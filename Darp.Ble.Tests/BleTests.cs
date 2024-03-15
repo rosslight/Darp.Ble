@@ -4,6 +4,7 @@ using Darp.Ble.Device;
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
 using Darp.Ble.Linq;
+using Darp.Ble.Utils;
 using FluentAssertions;
 using NSubstitute;
 using Serilog;
@@ -15,19 +16,17 @@ namespace Darp.Ble.Tests;
 
 public sealed class BleTests
 {
-    private readonly ILogger _logger;
-
     private static readonly byte[] AdvBytes = "130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB".ToByteArray();
     private readonly BleManager _manager;
 
     public BleTests(ITestOutputHelper outputHelper)
     {
-        _logger = new LoggerConfiguration()
+        ILogger logger = new LoggerConfiguration()
             .MinimumLevel.Verbose()
             .WriteTo.TestOutput(outputHelper)
             .CreateLogger();
         _manager = new BleManagerBuilder()
-            .OnLog((_, logEvent) => _logger.Write((LogEventLevel)logEvent.Level, logEvent.Exception, logEvent.MessageTemplate, logEvent.Properties))
+            .OnLog((_, logEvent) => logger.Write((LogEventLevel)logEvent.Level, logEvent.Exception, logEvent.MessageTemplate, logEvent.Properties))
             .WithImplementation<SubstituteBleImplementation>()
             .CreateManager();
     }
@@ -98,12 +97,12 @@ public sealed class BleTests
     }
 
     [Theory]
-    [InlineData(PduEventType.AdvInd, BleAddressType.Public, 0xAABBCCDDEEFF, Physical.Le1M, Physical.NotAvailable,
+    [InlineData(BleEventType.AdvInd, BleAddressType.Public, 0xAABBCCDDEEFF, Physical.Le1M, Physical.NotAvailable,
         AdvertisingSId.NoAdIProvided, TxPowerLevel.NotAvailable, -40, PeriodicAdvertisingInterval.NoPeriodicAdvertising,
         BleAddressType.NotAvailable, 0x000000000000,
         SectionType.Flags, "1A", SectionType.CompleteService16BitUuids, "AABB",
         "130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB")]
-    public async Task Advertisement_FromExtendedAdvertisingReport(PduEventType eventType, BleAddressType addressType, ulong address,
+    public async Task Advertisement_FromExtendedAdvertisingReport(BleEventType eventType, BleAddressType addressType, ulong address,
         Physical primaryPhy,
         Physical secondaryPhy,
         AdvertisingSId advertisingSId,

@@ -4,6 +4,7 @@ using Darp.Ble.Data;
 
 namespace Darp.Ble.Gap;
 
+/// <summary> The advertising data sections </summary>
 public sealed class GapAdvertisingData : IReadOnlyList<(SectionType Section, ReadOnlyMemory<byte> Bytes)>
 {
     private readonly IReadOnlyList<(SectionType, ReadOnlyMemory<byte>)> _dataSections;
@@ -16,6 +17,9 @@ public sealed class GapAdvertisingData : IReadOnlyList<(SectionType Section, Rea
         _dataSections = dataSections;
     }
 
+    /// <summary> Create advertising data from a given list of sections </summary>
+    /// <param name="sections"> The sections to be used </param>
+    /// <returns> The advertising data </returns>
     public static GapAdvertisingData From(IReadOnlyList<(SectionType Section, byte[] Bytes)> sections)
     {
         int bytesLength = sections.Select(x => 2 + x.Bytes.Length).Sum();
@@ -72,7 +76,10 @@ public sealed class GapAdvertisingData : IReadOnlyList<(SectionType Section, Rea
     public int Count => _dataSections.Count;
     /// <inheritdoc />
     public (SectionType Section, ReadOnlyMemory<byte> Bytes) this[int index] => _dataSections[index];
-
+    /// <summary> Gets the underlying data as memory </summary>
+    /// <returns> The data section memory </returns>
     public ReadOnlyMemory<byte> AsReadOnlyMemory() => _advertisingDataMemory;
+    /// <summary> Gives back the underlying data as byte array </summary>
+    /// <returns> The data sections as byte array </returns>
     public byte[] ToByteArray() => _advertisingDataMemory.ToArray();
 }

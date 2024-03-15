@@ -9,7 +9,7 @@ public interface IGapAdvertisement
     DateTimeOffset Timestamp { get; }
 
     /// <summary> The type of the advertising event </summary>
-    PduEventType EventType { get; }
+    BleEventType EventType { get; }
     /// <summary> The address of the advertising device </summary>
     BleAddress Address { get; }
     /// <summary> Settings of the primary physical the advertising device used </summary>

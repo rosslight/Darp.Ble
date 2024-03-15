@@ -18,7 +18,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
     /// <inheritdoc />
     public required DateTimeOffset Timestamp { get; init; }
     /// <inheritdoc />
-    public required PduEventType EventType { get;  init; }
+    public required BleEventType EventType { get;  init; }
     /// <inheritdoc />
     public required BleAddress Address { get;  init; }
     /// <inheritdoc />
@@ -66,7 +66,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
         return new GapAdvertisement(bytes, bleObserver)
         {
             Timestamp = timestamp,
-            EventType = (PduEventType)eventType,
+            EventType = (BleEventType)eventType,
             Address = new BleAddress((BleAddressType)addressType, address),
             PrimaryPhy = (Physical)primaryPhy,
             SecondaryPhy = (Physical)secondaryPhy,
@@ -95,7 +95,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
     /// <returns></returns>
     public static GapAdvertisement FromExtendedAdvertisingReport(BleObserver bleObserver,
         DateTimeOffset timestamp,
-        PduEventType eventType,
+        BleEventType eventType,
         BleAddress address,
         Physical primaryPhy,
         Physical secondaryPhy,
@@ -107,9 +107,8 @@ public sealed class GapAdvertisement : IGapAdvertisement
         IReadOnlyList<(SectionType Section, byte[] Bytes)> dataSections)
     {
         GapAdvertisingData data = GapAdvertisingData.From(dataSections);
-        ReadOnlyMemory<byte> dataMemory = data.AsReadOnlyMemory();
-        var bytes = new byte[24 + dataMemory.Length];
         ReadOnlySpan<byte> dataSpan = data.AsReadOnlyMemory().Span;
+        var bytes = new byte[24 + dataSpan.Length];
         Span<byte> buffer = bytes;
         BinaryPrimitives.WriteUInt16LittleEndian(buffer, (ushort)eventType);
         buffer[2] = (byte)address.Type;
@@ -162,7 +161,7 @@ public sealed class GapAdvertisement<TUserData> : IGapAdvertisement<TUserData>, 
     /// <inheritdoc />
     public DateTimeOffset Timestamp => _advertisement.Timestamp;
     /// <inheritdoc />
-    public PduEventType EventType => _advertisement.EventType;
+    public BleEventType EventType => _advertisement.EventType;
     /// <inheritdoc />
     public BleAddress Address => _advertisement.Address;
     /// <inheritdoc />

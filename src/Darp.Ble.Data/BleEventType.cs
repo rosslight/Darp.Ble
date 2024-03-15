@@ -1,24 +1,22 @@
 namespace Darp.Ble.Data;
 
+/// <summary>
+/// The event type of the advertising report
+/// </summary>
 [Flags]
-public enum PduEventType
+public enum BleEventType
 {
+    /// <summary> Indicates, that one can connect to the sender of the event </summary>
     Connectable = 0b00001,
-    /// <summary>
-    /// Indicates, that the sender is capable of handling a scan request
-    /// </summary>
+    /// <summary> Indicates, that the sender is capable of handling a scan request </summary>
     Scannable = 0b00010,
-    /// <summary>
-    /// Indicates, that the sender only accepts connections from a known peer
-    /// </summary>
+    /// <summary> Indicates, that the sender only accepts connections from a known peer </summary>
     Directed = 0b00100,
     /// <summary>
     /// This advertisement is a scan response to a scan request issued for a scannable advertisement.
     /// </summary>
     ScanResponse = 0b01000,
-    /// <summary>
-    /// This advertisement was sent using a legacy PDU
-    /// </summary>
+    /// <summary> This advertisement was sent using a legacy PDU </summary>
     Legacy = 0b10000,
 
     /// <summary>

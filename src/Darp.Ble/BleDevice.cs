@@ -16,7 +16,7 @@ public sealed class BleDevice
     internal BleDevice(IBleDeviceImplementation bleDevice, IObserver<(BleDevice, LogEvent)>? logger)
     {
         _bleDevice = bleDevice;
-        if (logger is not null) _logger = System.Reactive.Observer.Create<LogEvent>(x => logger.OnNext((this, x)));;
+        if (logger is not null) _logger = System.Reactive.Observer.Create<LogEvent>(x => logger.OnNext((this, x)));
     }
 
     /// <summary> True if the device was successfully initialized </summary>

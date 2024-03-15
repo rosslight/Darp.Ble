@@ -22,6 +22,9 @@ public sealed class BleManagerBuilder
         return this;
     }
 
+    /// <summary> Register a handler for log events </summary>
+    /// <param name="onLog"> Called when any part of the ble library logs something </param>
+    /// <returns> The current builder </returns>
     public BleManagerBuilder OnLog(Action<BleDevice, LogEvent> onLog)
     {
         _logActions.Add(onLog);

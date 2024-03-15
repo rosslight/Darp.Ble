@@ -1,5 +1,6 @@
 namespace Darp.Ble.Data;
 
+/// <summary> Ble address type </summary>
 public enum BleAddressType : byte
 {
     /// <summary>
