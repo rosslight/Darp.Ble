@@ -6,13 +6,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{4A27900B-41D
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{F33B062A-678F-4598-A3AC-D30BCDBE9A6B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Darp.Ble.Tests", "Darp.Ble.Tests\Darp.Ble.Tests.csproj", "{28339B88-01F4-43E3-AB21-A15B59036710}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Darp.Ble.Tests", "test\Darp.Ble.Tests\Darp.Ble.Tests.csproj", "{28339B88-01F4-43E3-AB21-A15B59036710}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Darp.Ble.Data", "src\Darp.Ble.Data\Darp.Ble.Data.csproj", "{EA9D60CC-E314-4B65-8CBC-A198803C1699}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{9A28278C-7F07-415D-8486-908797B3C134}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AssignedNumbersCrawler", "AssignedNumbersCrawler\AssignedNumbersCrawler.csproj", "{448223B0-EA6B-4D53-9111-CA3A21CE8B8F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AssignedNumbersCrawler", "tools\AssignedNumbersCrawler\AssignedNumbersCrawler.csproj", "{448223B0-EA6B-4D53-9111-CA3A21CE8B8F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

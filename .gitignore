@@ -409,4 +409,4 @@ FodyWeavers.xsd
 _site/
 _site_pdf/
 
-AssignedNumbersCrawler/public/
+tools/AssignedNumbersCrawler/public/
