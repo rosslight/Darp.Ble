@@ -1,6 +1,9 @@
 using System.Reactive.Linq;
+using Darp.Ble.Data;
 using Darp.Ble.Device;
+using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
+using Darp.Ble.Linq;
 using FluentAssertions;
 using NSubstitute;
 using Serilog;
@@ -10,12 +13,24 @@ using LogEvent = Darp.Ble.Logger.LogEvent;
 
 namespace Darp.Ble.Tests;
 
-public sealed class BleTests(ITestOutputHelper outputHelper)
+public sealed class BleTests
 {
-    private readonly ILogger _logger = new LoggerConfiguration()
-        .MinimumLevel.Verbose()
-        .WriteTo.TestOutput(outputHelper)
-        .CreateLogger();
+    private readonly ILogger _logger;
+
+    private static readonly byte[] AdvBytes = "130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB".ToByteArray();
+    private readonly BleManager _manager;
+
+    public BleTests(ITestOutputHelper outputHelper)
+    {
+        _logger = new LoggerConfiguration()
+            .MinimumLevel.Verbose()
+            .WriteTo.TestOutput(outputHelper)
+            .CreateLogger();
+        _manager = new BleManagerBuilder()
+            .OnLog((_, logEvent) => _logger.Write((LogEventLevel)logEvent.Level, logEvent.Exception, logEvent.MessageTemplate, logEvent.Properties))
+            .WithImplementation<SubstituteBleImplementation>()
+            .CreateManager();
+    }
 
     private sealed class SubstituteBleImplementation : IBleImplementation
     {
@@ -24,10 +39,12 @@ public sealed class BleTests(ITestOutputHelper outputHelper)
             var impl = Substitute.For<IBleDeviceImplementation>();
             impl.InitializeAsync().Returns(Task.FromResult(InitializeResult.Success));
             var observer = Substitute.For<IBleObserverImplementation>();
-            observer.TryStartScan(out Arg.Any<IObservable<IGapAdvertisement>?>())
+            observer.TryStartScan(out _)
                 .Returns(info =>
                 {
-                    info[0] = Observable.Return(Substitute.For<IGapAdvertisement>());
+                    info[0] = Observable.Return(GapAdvertisement.FromExtendedAdvertisingReport(
+                        null!,
+                        DateTimeOffset.UtcNow, AdvBytes));
                     return true;
                 });
             impl.Observer.Returns(observer);
@@ -40,7 +57,7 @@ public sealed class BleTests(ITestOutputHelper outputHelper)
     {
         List<(BleDevice, LogEvent)> resultList = [];
         BleManager manager = new BleManagerBuilder()
-            .OnLog((device, logEvent) => resultList.Add((device, logEvent)))
+            .OnLog((bleDevice, logEvent) => resultList.Add((bleDevice, logEvent)))
             .WithImplementation<SubstituteBleImplementation>()
             .CreateManager();
         BleDevice device = manager.EnumerateDevices().First();
@@ -51,12 +68,8 @@ public sealed class BleTests(ITestOutputHelper outputHelper)
     [Fact]
     public async Task GeneralFlow()
     {
-        BleManager manager = new BleManagerBuilder()
-            .OnLog((_, logEvent) => _logger.Write((LogEventLevel)logEvent.Level, logEvent.Exception, logEvent.MessageTemplate, logEvent.Properties))
-            .WithImplementation<SubstituteBleImplementation>()
-            .CreateManager();
 
-        BleDevice[] adapters = manager.EnumerateDevices().ToArray();
+        BleDevice[] adapters = _manager.EnumerateDevices().ToArray();
 
         adapters.Should().ContainSingle();
 
@@ -73,8 +86,66 @@ public sealed class BleTests(ITestOutputHelper outputHelper)
 
         BleObserver observer = device.Observer;
 
-        await observer.RefCount().FirstAsync();
+        IGapAdvertisement<string> adv = await observer.RefCount()
+            .Select(x => x.WithUserData(""))
+            .Where(x => x.UserData == "")
+            .FirstAsync();
 
         observer.IsScanning.Should().BeFalse();
+
+        adv.AsByteArray().Should().BeEquivalentTo(AdvBytes);
+        ((ulong)adv.Address.Value).Should().Be(0xAABBCCDDEEFF);
+    }
+
+    [Theory]
+    [InlineData(PduEventType.AdvInd, BleAddressType.Public, 0xAABBCCDDEEFF, Physical.Le1M, Physical.NotAvailable,
+        AdvertisingSId.NoAdIProvided, TxPowerLevel.NotAvailable, -40, PeriodicAdvertisingInterval.NoPeriodicAdvertising,
+        BleAddressType.NotAvailable, 0x000000000000,
+        SectionType.Flags, "1A", SectionType.CompleteService16BitUuids, "AABB",
+        "130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB")]
+    public async Task Advertisement_FromExtendedAdvertisingReport(PduEventType eventType, BleAddressType addressType, ulong address,
+        Physical primaryPhy,
+        Physical secondaryPhy,
+        AdvertisingSId advertisingSId,
+        TxPowerLevel txPower,
+        sbyte rssi,
+        PeriodicAdvertisingInterval periodicAdvertisingInterval,
+        BleAddressType directAddressType,
+        ulong directAddress,
+        SectionType sectionType1,
+        string sectionDataHex1,
+        SectionType sectionType2,
+        string sectionDataHex2,
+        string expectedReportHex)
+    {
+        byte[] sectionData1 = sectionDataHex1.ToByteArray();
+        byte[] sectionData2 = sectionDataHex2.ToByteArray();
+        var device = _manager.EnumerateDevices().First();
+        await device.InitializeAsync();
+
+        GapAdvertisement adv = GapAdvertisement.FromExtendedAdvertisingReport(device.Observer, DateTimeOffset.UtcNow, eventType,
+            new BleAddress(addressType, (UInt48)address), primaryPhy, secondaryPhy,
+            advertisingSId, txPower, (Rssi)rssi, periodicAdvertisingInterval, new BleAddress(directAddressType, (UInt48)directAddress), new[]
+            {
+                (sectionType1, sectionData1),
+                (sectionType2, sectionData2)
+            });
+        string byteString = adv.AsByteArray().ToHexString();
+
+        byteString.Should().Be(expectedReportHex);
+        adv.EventType.Should().Be(eventType);
+        adv.Address.Type.Should().Be(addressType);
+        adv.Address.Value.Should().Be((UInt48)address);
+        adv.PrimaryPhy.Should().Be(primaryPhy);
+        adv.SecondaryPhy.Should().Be(secondaryPhy);
+        adv.AdvertisingSId.Should().Be(advertisingSId);
+        adv.TxPower.Should().Be(txPower);
+        adv.Rssi.Should().Be((Rssi)rssi);
+        adv.PeriodicAdvertisingInterval.Should().Be(periodicAdvertisingInterval);
+        adv.DirectAddress.Type.Should().Be(directAddressType);
+        adv.DirectAddress.Value.Should().Be((UInt48)directAddress);
+        adv.Data.Should().HaveCount(2);
+        adv.Data.Should().HaveElementAt(0, (sectionType1, sectionData1));
+        adv.Data.Should().HaveElementAt(1, (sectionType2, sectionData2));
     }
 }

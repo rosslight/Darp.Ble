@@ -1,5 +1,6 @@
 using System.Reactive.Disposables;
 using System.Reactive.Subjects;
+using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
 
 namespace Darp.Ble;

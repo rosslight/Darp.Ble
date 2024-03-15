@@ -1,4 +1,4 @@
-namespace Darp.Ble;
+namespace Darp.Ble.Data;
 
 /// <summary> The result codes for initialization </summary>
 public enum InitializeResult

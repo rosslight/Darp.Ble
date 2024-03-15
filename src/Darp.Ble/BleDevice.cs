@@ -1,3 +1,4 @@
+using Darp.Ble.Data;
 using Darp.Ble.Device;
 using Darp.Ble.Implementation;
 using Darp.Ble.Logger;

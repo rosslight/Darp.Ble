@@ -1,4 +1,5 @@
-using System.Diagnostics.CodeAnalysis;
+using Darp.Ble.Data;
+using Darp.Ble.Gap;
 
 namespace Darp.Ble.Implementation;
 
