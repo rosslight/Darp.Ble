@@ -100,7 +100,7 @@ public sealed class BleTests
     [InlineData(BleEventType.AdvInd, BleAddressType.Public, 0xAABBCCDDEEFF, Physical.Le1M, Physical.NotAvailable,
         AdvertisingSId.NoAdIProvided, TxPowerLevel.NotAvailable, -40, PeriodicAdvertisingInterval.NoPeriodicAdvertising,
         BleAddressType.NotAvailable, 0x000000000000,
-        SectionType.Flags, "1A", SectionType.CompleteService16BitUuids, "AABB",
+        AdType.Flags, "1A", AdType.CompleteListOf16BitServiceClassUuids, "AABB",
         "130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB")]
     public async Task Advertisement_FromExtendedAdvertisingReport(BleEventType eventType, BleAddressType addressType, ulong address,
         Physical primaryPhy,
@@ -111,9 +111,9 @@ public sealed class BleTests
         PeriodicAdvertisingInterval periodicAdvertisingInterval,
         BleAddressType directAddressType,
         ulong directAddress,
-        SectionType sectionType1,
+        AdType adType1,
         string sectionDataHex1,
-        SectionType sectionType2,
+        AdType adType2,
         string sectionDataHex2,
         string expectedReportHex)
     {
@@ -126,8 +126,8 @@ public sealed class BleTests
             new BleAddress(addressType, (UInt48)address), primaryPhy, secondaryPhy,
             advertisingSId, txPower, (Rssi)rssi, periodicAdvertisingInterval, new BleAddress(directAddressType, (UInt48)directAddress), new[]
             {
-                (sectionType1, sectionData1),
-                (sectionType2, sectionData2)
+                (adType1, sectionData1),
+                (adType2, sectionData2)
             });
         string byteString = adv.AsByteArray().ToHexString();
 
@@ -144,7 +144,7 @@ public sealed class BleTests
         adv.DirectAddress.Type.Should().Be(directAddressType);
         adv.DirectAddress.Value.Should().Be((UInt48)directAddress);
         adv.Data.Should().HaveCount(2);
-        adv.Data.Should().HaveElementAt(0, (sectionType1, sectionData1));
-        adv.Data.Should().HaveElementAt(1, (sectionType2, sectionData2));
+        adv.Data.Should().HaveElementAt(0, (adType1, sectionData1));
+        adv.Data.Should().HaveElementAt(1, (adType2, sectionData2));
     }
 }

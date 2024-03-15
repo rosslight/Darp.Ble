@@ -408,3 +408,5 @@ FodyWeavers.xsd
 # DocFX
 _site/
 _site_pdf/
+
+AssignedNumbersCrawler/public/

@@ -51,7 +51,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
         ReadOnlySpan<byte> byteBuffer = bytes;
         ushort eventType = BinaryPrimitives.ReadUInt16LittleEndian(byteBuffer);
         byte addressType = byteBuffer[2];
-        UInt48 address = UInt48.ReadLitteEndian(byteBuffer[3..]);
+        UInt48 address = UInt48.ReadLittleEndian(byteBuffer[3..]);
         byte primaryPhy = byteBuffer[9];
         byte secondaryPhy = byteBuffer[10];
         byte advertisingSId = byteBuffer[11];
@@ -59,7 +59,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
         byte rssi = byteBuffer[13];
         ushort periodicAdvertisingInterval = BinaryPrimitives.ReadUInt16LittleEndian(byteBuffer[14..]);
         byte directAddressType = byteBuffer[16];
-        UInt48 directAddress = UInt48.ReadLitteEndian(byteBuffer[17..]);
+        UInt48 directAddress = UInt48.ReadLittleEndian(byteBuffer[17..]);
         byte dataLength = byteBuffer[23];
         ReadOnlyMemory<byte> data = bytes.AsMemory()[24..(24+dataLength)];
 
@@ -104,7 +104,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
         Rssi rssi,
         PeriodicAdvertisingInterval periodicAdvertisingInterval,
         BleAddress directAddress,
-        IReadOnlyList<(SectionType Section, byte[] Bytes)> dataSections)
+        IReadOnlyList<(AdType Section, byte[] Bytes)> dataSections)
     {
         GapAdvertisingData data = GapAdvertisingData.From(dataSections);
         ReadOnlySpan<byte> dataSpan = data.AsReadOnlyMemory().Span;
@@ -112,7 +112,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
         Span<byte> buffer = bytes;
         BinaryPrimitives.WriteUInt16LittleEndian(buffer, (ushort)eventType);
         buffer[2] = (byte)address.Type;
-        UInt48.WriteLitteEndian(buffer[3..], address.Value);
+        UInt48.WriteLittleEndian(buffer[3..], address.Value);
         buffer[9] = (byte)primaryPhy;
         buffer[10] = (byte)secondaryPhy;
         buffer[11] = (byte)advertisingSId;
@@ -120,7 +120,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
         buffer[13] = (byte)rssi;
         BinaryPrimitives.WriteUInt16LittleEndian(buffer[14..], (ushort)periodicAdvertisingInterval);
         buffer[16] = (byte)directAddress.Type;
-        UInt48.WriteLitteEndian(buffer[17..], directAddress.Value);
+        UInt48.WriteLittleEndian(buffer[17..], directAddress.Value);
         buffer[23] = (byte)dataSpan.Length;
         dataSpan.CopyTo(buffer[24..]);
         return new GapAdvertisement(bytes, bleObserver)

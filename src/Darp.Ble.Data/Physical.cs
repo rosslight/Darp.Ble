@@ -1,5 +1,6 @@
 namespace Darp.Ble.Data;
 
+/// <summary> The ble physical </summary>
 public enum Physical : byte
 {
     /// <summary>

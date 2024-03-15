@@ -1,14 +1,20 @@
 ﻿namespace Darp.Ble.Data;
 
+/// <summary> A 48 bit unsigned integer </summary>
 public struct UInt48 : IComparable<UInt48>
 {
     private readonly byte _b0;
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
     private readonly byte _b1;
     private readonly byte _b2;
     private readonly byte _b3;
     private readonly byte _b4;
     private readonly byte _b5;
+#pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
 
+    /// <summary> Cast a ulong to </summary>
+    /// <param name="value"> The ulong to cast </param>
+    /// <returns> The resulting 48 bit integer </returns>
     public static explicit operator UInt48(ulong value)
     {
         unsafe
@@ -18,6 +24,10 @@ public struct UInt48 : IComparable<UInt48>
             return *resPtr;
         }
     }
+
+    /// <summary> Cast a 48 bit integer to a ulong </summary>
+    /// <param name="value"> The 48 bit integer </param>
+    /// <returns> A ulong </returns>
     public static implicit operator ulong(UInt48 value)
     {
         unsafe
@@ -28,7 +38,12 @@ public struct UInt48 : IComparable<UInt48>
         }
     }
 
-    public static UInt48 ReadLitteEndian(ReadOnlySpan<byte> source)
+    /// <summary> Read a given source in little endian </summary>
+    /// <param name="source"> The source </param>
+    /// <returns> The 48 bit integer </returns>
+    /// <exception cref="NotImplementedException"> Non little endian systems are not implemented yet </exception>
+    /// <exception cref="ArgumentOutOfRangeException"> The source does not yield enough bytes </exception>
+    public static UInt48 ReadLittleEndian(ReadOnlySpan<byte> source)
     {
         if (!BitConverter.IsLittleEndian) throw new NotImplementedException();
         if (source.Length < 6) throw new ArgumentOutOfRangeException(nameof(source), "Source has to be 6 bytes long");
@@ -42,7 +57,12 @@ public struct UInt48 : IComparable<UInt48>
         }
     }
 
-    public static void WriteLitteEndian(Span<byte> destination, UInt48 uint48)
+    /// <summary> Write a given 48 bit integer into a destination buffer </summary>
+    /// <param name="destination"> The destination </param>
+    /// <param name="uint48"> The 48 bit integer to write </param>
+    /// <exception cref="NotImplementedException"> Non little endian systems are not implemented yet </exception>
+    /// <exception cref="ArgumentOutOfRangeException"> The destination is not long enough </exception>
+    public static void WriteLittleEndian(Span<byte> destination, UInt48 uint48)
     {
         if (!BitConverter.IsLittleEndian) throw new NotImplementedException();
         if (destination.Length < 6) throw new ArgumentOutOfRangeException(nameof(destination), "Source has to be 6 bytes long");
