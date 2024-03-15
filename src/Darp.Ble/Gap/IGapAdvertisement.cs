@@ -36,3 +36,11 @@ public interface IGapAdvertisement
     byte[] AsByteArray();
     //IObservable<IGattPeripheral> Connect(ScannerConfiguration? scannerConfig, ConnectionConfiguration? connectionConfig);
 }
+
+/// <summary> An advertisement with attached user data </summary>
+/// <typeparam name="TUserData"> The user data </typeparam>
+public interface IGapAdvertisement<out TUserData> : IGapAdvertisement
+{
+    /// <summary> The data specified by the user and attached to the advertisement </summary>
+    TUserData UserData { get; }
+}
