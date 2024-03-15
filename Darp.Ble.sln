@@ -1,0 +1,30 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Darp.Ble", "src\Darp.Ble\Darp.Ble.csproj", "{1E48FB53-33FF-4AFF-9DA3-95F6F8C35ACA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{4A27900B-41D2-41FF-95C9-28D27D5A7F86}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{F33B062A-678F-4598-A3AC-D30BCDBE9A6B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Darp.Ble.Tests", "Darp.Ble.Tests\Darp.Ble.Tests.csproj", "{28339B88-01F4-43E3-AB21-A15B59036710}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1E48FB53-33FF-4AFF-9DA3-95F6F8C35ACA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1E48FB53-33FF-4AFF-9DA3-95F6F8C35ACA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1E48FB53-33FF-4AFF-9DA3-95F6F8C35ACA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1E48FB53-33FF-4AFF-9DA3-95F6F8C35ACA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28339B88-01F4-43E3-AB21-A15B59036710}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28339B88-01F4-43E3-AB21-A15B59036710}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28339B88-01F4-43E3-AB21-A15B59036710}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28339B88-01F4-43E3-AB21-A15B59036710}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{1E48FB53-33FF-4AFF-9DA3-95F6F8C35ACA} = {4A27900B-41D2-41FF-95C9-28D27D5A7F86}
+		{28339B88-01F4-43E3-AB21-A15B59036710} = {F33B062A-678F-4598-A3AC-D30BCDBE9A6B}
+	EndGlobalSection
+EndGlobal
