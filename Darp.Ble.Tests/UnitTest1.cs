@@ -1,4 +1,5 @@
 using System.Reactive.Linq;
+using Darp.Ble.Device;
 using Darp.Ble.Implementation;
 using FluentAssertions;
 using NSubstitute;
@@ -9,7 +10,7 @@ public class UnitTest1
 {
     private sealed class Xyz : IBleImplementation
     {
-        public IEnumerable<BleDevice> EnumerateAdapters()
+        public IEnumerable<IBleDeviceImplementation> EnumerateAdapters()
         {
             var impl = Substitute.For<IBleDeviceImplementation>();
             impl.InitializeAsync().Returns(Task.FromResult(InitializeResult.Success));
@@ -21,7 +22,7 @@ public class UnitTest1
                     return true;
                 });
             impl.Observer.Returns(observer);
-            yield return new BleDevice(impl);
+            yield return impl;
         }
     }
 

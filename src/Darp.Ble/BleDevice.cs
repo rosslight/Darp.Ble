@@ -1,12 +1,7 @@
+using Darp.Ble.Device;
 using Darp.Ble.Implementation;
 
 namespace Darp.Ble;
-
-public enum InitializeResult
-{
-    Success = 0,
-    AlreadyInitializing,
-}
 
 /// <summary> The base interface of a ble device. </summary>
 public sealed class BleDevice
@@ -15,13 +10,16 @@ public sealed class BleDevice
     private BleObserver? _bleObserver;
     private bool _isInitializing;
 
-    public BleDevice(IBleDeviceImplementation bleDevice)
+    internal BleDevice(IBleDeviceImplementation bleDevice)
     {
         _bleDevice = bleDevice;
     }
 
+    /// <summary> True if the device was successfully initialized </summary>
     public bool IsInitialized { get; private set; }
 
+    /// <summary> Initializes the ble device </summary>
+    /// <returns> Success or a custom error code </returns>
     public async Task<InitializeResult> InitializeAsync()
     {
         if (_isInitializing) return InitializeResult.AlreadyInitializing;
@@ -31,7 +29,8 @@ public sealed class BleDevice
             InitializeResult result = await _bleDevice.InitializeAsync();
             if (result is not InitializeResult.Success)
                 return result;
-            _bleObserver = new BleObserver(_bleDevice.Observer);
+            if (_bleDevice.Observer is not null)
+                _bleObserver = new BleObserver(_bleDevice.Observer);
             IsInitialized = true;
             return InitializeResult.Success;
         }
@@ -41,9 +40,16 @@ public sealed class BleDevice
         }
     }
 
+    /// <summary>
+    /// Gives back capabilities of this device. Before the device was successfully initialized, the capabilities are unknown
+    /// </summary>
     public Capabilities Capabilities => Capabilities.Unknown
                                         | (_bleObserver is not null ? Capabilities.Observer : Capabilities.Unknown);
 
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <exception cref="NotSupportedException"></exception>
     public BleObserver Observer => _bleObserver ?? throw new NotSupportedException();
 }
 

@@ -1,4 +1,4 @@
-namespace Darp.Ble;
+namespace Darp.Ble.Device;
 
 /// <summary> There are four GAP roles defined for devices operating over an LE physical transport </summary>
 [Flags]
