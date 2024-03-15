@@ -3,12 +3,21 @@ using Darp.Ble.Device;
 using Darp.Ble.Implementation;
 using FluentAssertions;
 using NSubstitute;
+using Serilog;
+using Serilog.Events;
+using Xunit.Abstractions;
+using LogEvent = Darp.Ble.Logger.LogEvent;
 
 namespace Darp.Ble.Tests;
 
-public class UnitTest1
+public sealed class BleTests(ITestOutputHelper outputHelper)
 {
-    private sealed class Xyz : IBleImplementation
+    private readonly ILogger _logger = new LoggerConfiguration()
+        .MinimumLevel.Verbose()
+        .WriteTo.TestOutput(outputHelper)
+        .CreateLogger();
+
+    private sealed class SubstituteBleImplementation : IBleImplementation
     {
         public IEnumerable<IBleDeviceImplementation> EnumerateAdapters()
         {
@@ -27,13 +36,27 @@ public class UnitTest1
     }
 
     [Fact]
-    public async Task Test1()
+    public async Task InitializeAsync_ShouldLog()
+    {
+        List<(BleDevice, LogEvent)> resultList = [];
+        BleManager manager = new BleManagerBuilder()
+            .OnLog((device, logEvent) => resultList.Add((device, logEvent)))
+            .WithImplementation<SubstituteBleImplementation>()
+            .CreateManager();
+        BleDevice device = manager.EnumerateDevices().First();
+        await device.InitializeAsync();
+        resultList.Should().HaveElementAt(0, (device, new LogEvent(1, null, "Adapter Initialized!", Array.Empty<object?>())));
+    }
+
+    [Fact]
+    public async Task GeneralFlow()
     {
         BleManager manager = new BleManagerBuilder()
-            .WithImplementation<Xyz>()
+            .OnLog((_, logEvent) => _logger.Write((LogEventLevel)logEvent.Level, logEvent.Exception, logEvent.MessageTemplate, logEvent.Properties))
+            .WithImplementation<SubstituteBleImplementation>()
             .CreateManager();
 
-        var adapters = manager.EnumerateDevices().ToArray();
+        BleDevice[] adapters = manager.EnumerateDevices().ToArray();
 
         adapters.Should().ContainSingle();
 

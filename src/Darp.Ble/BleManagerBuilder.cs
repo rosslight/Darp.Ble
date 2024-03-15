@@ -1,4 +1,5 @@
 using Darp.Ble.Implementation;
+using Darp.Ble.Logger;
 
 namespace Darp.Ble;
 
@@ -6,6 +7,7 @@ namespace Darp.Ble;
 public sealed class BleManagerBuilder
 {
     private readonly List<IBleImplementation> _implementations = [];
+    private readonly List<Action<BleDevice, LogEvent>> _logActions = [];
 
     /// <summary> Add a new implementation </summary>
     /// <param name="config"> An optional callback to modify the implementation config </param>
@@ -20,10 +22,16 @@ public sealed class BleManagerBuilder
         return this;
     }
 
+    public BleManagerBuilder OnLog(Action<BleDevice, LogEvent> onLog)
+    {
+        _logActions.Add(onLog);
+        return this;
+    }
+
     /// <summary> Create a new ble manager </summary>
     /// <returns> The new ble manager </returns>
     public BleManager CreateManager()
     {
-        return new BleManager(_implementations);
+        return new BleManager(_implementations, _logActions);
     }
 }

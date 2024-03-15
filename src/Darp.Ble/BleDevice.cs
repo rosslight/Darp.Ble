@@ -1,5 +1,6 @@
 using Darp.Ble.Device;
 using Darp.Ble.Implementation;
+using Darp.Ble.Logger;
 
 namespace Darp.Ble;
 
@@ -7,12 +8,14 @@ namespace Darp.Ble;
 public sealed class BleDevice
 {
     private readonly IBleDeviceImplementation _bleDevice;
+    private readonly IObserver<LogEvent>? _logger;
     private BleObserver? _bleObserver;
     private bool _isInitializing;
 
-    internal BleDevice(IBleDeviceImplementation bleDevice)
+    internal BleDevice(IBleDeviceImplementation bleDevice, IObserver<(BleDevice, LogEvent)>? logger)
     {
         _bleDevice = bleDevice;
+        if (logger is not null) _logger = System.Reactive.Observer.Create<LogEvent>(x => logger.OnNext((this, x)));;
     }
 
     /// <summary> True if the device was successfully initialized </summary>
@@ -32,6 +35,7 @@ public sealed class BleDevice
             if (_bleDevice.Observer is not null)
                 _bleObserver = new BleObserver(_bleDevice.Observer);
             IsInitialized = true;
+            _logger?.Debug("Adapter Initialized!");
             return InitializeResult.Success;
         }
         finally
