@@ -9,16 +9,24 @@ public sealed class BleManagerBuilder
     private readonly List<IBleFactory> _factories = [];
     private readonly List<Action<BleDevice, LogEvent>> _logActions = [];
 
-    /// <summary> Add a new implementation </summary>
+    /// <summary> Add a new factory </summary>
     /// <param name="config"> An optional callback to modify the implementation config </param>
     /// <typeparam name="TFactory"> The type of the factory </typeparam>
     /// <returns> The current builder </returns>
     public BleManagerBuilder With<TFactory>(Action<TFactory>? config = null)
         where TFactory : IBleFactory, new()
     {
-        var impl = new TFactory();
-        config?.Invoke(impl);
-        _factories.Add(impl);
+        var factory = new TFactory();
+        config?.Invoke(factory);
+        return With(factory);
+    }
+
+    /// <summary> Add a new factory directly </summary>
+    /// <param name="factory"> The factory to be added </param>
+    /// <returns> The current builder  </returns>
+    public BleManagerBuilder With(IBleFactory factory)
+    {
+        _factories.Add(factory);
         return this;
     }
 

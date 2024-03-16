@@ -38,10 +38,5 @@ public enum BleEventType
     /// The advertisement is undirected and indicates that the device is not connectable nor scannable.
     /// This advertisement type can carry data.
     /// </summary>
-    AdvNonConnInd = Legacy | 0,
-    /// <summary>
-    /// This advertisement is a 5.0 extended advertisement.
-    /// This advertisement type may have different properties, and is not necessarily directed, connected, scannable, nor a scan response.
-    /// </summary>
-    Extended = 5
+    AdvNonConnInd = Legacy | 0
 }
