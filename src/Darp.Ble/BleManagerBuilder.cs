@@ -6,19 +6,19 @@ namespace Darp.Ble;
 /// <summary> Configure the ble manager. Add new implementations or specify logging behavior </summary>
 public sealed class BleManagerBuilder
 {
-    private readonly List<IBleImplementation> _implementations = [];
+    private readonly List<IBleFactory> _factories = [];
     private readonly List<Action<BleDevice, LogEvent>> _logActions = [];
 
     /// <summary> Add a new implementation </summary>
     /// <param name="config"> An optional callback to modify the implementation config </param>
-    /// <typeparam name="TImplementation"> The type of the implementation </typeparam>
+    /// <typeparam name="TFactory"> The type of the factory </typeparam>
     /// <returns> The current builder </returns>
-    public BleManagerBuilder WithImplementation<TImplementation>(Action<TImplementation>? config = null)
-        where TImplementation : IBleImplementation, new()
+    public BleManagerBuilder With<TFactory>(Action<TFactory>? config = null)
+        where TFactory : IBleFactory, new()
     {
-        var impl = new TImplementation();
+        var impl = new TFactory();
         config?.Invoke(impl);
-        _implementations.Add(impl);
+        _factories.Add(impl);
         return this;
     }
 
@@ -35,6 +35,6 @@ public sealed class BleManagerBuilder
     /// <returns> The new ble manager </returns>
     public BleManager CreateManager()
     {
-        return new BleManager(_implementations, _logActions);
+        return new BleManager(_factories, _logActions);
     }
 }

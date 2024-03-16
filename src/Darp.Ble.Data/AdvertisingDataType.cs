@@ -1,7 +1,7 @@
 namespace Darp.Ble.Data;
 
 /// <summary> The Ad types </summary>
-public enum AdType : byte
+public enum AdvertisingDataType : byte
 {
     /// <summary> Flags </summary>
     /// <remarks> Core Specification Supplement, Part A, Section 1.3 </remarks>

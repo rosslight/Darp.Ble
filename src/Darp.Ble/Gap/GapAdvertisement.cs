@@ -36,7 +36,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
     /// <inheritdoc />
     public required BleAddress DirectAddress { get;  init; }
     /// <inheritdoc />
-    public required GapAdvertisingData Data { get;  init; }
+    public required AdvertisingData Data { get;  init; }
 
     /// <summary> Create an advertisement wrapper from bytes of an extended advertising report </summary>
     /// <remarks> BLUETOOTH CORE SPECIFICATION Version 5.4 | Vol 4, Part E, 7.7.65.13 LE Extended Advertising Report event </remarks>
@@ -75,7 +75,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
             Rssi = (Rssi)rssi,
             PeriodicAdvertisingInterval = (PeriodicAdvertisingInterval)periodicAdvertisingInterval,
             DirectAddress = new BleAddress((BleAddressType)directAddressType, directAddress),
-            Data = GapAdvertisingData.From(data)
+            Data = AdvertisingData.From(data)
         };
     }
 
@@ -104,9 +104,9 @@ public sealed class GapAdvertisement : IGapAdvertisement
         Rssi rssi,
         PeriodicAdvertisingInterval periodicAdvertisingInterval,
         BleAddress directAddress,
-        IReadOnlyList<(AdType Section, byte[] Bytes)> dataSections)
+        IReadOnlyList<(AdvertisingDataType Section, byte[] Bytes)> dataSections)
     {
-        GapAdvertisingData data = GapAdvertisingData.From(dataSections);
+        AdvertisingData data = AdvertisingData.From(dataSections);
         ReadOnlySpan<byte> dataSpan = data.AsReadOnlyMemory().Span;
         var bytes = new byte[24 + dataSpan.Length];
         Span<byte> buffer = bytes;
@@ -179,7 +179,7 @@ public sealed class GapAdvertisement<TUserData> : IGapAdvertisement<TUserData>, 
     /// <inheritdoc />
     public BleAddress DirectAddress => _advertisement.DirectAddress;
     /// <inheritdoc />
-    public GapAdvertisingData Data => _advertisement.Data;
+    public AdvertisingData Data => _advertisement.Data;
     /// <inheritdoc />
     public TUserData UserData { get; }
     object? IGapAdvertisementWithUserData.UserData => UserData;

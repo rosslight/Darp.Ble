@@ -34,7 +34,7 @@ public sealed class BleDevice
             if (result is not InitializeResult.Success)
                 return result;
             if (_bleDevice.Observer is not null)
-                _bleObserver = new BleObserver(_bleDevice.Observer);
+                _bleObserver = new BleObserver(_bleDevice.Observer, _logger);
             IsInitialized = true;
             _logger?.Debug("Adapter Initialized!");
             return InitializeResult.Success;

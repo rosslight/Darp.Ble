@@ -29,7 +29,7 @@ public interface IGapAdvertisement
     /// <summary> The address of the device the advertisement is directed to </summary>
     BleAddress DirectAddress { get; }
     /// <summary> The data sections </summary>
-    GapAdvertisingData Data { get; }
+    AdvertisingData Data { get; }
 
     /// <summary> Gives back the underlying byte array representing the advertising report </summary>
     /// <returns></returns>

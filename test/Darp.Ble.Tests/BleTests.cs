@@ -27,21 +27,21 @@ public sealed class BleTests
             .CreateLogger();
         _manager = new BleManagerBuilder()
             .OnLog((_, logEvent) => logger.Write((LogEventLevel)logEvent.Level, logEvent.Exception, logEvent.MessageTemplate, logEvent.Properties))
-            .WithImplementation<SubstituteBleImplementation>()
+            .With<SubstituteBleFactory>()
             .CreateManager();
     }
 
-    private sealed class SubstituteBleImplementation : IBleImplementation
+    private sealed class SubstituteBleFactory : IBleFactory
     {
         public IEnumerable<IBleDeviceImplementation> EnumerateAdapters()
         {
             var impl = Substitute.For<IBleDeviceImplementation>();
             impl.InitializeAsync().Returns(Task.FromResult(InitializeResult.Success));
             var observer = Substitute.For<IBleObserverImplementation>();
-            observer.TryStartScan(out _)
+            observer.TryStartScan(null!, out _)
                 .Returns(info =>
                 {
-                    info[0] = Observable.Return(GapAdvertisement.FromExtendedAdvertisingReport(
+                    info[1] = Observable.Return(GapAdvertisement.FromExtendedAdvertisingReport(
                         null!,
                         DateTimeOffset.UtcNow, AdvBytes));
                     return true;
@@ -57,7 +57,7 @@ public sealed class BleTests
         List<(BleDevice, LogEvent)> resultList = [];
         BleManager manager = new BleManagerBuilder()
             .OnLog((bleDevice, logEvent) => resultList.Add((bleDevice, logEvent)))
-            .WithImplementation<SubstituteBleImplementation>()
+            .With<SubstituteBleFactory>()
             .CreateManager();
         BleDevice device = manager.EnumerateDevices().First();
         await device.InitializeAsync();
@@ -100,7 +100,7 @@ public sealed class BleTests
     [InlineData(BleEventType.AdvInd, BleAddressType.Public, 0xAABBCCDDEEFF, Physical.Le1M, Physical.NotAvailable,
         AdvertisingSId.NoAdIProvided, TxPowerLevel.NotAvailable, -40, PeriodicAdvertisingInterval.NoPeriodicAdvertising,
         BleAddressType.NotAvailable, 0x000000000000,
-        AdType.Flags, "1A", AdType.CompleteListOf16BitServiceClassUuids, "AABB",
+        AdvertisingDataType.Flags, "1A", AdvertisingDataType.CompleteListOf16BitServiceClassUuids, "AABB",
         "130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB")]
     public async Task Advertisement_FromExtendedAdvertisingReport(BleEventType eventType, BleAddressType addressType, ulong address,
         Physical primaryPhy,
@@ -111,9 +111,9 @@ public sealed class BleTests
         PeriodicAdvertisingInterval periodicAdvertisingInterval,
         BleAddressType directAddressType,
         ulong directAddress,
-        AdType adType1,
+        AdvertisingDataType advertisingDataType1,
         string sectionDataHex1,
-        AdType adType2,
+        AdvertisingDataType advertisingDataType2,
         string sectionDataHex2,
         string expectedReportHex)
     {
@@ -126,8 +126,8 @@ public sealed class BleTests
             new BleAddress(addressType, (UInt48)address), primaryPhy, secondaryPhy,
             advertisingSId, txPower, (Rssi)rssi, periodicAdvertisingInterval, new BleAddress(directAddressType, (UInt48)directAddress), new[]
             {
-                (adType1, sectionData1),
-                (adType2, sectionData2)
+                (advertisingDataType1, sectionData1),
+                (advertisingDataType2, sectionData2)
             });
         string byteString = adv.AsByteArray().ToHexString();
 
@@ -144,7 +144,7 @@ public sealed class BleTests
         adv.DirectAddress.Type.Should().Be(directAddressType);
         adv.DirectAddress.Value.Should().Be((UInt48)directAddress);
         adv.Data.Should().HaveCount(2);
-        adv.Data.Should().HaveElementAt(0, (adType1, sectionData1));
-        adv.Data.Should().HaveElementAt(1, (adType2, sectionData2));
+        adv.Data.Should().HaveElementAt(0, (advertisingDataType1, sectionData1));
+        adv.Data.Should().HaveElementAt(1, (advertisingDataType2, sectionData2));
     }
 }

@@ -1,7 +1,10 @@
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
+using Darp.Ble.Logger;
 
 namespace Darp.Ble;
 
@@ -9,13 +12,15 @@ namespace Darp.Ble;
 public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
 {
     private readonly IBleObserverImplementation _bleDeviceObserver;
+    private readonly IObserver<LogEvent>? _logger;
     private readonly List<IObserver<IGapAdvertisement>> _observers = [];
     private IObservable<IGapAdvertisement>? _scanObservable;
     private IDisposable? _scanDisposable;
 
-    internal BleObserver(IBleObserverImplementation bleDeviceObserver)
+    internal BleObserver(IBleObserverImplementation bleDeviceObserver, IObserver<LogEvent>? logger)
     {
         _bleDeviceObserver = bleDeviceObserver;
+        _logger = logger;
     }
 
     /// <summary> True if the observer is currently scanning </summary>
@@ -54,6 +59,15 @@ public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
         }
     }
 
+    private void ThrowAll(Exception exception)
+    {
+        lock (this)
+        {
+            foreach (IObserver<IGapAdvertisement> observer in _observers.ToArray()) observer.OnError(exception);
+            _observers.Clear();
+        }
+    }
+
     /// <summary>
     /// Start a new connection. All observers will receive advertisement events.
     /// If called while an observation is running nothing happens and the disposable to cancel the scan is returned
@@ -64,19 +78,28 @@ public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
         lock (this)
         {
             if (_scanDisposable is not null) return _scanDisposable;
-            var result = _bleDeviceObserver.TryStartScan(out var observable);
-            if (!result) return Disposable.Empty;
+            bool startScanSuccessful = _bleDeviceObserver.TryStartScan(this, out IObservable<IGapAdvertisement> observable);
 
+            observable = observable
+                .Do(x => _logger?.Verbose("Got an adv to {Addr}", x.Address.Value))
+                .Catch((Exception exception) => Observable.Throw<IGapAdvertisement>(exception switch
+                {
+                    BleObservationStartUnsuccessfulException e => e,
+                    _ => new BleObservationStartUnsuccessfulException(this, exception)
+                }));
+            // Make copy of observers (.ToArray()) to be resilient to disconnections on first connection
+            foreach (IObserver<IGapAdvertisement> observer in _observers.ToArray()) observable.Subscribe(observer);
+
+            if (!startScanSuccessful)
+            {
+                return Disposable.Empty;
+            }
+
+            _scanObservable = observable;
             _scanDisposable = Disposable.Create(this, state =>
             {
                 state.StopScan();
             });
-            _scanObservable = observable;
-            // Make copy of observers to be resilient to disconnections on first connection
-            foreach (var observer in _observers.ToArray())
-            {
-                observable.Subscribe(observer);
-            }
             return _scanDisposable;
         }
     }
