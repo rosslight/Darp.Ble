@@ -27,4 +27,5 @@ public class AndroidBleDevice : IBleDeviceImplementation
     }
 
     public IBleObserverImplementation? Observer { get; private set; }
+    public string Identifier => "Darp.Ble.Android";
 }

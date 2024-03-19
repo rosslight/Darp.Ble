@@ -11,6 +11,8 @@ public interface IBleDeviceImplementation
     Task<InitializeResult> InitializeAsync();
     /// <summary> Get access to the implementation specific observer </summary>
     IBleObserverImplementation? Observer { get; }
+    /// <summary> Get an implementation specific identification string </summary>
+    string Identifier { get; }
 }
 
 /// <summary> The ble observer implementation </summary>

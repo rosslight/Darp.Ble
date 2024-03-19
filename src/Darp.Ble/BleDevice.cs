@@ -22,6 +22,9 @@ public sealed class BleDevice
     /// <summary> True if the device was successfully initialized </summary>
     public bool IsInitialized { get; private set; }
 
+    /// <summary> Get an implementation specific identification string </summary>
+    public string Identifier => _bleDevice.Identifier;
+
     /// <summary> Initializes the ble device </summary>
     /// <returns> Success or a custom error code </returns>
     public async Task<InitializeResult> InitializeAsync()

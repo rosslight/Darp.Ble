@@ -20,7 +20,7 @@ public static class ByteArrayExtensions
     /// <param name="hexString"> The hex string with two chars per byte </param>
     /// <param name="destination"> The destination to write the bytes to </param>
     /// <exception cref="ArgumentException"> Thrown if string is in wrong format or destination is not big enough </exception>
-    public static void WriteByteArray(this string hexString, Span<byte> destination)
+    public static void WriteByteArray(this string hexString, in Span<byte> destination)
     {
         if (hexString.Length % 2 == 1)
             throw new ArgumentException("The binary string cannot have an odd number of digits", nameof(hexString));

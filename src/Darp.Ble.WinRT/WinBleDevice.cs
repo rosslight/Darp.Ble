@@ -12,4 +12,5 @@ public class WinBleDevice : IBleDeviceImplementation
     }
 
     public IBleObserverImplementation? Observer { get; private set; }
+    public string Identifier => "Darp.Ble.WinRT";
 }

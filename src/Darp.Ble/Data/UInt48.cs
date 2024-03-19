@@ -19,7 +19,7 @@ public struct UInt48 : IComparable<UInt48>
     {
         unsafe
         {
-            ulong* valuePtr = &value;
+            var valuePtr = &value;
             var resPtr = (UInt48*)valuePtr;
             return *resPtr;
         }
@@ -32,7 +32,7 @@ public struct UInt48 : IComparable<UInt48>
     {
         unsafe
         {
-            UInt48* valuePtr = &value;
+            var valuePtr = &value;
             var resPtr = (ulong*)valuePtr;
             return *resPtr;
         }
