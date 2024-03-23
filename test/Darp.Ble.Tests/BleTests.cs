@@ -1,6 +1,6 @@
 using System.Reactive.Linq;
 using Darp.Ble.Data;
-using Darp.Ble.Device;
+using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
 using Darp.Ble.Linq;

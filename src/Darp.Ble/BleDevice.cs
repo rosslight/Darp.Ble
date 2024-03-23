@@ -1,5 +1,4 @@
 using Darp.Ble.Data;
-using Darp.Ble.Device;
 using Darp.Ble.Implementation;
 using Darp.Ble.Logger;
 
@@ -54,10 +53,8 @@ public sealed class BleDevice
     public Capabilities Capabilities => Capabilities.Unknown
                                         | (_bleObserver is not null ? Capabilities.Observer : Capabilities.Unknown);
 
-    /// <summary>
-    /// 
-    /// </summary>
-    /// <exception cref="NotSupportedException"></exception>
+    /// <summary> Returns a view of the device in Observer Role </summary>
+    /// <exception cref="NotSupportedException"> Thrown when the device has not been initialized </exception>
     public BleObserver Observer => _bleObserver ?? throw new NotSupportedException();
 }
 

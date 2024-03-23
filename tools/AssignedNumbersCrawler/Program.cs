@@ -9,9 +9,9 @@ using YamlDotNet.Serialization.NamingConventions;
 string numbersDirectory = args[0];
 string targetDirectory = args[1];
 
-await using var adTypesWriter = new StreamWriter(File.Create($"{targetDirectory}/AdTypes.cs"));
+await using var adTypesWriter = new StreamWriter(File.Create($"{targetDirectory}/AssignedNumbers/AdTypes.cs"));
 await adTypesWriter.WriteAsync(ReadAdTypes(numbersDirectory));
-await using var companyIdentifierWriter = new StreamWriter(File.Create($"{targetDirectory}/CompanyIdentifiers.cs"));
+await using var companyIdentifierWriter = new StreamWriter(File.Create($"{targetDirectory}/AssignedNumbers/CompanyIdentifiers.cs"));
 await companyIdentifierWriter.WriteAsync(ReadCompanyIdentifiers(numbersDirectory));
 return;
 
@@ -60,7 +60,7 @@ string ReadFile<T, TEnum>(string path, string key, Func<T, int, string> func)
         var t => t
     };
     builder.AppendLine($$"""
-                       namespace Darp.Ble.Data;
+                       namespace Darp.Ble.Data.AssignedNumbers;
 
                        /// <summary>
                        /// The {{enumName}}.

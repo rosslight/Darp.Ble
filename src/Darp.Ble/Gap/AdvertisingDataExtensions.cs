@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Darp.Ble.Data;
+using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Utils;
 
 namespace Darp.Ble.Gap;
@@ -16,9 +17,9 @@ public static class AdvertisingDataExtensions
     {
         flags = default;
         var adTypeFound = false;
-        foreach ((AdTypes AdTypes, ReadOnlyMemory<byte> bytes) in data)
+        foreach ((AdTypes adTypes, ReadOnlyMemory<byte> bytes) in data)
         {
-            if (AdTypes is not AdTypes.Flags || bytes.Length == 0) continue;
+            if (adTypes is not AdTypes.Flags || bytes.Length == 0) continue;
             adTypeFound = true;
             flags |= (AdvertisingDataFlags)bytes.Span[0];
         }
@@ -27,9 +28,9 @@ public static class AdvertisingDataExtensions
 
     private static bool TryGetFirstType(this AdvertisingData data, AdTypes type, out ReadOnlyMemory<byte> buffer)
     {
-        foreach ((AdTypes AdTypes, ReadOnlyMemory<byte> bytes) in data)
+        foreach ((AdTypes adTypes, ReadOnlyMemory<byte> bytes) in data)
         {
-            if (AdTypes != type) continue;
+            if (adTypes != type) continue;
             buffer = bytes;
             return true;
         }

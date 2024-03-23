@@ -1,7 +1,7 @@
 ﻿namespace Darp.Ble.Data;
 
 /// <summary> A 48 bit unsigned integer </summary>
-public struct UInt48 : IComparable<UInt48>
+public readonly struct UInt48 : IComparable<UInt48>
 {
     private readonly byte _b0;
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
@@ -12,14 +12,14 @@ public struct UInt48 : IComparable<UInt48>
     private readonly byte _b5;
 #pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
 
-    /// <summary> Cast a ulong to </summary>
+    /// <summary> Cast a ulong to a 48 bit integer</summary>
     /// <param name="value"> The ulong to cast </param>
     /// <returns> The resulting 48 bit integer </returns>
     public static explicit operator UInt48(ulong value)
     {
         unsafe
         {
-            var valuePtr = &value;
+            ulong* valuePtr = &value;
             var resPtr = (UInt48*)valuePtr;
             return *resPtr;
         }
@@ -32,7 +32,7 @@ public struct UInt48 : IComparable<UInt48>
     {
         unsafe
         {
-            var valuePtr = &value;
+            UInt48* valuePtr = &value;
             var resPtr = (ulong*)valuePtr;
             return *resPtr;
         }

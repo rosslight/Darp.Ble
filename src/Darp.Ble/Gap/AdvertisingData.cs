@@ -1,6 +1,6 @@
 using System.Collections;
 using System.Collections.ObjectModel;
-using Darp.Ble.Data;
+using Darp.Ble.Data.AssignedNumbers;
 
 namespace Darp.Ble.Gap;
 

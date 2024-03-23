@@ -70,6 +70,7 @@ public class MyScanCallback : ScanCallback, IObservable<ScanResult>
 {
     private readonly List<IObserver<ScanResult>> _observers = [];
     private bool _disposed;
+    private readonly object _lockObject = new object();
 
     public override void OnScanResult(ScanCallbackType callbackType, ScanResult? result)
     {
@@ -106,7 +107,7 @@ public class MyScanCallback : ScanCallback, IObservable<ScanResult>
 
     public IDisposable Subscribe(IObserver<ScanResult> observer)
     {
-        lock (this)
+        lock (_lockObject)
         {
             if (_disposed) return Disposable.Empty;
             _observers.Add(observer);
@@ -119,7 +120,7 @@ public class MyScanCallback : ScanCallback, IObservable<ScanResult>
 
     protected override void Dispose(bool disposing)
     {
-        lock (this)
+        lock (_lockObject)
         {
             base.Dispose(disposing);
             foreach (IObserver<ScanResult> observer in _observers)

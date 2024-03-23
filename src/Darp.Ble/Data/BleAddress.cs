@@ -5,7 +5,6 @@ namespace Darp.Ble.Data;
 /// <summary> The ble address </summary>
 public readonly struct BleAddress
 {
-
     /// <summary> Initializes a new ble address </summary>
     /// <param name="address"> The 48bit address </param>
     [SetsRequiredMembers]

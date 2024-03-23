@@ -16,6 +16,7 @@ public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
     private readonly List<IObserver<IGapAdvertisement>> _observers = [];
     private IObservable<IGapAdvertisement>? _scanObservable;
     private IDisposable? _scanDisposable;
+    private readonly object _lockObject = new();
 
     internal BleObserver(IBleObserverImplementation bleDeviceObserver, IObserver<LogEvent>? logger)
     {
@@ -29,7 +30,7 @@ public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
     /// <summary> Stop the scan that is currently running </summary>
     public void StopScan()
     {
-        lock (this)
+        lock (_lockObject)
         {
             _bleDeviceObserver.StopScan();
             _scanDisposable?.Dispose();
@@ -45,7 +46,7 @@ public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
     /// <returns>A reference to an interface that allows observers to stop receiving notifications before the provider has finished sending them.</returns>
     public IDisposable Subscribe(IObserver<IGapAdvertisement> observer)
     {
-        lock (this)
+        lock (_lockObject)
         {
             IDisposable? optDisposable = _scanObservable?.Subscribe(observer);
             _observers.Add(observer);
@@ -61,7 +62,7 @@ public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
 
     private void ThrowAll(Exception exception)
     {
-        lock (this)
+        lock (_lockObject)
         {
             foreach (IObserver<IGapAdvertisement> observer in _observers.ToArray()) observer.OnError(exception);
             _observers.Clear();
@@ -75,7 +76,7 @@ public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
     /// <returns>Disposable used to disconnect the observable wrapper from its source, causing subscribed observer to stop receiving values from the underlying observable sequence.</returns>
     public IDisposable Connect()
     {
-        lock (this)
+        lock (_lockObject)
         {
             if (_scanDisposable is not null) return _scanDisposable;
             bool startScanSuccessful = _bleDeviceObserver.TryStartScan(this, out IObservable<IGapAdvertisement> observable);

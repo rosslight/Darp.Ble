@@ -1,4 +1,4 @@
-namespace Darp.Ble.Data;
+namespace Darp.Ble.Data.AssignedNumbers;
 
 /// <summary>
 /// The CompanyIdentifiers.
