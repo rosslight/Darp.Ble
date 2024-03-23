@@ -38,7 +38,7 @@ public sealed class BleTests
             var impl = Substitute.For<IBleDeviceImplementation>();
             impl.InitializeAsync().Returns(Task.FromResult(InitializeResult.Success));
             var observer = Substitute.For<IBleObserverImplementation>();
-            observer.TryStartScan(null!, out _)
+            observer.TryStartScan(Arg.Any<BleObserver>(), out _)
                 .Returns(info =>
                 {
                     info[1] = Observable.Return(GapAdvertisement.FromExtendedAdvertisingReport(

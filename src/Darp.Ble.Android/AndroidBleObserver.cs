@@ -70,7 +70,7 @@ public class MyScanCallback : ScanCallback, IObservable<ScanResult>
 {
     private readonly List<IObserver<ScanResult>> _observers = [];
     private bool _disposed;
-    private readonly object _lockObject = new object();
+    private readonly object _lockObject = new();
 
     public override void OnScanResult(ScanCallbackType callbackType, ScanResult? result)
     {

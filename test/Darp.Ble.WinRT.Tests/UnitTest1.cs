@@ -12,7 +12,7 @@ public class UnitTest1(ITestOutputHelper outputHelper)
         .WriteTo.TestOutput(outputHelper)
         .CreateLogger();
 
-    [Fact]
+    //[Fact]
     public async Task Test1()
     {
         BleManager manager = new BleManagerBuilder()

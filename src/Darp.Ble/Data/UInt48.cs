@@ -1,7 +1,11 @@
-﻿namespace Darp.Ble.Data;
+﻿using System.Buffers.Binary;
+using System.Numerics;
+using System.Runtime.InteropServices;
+
+namespace Darp.Ble.Data;
 
 /// <summary> A 48 bit unsigned integer </summary>
-public readonly struct UInt48 : IComparable<UInt48>
+public readonly struct UInt48 : IComparable<UInt48>, IMinMaxValue<UInt48>
 {
     private readonly byte _b0;
 #pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
@@ -11,6 +15,16 @@ public readonly struct UInt48 : IComparable<UInt48>
     private readonly byte _b4;
     private readonly byte _b5;
 #pragma warning restore CS0649 // Field is never assigned to, and will always have its default value
+
+    /// <summary> Initialize a new 48 bit integer based on every byte field </summary>
+    /// <param name="b0"> The first byte </param>
+    /// <param name="b1"> The second byte </param>
+    /// <param name="b2"> The third byte </param>
+    /// <param name="b3"> The fourth byte </param>
+    /// <param name="b4"> The fifth byte </param>
+    /// <param name="b5"> The sixth byte </param>
+    public UInt48(byte b0, byte b1, byte b2, byte b3, byte b4, byte b5) =>
+        (_b0, _b1, _b2, _b3, _b4, _b5) = (b0, b1, b2, b3, b4, b5);
 
     /// <summary> Cast a ulong to a 48 bit integer</summary>
     /// <param name="value"> The ulong to cast </param>
@@ -38,39 +52,34 @@ public readonly struct UInt48 : IComparable<UInt48>
         }
     }
 
+    /// <summary>Reverses a primitive value by performing an endianness swap of the specified <see cref="UInt48" /> value.</summary>
+    /// <param name="value">The value to reverse.</param>
+    /// <returns>The reversed value.</returns>
+    public static UInt48 ReverseEndianness(UInt48 value)
+    {
+        return new UInt48(value._b5, value._b4, value._b3, value._b2, value._b1, value._b0);
+    }
+
     /// <summary> Read a given source in little endian </summary>
     /// <param name="source"> The source </param>
     /// <returns> The 48 bit integer </returns>
-    /// <exception cref="NotImplementedException"> Non little endian systems are not implemented yet </exception>
     /// <exception cref="ArgumentOutOfRangeException"> The source does not yield enough bytes </exception>
     public static UInt48 ReadLittleEndian(ReadOnlySpan<byte> source)
     {
-        if (!BitConverter.IsLittleEndian) throw new NotImplementedException();
         if (source.Length < 6) throw new ArgumentOutOfRangeException(nameof(source), "Source has to be 6 bytes long");
-        unsafe
-        {
-            fixed (byte* sourcePtr = source)
-            {
-                var resPtr = (UInt48*)sourcePtr;
-                return *resPtr;
-            }
-        }
+        var result = MemoryMarshal.Read<UInt48>(source);
+        return BitConverter.IsLittleEndian ? result : ReverseEndianness(result);
     }
 
     /// <summary> Write a given 48 bit integer into a destination buffer </summary>
     /// <param name="destination"> The destination </param>
     /// <param name="uint48"> The 48 bit integer to write </param>
-    /// <exception cref="NotImplementedException"> Non little endian systems are not implemented yet </exception>
     /// <exception cref="ArgumentOutOfRangeException"> The destination is not long enough </exception>
     public static void WriteLittleEndian(Span<byte> destination, UInt48 uint48)
     {
-        if (!BitConverter.IsLittleEndian) throw new NotImplementedException();
         if (destination.Length < 6) throw new ArgumentOutOfRangeException(nameof(destination), "Source has to be 6 bytes long");
-        unsafe
-        {
-            byte* sourcePtr = &uint48._b0;
-            new ReadOnlySpan<byte>(sourcePtr, 6).CopyTo(destination);
-        }
+        UInt48 valueToWrite = BitConverter.IsLittleEndian ? uint48 : ReverseEndianness(uint48);
+        MemoryMarshal.Write(destination, in valueToWrite);
     }
 
     /// <inheritdoc />
@@ -91,4 +100,10 @@ public readonly struct UInt48 : IComparable<UInt48>
         if (b4Comparison != 0) return b4Comparison;
         return _b5.CompareTo(other._b5);
     }
+
+    /// <inheritdoc />
+    public static UInt48 MaxValue { get; } = new(0xFF,0xFF,0xFF,0xFF,0xFF,0xFF);
+
+    /// <inheritdoc />
+    public static UInt48 MinValue { get; } = new(0x00,0x00,0x00,0x00,0x00,0x00);
 }
