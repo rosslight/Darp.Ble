@@ -5,13 +5,13 @@ using Darp.Ble.Data;
 namespace Darp.Ble.Gap;
 
 /// <summary> The advertising data sections </summary>
-public sealed class AdvertisingData : IReadOnlyList<(AdvertisingDataType Type, ReadOnlyMemory<byte> Bytes)>
+public sealed class AdvertisingData : IReadOnlyList<(AdTypes Type, ReadOnlyMemory<byte> Bytes)>
 {
-    private readonly IReadOnlyList<(AdvertisingDataType, ReadOnlyMemory<byte>)> _dataSections;
+    private readonly IReadOnlyList<(AdTypes, ReadOnlyMemory<byte>)> _dataSections;
     private readonly ReadOnlyMemory<byte> _advertisingDataMemory;
 
     private AdvertisingData(ReadOnlyMemory<byte> advertisingDataMemory,
-        IReadOnlyList<(AdvertisingDataType, ReadOnlyMemory<byte>)> dataSections)
+        IReadOnlyList<(AdTypes, ReadOnlyMemory<byte>)> dataSections)
     {
         _advertisingDataMemory = advertisingDataMemory;
         _dataSections = dataSections;
@@ -20,15 +20,15 @@ public sealed class AdvertisingData : IReadOnlyList<(AdvertisingDataType Type, R
     /// <summary> Create advertising data from a given list of sections </summary>
     /// <param name="sections"> The sections to be used </param>
     /// <returns> The advertising data </returns>
-    public static AdvertisingData From(IReadOnlyList<(AdvertisingDataType Section, byte[] Bytes)> sections)
+    public static AdvertisingData From(IReadOnlyList<(AdTypes Section, byte[] Bytes)> sections)
     {
         int bytesLength = sections.Select(x => 2 + x.Bytes.Length).Sum();
         var bytes = new byte[bytesLength];
         Span<byte> bytesBuffer = bytes;
-        var sectionsWithMemory = new (AdvertisingDataType Section, ReadOnlyMemory<byte> Bytes)[sections.Count];
+        var sectionsWithMemory = new (AdTypes Section, ReadOnlyMemory<byte> Bytes)[sections.Count];
         for (var index = 0; index < sections.Count; index++)
         {
-            (AdvertisingDataType section, byte[] sectionBytes) = sections[index];
+            (AdTypes section, byte[] sectionBytes) = sections[index];
             var sectionLength = (byte)(1 + sectionBytes.Length);
             bytesBuffer[0] = sectionLength;
             bytesBuffer[1] = (byte)section;
@@ -46,7 +46,7 @@ public sealed class AdvertisingData : IReadOnlyList<(AdvertisingDataType Type, R
     /// <returns> The advertisement data sections </returns>
     public static AdvertisingData From(ReadOnlyMemory<byte> advertisingDataMemory)
     {
-        var advertisementReports = new List<(AdvertisingDataType, ReadOnlyMemory<byte>)>();
+        var advertisementReports = new List<(AdTypes, ReadOnlyMemory<byte>)>();
         byte index = 0;
         ReadOnlySpan<byte> span = advertisingDataMemory.Span;
         while (index < span.Length)
@@ -56,7 +56,7 @@ public sealed class AdvertisingData : IReadOnlyList<(AdvertisingDataType Type, R
                 break;
             if (index + fieldLength > span.Length)
                 break;
-            var fieldType = (AdvertisingDataType)span[index + 1];
+            var fieldType = (AdTypes)span[index + 1];
 
             ReadOnlyMemory<byte> sectionMemory = advertisingDataMemory[(index + 2)..(index + 2 + fieldLength - 1)];
 
@@ -65,17 +65,17 @@ public sealed class AdvertisingData : IReadOnlyList<(AdvertisingDataType Type, R
         }
         return new AdvertisingData(
             advertisingDataMemory,
-            new ReadOnlyCollection<(AdvertisingDataType, ReadOnlyMemory<byte>)>(advertisementReports)
+            new ReadOnlyCollection<(AdTypes, ReadOnlyMemory<byte>)>(advertisementReports)
         );
     }
 
     /// <inheritdoc />
-    public IEnumerator<(AdvertisingDataType Type, ReadOnlyMemory<byte> Bytes)> GetEnumerator() => _dataSections.GetEnumerator();
+    public IEnumerator<(AdTypes Type, ReadOnlyMemory<byte> Bytes)> GetEnumerator() => _dataSections.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
     /// <inheritdoc />
     public int Count => _dataSections.Count;
     /// <inheritdoc />
-    public (AdvertisingDataType Type, ReadOnlyMemory<byte> Bytes) this[int index] => _dataSections[index];
+    public (AdTypes Type, ReadOnlyMemory<byte> Bytes) this[int index] => _dataSections[index];
     /// <summary> Gets the underlying data as memory </summary>
     /// <returns> The data section memory </returns>
     public ReadOnlyMemory<byte> AsReadOnlyMemory() => _advertisingDataMemory;

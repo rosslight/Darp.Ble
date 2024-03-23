@@ -16,20 +16,20 @@ public static class AdvertisingDataExtensions
     {
         flags = default;
         var adTypeFound = false;
-        foreach ((AdvertisingDataType advertisingDataType, ReadOnlyMemory<byte> bytes) in data)
+        foreach ((AdTypes AdTypes, ReadOnlyMemory<byte> bytes) in data)
         {
-            if (advertisingDataType is not AdvertisingDataType.Flags || bytes.Length == 0) continue;
+            if (AdTypes is not AdTypes.Flags || bytes.Length == 0) continue;
             adTypeFound = true;
             flags |= (AdvertisingDataFlags)bytes.Span[0];
         }
         return adTypeFound;
     }
 
-    private static bool TryGetFirstType(this AdvertisingData data, AdvertisingDataType type, out ReadOnlyMemory<byte> buffer)
+    private static bool TryGetFirstType(this AdvertisingData data, AdTypes type, out ReadOnlyMemory<byte> buffer)
     {
-        foreach ((AdvertisingDataType advertisingDataType, ReadOnlyMemory<byte> bytes) in data)
+        foreach ((AdTypes AdTypes, ReadOnlyMemory<byte> bytes) in data)
         {
-            if (advertisingDataType != type) continue;
+            if (AdTypes != type) continue;
             buffer = bytes;
             return true;
         }
@@ -46,7 +46,7 @@ public static class AdvertisingDataExtensions
     /// <returns> True, if the data type was present </returns>
     public static bool TryGetCompleteLocalName(this AdvertisingData data, [NotNullWhen(true)] out string? name)
     {
-        if (data.TryGetFirstType(AdvertisingDataType.CompleteLocalName, out ReadOnlyMemory<byte> buffer))
+        if (data.TryGetFirstType(AdTypes.CompleteLocalName, out ReadOnlyMemory<byte> buffer))
         {
             name = Encoding.UTF8.GetString(buffer.Span);
             return true;
@@ -64,7 +64,7 @@ public static class AdvertisingDataExtensions
     /// <returns> True, if the data type was present </returns>
     public static bool TryGetShortenedLocalName(this AdvertisingData data, [NotNullWhen(true)] out string? name)
     {
-        if (data.TryGetFirstType(AdvertisingDataType.ShortenedLocalName, out ReadOnlyMemory<byte> buffer))
+        if (data.TryGetFirstType(AdTypes.ShortenedLocalName, out ReadOnlyMemory<byte> buffer))
         {
             name = Encoding.UTF8.GetString(buffer.Span);
             return true;
@@ -94,13 +94,13 @@ public static class AdvertisingDataExtensions
     public static Guid[] GetServices(this AdvertisingData data)
     {
         var serviceGuids = new List<Guid>();
-        foreach ((AdvertisingDataType sectionType, ReadOnlyMemory<byte> bytes) in data)
+        foreach ((AdTypes sectionType, ReadOnlyMemory<byte> bytes) in data)
         {
             int guidLength = sectionType switch
             {
-                AdvertisingDataType.IncompleteListOf16BitServiceClassUuids or AdvertisingDataType.CompleteListOf16BitServiceClassUuids => 2,
-                AdvertisingDataType.IncompleteListOf32BitServiceClassUuids or AdvertisingDataType.CompleteListOf32BitServiceClassUuids => 4,
-                AdvertisingDataType.IncompleteListOf128BitServiceClassUuids or AdvertisingDataType.CompleteListOf128BitServiceClassUuids => 16,
+                AdTypes.IncompleteListOf16BitServiceClassUuids or AdTypes.CompleteListOf16BitServiceClassUuids => 2,
+                AdTypes.IncompleteListOf32BitServiceClassUuids or AdTypes.CompleteListOf32BitServiceClassUuids => 4,
+                AdTypes.IncompleteListOf128BitServiceClassUuids or AdTypes.CompleteListOf128BitServiceClassUuids => 16,
                 _ => -1
             };
             if (guidLength < 0)
@@ -120,15 +120,15 @@ public static class AdvertisingDataExtensions
     /// <param name="manufacturerData"> The resulting manufacturer specific data if the return is true </param>
     /// <returns> True, if the data type was present and AD data at least 2 bytes long </returns>
     public static bool TryGetManufacturerSpecificData(this AdvertisingData data,
-        [NotNullWhen(true)] out (CompanyUuid Company, byte[] Bytes)? manufacturerData)
+        [NotNullWhen(true)] out (CompanyIdentifiers Company, byte[] Bytes)? manufacturerData)
     {
-        if (!data.TryGetFirstType(AdvertisingDataType.ManufacturerSpecificData, out ReadOnlyMemory<byte> bytes)
+        if (!data.TryGetFirstType(AdTypes.ManufacturerSpecificData, out ReadOnlyMemory<byte> bytes)
             || bytes.Length < 2)
         {
             manufacturerData = null;
             return false;
         }
-        var companyUuid = (CompanyUuid)BitConverter.ToUInt16(bytes.Span);
+        var companyUuid = (CompanyIdentifiers)BitConverter.ToUInt16(bytes.Span);
         manufacturerData = (companyUuid, bytes.Span[2..].ToArray());
         return true;
     }

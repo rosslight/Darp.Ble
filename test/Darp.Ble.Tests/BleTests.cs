@@ -88,6 +88,7 @@ public sealed class BleTests
         IGapAdvertisement<string> adv = await observer.RefCount()
             .Select(x => x.WithUserData(""))
             .Where(x => x.UserData == "")
+            .Timeout(TimeSpan.FromSeconds(1))
             .FirstAsync();
 
         observer.IsScanning.Should().BeFalse();
@@ -100,7 +101,7 @@ public sealed class BleTests
     [InlineData(BleEventType.AdvInd, BleAddressType.Public, 0xAABBCCDDEEFF, Physical.Le1M, Physical.NotAvailable,
         AdvertisingSId.NoAdIProvided, TxPowerLevel.NotAvailable, -40, PeriodicAdvertisingInterval.NoPeriodicAdvertising,
         BleAddressType.NotAvailable, 0x000000000000,
-        AdvertisingDataType.Flags, "1A", AdvertisingDataType.CompleteListOf16BitServiceClassUuids, "AABB",
+        AdTypes.Flags, "1A", AdTypes.CompleteListOf16BitServiceClassUuids, "AABB",
         "130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB")]
     public async Task Advertisement_FromExtendedAdvertisingReport(BleEventType eventType, BleAddressType addressType, ulong address,
         Physical primaryPhy,
@@ -111,9 +112,9 @@ public sealed class BleTests
         PeriodicAdvertisingInterval periodicAdvertisingInterval,
         BleAddressType directAddressType,
         ulong directAddress,
-        AdvertisingDataType advertisingDataType1,
+        AdTypes advertisingDataType1,
         string sectionDataHex1,
-        AdvertisingDataType advertisingDataType2,
+        AdTypes advertisingDataType2,
         string sectionDataHex2,
         string expectedReportHex)
     {

@@ -104,7 +104,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
         Rssi rssi,
         PeriodicAdvertisingInterval periodicAdvertisingInterval,
         BleAddress directAddress,
-        IReadOnlyList<(AdvertisingDataType Section, byte[] Bytes)> advertisingDataSections)
+        IReadOnlyList<(AdTypes Section, byte[] Bytes)> advertisingDataSections)
     {
         AdvertisingData advertisingData = AdvertisingData.From(advertisingDataSections);
         return FromExtendedAdvertisingReport(bleObserver, timestamp, eventType, address, primaryPhy, secondaryPhy,

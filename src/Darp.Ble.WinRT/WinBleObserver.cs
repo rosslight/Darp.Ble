@@ -110,10 +110,10 @@ public class WinBleObserver : IBleObserverImplementation
             _ => BleAddressType.NotAvailable
         };
 
-        (AdvertisingDataType, byte[])[] pduData = eventArgs
+        (AdTypes, byte[])[] pduData = eventArgs
             .Advertisement
             .DataSections
-            .Select(section => ((AdvertisingDataType)section.DataType, section.Data.ToArray()))
+            .Select(section => ((AdTypes)section.DataType, section.Data.ToArray()))
             .ToArray();
 
         GapAdvertisement advertisement = GapAdvertisement.FromExtendedAdvertisingReport(bleObserver,
