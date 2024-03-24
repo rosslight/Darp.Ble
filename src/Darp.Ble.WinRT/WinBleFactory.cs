@@ -4,7 +4,7 @@ namespace Darp.Ble.WinRT;
 
 public sealed class WinBleFactory : IBleFactory
 {
-    public IEnumerable<IBleDeviceImplementation> EnumerateAdapters()
+    public IEnumerable<IBleDeviceImplementation> EnumerateDevices()
     {
         yield return new WinBleDevice();
     }

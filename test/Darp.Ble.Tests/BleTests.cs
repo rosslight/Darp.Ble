@@ -33,7 +33,7 @@ public sealed class BleTests
 
     private sealed class SubstituteBleFactory : IBleFactory
     {
-        public IEnumerable<IBleDeviceImplementation> EnumerateAdapters()
+        public IEnumerable<IBleDeviceImplementation> EnumerateDevices()
         {
             var impl = Substitute.For<IBleDeviceImplementation>();
             impl.InitializeAsync().Returns(Task.FromResult(InitializeResult.Success));

@@ -29,6 +29,6 @@ public sealed class BleManager
     /// <summary> Enumerate all implementations for devices </summary>
     /// <returns> A list of all available devices </returns>
     public IEnumerable<BleDevice> EnumerateDevices() => _factories
-        .SelectMany(x => x.EnumerateAdapters())
+        .SelectMany(x => x.EnumerateDevices())
         .Select(x => new BleDevice(x, _logObserver));
 }
