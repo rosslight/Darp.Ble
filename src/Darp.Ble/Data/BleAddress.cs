@@ -1,6 +1,4 @@
-using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
-using Darp.Ble.Utils;
 
 namespace Darp.Ble.Data;
 
@@ -67,15 +65,28 @@ public sealed record BleAddress : ISpanParsable<BleAddress>
             return false;
         }
         var value = new UInt48(
-            s.GetHexVal(),
-            s[3..].GetHexVal(),
-            s[6..].GetHexVal(),
-            s[9..].GetHexVal(),
-            s[12..].GetHexVal(),
-            s[15..].GetHexVal()
+            GetHexVal(s),
+            GetHexVal(s[3..]),
+            GetHexVal(s[6..]),
+            GetHexVal(s[9..]),
+            GetHexVal(s[12..]),
+            GetHexVal(s[15..])
         );
         result = new BleAddress(BleAddressType.NotAvailable, value);
         return true;
+    }
+
+    private static byte GetHexVal(in ReadOnlySpan<char> s) => (byte)((GetHexVal(s[0]) << 4) + GetHexVal(s[1]));
+
+    private static int GetHexVal(char hex)
+    {
+        int val = hex;
+        //For uppercase A-F letters:
+        //return val - (val < 58 ? 48 : 55);
+        //For lowercase a-f letters:
+        //return val - (val < 58 ? 48 : 87);
+        //Or the two combined, but a bit slower:
+        return val - (val < 58 ? 48 : val < 97 ? 55 : 87);
     }
 
     /// <inheritdoc cref="Parse(ReadOnlySpan{char},System.IFormatProvider?)"/>

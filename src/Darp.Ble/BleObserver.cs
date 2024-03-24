@@ -82,7 +82,6 @@ public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
             bool startScanSuccessful = _bleDeviceObserver.TryStartScan(this, out IObservable<IGapAdvertisement> observable);
 
             observable = observable
-                .Do(x => _logger?.Verbose("Got an adv to {Addr}", x.Address.Value))
                 .Catch((Exception exception) => Observable.Throw<IGapAdvertisement>(exception switch
                 {
                     BleObservationStartUnsuccessfulException e => e,

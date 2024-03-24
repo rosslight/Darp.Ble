@@ -130,7 +130,7 @@ public sealed class BleTests
                 (advertisingDataType1, sectionData1),
                 (advertisingDataType2, sectionData2)
             });
-        string byteString = adv.AsByteArray().ToHexString();
+        string byteString = Convert.ToHexString(adv.AsByteArray());
 
         byteString.Should().Be(expectedReportHex);
         adv.EventType.Should().Be(eventType);
