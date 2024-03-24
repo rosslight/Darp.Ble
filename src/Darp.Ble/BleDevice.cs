@@ -50,8 +50,8 @@ public sealed class BleDevice
     /// <summary>
     /// Gives back capabilities of this device. Before the device was successfully initialized, the capabilities are unknown
     /// </summary>
-    public Capabilities Capabilities => Capabilities.Unknown
-                                        | (_bleObserver is not null ? Capabilities.Observer : Capabilities.Unknown);
+    public Capabilities Capabilities => Capabilities.None
+                                        | (_bleObserver is not null ? Capabilities.Observer : Capabilities.None);
 
     /// <summary> Returns a view of the device in Observer Role </summary>
     /// <exception cref="NotSupportedException"> Thrown when the device has not been initialized </exception>

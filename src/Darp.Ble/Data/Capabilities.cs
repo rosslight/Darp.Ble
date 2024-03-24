@@ -5,7 +5,7 @@ namespace Darp.Ble.Data;
 public enum Capabilities
 {
     /// <summary> A device with unknown capabilities </summary>
-    Unknown = 0,
+    None = 0,
     /// <summary>
     /// A device operating in the Broadcaster role is a device that sends advertising events or periodic advertising events
     /// </summary>

@@ -7,15 +7,10 @@ using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Android;
 
-public class AndroidBleObserver : IBleObserverImplementation
+public class AndroidBleObserver(BluetoothLeScanner bluetoothLeScanner) : IBleObserverImplementation
 {
-    private readonly BluetoothLeScanner _bluetoothLeScanner;
+    private readonly BluetoothLeScanner _bluetoothLeScanner = bluetoothLeScanner;
     private MyScanCallback? _scanCallback;
-
-    public AndroidBleObserver(BluetoothLeScanner bluetoothLeScanner)
-    {
-        _bluetoothLeScanner = bluetoothLeScanner;
-    }
 
     public bool TryStartScan(BleObserver bleObserver, out IObservable<IGapAdvertisement> observable)
     {

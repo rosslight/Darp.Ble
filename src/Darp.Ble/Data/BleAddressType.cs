@@ -28,9 +28,7 @@ public enum BleAddressType : byte
     /// Unlike a resolvable addresses, it is not resolvable by any other device. The sole purpose of this type of address is to prevent tracking by any other BLE device.
     /// </summary>
     RandomPrivateNonResolvable = 0x03,
-    /// <summary>
-    /// 
-    /// </summary>
+    /// <summary> Private resolvable address </summary>
     ResolvablePrivateAddress = 0xFE,
     /// <summary>
     /// No address provided (anonymous)

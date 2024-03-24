@@ -75,7 +75,7 @@ public sealed class BleTests
         BleDevice device = adapters.First();
 
         device.IsInitialized.Should().BeFalse();
-        device.Capabilities.Should().Be(Capabilities.Unknown);
+        device.Capabilities.Should().Be(Capabilities.None);
 
         InitializeResult initResult = await device.InitializeAsync();
         initResult.Should().Be(InitializeResult.Success);

@@ -43,7 +43,9 @@ public static class ByteArrayExtensions
     /// <returns> The hex string with two chars byte </returns>
     public static string ToHexString(this in ReadOnlySpan<byte> span) => Convert.ToHexString(span);
 
-    private static int GetHexVal(char hex)
+    public static byte GetHexVal(this in ReadOnlySpan<char> s) => (byte)((GetHexVal(s[0]) << 4) + GetHexVal(s[1]));
+
+    public static int GetHexVal(char hex)
     {
         int val = hex;
         //For uppercase A-F letters:

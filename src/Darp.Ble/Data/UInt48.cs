@@ -20,7 +20,7 @@ public readonly struct UInt48 : IComparable<UInt48>, IMinMaxValue<UInt48>
     /// <param name="b3"> The fourth byte </param>
     /// <param name="b4"> The fifth byte </param>
     /// <param name="b5"> The sixth byte </param>
-    private UInt48(byte b0, byte b1, byte b2, byte b3, byte b4, byte b5) =>
+    public UInt48(byte b0, byte b1, byte b2, byte b3, byte b4, byte b5) =>
         (_b0, _b1, _b2, _b3, _b4, _b5) = (b0, b1, b2, b3, b4, b5);
 
     /// <summary> Cast a ulong to a 48 bit integer</summary>
