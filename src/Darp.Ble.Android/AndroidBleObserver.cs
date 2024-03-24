@@ -7,7 +7,7 @@ using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Android;
 
-public class AndroidBleObserver(BluetoothLeScanner bluetoothLeScanner) : IBleObserverImplementation
+public sealed class AndroidBleObserver(BluetoothLeScanner bluetoothLeScanner) : IBleObserverImplementation
 {
     private readonly BluetoothLeScanner _bluetoothLeScanner = bluetoothLeScanner;
     private MyScanCallback? _scanCallback;
@@ -61,7 +61,7 @@ public class AndroidBleObserver(BluetoothLeScanner bluetoothLeScanner) : IBleObs
     }
 }
 
-public class MyScanCallback : ScanCallback, IObservable<ScanResult>
+public sealed class MyScanCallback : ScanCallback, IObservable<ScanResult>
 {
     private readonly List<IObserver<ScanResult>> _observers = [];
     private bool _disposed;

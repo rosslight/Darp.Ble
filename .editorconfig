@@ -34,6 +34,7 @@ dotnet_style_qualification_for_field = false:suggestion
 dotnet_style_qualification_for_method = false:suggestion
 dotnet_style_qualification_for_property = false:suggestion
 dotnet_style_require_accessibility_modifiers = for_non_interface_members:suggestion
+dotnet_diagnostic.CA1028.severity = none
 
 # ReSharper properties
 resharper_formatter_off_tag = @formatter:off
@@ -65,6 +66,10 @@ resharper_web_config_wrong_module_highlighting = warning
 # Roslynator
 dotnet_diagnostic.RCS1194.severity = silent
 
+# Meziantou
+MA0053.public_class_should_be_sealed = true
+dotnet_diagnostic.MA0053.severity = error
+dotnet_diagnostic.MA0004.severity = none
 [{*.har,*.jsb2,*.jsb3,*.json,*.jsonc,*.postman_collection,*.postman_collection.json,*.postman_environment,*.postman_environment.json,.babelrc,.eslintrc,.prettierrc,.stylelintrc,bowerrc,jest.config}]
 indent_style = space
 indent_size = 2

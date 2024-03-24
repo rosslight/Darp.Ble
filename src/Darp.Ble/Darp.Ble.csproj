@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
     <PropertyGroup>
         <TargetFramework>net8.0</TargetFramework>
         <LangVersion>12</LangVersion>
@@ -12,10 +11,6 @@
 
     <ItemGroup>
       <PackageReference Include="System.Reactive" Version="6.0.0" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="Data\AssignedNumbers\" />
     </ItemGroup>
 
 </Project>

@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
-        <TargetFramework>net8.0-android</TargetFramework>
+        <TargetFramework>net8.0-android34</TargetFramework>
         <!-- Android 12, older versions are not maintained by google anymore -->
         <SupportedOSPlatformVersion>31</SupportedOSPlatformVersion>
         <Nullable>enable</Nullable>

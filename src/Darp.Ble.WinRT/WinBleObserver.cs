@@ -26,7 +26,7 @@ public enum ScanTiming : ushort
     Ms1000 = 1600
 }
 
-public class WinBleObserver : IBleObserverImplementation
+public sealed class WinBleObserver : IBleObserverImplementation
 {
     private BluetoothLEAdvertisementWatcher? _watcher;
 

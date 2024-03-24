@@ -4,9 +4,8 @@ using FluentAssertions;
 
 namespace Darp.Ble.Tests.Data;
 
-public class BleUuidTests
+public sealed class BleUuidTests
 {
-
     [Theory]
     [InlineData(0x1800, "00001800-0000-1000-8000-00805F9B34FB")]
     [InlineData(0x2902, "00002902-0000-1000-8000-00805f9b34fb")]

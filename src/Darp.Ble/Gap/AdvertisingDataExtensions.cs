@@ -2,7 +2,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
-using Darp.Ble.Utils;
 
 namespace Darp.Ble.Gap;
 

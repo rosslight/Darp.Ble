@@ -22,7 +22,7 @@ public sealed class AdvertisingData : IReadOnlyList<(AdTypes Type, ReadOnlyMemor
     /// <returns> The advertising data </returns>
     public static AdvertisingData From(IReadOnlyList<(AdTypes Section, byte[] Bytes)> sections)
     {
-        int bytesLength = sections.Select(x => 2 + x.Bytes.Length).Sum();
+        int bytesLength = sections.Sum(x => 2 + x.Bytes.Length);
         var bytes = new byte[bytesLength];
         Span<byte> bytesBuffer = bytes;
         var sectionsWithMemory = new (AdTypes Section, ReadOnlyMemory<byte> Bytes)[sections.Count];

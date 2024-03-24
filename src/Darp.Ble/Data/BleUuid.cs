@@ -63,7 +63,7 @@ public sealed record BleUuid : ISpanParsable<BleUuid>, ISpanFormattable, IUtf8Sp
     /// <summary> Parses a string of suitable format and returns a ble uuid </summary>
     /// <param name="s">The string to parse.</param>
     /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="s" />. </param>
-    /// <exception cref="T:System.FormatException"> <paramref name="s" /> is not in a recognized format. </exception>
+    /// <exception cref="System.FormatException"> <paramref name="s" /> is not in a recognized format. </exception>
     /// <example> 00002902-0000-1000-8000–00805f9b34fb </example>
     /// <returns> The parsed BleUuid with type <see cref="BleUuidType.Uuid128"/> or default </returns>
     public static BleUuid Parse(ReadOnlySpan<char> s, IFormatProvider? provider)

@@ -1,28 +1,33 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.Versioning;
+using Android;
 using Android.Bluetooth;
+using Android.Content.PM;
 using Darp.Ble.Data;
 using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Android;
 
-public class AndroidBleDevice : IBleDeviceImplementation
+public class AndroidBleDevice(BluetoothManager bluetoothManager) : IBleDeviceImplementation
 {
-    private readonly BluetoothManager _bluetoothManager;
+    private readonly BluetoothManager _bluetoothManager = bluetoothManager;
     private BluetoothAdapter? BluetoothAdapter => _bluetoothManager.Adapter;
 
-    public AndroidBleDevice(BluetoothManager bluetoothManager)
-    {
-        _bluetoothManager = bluetoothManager;
-    }
-
     [MemberNotNullWhen(true, nameof(BluetoothAdapter))]
-    public bool IsAvailable => BluetoothAdapter is not null;
+    public bool IsAvailable => BluetoothAdapter?.IsEnabled == true;
 
+    [SupportedOSPlatform("android31.0")]
     public Task<InitializeResult> InitializeAsync()
     {
-        if (!IsAvailable) return Task.FromResult(InitializeResult.AdapterNotAvailable);
-        if (BluetoothAdapter.BluetoothLeScanner is not null)
+        if (BluetoothAdapter is null) return Task.FromResult(InitializeResult.DeviceNotAvailable);
+        if (BluetoothAdapter.IsEnabled) return Task.FromResult(InitializeResult.DeviceNotEnabled);
+        if (!IsAvailable) return Task.FromResult(InitializeResult.DeviceNotAvailable);
+
+        if (Application.Context.CheckSelfPermission(Manifest.Permission.BluetoothScan) is Permission.Granted
+            && BluetoothAdapter.BluetoothLeScanner is not null)
+        {
             Observer = new AndroidBleObserver(BluetoothAdapter.BluetoothLeScanner);
+        }
         return Task.FromResult(InitializeResult.Success);
     }
 

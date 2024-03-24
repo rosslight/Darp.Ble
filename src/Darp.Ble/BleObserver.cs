@@ -8,6 +8,14 @@ using Darp.Ble.Logger;
 
 namespace Darp.Ble;
 
+/// <summary>
+/// 
+/// </summary>
+public record BleObserverConfiguration
+{
+    
+}
+
 /// <summary> The ble observer </summary>
 public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
 {
@@ -22,6 +30,11 @@ public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
     {
         _bleDeviceObserver = bleDeviceObserver;
         _logger = logger;
+    }
+
+    public void Configure(BleObserverConfiguration configuration)
+    {
+        
     }
 
     /// <summary> True if the observer is currently scanning </summary>
@@ -96,10 +109,7 @@ public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
             }
 
             _scanObservable = observable;
-            _scanDisposable = Disposable.Create(this, state =>
-            {
-                state.StopScan();
-            });
+            _scanDisposable = Disposable.Create(this, state => state.StopScan());
             return _scanDisposable;
         }
     }

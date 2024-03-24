@@ -3,7 +3,7 @@ using Darp.Ble.Implementation;
 
 namespace Darp.Ble.WinRT;
 
-public class WinBleDevice : IBleDeviceImplementation
+public sealed class WinBleDevice : IBleDeviceImplementation
 {
     public Task<InitializeResult> InitializeAsync()
     {

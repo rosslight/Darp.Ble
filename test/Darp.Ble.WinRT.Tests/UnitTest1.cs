@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Reactive.Linq;
 using Serilog;
 using Serilog.Events;
@@ -5,11 +6,11 @@ using Xunit.Abstractions;
 
 namespace Darp.Ble.WinRT.Tests;
 
-public class UnitTest1(ITestOutputHelper outputHelper)
+public sealed class UnitTest1(ITestOutputHelper outputHelper)
 {
     private readonly ILogger _logger = new LoggerConfiguration()
         .MinimumLevel.Verbose()
-        .WriteTo.TestOutput(outputHelper)
+        .WriteTo.TestOutput(outputHelper, formatProvider:CultureInfo.InvariantCulture)
         .CreateLogger();
 
     //[Fact]

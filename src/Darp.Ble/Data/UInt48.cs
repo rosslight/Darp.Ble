@@ -1,10 +1,15 @@
-﻿using System.Numerics;
+﻿using System.Globalization;
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace Darp.Ble.Data;
 
 /// <summary> A 48 bit unsigned integer </summary>
-public readonly struct UInt48 : IComparable<UInt48>, IMinMaxValue<UInt48>
+[StructLayout(LayoutKind.Sequential, Size = 6)]
+public readonly struct UInt48 : IComparable<UInt48>,
+    IEquatable<UInt48>,
+    IComparisonOperators<UInt48, UInt48, bool>,
+    IMinMaxValue<UInt48>
 {
     private readonly byte _b0;
     private readonly byte _b1;
@@ -80,7 +85,7 @@ public readonly struct UInt48 : IComparable<UInt48>, IMinMaxValue<UInt48>
     }
 
     /// <inheritdoc />
-    public override string ToString() => ((ulong)this).ToString();
+    public override string ToString() => ((ulong)this).ToString(CultureInfo.InvariantCulture);
 
     /// <inheritdoc />
     public int CompareTo(UInt48 other)
@@ -103,4 +108,23 @@ public readonly struct UInt48 : IComparable<UInt48>, IMinMaxValue<UInt48>
 
     /// <inheritdoc />
     public static UInt48 MinValue { get; } = new(0x00,0x00,0x00,0x00,0x00,0x00);
+
+    /// <inheritdoc />
+    public bool Equals(UInt48 other) => _b0 == other._b0 && _b1 == other._b1 && _b2 == other._b2 && _b3 == other._b3 && _b4 == other._b4 && _b5 == other._b5;
+    /// <inheritdoc />
+    public override bool Equals(object? obj) => obj is UInt48 other && Equals(other);
+    /// <inheritdoc />
+    public override int GetHashCode() => HashCode.Combine(_b0, _b1, _b2, _b3, _b4, _b5);
+    /// <inheritdoc />
+    public static bool operator ==(UInt48 left, UInt48 right) => left.Equals(right);
+    /// <inheritdoc />
+    public static bool operator !=(UInt48 left, UInt48 right) => !(left == right);
+    /// <inheritdoc />
+    public static bool operator <(UInt48 left, UInt48 right) => left.CompareTo(right) < 0;
+    /// <inheritdoc />
+    public static bool operator <=(UInt48 left, UInt48 right) => left.CompareTo(right) <= 0;
+    /// <inheritdoc />
+    public static bool operator >(UInt48 left, UInt48 right) => left.CompareTo(right) > 0;
+    /// <inheritdoc />
+    public static bool operator >=(UInt48 left, UInt48 right) => left.CompareTo(right) >= 0;
 }
