@@ -39,7 +39,7 @@ public sealed record BleUuid : ISpanParsable<BleUuid>, ISpanFormattable, IUtf8Sp
     [SetsRequiredMembers]
     public BleUuid(Guid value) : this(BleUuidType.Uuid128, value) {}
 
-    private static Guid CreateGuid(uint a) => new(a, 0, 16, 128, 0, 0, 128, 95, 155, 52, 251);
+    private static Guid CreateGuid(uint a) => new(a, 0x0000, 0x1000, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB);
 
     /// <summary> Initializes a BleUuid from a readonly span of bytes </summary>
     /// <param name="source"> The source to be decoded. </param>
@@ -51,7 +51,7 @@ public sealed record BleUuid : ISpanParsable<BleUuid>, ISpanFormattable, IUtf8Sp
         (BleUuidType Type, Guid Guid) tuple = source.Length switch
         {
             2 => (BleUuidType.Uuid16, CreateGuid(BinaryPrimitives.ReadUInt16LittleEndian(source))),
-            4 => (BleUuidType.Uuid32, CreateGuid(BinaryPrimitives.ReadUInt16LittleEndian(source))),
+            4 => (BleUuidType.Uuid32, CreateGuid(BinaryPrimitives.ReadUInt32LittleEndian(source))),
             16 => (BleUuidType.Uuid128, new Guid(source)),
             _ => throw new ArgumentOutOfRangeException(nameof(source),
                 $"Provided invalid number of bytes for uuid: {source.Length}")
@@ -98,6 +98,9 @@ public sealed record BleUuid : ISpanParsable<BleUuid>, ISpanFormattable, IUtf8Sp
         result = default;
         return false;
     }
+
+    /// <inheritdoc />
+    public override string ToString() => Value.ToString();
 
     /// <inheritdoc />
     public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format, formatProvider);
