@@ -31,7 +31,7 @@ public readonly struct HciCommandCompleteEvent<TParameters> : IHciEvent<HciComma
         {
             NumHciCommandPackets = numHciCommandPackets,
             CommandOpCode = (HciOpCode)commandOpCode,
-            ReturnParameters = returnParameters
+            ReturnParameters = returnParameters,
         };
         return true;
     }

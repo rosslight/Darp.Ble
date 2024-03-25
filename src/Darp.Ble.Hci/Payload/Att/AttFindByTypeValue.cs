@@ -44,7 +44,7 @@ public readonly struct AttFindByTypeValueRsp : IAttPdu, IDecodable<AttFindByType
         result = new AttFindByTypeValueRsp
         {
             OpCode = opCode,
-            HandlesInformationList = MemoryMarshal.Cast<byte, AttFindByTypeHandlesInformation>(span[1..]).ToArray()
+            HandlesInformationList = MemoryMarshal.Cast<byte, AttFindByTypeHandlesInformation>(span[1..]).ToArray(),
         };
         return true;
     }

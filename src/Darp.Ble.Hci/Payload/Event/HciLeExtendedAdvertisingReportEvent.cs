@@ -133,7 +133,7 @@ public readonly struct HciLeExtendedAdvertisingReport : IDecodable<HciLeExtended
             DirectAddressType = directAddressType,
             DirectAddress = directAddress,
             DataLength = dataLength,
-            Data = source[24..bytesDecoded]
+            Data = source[24..bytesDecoded],
         };
         return true;
     }
@@ -173,7 +173,7 @@ public readonly struct HciLeExtendedAdvertisingReportEvent : IHciLeMetaEvent<Hci
         {
             SubEventCode = (HciLeMetaSubEventType)subEventCode,
             NumReports = numReports,
-            Reports = reports
+            Reports = reports,
         };
         return true;
     }

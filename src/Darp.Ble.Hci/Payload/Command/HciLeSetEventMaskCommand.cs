@@ -15,7 +15,7 @@ public enum LeEventMask : ulong
     LeDataLengthChangeEvent = 1 << 6,
     LeReadLocalP256PublicKeyCompleteEvent = 1 << 7,
     LeGenerateDhKeyCompleteEvent = 1 << 8,
-    LeEnhancedConnectionCompleteEventV1 = 1 << 9
+    LeEnhancedConnectionCompleteEventV1 = 1 << 9,
 }
 
 [StructLayout(LayoutKind.Sequential, Pack = 1)]

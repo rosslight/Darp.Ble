@@ -26,5 +26,5 @@ public enum AttOpCode
 
     ATT_WRITE_CMD = 0x52,
 
-    ATT_HANDLE_VALUE_NTF = 0x1B
+    ATT_HANDLE_VALUE_NTF = 0x1B,
 }

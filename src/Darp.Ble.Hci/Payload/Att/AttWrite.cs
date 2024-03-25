@@ -39,7 +39,7 @@ public readonly struct AttWriteRsp : IAttPdu, IDecodable<AttWriteRsp>
         if (opCode != ExpectedOpCode) return false;
         result = new AttWriteRsp
         {
-            OpCode = opCode
+            OpCode = opCode,
         };
         return true;
     }

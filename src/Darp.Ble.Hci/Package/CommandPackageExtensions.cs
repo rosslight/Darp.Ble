@@ -1,20 +1,18 @@
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
+using Darp.Ble.Hci.Exceptions;
 using Darp.Ble.Hci.Payload;
-using Darp.Ble.Hci.Payload.Att;
 using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci.Package;
-
-public readonly record struct AttReadResult(AttOpCode OpCode, byte[] Pdu);
 
 public static class CommandPackageExtensions
 {
     public static async Task<TParameters> QueryCommandCompletionAsync<TCommand, TParameters>(this HciHost hciHost,
         TCommand command = default, TimeSpan? timeout = null,
         CancellationToken cancellationToken = default)
-        where TParameters : unmanaged, IDecodable<TParameters>
         where TCommand : unmanaged, IHciCommand<TCommand>
+        where TParameters : unmanaged, IDecodable<TParameters>
     {
         timeout ??= TimeSpan.FromSeconds(10);
         HciEventPacket<HciCommandCompleteEvent<TParameters>> packet = await Observable
@@ -26,7 +24,7 @@ public static class CommandPackageExtensions
                         && HciEventPacket.TryWithData(next, out HciEventPacket<HciCommandStatusEvent>? statusResult)
                         && statusResult.Data.CommandOpCode == TCommand.OpCode)
                     {
-                        observer.OnError(new Exception($"Command failed with status {statusResult.Data.Status}"));
+                        observer.OnError(new HciException($"Command failed with status {statusResult.Data.Status}"));
                         return;
                     }
                     observer.OnNext(next);
@@ -34,16 +32,16 @@ public static class CommandPackageExtensions
             })
             .SelectWhereEvent<HciCommandCompleteEvent<TParameters>>()
             .Where(x => x.Data.CommandOpCode == TCommand.OpCode)
-            .Do(completePacket =>
-            {
-                // hciHost.Logger.Verbose(
-                //     "HciHost: Query {@Command} from client completed successfully: Received {EventCode} {@Packet}",
-                //     command, completePacket.EventCode, completePacket);
-            }, exception =>
-            {
-                // hciHost.Logger.Error(exception, "HciHost: Query {@Command} from client failed because of {Reason}",
-                //     command, exception.Message);
-            })
+            // .Do(completePacket =>
+            // {
+            //     hciHost.Logger.Verbose(
+            //         "HciHost: Query {@Command} from client completed successfully: Received {EventCode} {@Packet}",
+            //         command, completePacket.EventCode, completePacket);
+            // }, exception =>
+            // {
+            //     hciHost.Logger.Error(exception, "HciHost: Query {@Command} from client failed because of {Reason}",
+            //         command, exception.Message);
+            // })
             .FirstAsync()
             .Timeout(timeout.Value)
             .ToTask(cancellationToken);
@@ -71,16 +69,16 @@ public static class CommandPackageExtensions
                         observer.OnError(e);
                     }
                 }, observer.OnError, observer.OnCompleted))
-            .Do(statusPacket =>
-            {
-                // hciHost.Logger.Verbose(
-                //     "HciHost: Query {@Command} from client started with status {Status}: Received {EventCode} {@Packet}",
-                //     command, statusPacket.Data.Status, statusPacket.EventCode, statusPacket);
-            }, exception =>
-            {
-                // hciHost.Logger.Error(exception, "HciHost: Query {@Command} from client failed because of {Reason}",
-                //     command, exception.Message);
-            })
+            // .Do(statusPacket =>
+            // {
+            //     hciHost.Logger.Verbose(
+            //         "HciHost: Query {@Command} from client started with status {Status}: Received {EventCode} {@Packet}",
+            //         command, statusPacket.Data.Status, statusPacket.EventCode, statusPacket);
+            // }, exception =>
+            // {
+            //     hciHost.Logger.Error(exception, "HciHost: Query {@Command} from client failed because of {Reason}",
+            //         command, exception.Message);
+            // })
             .FirstAsync()
             .Timeout(timeout.Value);
     }

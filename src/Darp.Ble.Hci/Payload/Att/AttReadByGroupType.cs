@@ -56,7 +56,7 @@ public readonly struct AttReadByGroupTypeRsp<TAttributeValue> : IAttPdu, IDecoda
         {
             OpCode = opCode,
             Length = length,
-            AttributeDataList = MemoryMarshal.Cast<byte, AttGroupTypeData<TAttributeValue>>(span[2..]).ToArray()
+            AttributeDataList = MemoryMarshal.Cast<byte, AttGroupTypeData<TAttributeValue>>(span[2..]).ToArray(),
         };
         return true;
     }

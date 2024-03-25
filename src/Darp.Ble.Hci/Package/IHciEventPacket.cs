@@ -22,6 +22,3 @@ public interface IHciEventPacket<TSelf> : IHciPacketImpl<TSelf> where TSelf : IH
         return DataBytes.AsSpan().TryCopyTo(destination[2..]);
     }
 }
-
-public interface IHciEventPacket<TSelf, out TData> : IHciEventPacket<TSelf>, IHciPacket<TSelf, TData>
-    where TSelf : IHciPacketImpl<TSelf>;

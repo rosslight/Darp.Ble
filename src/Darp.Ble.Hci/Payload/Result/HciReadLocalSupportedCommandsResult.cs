@@ -61,7 +61,7 @@ public readonly struct HciReadLocalSupportedCommandsResult : IDefaultDecodable<H
         HciOpCode.HCI_LE_Extended_Create_ConnectionV1 => IsSupported(37, 7),
         HciOpCode.HCI_LE_Read_Buffer_Size_V2 => IsSupported(41, 5),
         HciOpCode.HCI_LE_Extended_Create_ConnectionV2 => IsSupported(47, 0),
-        _ => false
+        _ => false,
     };
 }
 

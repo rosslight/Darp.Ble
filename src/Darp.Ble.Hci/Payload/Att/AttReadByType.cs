@@ -64,7 +64,7 @@ public readonly struct AttReadByTypeRsp : IAttPdu, IDecodable<AttReadByTypeRsp>
         {
             OpCode = opCode,
             Length = length,
-            AttributeDataList = attributeDataList
+            AttributeDataList = attributeDataList,
         };
         return true;
     }

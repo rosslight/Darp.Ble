@@ -10,5 +10,5 @@ public enum HciEventCode : byte
     HCI_Command_Complete = 0x0E,
     HCI_Command_Status = 0x0F,
     HCI_Number_Of_Completed_Packets = 0x13,
-    HCI_LE_Meta = 0x3E
+    HCI_LE_Meta = 0x3E,
 }

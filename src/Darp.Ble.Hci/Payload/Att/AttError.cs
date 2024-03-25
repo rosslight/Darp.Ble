@@ -48,7 +48,7 @@ public readonly struct AttErrorRsp : IAttPdu, IDecodable<AttErrorRsp>
             OpCode = opCode,
             RequestOpCode = (AttOpCode)span[1],
             Handle = BinaryPrimitives.ReadUInt16LittleEndian(span[2..]),
-            ErrorCode = (AttErrorCode)span[4]
+            ErrorCode = (AttErrorCode)span[4],
         };
         return true;
     }

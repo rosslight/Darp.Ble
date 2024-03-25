@@ -31,7 +31,7 @@ public enum AttInformationFormat
     /// <summary> A list of 1 or more handles with their 16-bit Bluetooth UUIDs </summary>
     HandleAnd16BitUuid = 0x01,
     /// <summary> A list of 1 or more handles with their 128-bit UUIDs </summary>
-    HandleAnd128BitUuid = 0x02
+    HandleAnd128BitUuid = 0x02,
 }
 
 /// <summary>
@@ -56,7 +56,7 @@ public readonly struct AttFindInformationRsp : IAttPdu, IDecodable<AttFindInform
         {
             AttInformationFormat.HandleAnd16BitUuid => 2,
             AttInformationFormat.HandleAnd128BitUuid => 16,
-            _ => -1
+            _ => -1,
         };
         if (length < 4) return false;
         if ((source.Length - 2) % length != 0) return false;
@@ -73,7 +73,7 @@ public readonly struct AttFindInformationRsp : IAttPdu, IDecodable<AttFindInform
         {
             OpCode = opCode,
             Format = format,
-            AttributeDataList = attributeDataList
+            AttributeDataList = attributeDataList,
         };
         return true;
     }

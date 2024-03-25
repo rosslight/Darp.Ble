@@ -96,5 +96,5 @@ public enum HciCommandStatus : byte
     /// The Unacceptable Connection Parameters error code indicates that the remote device either terminated
     /// the connection or rejected a request because of one or more unacceptable connection parameters.
     /// </summary>
-    UnacceptableConnectionParameters = 0x3B
+    UnacceptableConnectionParameters = 0x3B,
 }

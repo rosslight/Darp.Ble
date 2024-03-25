@@ -20,7 +20,7 @@ public enum PacketBoundaryFlag
     /// <summary>
     /// First automatically flushable packet of a higher layer message (start of an automatically-flushable L2CAP PDU)
     /// </summary>
-    FirstAutoFlushable = 0b10
+    FirstAutoFlushable = 0b10,
 }
 
 /// <summary> BLUETOOTH CORE SPECIFICATION Version 5.4 | Vol 4, Part E 5.4.2 HCI ACL Data packets </summary>

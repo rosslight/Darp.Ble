@@ -25,7 +25,7 @@ public readonly struct AttHandleValueNtf : IAttPdu, IDecodable<AttHandleValueNtf
         {
             OpCode = opCode,
             Handle = handle,
-            Value = span[3..].ToArray()
+            Value = span[3..].ToArray(),
         };
         return true;
     }

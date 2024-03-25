@@ -38,14 +38,14 @@ public readonly struct HciNumberOfCompletedPackets : IHciEvent<HciNumberOfComple
             handles[i] = new HciNumberOfCompletedPacketsInfo
             {
                 ConnectionHandle = connectionHandle,
-                NumCompletedPackets = numCompletedPackets
+                NumCompletedPackets = numCompletedPackets,
             };
         }
         bytesRead = 1 + numHandles * 4;
         hciEvent = new HciNumberOfCompletedPackets
         {
             NumHandles = numHandles,
-            Handles = handles
+            Handles = handles,
         };
         return true;
     }

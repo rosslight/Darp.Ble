@@ -35,7 +35,7 @@ public readonly struct AttExchangeMtuRsp : IAttPdu, IDecodable<AttExchangeMtuRsp
         result = new AttExchangeMtuRsp
         {
             OpCode = opCode,
-            ServerRxMtu = BinaryPrimitives.ReadUInt16BigEndian(span[1..])
+            ServerRxMtu = BinaryPrimitives.ReadUInt16BigEndian(span[1..]),
         };
         return true;
     }
