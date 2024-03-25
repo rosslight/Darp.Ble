@@ -22,4 +22,8 @@ public sealed class WinBleDevice : IPlatformSpecificBleDevice
 #pragma warning disable CA1822
     public string Identifier => "Darp.Ble.WinRT";
 #pragma warning restore CA1822
+
+    void IDisposable.Dispose()
+    {
+    }
 }

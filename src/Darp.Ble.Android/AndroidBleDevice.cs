@@ -34,4 +34,10 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager) : IPlatf
     public IPlatformSpecificBleObserver? Observer { get; private set; }
     public object Central => throw new NotImplementedException();
     public string Identifier => "Darp.Ble.Android";
+
+    void IDisposable.Dispose()
+    {
+        _bluetoothManager.Dispose();
+        bluetoothManager.Dispose();
+    }
 }

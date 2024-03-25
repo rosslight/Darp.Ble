@@ -3,7 +3,7 @@ using Darp.Ble.Data;
 namespace Darp.Ble.Implementation;
 
 /// <summary> The ble device implementation </summary>
-public interface IPlatformSpecificBleDevice
+public interface IPlatformSpecificBleDevice : IDisposable
 {
     /// <summary> Get an platform specific identification string </summary>
     string Identifier { get; }
