@@ -1,14 +1,7 @@
 using Darp.Ble.Data;
 using FluentAssertions.Numeric;
 
-namespace Darp.Ble.Tests;
-
-public sealed class UInt48Assertions : NumericAssertions<UInt48>
-{
-    public UInt48Assertions(UInt48 value) : base(value)
-    {
-    }
-}
+namespace Darp.Ble.Tests.TestUtils;
 
 public static class UInt48AssertionExtensions
 {

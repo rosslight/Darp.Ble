@@ -4,6 +4,7 @@ using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
 using Darp.Ble.Linq;
+using Darp.Ble.Tests.TestUtils;
 using Darp.Ble.Utils;
 using FluentAssertions;
 using NSubstitute;
@@ -21,7 +22,7 @@ public sealed class BleTests
 
     public BleTests(ITestOutputHelper outputHelper)
     {
-        ILogger logger = new LoggerConfiguration()
+        Serilog.Core.Logger logger = new LoggerConfiguration()
             .MinimumLevel.Verbose()
             .WriteTo.TestOutput(outputHelper, formatProvider: null)
             .CreateLogger();

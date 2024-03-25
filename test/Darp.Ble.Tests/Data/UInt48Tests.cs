@@ -1,4 +1,5 @@
 using Darp.Ble.Data;
+using Darp.Ble.Tests.TestUtils;
 using FluentAssertions;
 
 namespace Darp.Ble.Tests.Data;
