@@ -3,8 +3,6 @@
         <TargetFramework>net8.0-android34</TargetFramework>
         <!-- Android 12, older versions are not maintained by google anymore -->
         <SupportedOSPlatformVersion>31</SupportedOSPlatformVersion>
-        <Nullable>enable</Nullable>
-        <WarningsAsErrors>Nullable</WarningsAsErrors>
         <ImplicitUsings>enable</ImplicitUsings>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
     </PropertyGroup>

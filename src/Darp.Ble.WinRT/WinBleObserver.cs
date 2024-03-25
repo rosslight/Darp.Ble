@@ -7,39 +7,26 @@ using Windows.Devices.Bluetooth.Advertisement;
 using Windows.Foundation;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
+using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
 
 namespace Darp.Ble.WinRT;
 
-public enum ScanningMode
-{
-    Passive = 0,
-    Active = 1,
-    None = 2
-}
-
-public enum ScanTiming : ushort
-{
-    Default = Ms100,
-    Ms100 = 160,
-    Ms1000 = 1600
-}
-
+/// <inheritdoc />
 public sealed class WinBleObserver : IBleObserverImplementation
 {
     private BluetoothLEAdvertisementWatcher? _watcher;
 
     [MemberNotNull(nameof(_watcher))]
-    private void CreateScanners(ScanningMode mode)
+    private void CreateScanners(ScanType mode)
     {
         _watcher = new BluetoothLEAdvertisementWatcher
         {
             ScanningMode = mode switch
             {
-                ScanningMode.Passive => BluetoothLEScanningMode.Passive,
-                ScanningMode.Active => BluetoothLEScanningMode.Active,
-                ScanningMode.None => BluetoothLEScanningMode.None,
+                ScanType.Passive => BluetoothLEScanningMode.Passive,
+                ScanType.Active => BluetoothLEScanningMode.Active,
                 _ => throw new ArgumentOutOfRangeException(nameof(mode))
             }
         };
@@ -48,9 +35,10 @@ public sealed class WinBleObserver : IBleObserverImplementation
         _watcher.Stopped += (_, _) => { };
     }
 
-    public bool TryStartScan(BleObserver bleObserver, out IObservable<IGapAdvertisement> observable)
+    /// <inheritdoc />
+    public bool TryStartScan(BleObserver observer, out IObservable<IGapAdvertisement> observable)
     {
-        CreateScanners(ScanningMode.Active);
+        CreateScanners(ScanType.Active);
         try
         {
             _watcher.Start();
@@ -62,7 +50,7 @@ public sealed class WinBleObserver : IBleObserverImplementation
         }
         if (_watcher.Status is BluetoothLEAdvertisementWatcherStatus.Aborted)
         {
-            var exception = new Exception(
+            var exception = new BleObservationStartException(observer,
                 $"Watcher status is '{_watcher.Status}' but should be 'Created'.\nTry restarting the bluetooth adapter!");
             observable = Observable.Throw<IGapAdvertisement>(exception);
             return false;
@@ -71,8 +59,8 @@ public sealed class WinBleObserver : IBleObserverImplementation
         {
             if (args.Error is BluetoothError.Success)
                 return;
-            var exception = new Exception($"Watcher stopped with error {args.Error}");
-            bleObserver.StopScan();
+            var exception = new BleObservationStopException(observer, $"Watcher stopped with error {args.Error}");
+            observer.StopScan(exception);
         };
         observable = Observable.FromEventPattern<
                 TypedEventHandler<BluetoothLEAdvertisementWatcher, BluetoothLEAdvertisementReceivedEventArgs>,
@@ -80,10 +68,11 @@ public sealed class WinBleObserver : IBleObserverImplementation
                 BluetoothLEAdvertisementReceivedEventArgs>(
                 addHandler => _watcher.Received += addHandler,
                 removeHandler => _watcher.Received -= removeHandler)
-            .Select(adv => OnAdvertisementReport(bleObserver, adv));
+            .Select(adv => OnAdvertisementReport(observer, adv));
         return true;
     }
 
+    /// <inheritdoc />
     public void StopScan()
     {
         _watcher?.Stop();
