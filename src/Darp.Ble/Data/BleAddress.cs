@@ -42,7 +42,7 @@ public sealed record BleAddress : ISpanParsable<BleAddress>
     /// <exception cref="FormatException"> Thrown if the format does not comply. </exception>
     public static BleAddress Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => TryParse(s, provider, out BleAddress? address)
         ? address
-        : throw new FormatException("Expected input to be follow 'AA:BB:CC:DD:EE:FF' (length of 17) but is invalid");
+        : throw new FormatException($"Given input '{s}' could not be parsed");
 
     /// <summary> Parses a string of suitable format and returns a ble address </summary>
     /// <param name="s">The string to parse.</param>
@@ -64,19 +64,33 @@ public sealed record BleAddress : ISpanParsable<BleAddress>
             result = default;
             return false;
         }
-        var value = new UInt48(
-            GetHexVal(s),
-            GetHexVal(s[3..]),
-            GetHexVal(s[6..]),
-            GetHexVal(s[9..]),
-            GetHexVal(s[12..]),
-            GetHexVal(s[15..])
-        );
+        if (!TryGetHexVal(s, out byte b0)
+            || !TryGetHexVal(s[3..], out byte b1)
+            || !TryGetHexVal(s[6..], out byte b2)
+            || !TryGetHexVal(s[9..], out byte b3)
+            || !TryGetHexVal(s[12..], out byte b4)
+            || !TryGetHexVal(s[15..], out byte b5))
+        {
+            result = default;
+            return false;
+        }
+        var value = new UInt48(b5, b4, b3, b2, b1, b0);
         result = new BleAddress(BleAddressType.NotAvailable, value);
         return true;
     }
 
-    private static byte GetHexVal(in ReadOnlySpan<char> s) => (byte)((GetHexVal(s[0]) << 4) + GetHexVal(s[1]));
+    private static bool TryGetHexVal(in ReadOnlySpan<char> s, out byte res)
+    {
+        int lower = GetHexVal(s[1]);
+        int upper = GetHexVal(s[0]);
+        if (lower > 15 || upper > 15)
+        {
+            res = default;
+            return false;
+        }
+        res = (byte)((upper << 4) + lower);
+        return true;
+    }
 
     private static int GetHexVal(char hex)
     {
