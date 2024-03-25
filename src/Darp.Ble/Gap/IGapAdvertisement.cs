@@ -5,6 +5,8 @@ namespace Darp.Ble.Gap;
 /// <summary> The advertisement definition </summary>
 public interface IGapAdvertisement
 {
+    /// <summary> The ble observer which registered the advertisement </summary>
+    internal BleObserver Observer { get; }
     /// <summary> The Timestamp when the report was received </summary>
     DateTimeOffset Timestamp { get; }
 
@@ -34,7 +36,6 @@ public interface IGapAdvertisement
     /// <summary> Gives back the underlying byte array representing the advertising report </summary>
     /// <returns></returns>
     byte[] AsByteArray();
-    //IObservable<IGattPeripheral> Connect(ScannerConfiguration? scannerConfig, ConnectionConfiguration? connectionConfig);
 }
 
 /// <summary> An advertisement with attached user data </summary>

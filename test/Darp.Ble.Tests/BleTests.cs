@@ -23,7 +23,7 @@ public sealed class BleTests
     {
         ILogger logger = new LoggerConfiguration()
             .MinimumLevel.Verbose()
-            .WriteTo.TestOutput(outputHelper)
+            .WriteTo.TestOutput(outputHelper, formatProvider: null)
             .CreateLogger();
         _manager = new BleManagerBuilder()
             .OnLog((_, logEvent) => logger.Write((LogEventLevel)logEvent.Level, logEvent.Exception, logEvent.MessageTemplate, logEvent.Properties))

@@ -8,7 +8,7 @@ using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Android;
 
-public class AndroidBleDevice(BluetoothManager bluetoothManager) : IPlatformSpecificBleDevice
+public sealed class AndroidBleDevice(BluetoothManager bluetoothManager) : IPlatformSpecificBleDevice
 {
     private readonly BluetoothManager _bluetoothManager = bluetoothManager;
     private BluetoothAdapter? BluetoothAdapter => _bluetoothManager.Adapter;
@@ -32,5 +32,6 @@ public class AndroidBleDevice(BluetoothManager bluetoothManager) : IPlatformSpec
     }
 
     public IPlatformSpecificBleObserver? Observer { get; private set; }
+    public object Central => throw new NotImplementedException();
     public string Identifier => "Darp.Ble.Android";
 }

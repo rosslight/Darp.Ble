@@ -8,14 +8,15 @@ namespace Darp.Ble.Gap;
 public sealed class GapAdvertisement : IGapAdvertisement
 {
     private readonly byte[] _bytes;
-    private readonly BleObserver _bleObserver;
 
     private GapAdvertisement(byte[] bytes, BleObserver bleObserver)
     {
         _bytes = bytes;
-        _bleObserver = bleObserver;
+        Observer = bleObserver;
     }
 
+    /// <inheritdoc />
+    public BleObserver Observer { get; }
     /// <inheritdoc />
     public required DateTimeOffset Timestamp { get; init; }
     /// <inheritdoc />
@@ -190,6 +191,8 @@ public sealed class GapAdvertisement<TUserData> : IGapAdvertisement<TUserData>, 
         _advertisement = advertisement;
     }
 
+    /// <inheritdoc />
+    public BleObserver Observer => _advertisement.Observer;
     /// <inheritdoc />
     public DateTimeOffset Timestamp => _advertisement.Timestamp;
     /// <inheritdoc />

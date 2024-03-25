@@ -70,6 +70,11 @@ dotnet_diagnostic.RCS1194.severity = silent
 MA0053.public_class_should_be_sealed = true
 dotnet_diagnostic.MA0053.severity = error
 dotnet_diagnostic.MA0004.severity = none
+
+# Test Project specifics
+[test/**/*.{cs,vb}]
+dotnet_diagnostic.CA1707.severity = none
+
 [{*.har,*.jsb2,*.jsb3,*.json,*.jsonc,*.postman_collection,*.postman_collection.json,*.postman_environment,*.postman_environment.json,.babelrc,.eslintrc,.prettierrc,.stylelintrc,bowerrc,jest.config}]
 indent_style = space
 indent_size = 2

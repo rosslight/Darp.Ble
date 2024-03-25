@@ -65,7 +65,7 @@ public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
     /// </summary>
     /// <param name="parameters"> The configuration to set </param>
     /// <returns> True, if setting parameters was successful </returns>
-    public bool TryConfigure(BleScanParameters parameters)
+    public bool Configure(BleScanParameters parameters)
     {
         if (IsScanning) return false;
         Parameters = parameters;

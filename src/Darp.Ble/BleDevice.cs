@@ -9,8 +9,9 @@ public sealed class BleDevice
 {
     private readonly IPlatformSpecificBleDevice _platformSpecificBleDevice;
     private readonly IObserver<LogEvent>? _logger;
-    private BleObserver? _bleObserver;
     private bool _isInitializing;
+    private BleObserver? _bleObserver;
+    private BleCentral? _bleCentral;
 
     internal BleDevice(IPlatformSpecificBleDevice platformSpecificBleDevice, IObserver<(BleDevice, LogEvent)>? logger)
     {
@@ -37,6 +38,8 @@ public sealed class BleDevice
                 return result;
             if (_platformSpecificBleDevice.Observer is not null)
                 _bleObserver = new BleObserver(this, _platformSpecificBleDevice.Observer, _logger);
+            if (_platformSpecificBleDevice.Central is not null)
+                _bleCentral = new BleCentral(this, _platformSpecificBleDevice.Central, _logger);
             IsInitialized = true;
             _logger?.Debug("Adapter Initialized!");
             return InitializeResult.Success;
@@ -54,7 +57,10 @@ public sealed class BleDevice
                                         | (_bleObserver is not null ? Capabilities.Observer : Capabilities.None);
 
     /// <summary> Returns a view of the device in Observer Role </summary>
-    /// <exception cref="NotSupportedException"> Thrown when the device has not been initialized </exception>
+    /// <exception cref="NotSupportedException"> Thrown when the device has not been initialized or the role is not supported </exception>
     public BleObserver Observer => _bleObserver ?? throw new NotSupportedException();
+    /// <summary> Returns a view of the device in Central Role </summary>
+    /// <exception cref="NotSupportedException"> Thrown when the device has not been initialized or the role is not supported </exception>
+    public BleCentral Central => _bleCentral ?? throw new NotSupportedException();
 }
 
