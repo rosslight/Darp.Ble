@@ -6,7 +6,7 @@ namespace Darp.Ble;
 /// <summary> Configure the ble manager. Add new implementations or specify logging behavior </summary>
 public sealed class BleManagerBuilder
 {
-    private readonly List<IBleFactory> _factories = [];
+    private readonly List<IPlatformSpecificBleFactory> _factories = [];
     private readonly List<Action<BleDevice, LogEvent>> _logActions = [];
 
     /// <summary> Add a new factory </summary>
@@ -14,7 +14,7 @@ public sealed class BleManagerBuilder
     /// <typeparam name="TFactory"> The type of the factory </typeparam>
     /// <returns> The current builder </returns>
     public BleManagerBuilder With<TFactory>(Action<TFactory>? config = null)
-        where TFactory : IBleFactory, new()
+        where TFactory : IPlatformSpecificBleFactory, new()
     {
         var factory = new TFactory();
         config?.Invoke(factory);
@@ -24,7 +24,7 @@ public sealed class BleManagerBuilder
     /// <summary> Add a new factory directly </summary>
     /// <param name="factory"> The factory to be added </param>
     /// <returns> The current builder  </returns>
-    public BleManagerBuilder With(IBleFactory factory)
+    public BleManagerBuilder With(IPlatformSpecificBleFactory factory)
     {
         _factories.Add(factory);
         return this;

@@ -32,22 +32,25 @@ public sealed record BleScanParameters
 /// <summary> The ble observer </summary>
 public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
 {
-    private readonly IBleObserverImplementation _bleDeviceObserver;
+    private readonly IPlatformSpecificBleObserver _platformSpecificObserver;
     private readonly IObserver<LogEvent>? _logger;
     private readonly List<IObserver<IGapAdvertisement>> _observers = [];
     private IObservable<IGapAdvertisement>? _scanObservable;
     private IDisposable? _scanDisposable;
     private readonly object _lockObject = new();
 
+    /// <summary> The ble device </summary>
+    public BleDevice Device { get; }
     /// <summary> The parameters used for the current scan </summary>
     public BleScanParameters Parameters { get; private set; }
 
     /// <summary> True if the observer is currently scanning </summary>
     public bool IsScanning => _scanDisposable is not null;
 
-    internal BleObserver(IBleObserverImplementation bleDeviceObserver, IObserver<LogEvent>? logger)
+    internal BleObserver(BleDevice device, IPlatformSpecificBleObserver platformSpecificObserver, IObserver<LogEvent>? logger)
     {
-        _bleDeviceObserver = bleDeviceObserver;
+        Device = device;
+        _platformSpecificObserver = platformSpecificObserver;
         _logger = logger;
         Parameters = new BleScanParameters
         {
@@ -82,7 +85,7 @@ public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
                 foreach (IObserver<IGapAdvertisement> observer in _observers.ToArray()) observer.OnError(reason);
                 _observers.Clear();
             }
-            _bleDeviceObserver.StopScan();
+            _platformSpecificObserver.StopScan();
             _scanDisposable?.Dispose();
             _scanDisposable = null;
             _scanObservable = null;
@@ -122,7 +125,7 @@ public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
         lock (_lockObject)
         {
             if (_scanDisposable is not null) return _scanDisposable;
-            bool startScanSuccessful = _bleDeviceObserver.TryStartScan(this, out IObservable<IGapAdvertisement> observable);
+            bool startScanSuccessful = _platformSpecificObserver.TryStartScan(this, out IObservable<IGapAdvertisement> observable);
 
             observable = observable
                 .Catch((Exception exception) => Observable.Throw<IGapAdvertisement>(exception switch

@@ -1,4 +1,3 @@
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Android.Bluetooth.LE;
 using Darp.Ble.Data;
@@ -7,22 +6,22 @@ using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Android;
 
-public sealed class AndroidBleObserver(BluetoothLeScanner bluetoothLeScanner) : IBleObserverImplementation
+public sealed class AndroidBleObserver(BluetoothLeScanner bluetoothLeScanner) : IPlatformSpecificBleObserver, IDisposable
 {
     private readonly BluetoothLeScanner _bluetoothLeScanner = bluetoothLeScanner;
-    private MyScanCallback? _scanCallback;
+    private BleObserverScanCallback? _scanCallback;
 
-    public bool TryStartScan(BleObserver bleObserver, out IObservable<IGapAdvertisement> observable)
+    public bool TryStartScan(BleObserver observer, out IObservable<IGapAdvertisement> observable)
     {
-        _scanCallback = new MyScanCallback();
+        _scanCallback = new BleObserverScanCallback(observer);
         ScanSettings? scanSettings = new ScanSettings.Builder()
             .SetCallbackType(ScanCallbackType.AllMatches)
             ?.SetMatchMode(BluetoothScanMatchMode.Aggressive)
             ?.SetReportDelay(0)
             ?.Build();
-        _bluetoothLeScanner.StartScan(null, scanSettings, _scanCallback);
+        _bluetoothLeScanner.StartScan(filters: null, scanSettings, _scanCallback);
         observable = _scanCallback
-            .Select(x => OnAdvertisementReport(bleObserver, x));
+            .Select(x => OnAdvertisementReport(observer, x));
         return true;
     }
 
@@ -36,18 +35,22 @@ public sealed class AndroidBleObserver(BluetoothLeScanner bluetoothLeScanner) : 
     private static GapAdvertisement OnAdvertisementReport(BleObserver bleObserver, ScanResult scanResult)
     {
         // Extract the very little information about the event type we have left
-        BleEventType advertisementType = scanResult.IsLegacy ? BleEventType.Legacy : 0;
+        var advertisementType = BleEventType.None;
+        if (scanResult.IsLegacy) advertisementType |= BleEventType.Legacy;
         if (scanResult.IsConnectable) advertisementType |= BleEventType.Connectable;
 
         // Assume address string is hex
-        var addressValue = Convert.ToUInt64(scanResult.Device?.Address?.Replace(":", ""), 16);
+        string? addressString = scanResult.Device?.Address;
+        BleAddress address = addressString is not null
+            ? BleAddress.Parse(addressString, provider: null)
+            : new BleAddress(BleAddressType.NotAvailable, (UInt48)0x00);
 
         AdvertisingData advertisingData = AdvertisingData.From(scanResult.ScanRecord?.GetBytes());
 
         GapAdvertisement advertisement = GapAdvertisement.FromExtendedAdvertisingReport(bleObserver,
             DateTimeOffset.UtcNow,
             advertisementType,
-            new BleAddress(BleAddressType.NotAvailable, (UInt48)addressValue),
+            address,
             (Physical)scanResult.PrimaryPhy,
             (Physical)scanResult.SecondaryPhy,
             (AdvertisingSId)scanResult.AdvertisingSid,
@@ -59,70 +62,6 @@ public sealed class AndroidBleObserver(BluetoothLeScanner bluetoothLeScanner) : 
 
         return advertisement;
     }
-}
 
-public sealed class MyScanCallback : ScanCallback, IObservable<ScanResult>
-{
-    private readonly List<IObserver<ScanResult>> _observers = [];
-    private bool _disposed;
-    private readonly object _lockObject = new();
-
-    public override void OnScanResult(ScanCallbackType callbackType, ScanResult? result)
-    {
-        base.OnScanResult(callbackType, result);
-        if (result is null) return;
-        foreach (IObserver<ScanResult> observer in _observers)
-        {
-            observer.OnNext(result);
-        }
-    }
-
-    public override void OnBatchScanResults(IList<ScanResult>? results)
-    {
-        base.OnBatchScanResults(results);
-        if (results is null) return;
-        foreach (ScanResult scanResult in results)
-        {
-            foreach (IObserver<ScanResult> observer in _observers)
-            {
-                observer.OnNext(scanResult);
-            }
-        }
-    }
-
-    public override void OnScanFailed(ScanFailure scanFailure)
-    {
-        base.OnScanFailed(scanFailure);
-        var scanFailedException = new Exception($"Scan failed because of {scanFailure}");
-        foreach (IObserver<ScanResult> observer in _observers)
-        {
-            observer.OnError(scanFailedException);
-        }
-    }
-
-    public IDisposable Subscribe(IObserver<ScanResult> observer)
-    {
-        lock (_lockObject)
-        {
-            if (_disposed) return Disposable.Empty;
-            _observers.Add(observer);
-            return Disposable.Create((ObserverList: _observers, Observer: observer), state =>
-            {
-                state.ObserverList.Remove(state.Observer);
-            });
-        }
-    }
-
-    protected override void Dispose(bool disposing)
-    {
-        lock (_lockObject)
-        {
-            base.Dispose(disposing);
-            foreach (IObserver<ScanResult> observer in _observers)
-            {
-                observer.OnCompleted();
-            }
-            _disposed = true;
-        }
-    }
+    void IDisposable.Dispose() => StopScan();
 }

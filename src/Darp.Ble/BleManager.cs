@@ -7,10 +7,10 @@ namespace Darp.Ble;
 /// <summary> The base manager class. Holds all implementations </summary>
 public sealed class BleManager
 {
-    private readonly IReadOnlyCollection<IBleFactory> _factories;
+    private readonly IReadOnlyCollection<IPlatformSpecificBleFactory> _factories;
     private readonly IObserver<(BleDevice, LogEvent)>? _logObserver;
 
-    internal BleManager(IReadOnlyCollection<IBleFactory> factories,
+    internal BleManager(IReadOnlyCollection<IPlatformSpecificBleFactory> factories,
         IReadOnlyCollection<Action<BleDevice, LogEvent>> logActions)
     {
         _factories = factories;

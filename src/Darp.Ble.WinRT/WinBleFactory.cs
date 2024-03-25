@@ -2,9 +2,9 @@ using Darp.Ble.Implementation;
 
 namespace Darp.Ble.WinRT;
 
-public sealed class WinBleFactory : IBleFactory
+public sealed class WinBleFactory : IPlatformSpecificBleFactory
 {
-    public IEnumerable<IBleDeviceImplementation> EnumerateDevices()
+    public IEnumerable<IPlatformSpecificBleDevice> EnumerateDevices()
     {
         yield return new WinBleDevice();
     }

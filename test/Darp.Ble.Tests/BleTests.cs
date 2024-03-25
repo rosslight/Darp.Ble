@@ -31,13 +31,13 @@ public sealed class BleTests
             .CreateManager();
     }
 
-    private sealed class SubstituteBleFactory : IBleFactory
+    private sealed class SubstituteBleFactory : IPlatformSpecificBleFactory
     {
-        public IEnumerable<IBleDeviceImplementation> EnumerateDevices()
+        public IEnumerable<IPlatformSpecificBleDevice> EnumerateDevices()
         {
-            var impl = Substitute.For<IBleDeviceImplementation>();
+            var impl = Substitute.For<IPlatformSpecificBleDevice>();
             impl.InitializeAsync().Returns(Task.FromResult(InitializeResult.Success));
-            var observer = Substitute.For<IBleObserverImplementation>();
+            var observer = Substitute.For<IPlatformSpecificBleObserver>();
             observer.TryStartScan(Arg.Any<BleObserver>(), out _)
                 .Returns(info =>
                 {

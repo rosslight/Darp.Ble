@@ -3,7 +3,7 @@ using Darp.Ble.Gap;
 namespace Darp.Ble.Implementation;
 
 /// <summary> The ble observer implementation </summary>
-public interface IBleObserverImplementation
+public interface IPlatformSpecificBleObserver
 {
     /// <summary> Tries to start a new scan. </summary>
     /// <param name="observer"> The ble observer who requests the scan start </param>

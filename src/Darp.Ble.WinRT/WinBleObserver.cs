@@ -14,7 +14,7 @@ using Darp.Ble.Implementation;
 namespace Darp.Ble.WinRT;
 
 /// <inheritdoc />
-public sealed class WinBleObserver : IBleObserverImplementation
+public sealed class WinBleObserver : IPlatformSpecificBleObserver
 {
     private BluetoothLEAdvertisementWatcher? _watcher;
 

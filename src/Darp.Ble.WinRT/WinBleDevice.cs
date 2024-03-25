@@ -3,7 +3,7 @@ using Darp.Ble.Implementation;
 
 namespace Darp.Ble.WinRT;
 
-public sealed class WinBleDevice : IBleDeviceImplementation
+public sealed class WinBleDevice : IPlatformSpecificBleDevice
 {
     public Task<InitializeResult> InitializeAsync()
     {
@@ -11,6 +11,6 @@ public sealed class WinBleDevice : IBleDeviceImplementation
         return Task.FromResult(InitializeResult.Success);
     }
 
-    public IBleObserverImplementation? Observer { get; private set; }
+    public IPlatformSpecificBleObserver? Observer { get; private set; }
     public string Identifier => "Darp.Ble.WinRT";
 }
