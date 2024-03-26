@@ -98,7 +98,6 @@ public static class CommandPackageExtensions
     {
         return Observable.Create<HciEventPacket>(observer =>
         {
-            //hciHost.Logger.Verbose("Starting query of {@Command}", command);
             IDisposable disposable = hciHost.WhenHciEventPackageReceived
                 .Subscribe(package =>
                 {
@@ -120,7 +119,9 @@ public static class CommandPackageExtensions
                         observer.OnError(e);
                     }
                 }, observer.OnError, observer.OnCompleted);
-            hciHost.EnqueuePacket(new HciCommandPacket<TCommand>(command));
+            var commandPacket = new HciCommandPacket<TCommand>(command);
+            hciHost.Logger.LogStartQuery(commandPacket);
+            hciHost.EnqueuePacket(commandPacket);
             return disposable;
         });
     }
