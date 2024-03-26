@@ -1,33 +1,13 @@
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
 using Darp.Ble.Logger;
 
 namespace Darp.Ble;
-
-public enum ScanType
-{
-    Passive = 0,
-    Active = 1,
-}
-
-public enum ScanTiming : ushort
-{
-    Default = Ms100,
-    Ms100 = 160,
-    Ms1000 = 1600,
-    MaxValue = 0xFFFF,
-}
-
-public sealed record BleScanParameters
-{
-    public ScanType ScanType { get; init; } = ScanType.Passive;
-    public ScanTiming ScanInterval { get; init; } = ScanTiming.Default;
-    public ScanTiming ScanWindow { get; init; } = ScanTiming.Default;
-}
 
 /// <summary> The ble observer </summary>
 public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
