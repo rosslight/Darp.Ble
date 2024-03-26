@@ -40,5 +40,5 @@ public enum BleEventType
     /// The advertisement is directed and indicates that the device is connectable but not scannable.
     /// This advertisement type cannot carry data.
     /// </summary>
-    AdvDirectInd = Legacy | Connectable | Directed
+    AdvDirectInd = Legacy | Connectable | Directed,
 }

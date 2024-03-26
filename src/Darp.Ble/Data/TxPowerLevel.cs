@@ -4,5 +4,5 @@ namespace Darp.Ble.Data;
 public enum TxPowerLevel : sbyte
 {
     /// <summary> Not available </summary>
-    NotAvailable = 0x7F
+    NotAvailable = 0x7F,
 }

@@ -1,3 +1,5 @@
+namespace AssignedNumbersCrawler;
+
 public sealed class CompanyIdentifier : INameable
 {
     public required string Value { get; init; }

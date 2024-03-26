@@ -14,5 +14,5 @@ public enum InitializeResult
     /// <summary> The version of the device is not supported </summary>
     DeviceVersionUnsupported,
     /// <summary> The controller can not be accessed as there are permissions missing </summary>
-    DeviceMissingPermissions
+    DeviceMissingPermissions,
 }

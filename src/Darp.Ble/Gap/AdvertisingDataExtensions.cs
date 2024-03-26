@@ -101,7 +101,7 @@ public static class AdvertisingDataExtensions
                 AdTypes.IncompleteListOf16BitServiceClassUuids or AdTypes.CompleteListOf16BitServiceClassUuids => 2,
                 AdTypes.IncompleteListOf32BitServiceClassUuids or AdTypes.CompleteListOf32BitServiceClassUuids => 4,
                 AdTypes.IncompleteListOf128BitServiceClassUuids or AdTypes.CompleteListOf128BitServiceClassUuids => 16,
-                _ => -1
+                _ => -1,
             };
             if (guidLength < 0)
                 continue;

@@ -54,7 +54,7 @@ public sealed record BleUuid : ISpanParsable<BleUuid>, ISpanFormattable, IUtf8Sp
             4 => (BleUuidType.Uuid32, CreateGuid(BinaryPrimitives.ReadUInt32LittleEndian(source))),
             16 => (BleUuidType.Uuid128, new Guid(source)),
             _ => throw new ArgumentOutOfRangeException(nameof(source),
-                $"Provided invalid number of bytes for uuid: {source.Length}")
+                $"Provided invalid number of bytes for uuid: {source.Length}"),
         };
         Type = tuple.Type;
         Value = tuple.Guid;

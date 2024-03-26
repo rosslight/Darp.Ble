@@ -33,5 +33,5 @@ public enum BleAddressType : byte
     /// <summary>
     /// No address provided (anonymous)
     /// </summary>
-    NotAvailable = 0xFF
+    NotAvailable = 0xFF,
 }

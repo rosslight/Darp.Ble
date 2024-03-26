@@ -5,5 +5,5 @@ namespace Darp.Ble.Data;
 public enum AdvertisingSId : byte
 {
     /// <summary> No ADI field provide </summary>
-    NoAdIProvided = 0xFF
+    NoAdIProvided = 0xFF,
 }

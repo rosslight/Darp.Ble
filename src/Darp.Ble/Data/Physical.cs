@@ -21,5 +21,5 @@ public enum Physical : byte
     /// Physical device, which sends with more symbols per bit (2 / 8 symbols possible).
     /// Higher  range comes on cost of data rate
     /// </summary>
-    LeCoded = 0x3
+    LeCoded = 0x3,
 }

@@ -8,5 +8,5 @@ public enum BleUuidType
     /// <summary> Ble Uuid with 32 bits </summary>
     Uuid32 = 4,
     /// <summary> Ble Uuid with 128 bits </summary>
-    Uuid128 = 16
+    Uuid128 = 16,
 }

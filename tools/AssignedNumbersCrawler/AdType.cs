@@ -1,3 +1,5 @@
+namespace AssignedNumbersCrawler;
+
 public sealed class AdType : INameable
 {
     public required string Value { get; init; }

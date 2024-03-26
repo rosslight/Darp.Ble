@@ -22,5 +22,5 @@ public enum Capabilities
     /// <summary>
     /// A device that supports the Central role initiates the establishment of an LE active physical link
     /// </summary>
-    Central =     0b1000 | Observer
+    Central =     0b1000 | Observer,
 }

@@ -77,7 +77,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
             Rssi = (Rssi)rssi,
             PeriodicAdvertisingInterval = (PeriodicAdvertisingInterval)periodicAdvertisingInterval,
             DirectAddress = new BleAddress((BleAddressType)directAddressType, directAddress),
-            Data = AdvertisingData.From(data)
+            Data = AdvertisingData.From(data),
         };
     }
 
@@ -168,7 +168,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
             Rssi = rssi,
             PeriodicAdvertisingInterval = periodicAdvertisingInterval,
             DirectAddress = directAddress,
-            Data = advertisingData
+            Data = advertisingData,
         };
     }
 

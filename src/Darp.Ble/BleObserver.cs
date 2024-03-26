@@ -11,7 +11,7 @@ namespace Darp.Ble;
 public enum ScanType
 {
     Passive = 0,
-    Active = 1
+    Active = 1,
 }
 
 public enum ScanTiming : ushort
@@ -19,7 +19,7 @@ public enum ScanTiming : ushort
     Default = Ms100,
     Ms100 = 160,
     Ms1000 = 1600,
-    MaxValue = 0xFFFF
+    MaxValue = 0xFFFF,
 }
 
 public sealed record BleScanParameters

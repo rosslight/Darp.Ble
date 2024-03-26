@@ -4,5 +4,5 @@ namespace Darp.Ble.Data;
 public enum PeriodicAdvertisingInterval : ushort
 {
     /// <summary> Periodic advertising is disabled </summary>
-    NoPeriodicAdvertising = 0x00
+    NoPeriodicAdvertising = 0x00,
 }
