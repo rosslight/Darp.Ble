@@ -62,10 +62,12 @@ public sealed class BleObserverScanCallback(BleObserver bleObserver) : ScanCallb
         lock (_lockObject)
         {
             base.Dispose(disposing);
-            foreach (IObserver<ScanResult> observer in _observers)
+            for (int index = _observers.Count - 1; index >= 0; index--)
             {
+                IObserver<ScanResult> observer = _observers[index];
                 observer.OnCompleted();
             }
+
             _disposed = true;
         }
     }

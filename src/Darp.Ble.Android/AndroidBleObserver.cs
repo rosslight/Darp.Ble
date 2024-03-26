@@ -27,7 +27,7 @@ public sealed class AndroidBleObserver(BluetoothLeScanner bluetoothLeScanner) : 
 
     public void StopScan()
     {
-        _bluetoothLeScanner.StopScan((ScanCallback?)null);
+        _bluetoothLeScanner.StopScan(_scanCallback);
         _scanCallback?.Dispose();
         _scanCallback = null;
     }
