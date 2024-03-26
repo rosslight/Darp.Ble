@@ -91,9 +91,8 @@ public static class AdvertisingDataExtensions
     /// <summary> Accumulate any services </summary>
     /// <param name="data"> The data to be looked at </param>
     /// <returns> An array with services </returns>
-    public static BleUuid[] GetServices(this AdvertisingData data)
+    public static IEnumerable<BleUuid> GetServices(this AdvertisingData data)
     {
-        var serviceGuids = new List<BleUuid>();
         foreach ((AdTypes sectionType, ReadOnlyMemory<byte> bytes) in data)
         {
             int guidLength = sectionType switch
@@ -107,9 +106,8 @@ public static class AdvertisingDataExtensions
                 continue;
             // Using length - 1 to avoid crashing if invalid lengths were transmitted
             for (var i = 0; i < bytes.Length + 1 - guidLength; i += guidLength)
-                serviceGuids.Add(new BleUuid(bytes[i..(i + guidLength)].Span));
+                yield return new BleUuid(bytes[i..(i + guidLength)].Span);
         }
-        return serviceGuids.ToArray();
     }
 
     /// <summary>

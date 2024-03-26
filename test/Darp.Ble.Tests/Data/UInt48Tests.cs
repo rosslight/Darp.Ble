@@ -121,6 +121,35 @@ public sealed class UInt48Tests
     }
 
     [Theory]
+    [InlineData(0xAABBCCDDEEFF, "187723572702975")]
+    public void ToString_Returns_Correctly(ulong value, string expectedString)
+    {
+        // Arrange
+        var value1 = (UInt48)value;
+
+        // Act
+        var toString = value1.ToString();
+
+        // Assert
+        toString.Should().Be(expectedString);
+    }
+
+    [Theory]
+    [InlineData(0xAABBCCDDEEFF, 0xAABBCCDDEEFF, true)]
+    public void Equals_Returns_Correctly(ulong first, ulong second, bool expectedResult)
+    {
+        // Arrange
+        var value1 = (UInt48)first;
+        var value2 = (UInt48)second;
+
+        // Act & Assert
+        value1.Equals(value2).Should().Be(expectedResult);
+        value1.Equals((object?)value2).Should().Be(expectedResult);
+        (value1 == value2).Should().Be(expectedResult);
+        (value1 != value2).Should().Be(!expectedResult);
+    }
+
+    [Theory]
     [InlineData(0x010000000000, 0x020000000000)]
     [InlineData(0x010100000000, 0x010200000000)]
     [InlineData(0x010101000000, 0x010102000000)]
@@ -135,7 +164,24 @@ public sealed class UInt48Tests
 
         // Act & Assert
         value1.CompareTo(value2).Should().BeNegative();
+        (value1 < value2).Should().BeTrue();
+        (value1 <= value2).Should().BeTrue();
         value2.CompareTo(value1).Should().BePositive();
-        value1.CompareTo(value1).Should().Be(0);
+        (value1 > value2).Should().BeFalse();
+        (value1 >= value2).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(0x010101010101)]
+    public void CompareTo_Returns_Correct_SameValue(ulong value)
+    {
+        // Arrange
+        var value1 = (UInt48)value;
+        var value2 = (UInt48)value;
+
+        value1.CompareTo(value2).Should().Be(0);
+        (value1 >= value2).Should().BeTrue();
+        (value1 <= value2).Should().BeTrue();
+        value1.GetHashCode().Should().Be(value2.GetHashCode());
     }
 }

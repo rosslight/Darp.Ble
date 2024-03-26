@@ -24,7 +24,13 @@ public sealed class LogEventExtensionsTests
         (await x.Should().PushAsync())
             .Which
             .Should()
-            .HaveElementAt(0, new LogEvent(level, exception, messageTemplate, properties));
+            .HaveElementAt(0, new LogEvent
+            {
+                Level = level,
+                Exception = exception,
+                MessageTemplate = messageTemplate,
+                Properties = properties,
+            });
     }
 
     [Theory]
