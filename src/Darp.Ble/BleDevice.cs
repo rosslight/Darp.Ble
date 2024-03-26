@@ -38,8 +38,8 @@ public sealed class BleDevice
                 return result;
             if (_platformSpecificBleDevice.Observer is not null)
                 _bleObserver = new BleObserver(this, _platformSpecificBleDevice.Observer, _logger);
-            if (_platformSpecificBleDevice.Central is not null)
-                _bleCentral = new BleCentral(this, _platformSpecificBleDevice.Central, _logger);
+            //if (_platformSpecificBleDevice.Central is not null)
+            //    _bleCentral = new BleCentral(this, _platformSpecificBleDevice.Central, _logger);
             IsInitialized = true;
             _logger?.Debug("Adapter Initialized!");
             return InitializeResult.Success;

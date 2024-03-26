@@ -16,20 +16,24 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager) : IPlatf
     [MemberNotNullWhen(true, nameof(BluetoothAdapter))]
     public bool IsAvailable => BluetoothAdapter?.IsEnabled == true;
 
-    [SupportedOSPlatform("android31.0")]
     public Task<InitializeResult> InitializeAsync()
     {
         if (BluetoothAdapter is null) return Task.FromResult(InitializeResult.DeviceNotAvailable);
-        if (BluetoothAdapter.IsEnabled) return Task.FromResult(InitializeResult.DeviceNotEnabled);
+        if (!BluetoothAdapter.IsEnabled) return Task.FromResult(InitializeResult.DeviceNotEnabled);
         if (!IsAvailable) return Task.FromResult(InitializeResult.DeviceNotAvailable);
 
-        if (Application.Context.CheckSelfPermission(Manifest.Permission.BluetoothScan) is Permission.Granted
+        if (HasScanPermissions()
             && BluetoothAdapter.BluetoothLeScanner is not null)
         {
             Observer = new AndroidBleObserver(BluetoothAdapter.BluetoothLeScanner);
         }
         return Task.FromResult(InitializeResult.Success);
     }
+
+    private static bool HasScanPermissions() => OperatingSystem.IsAndroidVersionAtLeast(31)
+        ? Application.Context.CheckSelfPermission(Manifest.Permission.BluetoothScan) is Permission.Granted
+        : Application.Context.CheckSelfPermission(Manifest.Permission.AccessCoarseLocation) is Permission.Granted
+          && Application.Context.CheckSelfPermission(Manifest.Permission.AccessFineLocation) is Permission.Granted;
 
     public IPlatformSpecificBleObserver? Observer { get; private set; }
     public object Central => throw new NotImplementedException();
