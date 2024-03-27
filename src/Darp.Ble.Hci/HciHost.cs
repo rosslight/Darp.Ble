@@ -1,6 +1,5 @@
 using System.Reactive.Linq;
 using Darp.Ble.Hci.Package;
-using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.Hci.Transport;
 using Microsoft.Extensions.Logging;
@@ -10,7 +9,6 @@ namespace Darp.Ble.Hci;
 
 public sealed class HciHost : IDisposable
 {
-    private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(20);
     private readonly ITransportLayer _transportLayer;
     internal ILogger<HciHost> Logger { get; }
 
@@ -27,7 +25,6 @@ public sealed class HciHost : IDisposable
     public IObservable<IHciPacket> WhenHciPacketReceived { get; }
     public IObservable<HciEventPacket> WhenHciEventPackageReceived { get; }
     public IObservable<HciEventPacket<HciLeMetaEvent>> WhenHciLeMetaEventPackageReceived { get; }
-    public TimeSpan Timout { get; set; } = DefaultTimeout;
 
     public void EnqueuePacket(IHciPacket packet)
     {

@@ -4,12 +4,14 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Event;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Darp.Ble.Hci.Transport;
 
 public sealed class H4TransportLayer : ITransportLayer
 {
-    //private readonly IObserver<LogEvent> _logger;
+    private readonly ILogger<H4TransportLayer> _logger;
     private readonly SerialPort _serialPort;
     private readonly ConcurrentQueue<IHciPacket> _txQueue;
     private readonly CancellationTokenSource _cancelSource;
@@ -17,9 +19,9 @@ public sealed class H4TransportLayer : ITransportLayer
     private readonly Subject<IHciPacket> _rxSubject;
     private bool _isDisposing;
 
-    public H4TransportLayer(string portName)//, IObserver<LogEvent> logger)
+    public H4TransportLayer(string portName, ILogger<H4TransportLayer>? logger)
     {
-        //_logger = logger;
+        _logger = logger ?? NullLogger<H4TransportLayer>.Instance;
         _serialPort = new SerialPort(portName);
         _txQueue = new ConcurrentQueue<IHciPacket>();
         _rxSubject = new Subject<IHciPacket>();
@@ -40,11 +42,11 @@ public sealed class H4TransportLayer : ITransportLayer
                 bytes[0] = (byte)packet.PacketType;
                 if (!packet.TryEncode(bytes.AsSpan()[1..]))
                 {
-                    //_logger.Verbose("H4Transport: Could not send packet {@Packet} due to error while encoding", packet);
+                    _logger.LogPacketSendingErrorEncoding(packet);
                     continue;
                 }
 
-                // _logger.Verbose("H4Transport: Sending packet {@Packet} with bytes 0x{@Bytes}", packet, bytes);
+                _logger.LogPacketSending(packet, bytes);
                 await _serialPort.BaseStream.WriteAsync(bytes, _cancelToken);
             }
         }
@@ -52,9 +54,9 @@ public sealed class H4TransportLayer : ITransportLayer
         {
             if (_isDisposing)
             {
-                //_logger.Verbose("H4Transport: Tx disconnected");
+                _logger.LogTransportDisconnected("Tx");
             }
-            //_logger.Fatal(e, "H4Transport: Tx died due to exception {Message}. This error is not recoverable!", e.Message);
+            _logger.LogTransportWithError(e, "Tx", e.Message);
         }
     }
 
@@ -70,13 +72,11 @@ public sealed class H4TransportLayer : ITransportLayer
         await _serialPort.BaseStream.ReadExactlyAsync(payloadBuffer, _cancelToken);
         if (!TPacket.TryDecode(buffer[..(TPacket.HeaderLength + payloadLength)], out TPacket? packet, out _))
         {
-            //_logger.Warning("H4Transport: Could not decode bytes 0x{PacketBytes:X2}{Bytes} to match packet {PacketType}",
-            //    (byte)TPacket.Type, buffer[..(TPacket.HeaderLength + payloadLength)].ToArray(), typeof(TPacket).Name);
+            _logger.LogPacketReceivingDecodingFailed((byte)TPacket.Type, buffer[..(TPacket.HeaderLength + payloadLength)].ToArray(), typeof(TPacket).Name);
             return;
         }
 
-        //_logger.Verbose("Read bytes 0x{PacketBytes:X2}{Bytes} of {PacketType} packet {@Packet}",
-        //    (byte)packet.PacketType, packet.ToByteArray(), packet.PacketType, packet);
+        _logger.LogPacketReceiving((byte)packet.PacketType, packet.ToByteArray(), packet.PacketType, packet);
         _rxSubject.OnNext(packet);
     }
 
@@ -99,8 +99,9 @@ public sealed class H4TransportLayer : ITransportLayer
                     case HciPacketType.HciAclData:
                         await RunRxPacket<HciAclPacket>(buffer, 2);
                         break;
+                    case HciPacketType.HciCommand:
                     default:
-                        //_logger.Warning("H4Transport: Received unknown hci packet of type 0x{Type:X2}. Reading remaining buffer ...", (byte)type);
+                        _logger.LogPacketReceivingUnknownPacket((byte)type);
                         _serialPort.ReadExisting();
                         continue;
                 }
@@ -111,11 +112,11 @@ public sealed class H4TransportLayer : ITransportLayer
         {
             if (_isDisposing)
             {
-                //_logger.Verbose("H4Transport: Rx disconnected");
+                _logger.LogTransportDisconnected("Rx");
                 _rxSubject.OnCompleted();
                 return;
             }
-            //_logger.Fatal(e, "H4Transport: Rx died due to exception {Message}. This error is not recoverable!", e.Message);
+            _logger.LogTransportWithError(e, "Rx", e.Message);
             _rxSubject.OnError(e);
         }
     }

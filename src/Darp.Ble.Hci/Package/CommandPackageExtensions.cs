@@ -32,16 +32,8 @@ public static class CommandPackageExtensions
             })
             .SelectWhereEvent<HciCommandCompleteEvent<TParameters>>()
             .Where(x => x.Data.CommandOpCode == TCommand.OpCode)
-            // .Do(completePacket =>
-            // {
-            //     hciHost.Logger.Verbose(
-            //         "HciHost: Query {@Command} from client completed successfully: Received {EventCode} {@Packet}",
-            //         command, completePacket.EventCode, completePacket);
-            // }, exception =>
-            // {
-            //     hciHost.Logger.Error(exception, "HciHost: Query {@Command} from client failed because of {Reason}",
-            //         command, exception.Message);
-            // })
+            .Do(completePacket => hciHost.Logger.LogQueryCompleted(command, completePacket.EventCode, completePacket),
+                exception => hciHost.Logger.LogQueryWithException(exception, command, exception.Message))
             .FirstAsync()
             .Timeout(timeout.Value)
             .ToTask(cancellationToken);
@@ -69,16 +61,8 @@ public static class CommandPackageExtensions
                         observer.OnError(e);
                     }
                 }, observer.OnError, observer.OnCompleted))
-            // .Do(statusPacket =>
-            // {
-            //     hciHost.Logger.Verbose(
-            //         "HciHost: Query {@Command} from client started with status {Status}: Received {EventCode} {@Packet}",
-            //         command, statusPacket.Data.Status, statusPacket.EventCode, statusPacket);
-            // }, exception =>
-            // {
-            //     hciHost.Logger.Error(exception, "HciHost: Query {@Command} from client failed because of {Reason}",
-            //         command, exception.Message);
-            // })
+            .Do(statusPacket => hciHost.Logger.LogQueryStarted(command, statusPacket.Data.Status, statusPacket.EventCode, statusPacket),
+                exception => hciHost.Logger.LogQueryWithException(exception, command, exception.Message))
             .FirstAsync()
             .Timeout(timeout.Value);
     }
@@ -92,6 +76,27 @@ public static class CommandPackageExtensions
         return packet.Data.Status;
     }
 
+    private static void OnNextEventPacket<TCommand>(this IObserver<HciEventPacket> observer, HciEventPacket package)
+        where TCommand : unmanaged, IHciCommand<TCommand>
+    {
+        try
+        {
+            if (HciEventPacket.TryWithData(package, out HciEventPacket<HciCommandStatusEvent>? statusPackage))
+            {
+                if (statusPackage.Data.CommandOpCode == TCommand.OpCode && statusPackage.Data.Status is not HciCommandStatus.Success)
+                {
+                    observer.OnError(new HciEventFailedException(statusPackage));
+                    return;
+                }
+            }
+            observer.OnNext(package);
+        }
+        catch (Exception e)
+        {
+            observer.OnError(e);
+        }
+    }
+
     public static IObservable<HciEventPacket> QueryCommand<TCommand>(this HciHost hciHost,
         TCommand command = default)
         where TCommand : unmanaged, IHciCommand<TCommand>
@@ -99,26 +104,7 @@ public static class CommandPackageExtensions
         return Observable.Create<HciEventPacket>(observer =>
         {
             IDisposable disposable = hciHost.WhenHciEventPackageReceived
-                .Subscribe(package =>
-                {
-                    try
-                    {
-                        if (HciEventPacket.TryWithData(package, out HciEventPacket<HciCommandStatusEvent>? statusPackage))
-                        {
-                            if (statusPackage.Data.CommandOpCode == TCommand.OpCode
-                                && statusPackage.Data.Status is not HciCommandStatus.Success)
-                            {
-                                observer.OnError(new HciEventFailedException(statusPackage));
-                                return;
-                            }
-                        }
-                        observer.OnNext(package);
-                    }
-                    catch (Exception e)
-                    {
-                        observer.OnError(e);
-                    }
-                }, observer.OnError, observer.OnCompleted);
+                .Subscribe(observer.OnNextEventPacket<TCommand>, observer.OnError, observer.OnCompleted);
             var commandPacket = new HciCommandPacket<TCommand>(command);
             hciHost.Logger.LogStartQuery(commandPacket);
             hciHost.EnqueuePacket(commandPacket);
