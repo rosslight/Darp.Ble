@@ -1,5 +1,7 @@
 using System.Reactive.Disposables;
 using Android.Bluetooth.LE;
+using Android.Runtime;
+using Android.Util;
 using Darp.Ble.Exceptions;
 
 namespace Darp.Ble.Android;
@@ -10,6 +12,12 @@ public sealed class BleObserverScanCallback(BleObserver bleObserver) : ScanCallb
     private readonly List<IObserver<ScanResult>> _observers = [];
     private bool _disposed;
     private readonly object _lockObject = new();
+
+    public BleObserverScanCallback(IntPtr _, JniHandleOwnership __)
+        : this(null!)
+    {
+        Log.Warn("adv", "Suspicious call to native constructor");
+    }
 
     public override void OnScanResult(ScanCallbackType callbackType, ScanResult? result)
     {
