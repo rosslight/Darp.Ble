@@ -25,6 +25,9 @@ public sealed class BleDevice
     /// <summary> Get an implementation specific identification string </summary>
     public string Identifier => _platformSpecificBleDevice.Identifier;
 
+    /// <summary> An optional name </summary>
+    public string? Name => _platformSpecificBleDevice.Name;
+
     /// <summary> Initializes the ble device </summary>
     /// <returns> Success or a custom error code </returns>
     public async Task<InitializeResult> InitializeAsync()

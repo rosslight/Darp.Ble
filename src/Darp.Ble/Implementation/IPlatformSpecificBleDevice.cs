@@ -13,6 +13,9 @@ public interface IPlatformSpecificBleDevice : IDisposable
     /// <summary> Get access to the platform specific central </summary>
     object? Central { get; }
 
+    /// <summary> An optional name </summary>
+    string? Name { get; }
+
     /// <summary> Initializes the ble device. </summary>
     /// <returns> The status of the initialization. Success or a custom error code. </returns>
     Task<InitializeResult> InitializeAsync();
