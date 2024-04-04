@@ -9,7 +9,7 @@ public static partial class Logging
     [LoggerMessage(Level = LogLevel.Trace, Message = "Enqueueing packet {@Packet}")]
     public static partial void LogEnqueuePacket(this ILogger logger, IHciPacket packet);
     [LoggerMessage(Level = LogLevel.Trace, Message = "Starting query of {@Command}")]
-    public static partial void LogStartQuery(this ILogger logger, IHciPacket commandPacket);
+    public static partial void LogStartQuery(this ILogger logger, IHciPacket command);
     [LoggerMessage(Level = LogLevel.Trace, Message = "H4Transport: {Direction} disconnected")]
     public static partial void LogTransportDisconnected(this ILogger logger, string direction);
     [LoggerMessage(Level = LogLevel.Critical, Message = "H4Transport: {Direction} died due to exception {Message}. This error is not recoverable!")]
