@@ -10,7 +10,9 @@ namespace Darp.Ble.HciHost;
 /// <summary> Provides windows specific implementation of a ble device </summary>
 public sealed class HciHostBleDevice(string port) : IPlatformSpecificBleDevice
 {
-    public Hci.HciHost Host { get; } = new(new H4TransportLayer(port, null), null);
+    public Hci.HciHost Host { get; } = new(new H4TransportLayer(port, logger: null), logger: null);
+
+    public string Name => port;
 
     /// <inheritdoc />
     public async Task<InitializeResult> InitializeAsync()
