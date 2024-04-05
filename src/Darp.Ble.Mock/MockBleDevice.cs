@@ -1,20 +1,20 @@
 using Darp.Ble.Data;
 using Darp.Ble.Implementation;
 
-namespace Darp.Ble.WinRT;
+namespace Darp.Ble.Mock;
 
 /// <summary> Provides windows specific implementation of a ble device </summary>
-public sealed class WinBleDevice : IPlatformSpecificBleDevice
+public sealed class MockBleDevice(BleBroadcasterMock broadcaster, BlePeripheralMock peripheral) : IPlatformSpecificBleDevice
 {
     /// <inheritdoc />
     public Task<InitializeResult> InitializeAsync()
     {
-        Observer = new WinBleObserver();
+        Observer = new MockBleObserver(broadcaster);
         return Task.FromResult(InitializeResult.Success);
     }
 
     /// <inheritdoc />
-    public string Name => "Windows";
+    public string Name => "Mock";
     /// <inheritdoc />
     public IPlatformSpecificBleObserver? Observer { get; private set; }
     /// <inheritdoc />
@@ -22,7 +22,7 @@ public sealed class WinBleDevice : IPlatformSpecificBleDevice
 
     /// <inheritdoc />
 #pragma warning disable CA1822
-    public string Identifier => "Darp.Ble.WinRT";
+    public string Identifier => "Darp.Ble.Mock";
 #pragma warning restore CA1822
 
     void IDisposable.Dispose()

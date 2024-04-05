@@ -69,6 +69,9 @@ public sealed class AdvertisingData : IReadOnlyList<(AdTypes Type, ReadOnlyMemor
         );
     }
 
+    /// <summary> Returns an empty advertising data object </summary>
+    public static AdvertisingData Empty { get; } = new(Array.Empty<byte>(), Array.Empty<(AdTypes, ReadOnlyMemory<byte>)>());
+
     /// <inheritdoc />
     public IEnumerator<(AdTypes Type, ReadOnlyMemory<byte> Bytes)> GetEnumerator() => _dataSections.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.Versioning;
 using Android;
 using Android.Bluetooth;
 using Android.Content.PM;
@@ -15,6 +14,8 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager) : IPlatf
 
     [MemberNotNullWhen(true, nameof(BluetoothAdapter))]
     public bool IsAvailable => BluetoothAdapter?.IsEnabled == true;
+
+    public string? Name => BluetoothAdapter?.Name;
 
     public Task<InitializeResult> InitializeAsync()
     {
@@ -36,12 +37,12 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager) : IPlatf
           && Application.Context.CheckSelfPermission(Manifest.Permission.AccessFineLocation) is Permission.Granted;
 
     public IPlatformSpecificBleObserver? Observer { get; private set; }
-    public object Central => throw new NotImplementedException();
+    public object Central => throw new NotSupportedException();
     public string Identifier => "Darp.Ble.Android";
 
     void IDisposable.Dispose()
     {
         _bluetoothManager.Dispose();
-        bluetoothManager.Dispose();
+        _bluetoothManager.Dispose();
     }
 }

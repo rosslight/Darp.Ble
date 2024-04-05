@@ -103,11 +103,14 @@ public readonly struct UInt48 : IComparable<UInt48>,
         return _b5.CompareTo(other._b5);
     }
 
+    /// <inheritdoc cref="INumberBase{TSelf}.Zero"/>/>
+    public static UInt48 Zero { get; } = new(0x00,0x00,0x00,0x00,0x00,0x00);
+
     /// <inheritdoc />
     public static UInt48 MaxValue { get; } = new(0xFF,0xFF,0xFF,0xFF,0xFF,0xFF);
 
     /// <inheritdoc />
-    public static UInt48 MinValue { get; } = new(0x00,0x00,0x00,0x00,0x00,0x00);
+    public static UInt48 MinValue => Zero;
 
     /// <inheritdoc />
     public bool Equals(UInt48 other) => _b0 == other._b0 && _b1 == other._b1 && _b2 == other._b2 && _b3 == other._b3 && _b4 == other._b4 && _b5 == other._b5;
