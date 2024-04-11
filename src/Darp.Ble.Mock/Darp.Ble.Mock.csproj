@@ -10,4 +10,7 @@
       <ProjectReference Include="..\Darp.Ble\Darp.Ble.csproj" />
     </ItemGroup>
 
+    <ItemGroup>
+      <PackageReference Include="Microsoft.Reactive.Testing" Version="6.0.0" />
+    </ItemGroup>
 </Project>

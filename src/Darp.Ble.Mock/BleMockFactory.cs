@@ -26,21 +26,28 @@ public sealed class BlePeripheralMock : IBlePeripheral
 public interface IBleBroadcaster
 {
     IDisposable Advertise(AdvertisingSet advertisingSet);
-    IDisposable Advertise(IObservable<AdvertisingData> source);
+    IDisposable Advertise(IObservable<AdvertisingData> source, AdvertisingParameters? parameters = null);
+}
+
+public sealed record AdvertisingParameters
+{
+    public required BleEventType Type { get; init; }
 }
 
 public sealed class BleBroadcasterMock : IBleBroadcaster
 {
-    public BleAddress OwnAddress { get; } = new(BleAddressType.Public, (UInt48)0xAABBCCDDEEFF);
-
     private IObservable<AdvertisingData>? _source;
+    private AdvertisingParameters? _parameters;
+
     public IObservable<IGapAdvertisement> GetAdvertisements(BleObserver observer)
     {
+        BleAddress ownAddress = new(BleAddressType.Public, (UInt48)0xAABBCCDDEEFF);
+
         IObservable<AdvertisingData> dataSource = _source ?? Observable.Empty<AdvertisingData>();
         return dataSource.Select(data => GapAdvertisement.FromExtendedAdvertisingReport(observer,
             DateTimeOffset.UtcNow,
-            BleEventType.None,
-            OwnAddress,
+            _parameters?.Type ?? BleEventType.None,
+            ownAddress,
             Physical.Le1M,
             Physical.NotAvailable,
             AdvertisingSId.NoAdIProvided,
@@ -52,9 +59,10 @@ public sealed class BleBroadcasterMock : IBleBroadcaster
     }
 
     public IDisposable Advertise(AdvertisingSet advertisingSet) => throw new NotImplementedException();
-    public IDisposable Advertise(IObservable<AdvertisingData> source)
+    public IDisposable Advertise(IObservable<AdvertisingData> source, AdvertisingParameters? parameters = null)
     {
         _source = source;
+        _parameters = parameters;
         return Disposable.Create(this, self => self._source = null);
     }
 }
@@ -91,12 +99,11 @@ public sealed class AdvertisingSet
 
 public sealed class BleMockFactory : IPlatformSpecificBleFactory
 {
-    private readonly BleBroadcasterMock _broadcaster = new();
-    private readonly BlePeripheralMock _peripheral = new();
-    public IBleBroadcaster Broadcaster => _broadcaster;
-    public IBlePeripheral Peripheral => _peripheral;
+    public BleBroadcasterMock Broadcaster { get; } = new();
+    public BlePeripheralMock Peripheral { get; } = new();
+
     public IEnumerable<IPlatformSpecificBleDevice> EnumerateDevices()
     {
-        yield return new MockBleDevice(_broadcaster, _peripheral);
+        yield return new MockBleDevice(Broadcaster, Peripheral);
     }
 }

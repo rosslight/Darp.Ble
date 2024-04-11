@@ -1,7 +1,9 @@
 using System.Reactive.Linq;
+using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Darp.Ble.Utils;
 using FluentAssertions;
+using Microsoft.Reactive.Testing;
 
 namespace Darp.Ble.Mock.Tests;
 /*
@@ -69,25 +71,38 @@ public sealed class UnitTest1
 {
     private const string AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName = "0201010908546573744E616D65";
 
-    [Fact]
-    public async Task Test1()
+    private static async Task<BleDevice> GetMockDeviceAsync(Action<BleMockFactory> configure)
     {
-        AdvertisingData adData = AdvertisingData.From(AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName.ToByteArray());
         BleManager bleManager = new BleManagerBuilder()
-            .With<BleMockFactory>(factory =>
-            {
-                IObservable<AdvertisingData> source = Observable.Interval(TimeSpan.FromMilliseconds(1000))
-                    .Select(_ => adData);
-                factory.Broadcaster.Advertise(source);
-            })
+            .With(configure)
             .CreateManager();
         BleDevice device = bleManager.EnumerateDevices().First();
+        InitializeResult result = await device.InitializeAsync();
+        result.Should().Be(InitializeResult.Success);
+        return device;
+    }
 
-        await device.InitializeAsync();
+    [Fact]
+    public async Task Observer_FirstAdvertisement_ShouldHaveCorrectData()
+    {
+        // Arrange
+        var scheduler = new TestScheduler();
+        AdvertisingData adData = AdvertisingData.From(AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName.ToByteArray());
+        void Configure(BleMockFactory factory)
+        {
+            IObservable<AdvertisingData> source = Observable.Interval(TimeSpan.FromMilliseconds(1000), scheduler)
+                .Select(_ => adData);
+            factory.Broadcaster.Advertise(source);
+        }
 
+        // Act
+        BleDevice device = await GetMockDeviceAsync(Configure);
         IGapAdvertisement adv = await device.Observer.RefCount().FirstAsync();
+
+        // Assert
         adv.Data.Should().BeEquivalentTo(adData);
     }
+
     [Fact]
     public async Task Test2()
     {
