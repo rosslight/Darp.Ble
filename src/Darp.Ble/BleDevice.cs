@@ -1,4 +1,5 @@
 using Darp.Ble.Data;
+using Darp.Ble.Exceptions;
 using Darp.Ble.Implementation;
 using Darp.Ble.Logger;
 
@@ -61,9 +62,9 @@ public sealed class BleDevice
 
     /// <summary> Returns a view of the device in Observer Role </summary>
     /// <exception cref="NotSupportedException"> Thrown when the device has not been initialized or the role is not supported </exception>
-    public BleObserver Observer => _bleObserver ?? throw new NotSupportedException();
+    public BleObserver Observer => _bleObserver ?? throw (IsInitialized ? new NotSupportedException() : new NotInitializedException(this));
     /// <summary> Returns a view of the device in Central Role </summary>
     /// <exception cref="NotSupportedException"> Thrown when the device has not been initialized or the role is not supported </exception>
-    public BleCentral Central => _bleCentral ?? throw new NotSupportedException();
+    public BleCentral Central => _bleCentral ?? throw (IsInitialized ? new NotSupportedException() : new NotInitializedException(this));
 }
 

@@ -35,9 +35,15 @@ public sealed record BleUuid : ISpanParsable<BleUuid>, ISpanFormattable, IUtf8Sp
 
     /// <summary> Initializes a BleUuid from a guid </summary>
     /// <param name="value"> The uuid </param>
+    /// <param name="inferType"> If true, the <see cref="BleUuidType"/> will be inferred from the given <paramref name="value"/> </param>
     /// <returns> The bleUuid with type <see cref="BleUuidType.Uuid128"/> </returns>
     [SetsRequiredMembers]
-    public BleUuid(Guid value) : this(BleUuidType.Uuid128, value) {}
+    public BleUuid(Guid value, bool inferType = false) : this(inferType ? InferType(value) : BleUuidType.Uuid128, value) {}
+
+    private static BleUuidType InferType(Guid value)
+    {
+        throw new NotImplementedException();
+    }
 
     private static Guid CreateGuid(uint a) => new(a, 0x0000, 0x1000, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB);
 

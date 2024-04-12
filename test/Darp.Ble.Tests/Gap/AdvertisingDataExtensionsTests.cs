@@ -23,7 +23,7 @@ public sealed class AdvertisingDataExtensionsTests
     private const string AdDataComplete16Uuids0XAabb = "0303BBAA";
     private const string AdDataComplete16Uuids0XAabbAacc = "0503BBAACCAA";
     private const string AdDataComplete32Uuids0XAabbccdd = "0505DDCCBBAA";
-    private const string AdDataComplete32Uuids0XAabbccddAabbccee = "0905DDCCBBAAEECCBBAA";
+    private const string AdDataComplete32Uuids0XAabbccddAabbccee = "0905DDCCBBAAEECCBBAA";  
     private const string AdDataComplete128Uuids = "1106FFEEDDCCBBAA99887766554433221100";
     private const string AdDataManufacturerSpecificApple = "07FF4C0012020002";
 
@@ -150,11 +150,11 @@ public sealed class AdvertisingDataExtensionsTests
         AdvertisingData data = AdvertisingData.From(sections.ToByteArray());
 
         // Act
-        bool result = data.TryGetManufacturerSpecificData(out (CompanyIdentifiers Company, byte[] Bytes)? manufacturerData);
+        bool result = data.TryGetManufacturerSpecificData(out (CompanyIdentifiers Company, byte[] Bytes) manufacturerData);
 
         // Assert
         result.Should().Be(expectedSuccess);
-        manufacturerData?.Company.Should().Be(expectedCompanyIdentifiers);
-        manufacturerData?.Bytes.Should().BeEquivalentTo(expectedDataString?.ToByteArray());
+        manufacturerData.Company.Should().Be(expectedCompanyIdentifiers);
+        manufacturerData.Bytes.Should().BeEquivalentTo(expectedDataString?.ToByteArray());
     }
 }

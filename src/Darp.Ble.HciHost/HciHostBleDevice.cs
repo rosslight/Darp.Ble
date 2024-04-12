@@ -30,7 +30,7 @@ public sealed class HciHostBleDevice(string port) : IPlatformSpecificBleDevice
     /// <inheritdoc />
     public IPlatformSpecificBleObserver? Observer { get; private set; }
     /// <inheritdoc />
-    public object Central => throw new NotImplementedException();
+    public IPlatformSpecificBleCentral Central => throw new NotSupportedException();
 
     /// <inheritdoc />
 #pragma warning disable CA1822

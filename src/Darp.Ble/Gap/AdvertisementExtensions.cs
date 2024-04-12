@@ -2,6 +2,8 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
+using Darp.Ble.Gatt.Server;
+using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Gap;
 
@@ -10,11 +12,12 @@ public static class AdvertisementExtensions
 {
     /// <summary> Connect to an advertisement </summary>
     /// <param name="advertisement"> The advertisement to connect to </param>
-    /// <param name="scanParameters"> The scan parameters to be used for initial discovery </param>
+    /// <param name="connectionParameters"> The connection parameters to be used </param>
     /// <returns> An observable of the connection </returns>
-    public static IObservable<object> Connect(this IGapAdvertisement advertisement, BleScanParameters scanParameters)
+    public static IObservable<GattServerDevice> Connect(this IGapAdvertisement advertisement,
+        BleConnectionParameters? connectionParameters = null)
     {
-        return Observable.Create<object>(observer =>
+        return Observable.Create<GattServerDevice>(observer =>
         {
             if (!advertisement.EventType.HasFlag(BleEventType.Connectable))
             {
@@ -22,16 +25,23 @@ public static class AdvertisementExtensions
                     "Unable to connect to advertisement as it is not connectable"));
                 return Disposable.Empty;
             }
-            if (advertisement.Observer.Device.Capabilities.HasFlag(Capabilities.Central))
+            BleDevice device = advertisement.Observer.Device;
+            if (device.Capabilities.HasFlag(Capabilities.Central))
             {
-                observer.OnError(new BleDeviceException(advertisement.Observer.Device,
+                observer.OnError(new BleDeviceException(device,
                     "Unable to connect to advertisement as it was captured by a device which does not support connections"));
                 return Disposable.Empty;
             }
-            BleCentral central = advertisement.Observer.Device.Central;
-            throw new NotImplementedException();
-            return Disposable.Empty;
+            BleCentral central = device.Central;
+            return central.ConnectToPeripheral(advertisement.Address, connectionParameters, scanParameters: null)
+                .Subscribe(observer);
         });
+    }
 
+    public static IObservable<GattServerDevice> ConnectToPeripheral<TAdv>(this IObservable<TAdv> source,
+        BleConnectionParameters? connectionParameters = null)
+        where TAdv : IGapAdvertisement
+    {
+        return source.SelectMany(x => x.Connect(connectionParameters));
     }
 }

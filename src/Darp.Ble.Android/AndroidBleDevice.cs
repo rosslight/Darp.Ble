@@ -37,7 +37,7 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager) : IPlatf
           && Application.Context.CheckSelfPermission(Manifest.Permission.AccessFineLocation) is Permission.Granted;
 
     public IPlatformSpecificBleObserver? Observer { get; private set; }
-    public object Central => throw new NotSupportedException();
+    public IPlatformSpecificBleCentral? Central { get; private set; }
     public string Identifier => "Darp.Ble.Android";
 
     void IDisposable.Dispose()

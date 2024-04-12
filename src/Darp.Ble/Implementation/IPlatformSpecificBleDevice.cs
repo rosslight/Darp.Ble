@@ -11,7 +11,7 @@ public interface IPlatformSpecificBleDevice : IDisposable
     /// <summary> Get access to the platform specific observer </summary>
     IPlatformSpecificBleObserver? Observer { get; }
     /// <summary> Get access to the platform specific central </summary>
-    object? Central { get; }
+    IPlatformSpecificBleCentral? Central { get; }
 
     /// <summary> An optional name </summary>
     string? Name { get; }

@@ -6,10 +6,14 @@ namespace Darp.Ble.Mock;
 /// <summary> Provides windows specific implementation of a ble device </summary>
 public sealed class MockBleDevice(BleBroadcasterMock broadcaster, BlePeripheralMock peripheral) : IPlatformSpecificBleDevice
 {
+    private readonly BleBroadcasterMock _broadcaster = broadcaster;
+    private readonly BlePeripheralMock _peripheral = peripheral;
+
     /// <inheritdoc />
     public Task<InitializeResult> InitializeAsync()
     {
-        Observer = new MockBleObserver(broadcaster);
+        Observer = new MockBleObserver(_broadcaster);
+        Central = new MockBleCentral(_peripheral);
         return Task.FromResult(InitializeResult.Success);
     }
 
@@ -18,7 +22,7 @@ public sealed class MockBleDevice(BleBroadcasterMock broadcaster, BlePeripheralM
     /// <inheritdoc />
     public IPlatformSpecificBleObserver? Observer { get; private set; }
     /// <inheritdoc />
-    public object Central => throw new NotSupportedException();
+    public IPlatformSpecificBleCentral? Central { get; private set; }
 
     /// <inheritdoc />
 #pragma warning disable CA1822

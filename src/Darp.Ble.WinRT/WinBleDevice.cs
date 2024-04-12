@@ -10,6 +10,7 @@ public sealed class WinBleDevice : IPlatformSpecificBleDevice
     public Task<InitializeResult> InitializeAsync()
     {
         Observer = new WinBleObserver();
+        Central = new WinBleCentral();
         return Task.FromResult(InitializeResult.Success);
     }
 
@@ -18,7 +19,7 @@ public sealed class WinBleDevice : IPlatformSpecificBleDevice
     /// <inheritdoc />
     public IPlatformSpecificBleObserver? Observer { get; private set; }
     /// <inheritdoc />
-    public object Central => throw new NotSupportedException();
+    public IPlatformSpecificBleCentral? Central { get; private set; }
 
     /// <inheritdoc />
 #pragma warning disable CA1822

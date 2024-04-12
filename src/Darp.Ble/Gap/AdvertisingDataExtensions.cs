@@ -118,12 +118,12 @@ public static class AdvertisingDataExtensions
     /// <param name="manufacturerData"> The resulting manufacturer specific data if the return is true </param>
     /// <returns> True, if the data type was present and AD data at least 2 bytes long </returns>
     public static bool TryGetManufacturerSpecificData(this AdvertisingData data,
-        [NotNullWhen(true)] out (CompanyIdentifiers Company, byte[] Bytes)? manufacturerData)
+        out (CompanyIdentifiers Company, byte[] Bytes) manufacturerData)
     {
         if (!data.TryGetFirstType(AdTypes.ManufacturerSpecificData, out ReadOnlyMemory<byte> bytes)
             || bytes.Length < 2)
         {
-            manufacturerData = null;
+            manufacturerData = default;
             return false;
         }
         var companyUuid = (CompanyIdentifiers)BitConverter.ToUInt16(bytes.Span);
