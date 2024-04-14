@@ -3,7 +3,6 @@ using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gatt.Server;
-using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Gap;
 
@@ -14,10 +13,10 @@ public static class AdvertisementExtensions
     /// <param name="advertisement"> The advertisement to connect to </param>
     /// <param name="connectionParameters"> The connection parameters to be used </param>
     /// <returns> An observable of the connection </returns>
-    public static IObservable<GattServerDevice> Connect(this IGapAdvertisement advertisement,
+    public static IObservable<GattServerPeer> Connect(this IGapAdvertisement advertisement,
         BleConnectionParameters? connectionParameters = null)
     {
-        return Observable.Create<GattServerDevice>(observer =>
+        return Observable.Create<GattServerPeer>(observer =>
         {
             if (!advertisement.EventType.HasFlag(BleEventType.Connectable))
             {
@@ -38,7 +37,7 @@ public static class AdvertisementExtensions
         });
     }
 
-    public static IObservable<GattServerDevice> ConnectToPeripheral<TAdv>(this IObservable<TAdv> source,
+    public static IObservable<GattServerPeer> ConnectToPeripheral<TAdv>(this IObservable<TAdv> source,
         BleConnectionParameters? connectionParameters = null)
         where TAdv : IGapAdvertisement
     {

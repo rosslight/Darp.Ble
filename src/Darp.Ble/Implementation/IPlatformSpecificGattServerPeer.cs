@@ -3,7 +3,7 @@ using Darp.Ble.Gatt;
 
 namespace Darp.Ble.Implementation;
 
-public interface IPlatformSpecificGattServerDevice : IAsyncDisposable
+public interface IPlatformSpecificGattServerPeer : IAsyncDisposable
 {
     IObservable<ConnectionStatus> WhenConnectionStatusChanged { get; }
     IObservable<IPlatformSpecificGattServerService> DiscoverServices();

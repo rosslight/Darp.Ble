@@ -4,10 +4,11 @@ public static class GattServerCharacteristicExtensions
 {
     public static IObservable<byte[]> OnNotify(this IGattServerCharacteristic<GattProperty.Notify> characteristic)
     {
-        throw new NotImplementedException();
+        return characteristic.Characteristic.OnNotify();
     }
-    public static Task WriteAsync(this IGattServerCharacteristic<GattProperty.Write> characteristic, byte[] bytes)
+
+    public static async Task WriteAsync(this IGattServerCharacteristic<GattProperty.Write> characteristic, byte[] bytes)
     {
-        throw new NotImplementedException();
+        await characteristic.Characteristic.WriteAsync(bytes);
     }
 }

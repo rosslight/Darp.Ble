@@ -12,11 +12,11 @@ using Darp.Ble.Implementation;
 namespace Darp.Ble.WinRT.Gatt;
 
 /// <inheritdoc />
-public sealed class WinGattServerDevice : IPlatformSpecificGattServerDevice
+public sealed class WinGattServerPeer : IPlatformSpecificGattServerPeer
 {
     private readonly BluetoothLEDevice _winDev;
 
-    internal WinGattServerDevice(BluetoothLEDevice winDev)
+    internal WinGattServerPeer(BluetoothLEDevice winDev)
     {
         _winDev = winDev;
         WhenConnectionStatusChanged = Observable.FromEventPattern<TypedEventHandler<BluetoothLEDevice, object>, BluetoothLEDevice, object>(

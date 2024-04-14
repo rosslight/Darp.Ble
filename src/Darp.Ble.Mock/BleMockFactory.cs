@@ -1,7 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using System.Reactive.Disposables;
+﻿using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
@@ -46,7 +44,7 @@ public sealed class BleBroadcasterMock : IBleBroadcaster
 public sealed class BleMockFactory : IPlatformSpecificBleFactory
 {
     public BleBroadcasterMock Broadcaster { get; } = new();
-    public BlePeripheralMock Peripheral { get; } = new();
+    public MockBlePeripheral Peripheral { get; } = new();
 
     public IEnumerable<IPlatformSpecificBleDevice> EnumerateDevices()
     {

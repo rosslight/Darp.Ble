@@ -48,7 +48,7 @@ public sealed class WinGattServerService(GattDeviceService winService) : IPlatfo
             .ToTask(cancellationToken);
     }
 
-    public async Task<IPlatformSpecificGattServerCharacteristic> DiscoverCharacteristicAsync(BleUuid uuid, CancellationToken cancellationToken)
+    public async Task<IPlatformSpecificGattServerCharacteristic?> DiscoverCharacteristicAsync(BleUuid uuid, CancellationToken cancellationToken)
     {
         return await DiscoverCharacteristic(() => _winService.GetCharacteristicsAsync())
             .FirstAsync()

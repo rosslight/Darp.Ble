@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Darp.Ble.Data;
@@ -29,11 +28,11 @@ public sealed class BleCentral
     /// <param name="address"> The address to be connected to </param>
     /// <param name="connectionParameters"> The connection parameters to be used </param>
     /// <param name="scanParameters"> The scan parameters to be used for initial discovery </param>
-    public IObservable<GattServerDevice> ConnectToPeripheral(BleAddress address, BleConnectionParameters? connectionParameters, BleScanParameters? scanParameters)
+    public IObservable<GattServerPeer> ConnectToPeripheral(BleAddress address, BleConnectionParameters? connectionParameters, BleScanParameters? scanParameters)
     {
         connectionParameters ??= new BleConnectionParameters();
         scanParameters ??= Device.Observer.Parameters;
-        return Observable.Create<GattServerDevice>(observer =>
+        return Observable.Create<GattServerPeer>(observer =>
         {
             if (connectionParameters.ConnectionInterval is < ConnectionTiming.MinValue or > ConnectionTiming.MaxValue)
             {
