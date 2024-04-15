@@ -11,15 +11,15 @@ namespace Darp.Ble;
 /// <summary> The central view of a ble device </summary>
 public sealed class BleCentral
 {
-    private readonly IPlatformSpecificBleCentral _central;
+    private readonly IPlatformSpecificBleCentral _specificCentral;
     private readonly IObserver<LogEvent>? _logger;
 
     /// <summary> The ble device </summary>
     public BleDevice Device { get; }
 
-    internal BleCentral(BleDevice device, IPlatformSpecificBleCentral central, IObserver<LogEvent>? logger)
+    internal BleCentral(BleDevice device, IPlatformSpecificBleCentral specificCentral, IObserver<LogEvent>? logger)
     {
-        _central = central;
+        _specificCentral = specificCentral;
         _logger = logger;
         Device = device;
     }
@@ -49,7 +49,8 @@ public sealed class BleCentral
                 observer.OnError(new BleCentralConnectionFailedException(this, "Supplied invalid scanWindow"));
                 return Disposable.Empty;
             }
-            return _central.ConnectToPeripheral(address, connectionParameters, scanParameters)
+            return _specificCentral.ConnectToPeripheral(address, connectionParameters, scanParameters)
+                .Select(x => new GattServerPeer(x.Item1, x.Item2))
                 .Subscribe(observer);
         });
     }

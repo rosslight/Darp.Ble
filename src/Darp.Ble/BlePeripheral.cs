@@ -12,6 +12,7 @@ public interface IPlatformSpecificBlePeripheral
     Task<IPlatformSpecificGattClientService> AddServiceAsync(BleUuid uuid, CancellationToken cancellationToken);
     IObservable<IGattClientPeer> WhenConnected { get; }
 }
+
 public sealed class BlePeripheral : IBlePeripheral
 {
     private readonly IObserver<LogEvent>? _logger;

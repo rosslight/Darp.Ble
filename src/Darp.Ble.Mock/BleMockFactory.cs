@@ -43,7 +43,7 @@ public sealed class BleBroadcasterMock : IBleBroadcaster
 
 public sealed class BleMockFactory : IPlatformSpecificBleFactory
 {
-    public required Func<BleBroadcasterMock, MockBlePeripheral, Task> OnConfigure { get; init; }
+    public required Func<BleBroadcasterMock, BlePeripheral, Task> OnConfigure { get; init; }
 
     public IEnumerable<IPlatformSpecificBleDevice> EnumerateDevices()
     {

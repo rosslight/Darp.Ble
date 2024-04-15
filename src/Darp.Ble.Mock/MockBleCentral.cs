@@ -1,7 +1,7 @@
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Darp.Ble.Data;
-using Darp.Ble.Gatt.Client;
-using Darp.Ble.Gatt.Server;
+using Darp.Ble.Gatt;
 using Darp.Ble.Implementation;
 using Darp.Ble.Mock.Gatt;
 
@@ -11,13 +11,17 @@ public sealed class MockBleCentral(MockBlePeripheral peripheralMock) : IPlatform
 {
     private readonly MockBlePeripheral _peripheralMock = peripheralMock;
 
-    public IObservable<GattServerPeer> ConnectToPeripheral(BleAddress address, BleConnectionParameters connectionParameters,
+    public IObservable<(IPlatformSpecificGattServerPeer, ConnectionStatus)> ConnectToPeripheral(BleAddress address,
+        BleConnectionParameters connectionParameters,
         BleScanParameters scanParameters)
     {
-        var gattClientPeer = new GattClientPeer(address, null!);
-        var mockDevice = new MockGattServerPeer(_peripheralMock, gattClientPeer);
-        var gattServerPeer = new GattServerPeer(mockDevice, isAlreadyConnected: true);
-        _peripheralMock.OnNextConnected(gattClientPeer);
-        return Observable.Return(gattServerPeer);
+        return Observable.Create<(IPlatformSpecificGattServerPeer, ConnectionStatus)>(observer =>
+        {
+            IMockBleConnection connection = new MockBleConnection();
+            var mockDevice = new MockGattServerPeer(connection);
+            _peripheralMock.OnCentralConnection(connection);
+            observer.OnNext((mockDevice, ConnectionStatus.Connected));
+            return Disposable.Empty;
+        });
     }
 }

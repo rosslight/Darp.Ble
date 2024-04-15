@@ -4,9 +4,9 @@ using Darp.Ble.Implementation;
 namespace Darp.Ble.Mock;
 
 /// <summary> Provides windows specific implementation of a ble device </summary>
-public sealed class MockBleDevice(Func<BleBroadcasterMock, MockBlePeripheral, Task> configure) : IPlatformSpecificBleDevice
+public sealed class MockBleDevice(Func<BleBroadcasterMock, BlePeripheral, Task> configure) : IPlatformSpecificBleDevice
 {
-    private readonly Func<BleBroadcasterMock, MockBlePeripheral, Task> _configure = configure;
+    private readonly Func<BleBroadcasterMock, BlePeripheral, Task> _configure = configure;
     private readonly BleBroadcasterMock _broadcaster = new();
     private readonly MockBlePeripheral _peripheral = new();
 
@@ -16,7 +16,7 @@ public sealed class MockBleDevice(Func<BleBroadcasterMock, MockBlePeripheral, Ta
     {
         Observer = new MockBleObserver(_broadcaster);
         Central = new MockBleCentral(_peripheral);
-        await _configure.Invoke(_broadcaster, _peripheral);
+        await _configure.Invoke(_broadcaster, new BlePeripheral(this, _peripheral, logger));
         return InitializeResult.Success;
     }
 

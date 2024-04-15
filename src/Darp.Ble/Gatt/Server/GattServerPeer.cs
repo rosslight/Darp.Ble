@@ -12,10 +12,10 @@ public sealed class GattServerPeer : IAsyncDisposable, IDisposable
     private readonly IPlatformSpecificGattServerPeer _platformSpecificGattServerPeer;
     private readonly BehaviorSubject<ConnectionStatus> _connectionSubject;
 
-    public GattServerPeer(IPlatformSpecificGattServerPeer platformSpecificGattServerPeer, bool isAlreadyConnected)
+    public GattServerPeer(IPlatformSpecificGattServerPeer platformSpecificGattServerPeer, ConnectionStatus initialConnectionStatus)
     {
         _platformSpecificGattServerPeer = platformSpecificGattServerPeer;
-        _connectionSubject = new BehaviorSubject<ConnectionStatus>(isAlreadyConnected ? ConnectionStatus.Connected : ConnectionStatus.Disconnected);
+        _connectionSubject = new BehaviorSubject<ConnectionStatus>(initialConnectionStatus);
         platformSpecificGattServerPeer.WhenConnectionStatusChanged.Subscribe(_connectionSubject);
     }
 

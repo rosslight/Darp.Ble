@@ -1,7 +1,7 @@
 using System.Reactive.Linq;
 using Windows.Devices.Bluetooth;
 using Darp.Ble.Data;
-using Darp.Ble.Gatt.Server;
+using Darp.Ble.Gatt;
 using Darp.Ble.Implementation;
 using Darp.Ble.WinRT.Gatt;
 
@@ -11,11 +11,11 @@ namespace Darp.Ble.WinRT;
 public sealed class WinBleCentral : IPlatformSpecificBleCentral
 {
     /// <inheritdoc />
-    public IObservable<GattServerPeer> ConnectToPeripheral(BleAddress address,
+    public IObservable<(IPlatformSpecificGattServerPeer, ConnectionStatus)> ConnectToPeripheral(BleAddress address,
         BleConnectionParameters connectionParameters,
         BleScanParameters scanParameters)
     {
-        return Observable.Create<GattServerPeer>(async (observer, cancellationToken) =>
+        return Observable.Create<(IPlatformSpecificGattServerPeer, ConnectionStatus)>(async (observer, cancellationToken) =>
         {
             BluetoothLEDevice? winDev = await BluetoothLEDevice.FromBluetoothAddressAsync(address.Value, address.Type switch
             {
@@ -29,7 +29,7 @@ public sealed class WinBleCentral : IPlatformSpecificBleCentral
                 return;
             }
             var winGattDevice = new WinGattServerPeer(winDev);
-            observer.OnNext(new GattServerPeer(winGattDevice, winDev.ConnectionStatus is BluetoothConnectionStatus.Connected));
+            observer.OnNext((winGattDevice, winDev.ConnectionStatus is BluetoothConnectionStatus.Connected ? ConnectionStatus.Connected : ConnectionStatus.Disconnected));
         });
     }
 }

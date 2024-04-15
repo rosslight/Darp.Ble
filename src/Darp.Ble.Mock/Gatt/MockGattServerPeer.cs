@@ -1,6 +1,5 @@
 using System.Reactive;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Client;
@@ -10,33 +9,44 @@ namespace Darp.Ble.Mock.Gatt;
 
 public sealed class MockGattServerPeer : IPlatformSpecificGattServerPeer
 {
-    private readonly Dictionary<BleUuid, MockGattServerService> _services;
-    private readonly Subject<Unit> _whenDisconnected = new();
+    private readonly MockGattClientPeer _clientPeer;
+    private readonly IMockBleConnection _connection;
 
-    internal MockGattServerPeer(MockBlePeripheral peripheralMock, GattClientPeer gattClientPeer)
+    internal MockGattServerPeer(MockGattClientPeer clientPeer)
     {
-        _services = peripheralMock.Services
-            .Select(x => (x.Key, new MockGattServerService(x.Key, x.Value)))
-            .ToDictionary();
-        WhenConnectionStatusChanged = _whenDisconnected.Select(_ => ConnectionStatus.Disconnected);
+        _clientPeer = clientPeer;
+        _connection = connection;
     }
 
-    public IObservable<ConnectionStatus> WhenConnectionStatusChanged { get; }
+    public IObservable<ConnectionStatus> WhenConnectionStatusChanged => _connection.WhenConnectionStatusChanged;
+    public IObservable<IPlatformSpecificGattServerService> DiscoverServices() => _clientPeer.GetServicesAsync();
+    public IObservable<IPlatformSpecificGattServerService> DiscoverService(BleUuid uuid) => _connection.GetServiceAsync(uuid);
+    public ValueTask DisposeAsync() => _connection.DisconnectAsync();
 
-    public IObservable<IPlatformSpecificGattServerService> DiscoverServices() => _services
-        .Select(x => x.Value)
-        .ToObservable();
+    public IObservable<Unit> WhenDisconnected => _connection.WhenConnectionStatusChanged
+        .Where(x => x is ConnectionStatus.Disconnected)
+        .Select(_ => Unit.Default);
+}
 
-    public IObservable<IPlatformSpecificGattServerService> DiscoverService(BleUuid uuid) => _services
-        .Where(x => x.Key == uuid)
-        .Select(x => x.Value)
-        .ToObservable();
+public sealed class MockGattClientPeer : IGattClientPeer
+{
+    private readonly IMockBleConnection _connection;
 
-    public ValueTask DisposeAsync()
+    public MockGattClientPeer(BleAddress address, IPlatformSpecificGattServerPeer serverPeer)
     {
-        _whenDisconnected.OnNext(Unit.Default);
-        return ValueTask.CompletedTask;
+        serverPeer.
+        _connection.WhenService.
+        Address = address;
     }
 
-    public IObservable<Unit> WhenDisconnected => _whenDisconnected;
+    public bool IsConnected => true;
+    public IObservable<Unit> WhenDisconnected => _connection.WhenConnectionStatusChanged
+        .Where(x => x is ConnectionStatus.Disconnected)
+        .Select(_ => Unit.Default);
+    public BleAddress Address { get; }
+
+    internal IObservable<IPlatformSpecificGattServerService> GetServicesAsync()
+    {
+        return Observable.Return()
+    }
 }
