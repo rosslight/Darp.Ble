@@ -1,6 +1,8 @@
 using System.Globalization;
 using System.Reactive.Linq;
 using Darp.Ble.Data;
+using Darp.Ble.Gatt;
+using Darp.Ble.Gatt.Client;
 using Serilog;
 using Serilog.Events;
 using Xunit.Abstractions;
@@ -39,7 +41,7 @@ public sealed class UnitTest1(ITestOutputHelper outputHelper)
         BleDevice device = manager.EnumerateDevices().First();
         await device.InitializeAsync();
         var service = await device.Peripheral.AddServiceAsync(new BleUuid(0x1234));
-        var characteristic = await service.AddCharacteristicAsync(new BleUuid(0x1234), GattProperty.Notify);
+        var characteristic = await service.AddCharacteristicAsync<Property.Notify>(new BleUuid(0x1234));
         await Task.Delay(1000);
     }
 }

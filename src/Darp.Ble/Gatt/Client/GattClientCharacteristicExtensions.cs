@@ -10,16 +10,16 @@ public static class GattClientCharacteristicExtensions
         CancellationToken cancellationToken = default)
         where TProp1 : IBleProperty
     {
-        return await service.AddCharacteristicAsync<TProp1>(characteristic.Uuid, characteristic.Property, cancellationToken);
+        GattClientCharacteristic clientCharacteristic = await service.AddCharacteristicAsync(characteristic.Uuid, characteristic.Property, cancellationToken);
+        return new GattClientCharacteristic<TProp1>(clientCharacteristic);
     }
 
     public static async Task<IGattClientCharacteristic<TProp1>> AddCharacteristicAsync<TProp1>(this GattClientService service,
         BleUuid uuid,
-        GattProperty property,
         CancellationToken cancellationToken = default)
         where TProp1 : IBleProperty
     {
-        GattClientCharacteristic clientCharacteristic = await service.AddCharacteristicAsync(uuid, property, cancellationToken);
+        GattClientCharacteristic clientCharacteristic = await service.AddCharacteristicAsync(uuid, TProp1.Property, cancellationToken);
         return new GattClientCharacteristic<TProp1>(clientCharacteristic);
     }
 
