@@ -9,13 +9,14 @@ using Windows.Storage.Streams;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Implementation;
+using Darp.Ble.Logger;
 
 namespace Darp.Ble.WinRT;
 
 public sealed class WinGattClientCharacteristic(
     WinGattClientService winService,
     GattLocalCharacteristic winCharacteristic)
-    : IPlatformSpecificGattClientCharacteristic
+    : GattClientCharacteristic
 {
     public WinGattClientService WinService { get; } = winService;
     private readonly GattLocalCharacteristic _winCharacteristic = winCharacteristic;
@@ -34,7 +35,7 @@ public sealed class WinGattClientCharacteristic(
             {
                 using Deferral deferral = pattern.EventArgs.GetDeferral();
                 GattWriteRequest request = await pattern.EventArgs.GetRequestAsync().AsTask(token);
-                IGattClientPeer peerClient = WinService.WinPeripheral.GetOrRegisterSession(pattern.EventArgs.Session);
+                IGattClientPeer peerClient = WinService.Peripheral.GetOrRegisterSession(pattern.EventArgs.Session);
                 DataReader reader = DataReader.FromBuffer(request.Value);
                 byte[] bytes = reader.DetachBuffer().ToArray();
                 GattProtocolStatus status = await callback(peerClient, bytes, token);
@@ -62,12 +63,12 @@ public sealed class WinGattClientCharacteristic(
     }
 }
 
-public sealed class WinGattClientService(WinBlePeripheral winPeripheral, GattLocalService winService) : IPlatformSpecificGattClientService
+public sealed class WinGattClientService(WinBlePeripheral peripheral, GattLocalService winService) : GattClientService(new BleUuid(winService.Uuid, true))
 {
-    public WinBlePeripheral WinPeripheral { get; } = winPeripheral;
     private readonly GattLocalService _winService = winService;
+    public WinBlePeripheral Peripheral { get; } = peripheral;
 
-    public async Task<IPlatformSpecificGattClientCharacteristic> AddCharacteristicAsync(BleUuid uuid, GattProperty gattProperty, CancellationToken cancellationToken)
+    protected override async Task<IGattClientCharacteristic> AddCharacteristicAsyncCore(BleUuid uuid, GattProperty gattProperty, CancellationToken cancellationToken)
     {
         GattLocalCharacteristicResult result = await _winService.CreateCharacteristicAsync(uuid.Value,
             new GattLocalCharacteristicParameters
@@ -79,18 +80,19 @@ public sealed class WinGattClientService(WinBlePeripheral winPeripheral, GattLoc
         {
             foreach (GattSubscribedClient senderSubscribedClient in sender.SubscribedClients)
             {
-                WinPeripheral.GetOrRegisterSession(senderSubscribedClient.Session);
+                Peripheral.GetOrRegisterSession(senderSubscribedClient.Session);
             }
         };
         return new WinGattClientCharacteristic(this, result.Characteristic);
     }
 }
 
-public sealed class WinBlePeripheral : IPlatformSpecificBlePeripheral
+public sealed class WinBlePeripheral(WinBleDevice device, IObserver<LogEvent>? logger) : BlePeripheral(device, logger)
 {
     private readonly Dictionary<BluetoothDeviceId, IGattClientPeer> _clients = new();
     private readonly Subject<IGattClientPeer> _whenConnected = new();
-    public async Task<IPlatformSpecificGattClientService> AddServiceAsync(BleUuid uuid,
+
+    protected override async Task<IGattClientService> AddServiceAsyncCore(BleUuid uuid,
         CancellationToken cancellationToken)
     {
         GattServiceProviderResult result = await GattServiceProvider
@@ -101,7 +103,7 @@ public sealed class WinBlePeripheral : IPlatformSpecificBlePeripheral
         return new WinGattClientService(this, provider.Service);
     }
 
-    public IObservable<IGattClientPeer> WhenConnected => throw new NotSupportedException("Windows does not support this feature");
+    public override IObservable<IGattClientPeer> WhenConnected => _whenConnected.AsObservable();
 
     internal IGattClientPeer GetOrRegisterSession(GattSession gattSession)
     {

@@ -1,21 +1,21 @@
 using System.Reactive.Linq;
 using Windows.Devices.Bluetooth;
 using Darp.Ble.Data;
-using Darp.Ble.Gatt;
-using Darp.Ble.Implementation;
+using Darp.Ble.Gatt.Server;
+using Darp.Ble.Logger;
 using Darp.Ble.WinRT.Gatt;
 
 namespace Darp.Ble.WinRT;
 
 /// <inheritdoc />
-public sealed class WinBleCentral : IPlatformSpecificBleCentral
+public sealed class WinBleCentral(BleDevice device, IObserver<LogEvent>? logger) : BleCentral(device, logger)
 {
     /// <inheritdoc />
-    public IObservable<(IPlatformSpecificGattServerPeer, ConnectionStatus)> ConnectToPeripheral(BleAddress address,
+    protected override IObservable<IGattServerPeer> ConnectToPeripheralCore(BleAddress address,
         BleConnectionParameters connectionParameters,
         BleScanParameters scanParameters)
     {
-        return Observable.Create<(IPlatformSpecificGattServerPeer, ConnectionStatus)>(async (observer, cancellationToken) =>
+        return Observable.Create<IGattServerPeer>(async (observer, cancellationToken) =>
         {
             BluetoothLEDevice? winDev = await BluetoothLEDevice.FromBluetoothAddressAsync(address.Value, address.Type switch
             {
@@ -28,8 +28,7 @@ public sealed class WinBleCentral : IPlatformSpecificBleCentral
                 observer.OnError(new Exception("PeripheralConnection: Failed!"));
                 return;
             }
-            var winGattDevice = new WinGattServerPeer(winDev);
-            observer.OnNext((winGattDevice, winDev.ConnectionStatus is BluetoothConnectionStatus.Connected ? ConnectionStatus.Connected : ConnectionStatus.Disconnected));
+            observer.OnNext(new WinGattServerPeer(winDev));
         });
     }
 }

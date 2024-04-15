@@ -3,6 +3,7 @@ using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
+using Darp.Ble.Logger;
 
 namespace Darp.Ble.Mock;
 
@@ -41,12 +42,12 @@ public sealed class BleBroadcasterMock : IBleBroadcaster
     }
 }
 
-public sealed class BleMockFactory : IPlatformSpecificBleFactory
+public sealed class BleMockFactory : IBleFactory
 {
     public required Func<BleBroadcasterMock, BlePeripheral, Task> OnConfigure { get; init; }
 
-    public IEnumerable<IPlatformSpecificBleDevice> EnumerateDevices()
+    public IEnumerable<IBleDevice> EnumerateDevices(IObserver<(BleDevice, LogEvent)>? logger)
     {
-        yield return new MockBleDevice(OnConfigure);
+        yield return new MockBleDevice(OnConfigure, logger);
     }
 }

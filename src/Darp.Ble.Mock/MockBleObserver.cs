@@ -1,17 +1,19 @@
 using Darp.Ble.Gap;
-using Darp.Ble.Implementation;
+using Darp.Ble.Logger;
 
 namespace Darp.Ble.Mock;
 
-public sealed class MockBleObserver(BleBroadcasterMock broadcaster) : IPlatformSpecificBleObserver
+public sealed class MockBleObserver(MockBleDevice device, BleBroadcasterMock broadcaster, IObserver<LogEvent>? logger) : BleObserver(device, logger)
 {
     private readonly BleBroadcasterMock _broadcaster = broadcaster;
 
-    public bool TryStartScan(BleObserver observer, out IObservable<IGapAdvertisement> observable)
+    protected override bool TryStartScanCore(out IObservable<IGapAdvertisement> observable)
     {
-        observable = _broadcaster.GetAdvertisements(observer);
+        observable = _broadcaster.GetAdvertisements(this);
         return true;
     }
 
-    public void StopScan() { }
+    protected override void StopScanCore()
+    {
+    }
 }

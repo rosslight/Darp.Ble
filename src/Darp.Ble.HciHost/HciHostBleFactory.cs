@@ -1,10 +1,11 @@
 using Darp.Ble.HciHost.Usb;
 using Darp.Ble.Implementation;
+using Darp.Ble.Logger;
 
 namespace Darp.Ble.HciHost;
 
 /// <summary> Search for the default windows ble device </summary>
-public sealed class HciHostBleFactory : IPlatformSpecificBleFactory
+public sealed class HciHostBleFactory : IBleFactory
 {
     private readonly string? _port;
 
@@ -21,11 +22,11 @@ public sealed class HciHostBleFactory : IPlatformSpecificBleFactory
     }
 
     /// <inheritdoc />
-    public IEnumerable<IPlatformSpecificBleDevice> EnumerateDevices()
+    public IEnumerable<IBleDevice> EnumerateDevices(IObserver<(BleDevice, LogEvent)>? logger)
     {
         if (_port is not null)
         {
-            yield return new HciHostBleDevice(_port);
+            yield return new HciHostBleDevice(_port, logger);
             yield break;
         }
 
@@ -34,7 +35,7 @@ public sealed class HciHostBleFactory : IPlatformSpecificBleFactory
                      .Where(x => x.VendorId is 0x2FE3 && x.ProductId is 0x0004))
         {
             if (portInfo.Port is null) continue;
-            yield return new HciHostBleDevice(portInfo.Port);
+            yield return new HciHostBleDevice(portInfo.Port, logger);
         }
     }
 }

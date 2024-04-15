@@ -3,11 +3,12 @@ using Android;
 using Android.Bluetooth;
 using Android.Content.PM;
 using Darp.Ble.Data;
-using Darp.Ble.Implementation;
+using Darp.Ble.Logger;
 
 namespace Darp.Ble.Android;
 
-public sealed class AndroidBleDevice(BluetoothManager bluetoothManager) : IPlatformSpecificBleDevice
+public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, IObserver<(BleDevice, LogEvent)>? logger)
+    : BleDevice(logger)
 {
     private readonly BluetoothManager _bluetoothManager = bluetoothManager;
     private BluetoothAdapter? BluetoothAdapter => _bluetoothManager.Adapter;
@@ -15,9 +16,9 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager) : IPlatf
     [MemberNotNullWhen(true, nameof(BluetoothAdapter))]
     public bool IsAvailable => BluetoothAdapter?.IsEnabled == true;
 
-    public string? Name => BluetoothAdapter?.Name;
+    public override string? Name => BluetoothAdapter?.Name;
 
-    public Task<InitializeResult> InitializeAsync(CancellationToken cancellationToken)
+    protected override Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
     {
         if (BluetoothAdapter is null) return Task.FromResult(InitializeResult.DeviceNotAvailable);
         if (!BluetoothAdapter.IsEnabled) return Task.FromResult(InitializeResult.DeviceNotEnabled);
@@ -26,7 +27,7 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager) : IPlatf
         if (HasScanPermissions()
             && BluetoothAdapter.BluetoothLeScanner is not null)
         {
-            Observer = new AndroidBleObserver(BluetoothAdapter.BluetoothLeScanner);
+            Observer = new AndroidBleObserver(this, BluetoothAdapter.BluetoothLeScanner, Logger);
         }
         return Task.FromResult(InitializeResult.Success);
     }
@@ -36,14 +37,10 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager) : IPlatf
         : Application.Context.CheckSelfPermission(Manifest.Permission.AccessCoarseLocation) is Permission.Granted
           && Application.Context.CheckSelfPermission(Manifest.Permission.AccessFineLocation) is Permission.Granted;
 
-    public IPlatformSpecificBleObserver? Observer { get; private set; }
-    public IPlatformSpecificBleCentral? Central { get; private set; }
-    public IPlatformSpecificBlePeripheral? Peripheral { get; private set; }
-    public string Identifier => "Darp.Ble.Android";
+    public override string Identifier => "Darp.Ble.Android";
 
-    void IDisposable.Dispose()
+    protected override void DisposeSyncInternal()
     {
-        _bluetoothManager.Dispose();
         _bluetoothManager.Dispose();
     }
 }

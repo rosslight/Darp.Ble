@@ -1,40 +1,28 @@
 using Darp.Ble.Data;
-using Darp.Ble.Implementation;
+using Darp.Ble.Logger;
 
 namespace Darp.Ble.Mock;
 
 /// <summary> Provides windows specific implementation of a ble device </summary>
-public sealed class MockBleDevice(Func<BleBroadcasterMock, BlePeripheral, Task> configure) : IPlatformSpecificBleDevice
+public sealed class MockBleDevice(
+    Func<BleBroadcasterMock, IBlePeripheral, Task> configure,
+    IObserver<(BleDevice, LogEvent)>? logger) : BleDevice(logger)
 {
-    private readonly Func<BleBroadcasterMock, BlePeripheral, Task> _configure = configure;
-    private readonly BleBroadcasterMock _broadcaster = new();
-    private readonly MockBlePeripheral _peripheral = new();
+    private readonly Func<BleBroadcasterMock, IBlePeripheral, Task> _configure = configure;
 
-    /// <param name="cancellationToken"></param>
     /// <inheritdoc />
-    public async Task<InitializeResult> InitializeAsync(CancellationToken cancellationToken)
+    protected override async Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
     {
-        Observer = new MockBleObserver(_broadcaster);
-        Central = new MockBleCentral(_peripheral);
-        await _configure.Invoke(_broadcaster, new BlePeripheral(this, _peripheral, logger));
+        var broadcaster = new BleBroadcasterMock();
+        Observer = new MockBleObserver(this, broadcaster, Logger);
+        Central = new MockBleCentral(this, Logger);
+        await _configure.Invoke(broadcaster, new MockBlePeripheral(this, Logger));
         return InitializeResult.Success;
     }
 
     /// <inheritdoc />
-    public string Name => "Mock";
-    /// <inheritdoc />
-    public IPlatformSpecificBleObserver? Observer { get; private set; }
-    /// <inheritdoc />
-    public IPlatformSpecificBleCentral? Central { get; private set; }
-    /// <inheritdoc />
-    public IPlatformSpecificBlePeripheral? Peripheral { get; }
+    public override string Name => "Mock";
 
     /// <inheritdoc />
-#pragma warning disable CA1822
-    public string Identifier => "Darp.Ble.Mock";
-#pragma warning restore CA1822
-
-    void IDisposable.Dispose()
-    {
-    }
+    public override string Identifier => "Darp.Ble.Mock";
 }

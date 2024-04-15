@@ -13,10 +13,10 @@ public static class AdvertisementExtensions
     /// <param name="advertisement"> The advertisement to connect to </param>
     /// <param name="connectionParameters"> The connection parameters to be used </param>
     /// <returns> An observable of the connection </returns>
-    public static IObservable<GattServerPeer> Connect(this IGapAdvertisement advertisement,
+    public static IObservable<IGattServerPeer> Connect(this IGapAdvertisement advertisement,
         BleConnectionParameters? connectionParameters = null)
     {
-        return Observable.Create<GattServerPeer>(observer =>
+        return Observable.Create<IGattServerPeer>(observer =>
         {
             if (!advertisement.EventType.HasFlag(BleEventType.Connectable))
             {
@@ -31,13 +31,13 @@ public static class AdvertisementExtensions
                     "Unable to connect to advertisement as it was captured by a device which does not support connections"));
                 return Disposable.Empty;
             }
-            BleCentral central = device.Central;
+            IBleCentral central = device.Central;
             return central.ConnectToPeripheral(advertisement.Address, connectionParameters, scanParameters: null)
                 .Subscribe(observer);
         });
     }
 
-    public static IObservable<GattServerPeer> ConnectToPeripheral<TAdv>(this IObservable<TAdv> source,
+    public static IObservable<IGattServerPeer> ConnectToPeripheral<TAdv>(this IObservable<TAdv> source,
         BleConnectionParameters? connectionParameters = null)
         where TAdv : IGapAdvertisement
     {

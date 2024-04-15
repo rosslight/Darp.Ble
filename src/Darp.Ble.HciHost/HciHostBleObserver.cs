@@ -7,16 +7,15 @@ using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.Hci.Payload.Result;
-using Darp.Ble.Implementation;
+using Darp.Ble.Logger;
 
 namespace Darp.Ble.HciHost;
 
 /// <inheritdoc />
-public sealed class HciHostBleObserver(HciHostBleDevice hciHostBleDevice) : IPlatformSpecificBleObserver
+public sealed class HciHostBleObserver(HciHostBleDevice device, IObserver<LogEvent>? logger) : BleObserver(device, logger)
 {
-    private readonly HciHostBleDevice _hciHostBleDevice = hciHostBleDevice;
-
-    private (HciSetExtendedScanParametersCommand, HciSetExtendedScanEnableCommand) CreateConfiguration(BleScanParameters parameters)
+    private readonly HciHostBleDevice _device = device;
+    private static (HciSetExtendedScanParametersCommand, HciSetExtendedScanEnableCommand) CreateConfiguration(BleScanParameters parameters)
     {
         bool isInActiveMode = parameters.ScanType is ScanType.Active;
         return (new HciSetExtendedScanParametersCommand
@@ -37,11 +36,11 @@ public sealed class HciHostBleObserver(HciHostBleDevice hciHostBleDevice) : IPla
     }
 
     /// <inheritdoc />
-    public bool TryStartScan(BleObserver observer, out IObservable<IGapAdvertisement> observable)
+    protected override bool TryStartScanCore(out IObservable<IGapAdvertisement> observable)
     {
-        (HciSetExtendedScanParametersCommand Parameters, HciSetExtendedScanEnableCommand Enable) commands = CreateConfiguration(observer.Parameters);
+        (HciSetExtendedScanParametersCommand Parameters, HciSetExtendedScanEnableCommand Enable) commands = CreateConfiguration(Parameters);
         //Logger.Verbose("AdvertisingScanner: Using scan params {@ScanParams} and enable params {@EnableParams}", commands.Parameters, commands.Enable);
-        HciSetExtendedScanParametersResult paramSetResult = _hciHostBleDevice.Host
+        HciSetExtendedScanParametersResult paramSetResult = _device.Host
             .QueryCommandCompletionAsync<HciSetExtendedScanParametersCommand, HciSetExtendedScanParametersResult>(commands.Parameters)
             .Result;
         if (paramSetResult.Status is not HciCommandStatus.Success)
@@ -49,7 +48,7 @@ public sealed class HciHostBleObserver(HciHostBleDevice hciHostBleDevice) : IPla
             observable = Observable.Throw<IGapAdvertisement>(new Exception($"Could not set scan parameters: {paramSetResult.Status}"));
             return false;
         }
-        HciSetExtendedScanEnableResult enableResult = _hciHostBleDevice.Host
+        HciSetExtendedScanEnableResult enableResult = _device.Host
             .QueryCommandCompletionAsync<HciSetExtendedScanEnableCommand, HciSetExtendedScanEnableResult>(commands.Enable)
             .Result;
         if (enableResult.Status is not HciCommandStatus.Success)
@@ -58,16 +57,16 @@ public sealed class HciHostBleObserver(HciHostBleDevice hciHostBleDevice) : IPla
             return false;
         }
 
-        observable = _hciHostBleDevice.Host
+        observable = _device.Host
             .WhenHciEventPackageReceived
             .SelectWhereEvent<HciLeExtendedAdvertisingReportEvent>()
             .SelectMany(x => x.Data.Reports)
-            .Select(x => OnAdvertisementReport(observer, x));
+            .Select(x => OnAdvertisementReport(this, x));
         return true;
     }
 
     /// <inheritdoc />
-    public void StopScan()
+    protected override void StopScanCore()
     {
         var stopScanCommand = new HciSetExtendedScanEnableCommand
         {
@@ -76,7 +75,7 @@ public sealed class HciHostBleObserver(HciHostBleDevice hciHostBleDevice) : IPla
             Duration = 0x0000,
             Period = 0x0000,
         };
-        _ = _hciHostBleDevice.Host.QueryCommandCompletionAsync<HciSetExtendedScanEnableCommand, HciSetExtendedScanEnableResult>(stopScanCommand);
+        _ = _device.Host.QueryCommandCompletionAsync<HciSetExtendedScanEnableCommand, HciSetExtendedScanEnableResult>(stopScanCommand);
     }
 
     private static GapAdvertisement OnAdvertisementReport(BleObserver bleObserver, HciLeExtendedAdvertisingReport report)

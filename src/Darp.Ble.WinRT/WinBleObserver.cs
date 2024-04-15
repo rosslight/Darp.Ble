@@ -9,12 +9,12 @@ using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
-using Darp.Ble.Implementation;
+using Darp.Ble.Logger;
 
 namespace Darp.Ble.WinRT;
 
 /// <inheritdoc />
-public sealed class WinBleObserver : IPlatformSpecificBleObserver
+public sealed class WinBleObserver(BleDevice device, IObserver<LogEvent>? logger) : BleObserver(device, logger)
 {
     private BluetoothLEAdvertisementWatcher? _watcher;
 
@@ -36,7 +36,7 @@ public sealed class WinBleObserver : IPlatformSpecificBleObserver
     }
 
     /// <inheritdoc />
-    public bool TryStartScan(BleObserver observer, out IObservable<IGapAdvertisement> observable)
+    protected override bool TryStartScanCore(out IObservable<IGapAdvertisement> observable)
     {
         CreateScanners(ScanType.Active);
         try
@@ -50,7 +50,7 @@ public sealed class WinBleObserver : IPlatformSpecificBleObserver
         }
         if (_watcher.Status is BluetoothLEAdvertisementWatcherStatus.Aborted)
         {
-            var exception = new BleObservationStartException(observer,
+            var exception = new BleObservationStartException(this,
                 $"Watcher status is '{_watcher.Status}' but should be 'Created'.\nTry restarting the bluetooth adapter!");
             observable = Observable.Throw<IGapAdvertisement>(exception);
             return false;
@@ -59,8 +59,8 @@ public sealed class WinBleObserver : IPlatformSpecificBleObserver
         {
             if (args.Error is BluetoothError.Success)
                 return;
-            var exception = new BleObservationStopException(observer, $"Watcher stopped with error {args.Error}");
-            observer.StopScan(exception);
+            var exception = new BleObservationStopException(this, $"Watcher stopped with error {args.Error}");
+            StopScan(exception);
         };
         observable = Observable.FromEventPattern<
                 TypedEventHandler<BluetoothLEAdvertisementWatcher, BluetoothLEAdvertisementReceivedEventArgs>,
@@ -68,12 +68,12 @@ public sealed class WinBleObserver : IPlatformSpecificBleObserver
                 BluetoothLEAdvertisementReceivedEventArgs>(
                 addHandler => _watcher.Received += addHandler,
                 removeHandler => _watcher.Received -= removeHandler)
-            .Select(adv => OnAdvertisementReport(observer, adv));
+            .Select(adv => OnAdvertisementReport(this, adv));
         return true;
     }
 
     /// <inheritdoc />
-    public void StopScan()
+    protected override void StopScanCore()
     {
         _watcher?.Stop();
         _watcher = null;

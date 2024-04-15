@@ -1,38 +1,39 @@
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
-using Darp.Ble.Implementation;
 
 namespace Darp.Ble;
 
 public interface IGattClientService
 {
     BleUuid Uuid { get; }
-    IReadOnlyDictionary<BleUuid, GattClientCharacteristic> Characteristics { get; }
+    IReadOnlyDictionary<BleUuid, IGattClientCharacteristic> Characteristics { get; }
+
+    Task<IGattClientCharacteristic> AddCharacteristicAsync(BleUuid uuid, GattProperty property, CancellationToken cancellationToken);
 }
 
 public interface IBlePeripheral
 {
-    IReadOnlyDictionary<BleUuid, GattClientService> Services { get; }
-    Task<GattClientService> AddServiceAsync(BleUuid uuid, CancellationToken cancellationToken = default);
+    IReadOnlyDictionary<BleUuid, IGattClientService> Services { get; }
+    Task<IGattClientService> AddServiceAsync(BleUuid uuid, CancellationToken cancellationToken = default);
     IObservable<IGattClientPeer> WhenConnected { get; }
     IObservable<IGattClientPeer> WhenDisconnected { get; }
 }
 
-public sealed class GattClientService(BleUuid uuid, IPlatformSpecificGattClientService service)
+public abstract class GattClientService(BleUuid uuid) : IGattClientService
 {
-    private readonly Dictionary<BleUuid, GattClientCharacteristic> _characteristics = new();
-    private readonly IPlatformSpecificGattClientService _service = service;
+    private readonly Dictionary<BleUuid, IGattClientCharacteristic> _characteristics = new();
 
     public BleUuid Uuid { get; } = uuid;
-    public IReadOnlyDictionary<BleUuid, GattClientCharacteristic> Characteristics => _characteristics;
+    public IReadOnlyDictionary<BleUuid, IGattClientCharacteristic> Characteristics => _characteristics;
 
-    public async Task<GattClientCharacteristic> AddCharacteristicAsync(BleUuid uuid,
+    public async Task<IGattClientCharacteristic> AddCharacteristicAsync(BleUuid uuid,
         GattProperty property,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken)
     {
-        IPlatformSpecificGattClientCharacteristic specificCharacteristic = await _service.AddCharacteristicAsync(uuid, property, cancellationToken);
-        var characteristic = new GattClientCharacteristic(uuid, specificCharacteristic);
+        IGattClientCharacteristic characteristic = await AddCharacteristicAsyncCore(uuid, property, cancellationToken);
         _characteristics[characteristic.Uuid] = characteristic;
         return characteristic;
     }
+
+    protected abstract Task<IGattClientCharacteristic> AddCharacteristicAsyncCore(BleUuid uuid, GattProperty gattProperty, CancellationToken cancellationToken);
 }

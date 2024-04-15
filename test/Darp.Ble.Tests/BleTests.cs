@@ -32,7 +32,7 @@ public sealed class BleTests
             .CreateManager();
     }
 
-    private sealed class SubstituteBleFactory : IPlatformSpecificBleFactory
+    private sealed class SubstituteBleFactory : IBleFactory
     {
         public IEnumerable<IPlatformSpecificBleDevice> EnumerateDevices()
         {

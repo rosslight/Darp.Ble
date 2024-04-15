@@ -5,6 +5,7 @@ using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Implementation;
+using Darp.Ble.Logger;
 using Darp.Ble.Mock.Gatt;
 
 namespace Darp.Ble.Mock;
@@ -64,7 +65,7 @@ public sealed class MockBleConnection : IMockBleConnection
     }
 }
 
-public sealed class MockBlePeripheral : IPlatformSpecificBlePeripheral
+public sealed class MockBlePeripheral(MockBleDevice device, IObserver<LogEvent>? logger) : BlePeripheral(device, logger)
 {
     private readonly Dictionary<BleAddress, IGattClientPeer> _clients = new();
     private readonly Subject<IGattClientPeer> _whenConnected = new();

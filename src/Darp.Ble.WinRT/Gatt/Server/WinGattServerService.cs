@@ -6,18 +6,18 @@ using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Windows.Devices.Enumeration;
 using Windows.Foundation;
 using Darp.Ble.Data;
-using Darp.Ble.Implementation;
+using Darp.Ble.Gatt.Server;
 
 namespace Darp.Ble.WinRT.Gatt;
 
-public sealed class WinGattServerService(GattDeviceService winService) : IPlatformSpecificGattServerService
+public sealed class WinGattServerService(GattDeviceService winService)
+    : GattServerService(new BleUuid(winService.Uuid, inferType: true))
 {
     private readonly GattDeviceService _winService = winService;
-    public BleUuid Uuid { get; } = new(winService.Uuid, inferType: true);
 
-    private IObservable<IPlatformSpecificGattServerCharacteristic> DiscoverCharacteristic(Func<IAsyncOperation<GattCharacteristicsResult>> getServices)
+    private IObservable<IGattServerCharacteristic> DiscoverCharacteristic(Func<IAsyncOperation<GattCharacteristicsResult>> getServices)
     {
-        return Observable.Create<IPlatformSpecificGattServerCharacteristic>(async (observer, cancellationToken) =>
+        return Observable.Create<IGattServerCharacteristic>(async (observer, cancellationToken) =>
         {
             DeviceAccessStatus accessStatus = await _winService.RequestAccessAsync().AsTask(cancellationToken);
             if (accessStatus is not DeviceAccessStatus.Allowed)
@@ -42,16 +42,24 @@ public sealed class WinGattServerService(GattDeviceService winService) : IPlatfo
         });
     }
 
-    public async Task DiscoverCharacteristicsAsync(CancellationToken cancellationToken)
+    /// <inheritdoc />
+    protected override async Task DiscoverCharacteristicsInternalAsync(CancellationToken cancellationToken)
     {
         await DiscoverCharacteristic(() => _winService.GetCharacteristicsAsync())
             .ToTask(cancellationToken);
     }
 
-    public async Task<IPlatformSpecificGattServerCharacteristic?> DiscoverCharacteristicAsync(BleUuid uuid, CancellationToken cancellationToken)
+    /// <inheritdoc />
+    protected override async Task<IGattServerCharacteristic?> DiscoverCharacteristicInternalAsync(BleUuid uuid, CancellationToken cancellationToken)
     {
         return await DiscoverCharacteristic(() => _winService.GetCharacteristicsAsync())
             .FirstAsync()
             .ToTask(cancellationToken);
+    }
+
+    /// <inheritdoc />
+    protected override void DisposeSyncInternal()
+    {
+        _winService.Dispose();
     }
 }

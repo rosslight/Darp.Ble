@@ -3,36 +3,34 @@ using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gatt.Server;
-using Darp.Ble.Implementation;
 using Darp.Ble.Logger;
 
 namespace Darp.Ble;
 
-/// <summary> The central view of a ble device </summary>
-public sealed class BleCentral
+public interface IBleCentral
 {
-    private readonly IPlatformSpecificBleCentral _specificCentral;
-    private readonly IObserver<LogEvent>? _logger;
-
-    /// <summary> The ble device </summary>
-    public BleDevice Device { get; }
-
-    internal BleCentral(BleDevice device, IPlatformSpecificBleCentral specificCentral, IObserver<LogEvent>? logger)
-    {
-        _specificCentral = specificCentral;
-        _logger = logger;
-        Device = device;
-    }
-
     /// <summary> Connect to remote peripheral </summary>
     /// <param name="address"> The address to be connected to </param>
     /// <param name="connectionParameters"> The connection parameters to be used </param>
     /// <param name="scanParameters"> The scan parameters to be used for initial discovery </param>
-    public IObservable<GattServerPeer> ConnectToPeripheral(BleAddress address, BleConnectionParameters? connectionParameters, BleScanParameters? scanParameters)
+    IObservable<IGattServerPeer> ConnectToPeripheral(BleAddress address, BleConnectionParameters? connectionParameters,
+        BleScanParameters? scanParameters);
+}
+
+/// <summary> The central view of a ble device </summary>
+public abstract class BleCentral(BleDevice device, IObserver<LogEvent>? logger) : IBleCentral
+{
+    private readonly IObserver<LogEvent>? _logger = logger;
+
+    /// <summary> The ble device </summary>
+    public BleDevice Device { get; } = device;
+
+    /// <inheritdoc />
+    public IObservable<IGattServerPeer> ConnectToPeripheral(BleAddress address, BleConnectionParameters? connectionParameters, BleScanParameters? scanParameters)
     {
         connectionParameters ??= new BleConnectionParameters();
         scanParameters ??= Device.Observer.Parameters;
-        return Observable.Create<GattServerPeer>(observer =>
+        return Observable.Create<IGattServerPeer>(observer =>
         {
             if (connectionParameters.ConnectionInterval is < ConnectionTiming.MinValue or > ConnectionTiming.MaxValue)
             {
@@ -49,15 +47,12 @@ public sealed class BleCentral
                 observer.OnError(new BleCentralConnectionFailedException(this, "Supplied invalid scanWindow"));
                 return Disposable.Empty;
             }
-            return _specificCentral.ConnectToPeripheral(address, connectionParameters, scanParameters)
-                .Select(x => new GattServerPeer(x.Item1, x.Item2))
+            return ConnectToPeripheralCore(address, connectionParameters, scanParameters)
                 .Subscribe(observer);
         });
     }
-}
 
-public interface IGattServerService<TService> : IGattServerService
-    where TService : IGattServerService<TService>
-{
-    static abstract Task<TService> CreateAsync(IPlatformSpecificGattServerService platformSpecificService);
+    protected abstract IObservable<IGattServerPeer> ConnectToPeripheralCore(BleAddress address,
+        BleConnectionParameters connectionParameters,
+        BleScanParameters scanParameters);
 }

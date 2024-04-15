@@ -7,12 +7,12 @@ using Windows.Devices.Enumeration;
 using Windows.Foundation;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
-using Darp.Ble.Implementation;
+using Darp.Ble.Gatt.Server;
 
 namespace Darp.Ble.WinRT.Gatt;
 
 /// <inheritdoc />
-public sealed class WinGattServerPeer : IPlatformSpecificGattServerPeer
+public sealed class WinGattServerPeer : GattServerPeer
 {
     private readonly BluetoothLEDevice _winDev;
 
@@ -29,11 +29,11 @@ public sealed class WinGattServerPeer : IPlatformSpecificGattServerPeer
     }
 
     /// <inheritdoc />
-    public IObservable<ConnectionStatus> WhenConnectionStatusChanged { get; }
+    public override IObservable<ConnectionStatus> WhenConnectionStatusChanged { get; }
 
-    private IObservable<IPlatformSpecificGattServerService> DiscoverService(Func<IAsyncOperation<GattDeviceServicesResult>> getServices)
+    private IObservable<IGattServerService> DiscoverService(Func<IAsyncOperation<GattDeviceServicesResult>> getServices)
     {
-        return Observable.Create<IPlatformSpecificGattServerService>(async (observer, cancellationToken) =>
+        return Observable.Create<IGattServerService>(async (observer, cancellationToken) =>
         {
             DeviceAccessStatus accessStatus = await _winDev.RequestAccessAsync().AsTask(cancellationToken);
             if (accessStatus is not DeviceAccessStatus.Allowed)
@@ -59,21 +59,20 @@ public sealed class WinGattServerPeer : IPlatformSpecificGattServerPeer
     }
 
     /// <inheritdoc />
-    public IObservable<IPlatformSpecificGattServerService> DiscoverServices()
+    protected override IObservable<IGattServerService> DiscoverServicesInternal()
     {
         return DiscoverService(() => _winDev.GetGattServicesAsync());
     }
 
     /// <inheritdoc />
-    public IObservable<IPlatformSpecificGattServerService> DiscoverService(BleUuid uuid)
+    protected override IObservable<IGattServerService> DiscoverServiceInternal(BleUuid uuid)
     {
         return DiscoverService(() => _winDev.GetGattServicesForUuidAsync(uuid.Value));
     }
 
     /// <inheritdoc />
-    public ValueTask DisposeAsync()
+    protected override void DisposeSyncInternal()
     {
         _winDev.Dispose();
-        return ValueTask.CompletedTask;
     }
 }

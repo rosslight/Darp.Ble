@@ -3,20 +3,20 @@ using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Result;
 using Darp.Ble.Hci.Transport;
-using Darp.Ble.Implementation;
+using Darp.Ble.Logger;
 
 namespace Darp.Ble.HciHost;
 
 /// <summary> Provides windows specific implementation of a ble device </summary>
-public sealed class HciHostBleDevice(string port) : IPlatformSpecificBleDevice
+public sealed class HciHostBleDevice(string port, IObserver<(BleDevice, LogEvent)>? logger) : BleDevice(logger)
 {
     public Hci.HciHost Host { get; } = new(new H4TransportLayer(port, logger: null), logger: null);
 
-    public string Name => port;
+    public override string Name => port;
 
     /// <param name="cancellationToken"></param>
     /// <inheritdoc />
-    public async Task<InitializeResult> InitializeAsync(CancellationToken cancellationToken)
+    protected override async Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
     {
         Host.Initialize();
         await Host.QueryCommandCompletionAsync<HciResetCommand, HciResetResult>(cancellationToken: cancellationToken);
@@ -24,21 +24,12 @@ public sealed class HciHostBleDevice(string port) : IPlatformSpecificBleDevice
         await Host.QueryCommandCompletionAsync<HciSetEventMaskCommand, HciSetEventMaskResult>(new HciSetEventMaskCommand((EventMask)0x3fffffffffffffff), cancellationToken: cancellationToken);
         await Host.QueryCommandCompletionAsync<HciLeSetEventMaskCommand, HciLeSetEventMaskResult>(new HciLeSetEventMaskCommand((LeEventMask)0xf0ffff), cancellationToken: cancellationToken);
         await Host.QueryCommandCompletionAsync<HciLeSetRandomAddressCommand, HciLeSetRandomAddressResult>(new HciLeSetRandomAddressCommand(0xF0F1F2F3F4F5), cancellationToken: cancellationToken);
-        Observer = new HciHostBleObserver(this);
+        Observer = new HciHostBleObserver(this, Logger);
         return InitializeResult.Success;
     }
 
     /// <inheritdoc />
-    public IPlatformSpecificBleObserver? Observer { get; private set; }
-    /// <inheritdoc />
-    public IPlatformSpecificBleCentral Central => throw new NotSupportedException();
-    /// <inheritdoc />
-    public IPlatformSpecificBlePeripheral? Peripheral { get; }
+    public override string Identifier => "Darp.Ble.WinRT";
 
-    /// <inheritdoc />
-#pragma warning disable CA1822
-    public string Identifier => "Darp.Ble.WinRT";
-#pragma warning restore CA1822
-
-    public void Dispose() => Host.Dispose();
+    protected override void DisposeSyncInternal() => Host.Dispose();
 }

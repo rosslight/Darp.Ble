@@ -7,8 +7,10 @@ public static class GattServerCharacteristicExtensions
         return characteristic.Characteristic.OnNotify();
     }
 
-    public static async Task WriteAsync(this IGattServerCharacteristic<Property.Write> characteristic, byte[] bytes)
+    public static async Task WriteAsync(this IGattServerCharacteristic<Property.Write> characteristic,
+        byte[] bytes,
+        CancellationToken cancellationToken = default)
     {
-        await characteristic.Characteristic.WriteAsync(bytes);
+        await characteristic.Characteristic.WriteAsync(bytes, cancellationToken);
     }
 }

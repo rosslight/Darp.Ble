@@ -5,16 +5,17 @@ using Android.Locations;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
-using Darp.Ble.Implementation;
+using Darp.Ble.Logger;
 
 namespace Darp.Ble.Android;
 
-public sealed class AndroidBleObserver(BluetoothLeScanner bluetoothLeScanner) : IPlatformSpecificBleObserver, IDisposable
+public sealed class AndroidBleObserver(BleDevice device, BluetoothLeScanner bluetoothLeScanner, IObserver<LogEvent>? logger)
+    : BleObserver(device, logger)
 {
     private readonly BluetoothLeScanner _bluetoothLeScanner = bluetoothLeScanner;
     private BleObserverScanCallback? _scanCallback;
 
-    public bool TryStartScan(BleObserver observer, out IObservable<IGapAdvertisement> observable)
+    protected override bool TryStartScanCore(out IObservable<IGapAdvertisement> observable)
     {
         // Android versions before Android12 (API version <= 30) did have to Location services at all times,
         // when targeting >= 31, there is an option to assert that there is no usage of location in the manifest
@@ -22,11 +23,11 @@ public sealed class AndroidBleObserver(BluetoothLeScanner bluetoothLeScanner) : 
         // TODO Best case: We do not throw and just warn the user about possibly inappropriate usage. How to do that in a cross-platform way?
         if (!AreLocationServicesEnabled())
         {
-            observable = Observable.Throw<IGapAdvertisement>(new BleObservationStartException(observer,
+            observable = Observable.Throw<IGapAdvertisement>(new BleObservationStartException(this,
                 "Location services are not enabled. Please check in the settings"));
             return false;
         }
-        _scanCallback = new BleObserverScanCallback(observer);
+        _scanCallback = new BleObserverScanCallback(this);
         ScanSettings? scanSettings = new ScanSettings.Builder()
             .SetCallbackType(ScanCallbackType.AllMatches)
             ?.SetMatchMode(BluetoothScanMatchMode.Aggressive)
@@ -34,11 +35,11 @@ public sealed class AndroidBleObserver(BluetoothLeScanner bluetoothLeScanner) : 
             ?.Build();
         _bluetoothLeScanner.StartScan(filters: null, scanSettings, _scanCallback);
         observable = _scanCallback
-            .Select(x => OnAdvertisementReport(observer, x));
+            .Select(x => OnAdvertisementReport(this, x));
         return true;
     }
 
-    public void StopScan()
+    protected override void StopScanCore()
     {
         if (_scanCallback is null)
             return;
@@ -94,6 +95,4 @@ public sealed class AndroidBleObserver(BluetoothLeScanner bluetoothLeScanner) : 
             return false;
         }
     }
-
-    void IDisposable.Dispose() => StopScan();
 }

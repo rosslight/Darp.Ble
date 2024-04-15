@@ -1,36 +1,23 @@
 using Darp.Ble.Data;
-using Darp.Ble.Implementation;
+using Darp.Ble.Logger;
 
 namespace Darp.Ble.WinRT;
 
 /// <summary> Provides windows specific implementation of a ble device </summary>
-public sealed class WinBleDevice : IPlatformSpecificBleDevice
+public sealed class WinBleDevice(IObserver<(BleDevice, LogEvent)>? logger) : BleDevice(logger)
 {
-    /// <param name="cancellationToken"></param>
     /// <inheritdoc />
-    public Task<InitializeResult> InitializeAsync(CancellationToken cancellationToken)
+    protected override Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
     {
-        Observer = new WinBleObserver();
-        Central = new WinBleCentral();
-        Peripheral = new WinBlePeripheral();
+        Observer = new WinBleObserver(this, Logger);
+        Central = new WinBleCentral(this, Logger);
+        Peripheral = new WinBlePeripheral(this, Logger);
         return Task.FromResult(InitializeResult.Success);
     }
 
     /// <inheritdoc />
-    public string Name => "Windows";
-    /// <inheritdoc />
-    public IPlatformSpecificBleObserver? Observer { get; private set; }
-    /// <inheritdoc />
-    public IPlatformSpecificBleCentral? Central { get; private set; }
-    /// <inheritdoc />
-    public IPlatformSpecificBlePeripheral? Peripheral { get; private set; }
+    public override string Name => "Windows";
 
     /// <inheritdoc />
-#pragma warning disable CA1822
-    public string Identifier => "Darp.Ble.WinRT";
-#pragma warning restore CA1822
-
-    void IDisposable.Dispose()
-    {
-    }
+    public override string Identifier => "Darp.Ble.WinRT";
 }

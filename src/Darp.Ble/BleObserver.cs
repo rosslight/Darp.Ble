@@ -4,41 +4,36 @@ using System.Reactive.Subjects;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
-using Darp.Ble.Implementation;
 using Darp.Ble.Logger;
 
 namespace Darp.Ble;
 
-/// <summary> The ble observer </summary>
-public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
+public interface IBleObserver : IConnectableObservable<IGapAdvertisement>, IAsyncDisposable
 {
-    private readonly IPlatformSpecificBleObserver _platformSpecificObserver;
-    private readonly IObserver<LogEvent>? _logger;
+    
+}
+
+/// <summary> The ble observer </summary>
+public abstract class BleObserver(BleDevice device, IObserver<LogEvent>? logger) : IBleObserver
+{
+    private readonly IObserver<LogEvent>? _logger = logger;
     private readonly List<IObserver<IGapAdvertisement>> _observers = [];
     private IObservable<IGapAdvertisement>? _scanObservable;
     private IDisposable? _scanDisposable;
     private readonly object _lockObject = new();
 
     /// <summary> The ble device </summary>
-    public BleDevice Device { get; }
+    public BleDevice Device { get; } = device;
     /// <summary> The parameters used for the current scan </summary>
-    public BleScanParameters Parameters { get; private set; }
+    public BleScanParameters Parameters { get; private set; } = new()
+    {
+        ScanType = ScanType.Passive,
+        ScanInterval = ScanTiming.Ms100,
+        ScanWindow = ScanTiming.Ms100,
+    };
 
     /// <summary> True if the observer is currently scanning </summary>
     public bool IsScanning => _scanDisposable is not null;
-
-    internal BleObserver(BleDevice device, IPlatformSpecificBleObserver platformSpecificObserver, IObserver<LogEvent>? logger)
-    {
-        Device = device;
-        _platformSpecificObserver = platformSpecificObserver;
-        _logger = logger;
-        Parameters = new BleScanParameters
-        {
-            ScanType = ScanType.Passive,
-            ScanInterval = ScanTiming.Ms100,
-            ScanWindow = ScanTiming.Ms100,
-        };
-    }
 
     /// <summary>
     /// Set a new configuration for advertising observation. Setting is only allowed while observer is not scanning
@@ -65,12 +60,14 @@ public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
                 foreach (IObserver<IGapAdvertisement> observer in _observers.ToArray()) observer.OnError(reason);
                 _observers.Clear();
             }
-            _platformSpecificObserver.StopScan();
+            StopScanCore();
             _scanDisposable?.Dispose();
             _scanDisposable = null;
             _scanObservable = null;
         }
     }
+
+    protected abstract void StopScanCore();
 
     /// <summary>
     /// Subscribe to the ble observer. Will not start the observation until <see cref="Connect"/> was called.
@@ -97,15 +94,13 @@ public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
     /// Start a new connection. All observers will receive advertisement events.
     /// If called while an observation is running nothing happens and the disposable to cancel the scan is returned
     /// </summary>
-    /// <returns>
-    /// Disposable used to stop the advertisement scan. Subscribed observables will be completed.
-    /// </returns>
+    /// <returns> Disposable used to stop the advertisement scan. Subscribed observables will be completed. </returns>
     public IDisposable Connect()
     {
         lock (_lockObject)
         {
             if (_scanDisposable is not null) return _scanDisposable;
-            bool startScanSuccessful = _platformSpecificObserver.TryStartScan(this, out IObservable<IGapAdvertisement> observable);
+            bool startScanSuccessful = TryStartScanCore(out IObservable<IGapAdvertisement> observable);
 
             observable = observable
                 .Catch((Exception exception) => Observable.Throw<IGapAdvertisement>(exception switch
@@ -126,4 +121,18 @@ public sealed class BleObserver : IConnectableObservable<IGapAdvertisement>
             return _scanDisposable;
         }
     }
+
+    protected abstract bool TryStartScanCore(out IObservable<IGapAdvertisement> observable);
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        DisposeSyncInternal();
+        await DisposeInternalAsync();
+        GC.SuppressFinalize(this);
+    }
+    /// <inheritdoc cref="DisposeAsync"/>
+    protected virtual ValueTask DisposeInternalAsync() => ValueTask.CompletedTask;
+    /// <inheritdoc cref="IDisposable.Dispose"/>
+    protected virtual void DisposeSyncInternal() { }
 }

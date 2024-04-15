@@ -1,59 +1,51 @@
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
-using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Gatt.Server;
 
-public sealed class GattServerPeer : IAsyncDisposable, IDisposable
+public interface IGattServerPeer : IAsyncDisposable;
+
+public abstract class GattServerPeer : IGattServerPeer
 {
-    private readonly Dictionary<BleUuid, GattServerService> _services = new();
-    private readonly IPlatformSpecificGattServerPeer _platformSpecificGattServerPeer;
-    private readonly BehaviorSubject<ConnectionStatus> _connectionSubject;
+    private readonly Dictionary<BleUuid, IGattServerService> _services = new();
 
-    public GattServerPeer(IPlatformSpecificGattServerPeer platformSpecificGattServerPeer, ConnectionStatus initialConnectionStatus)
+    public IReadOnlyDictionary<BleUuid, IGattServerService> Services => _services;
+    public abstract IObservable<ConnectionStatus> WhenConnectionStatusChanged { get; }
+
+    public async Task DiscoverServicesAsync(CancellationToken cancellationToken)
     {
-        _platformSpecificGattServerPeer = platformSpecificGattServerPeer;
-        _connectionSubject = new BehaviorSubject<ConnectionStatus>(initialConnectionStatus);
-        platformSpecificGattServerPeer.WhenConnectionStatusChanged.Subscribe(_connectionSubject);
-    }
-
-    public IReadOnlyDictionary<BleUuid, GattServerService> Services => _services;
-
-    public bool IsConnected => _connectionSubject.Value is ConnectionStatus.Connected;
-    public IObservable<ConnectionStatus> WhenConnectionStatusChanged => _connectionSubject.AsObservable();
-
-    public async Task DiscoverServicesAsync(CancellationToken cancellationToken = default)
-    {
-        await foreach (IPlatformSpecificGattServerService platformSpecificService in _platformSpecificGattServerPeer
-                           .DiscoverServices()
+        await foreach (IGattServerService service in DiscoverServicesInternal()
                            .ToAsyncEnumerable()
                            .WithCancellation(cancellationToken))
         {
-            var service = new GattServerService(platformSpecificService);
             _services[service.Uuid] = service;
         }
     }
 
-    public async Task<GattServerService> DiscoverServiceAsync(BleUuid uuid, CancellationToken cancellationToken = default)
+    public async Task<IGattServerService> DiscoverServiceAsync(BleUuid uuid, CancellationToken cancellationToken)
     {
-        IPlatformSpecificGattServerService platformSpecificService = await _platformSpecificGattServerPeer
-            .DiscoverService(uuid)
+        IGattServerService service = await DiscoverServiceInternal(uuid)
             .FirstAsync()
             .ToTask(cancellationToken);
 
-        var service = new GattServerService(platformSpecificService);
         _services[service.Uuid] = service;
         return service;
     }
 
+    protected abstract IObservable<IGattServerService> DiscoverServicesInternal();
+    protected abstract IObservable<IGattServerService> DiscoverServiceInternal(BleUuid uuid);
+
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
-        await _platformSpecificGattServerPeer.DisposeAsync();
-        _connectionSubject.Dispose();
+        DisposeSyncInternal();
+        await DisposeInternalAsync();
+        GC.SuppressFinalize(this);
     }
 
-    void IDisposable.Dispose() => _ = DisposeAsync().AsTask();
+    /// <inheritdoc cref="DisposeAsync"/>
+    protected virtual ValueTask DisposeInternalAsync() => ValueTask.CompletedTask;
+    /// <inheritdoc cref="IDisposable.Dispose"/>
+    protected virtual void DisposeSyncInternal() { }
 }

@@ -1,5 +1,4 @@
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Implementation;
@@ -13,38 +12,29 @@ public interface IPlatformSpecificBlePeripheral
     IObservable<IGattClientPeer> WhenConnected { get; }
 }
 
-public sealed class BlePeripheral : IBlePeripheral
+public abstract class BlePeripheral(BleDevice device, IObserver<LogEvent>? logger) : IBlePeripheral
 {
-    private readonly IObserver<LogEvent>? _logger;
-    private readonly IPlatformSpecificBlePeripheral _peripheral;
-    private readonly Subject<IGattClientPeer> _whenDisconnected = new();
-    private readonly Dictionary<BleUuid, GattClientService> _services = new();
+    private readonly IObserver<LogEvent>? Logger = logger;
+    private readonly Dictionary<BleUuid, IGattClientService> _services = new();
 
     /// <summary> The ble device </summary>
-    public BleDevice Device { get; }
+    public BleDevice Device { get; } = device;
     /// <inheritdoc />
-    public IReadOnlyDictionary<BleUuid, GattClientService> Services => _services;
-
-    internal BlePeripheral(BleDevice device,
-        IPlatformSpecificBlePeripheral peripheral,
-        IObserver<LogEvent>? logger)
-    {
-        _peripheral = peripheral;
-        WhenDisconnected = peripheral.WhenConnected.SelectMany(x => x.WhenDisconnected.Select(_ => x));
-        _logger = logger;
-        Device = device;
-    }
+    public IReadOnlyDictionary<BleUuid, IGattClientService> Services => _services;
 
     /// <inheritdoc />
-    public async Task<GattClientService> AddServiceAsync(BleUuid uuid, CancellationToken cancellationToken = default)
+    public async Task<IGattClientService> AddServiceAsync(BleUuid uuid, CancellationToken cancellationToken)
     {
-        IPlatformSpecificGattClientService specificService = await _peripheral.AddServiceAsync(uuid, cancellationToken);
-        var service = new GattClientService(uuid, specificService);
+        IGattClientService service = await AddServiceAsyncCore(uuid, cancellationToken);
         _services[service.Uuid] = service;
         return service;
     }
+
+    protected abstract Task<IGattClientService> AddServiceAsyncCore(BleUuid uuid, CancellationToken cancellationToken);
+
     /// <inheritdoc />
-    public IObservable<IGattClientPeer> WhenConnected => _peripheral.WhenConnected;
+    public abstract IObservable<IGattClientPeer> WhenConnected { get; }
+
     /// <inheritdoc />
-    public IObservable<IGattClientPeer> WhenDisconnected { get; }
+    public IObservable<IGattClientPeer> WhenDisconnected => WhenConnected.SelectMany(x => x.WhenDisconnected.Select(_ => x));
 }

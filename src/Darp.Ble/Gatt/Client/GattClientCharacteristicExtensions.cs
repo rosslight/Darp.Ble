@@ -5,21 +5,21 @@ namespace Darp.Ble.Gatt.Client;
 
 public static class GattClientCharacteristicExtensions
 {
-    public static async Task<IGattClientCharacteristic<TProp1>> AddCharacteristicAsync<TProp1>(this GattClientService service,
+    public static async Task<IGattClientCharacteristic<TProp1>> AddCharacteristicAsync<TProp1>(this IGattClientService service,
         Characteristic<TProp1> characteristic,
         CancellationToken cancellationToken = default)
         where TProp1 : IBleProperty
     {
-        GattClientCharacteristic clientCharacteristic = await service.AddCharacteristicAsync(characteristic.Uuid, characteristic.Property, cancellationToken);
+        IGattClientCharacteristic clientCharacteristic = await service.AddCharacteristicAsync(characteristic.Uuid, characteristic.Property, cancellationToken);
         return new GattClientCharacteristic<TProp1>(clientCharacteristic);
     }
 
-    public static async Task<IGattClientCharacteristic<TProp1>> AddCharacteristicAsync<TProp1>(this GattClientService service,
+    public static async Task<IGattClientCharacteristic<TProp1>> AddCharacteristicAsync<TProp1>(this IGattClientService service,
         BleUuid uuid,
         CancellationToken cancellationToken = default)
         where TProp1 : IBleProperty
     {
-        GattClientCharacteristic clientCharacteristic = await service.AddCharacteristicAsync(uuid, TProp1.Property, cancellationToken);
+        IGattClientCharacteristic clientCharacteristic = await service.AddCharacteristicAsync(uuid, TProp1.Property, cancellationToken);
         return new GattClientCharacteristic<TProp1>(clientCharacteristic);
     }
 
