@@ -14,15 +14,16 @@ public sealed class HciHostBleDevice(string port) : IPlatformSpecificBleDevice
 
     public string Name => port;
 
+    /// <param name="cancellationToken"></param>
     /// <inheritdoc />
-    public async Task<InitializeResult> InitializeAsync()
+    public async Task<InitializeResult> InitializeAsync(CancellationToken cancellationToken)
     {
         Host.Initialize();
-        await Host.QueryCommandCompletionAsync<HciResetCommand, HciResetResult>();
+        await Host.QueryCommandCompletionAsync<HciResetCommand, HciResetResult>(cancellationToken: cancellationToken);
         //await Host.QueryCommandCompletionAsync<HciReadLocalSupportedCommandsCommand, HciReadLocalSupportedCommandsResult>();
-        await Host.QueryCommandCompletionAsync<HciSetEventMaskCommand, HciSetEventMaskResult>(new HciSetEventMaskCommand((EventMask)0x3fffffffffffffff));
-        await Host.QueryCommandCompletionAsync<HciLeSetEventMaskCommand, HciLeSetEventMaskResult>(new HciLeSetEventMaskCommand((LeEventMask)0xf0ffff));
-        await Host.QueryCommandCompletionAsync<HciLeSetRandomAddressCommand, HciLeSetRandomAddressResult>(new HciLeSetRandomAddressCommand(0xF0F1F2F3F4F5));
+        await Host.QueryCommandCompletionAsync<HciSetEventMaskCommand, HciSetEventMaskResult>(new HciSetEventMaskCommand((EventMask)0x3fffffffffffffff), cancellationToken: cancellationToken);
+        await Host.QueryCommandCompletionAsync<HciLeSetEventMaskCommand, HciLeSetEventMaskResult>(new HciLeSetEventMaskCommand((LeEventMask)0xf0ffff), cancellationToken: cancellationToken);
+        await Host.QueryCommandCompletionAsync<HciLeSetRandomAddressCommand, HciLeSetRandomAddressResult>(new HciLeSetRandomAddressCommand(0xF0F1F2F3F4F5), cancellationToken: cancellationToken);
         Observer = new HciHostBleObserver(this);
         return InitializeResult.Success;
     }
@@ -31,6 +32,8 @@ public sealed class HciHostBleDevice(string port) : IPlatformSpecificBleDevice
     public IPlatformSpecificBleObserver? Observer { get; private set; }
     /// <inheritdoc />
     public IPlatformSpecificBleCentral Central => throw new NotSupportedException();
+    /// <inheritdoc />
+    public IPlatformSpecificBlePeripheral? Peripheral { get; }
 
     /// <inheritdoc />
 #pragma warning disable CA1822

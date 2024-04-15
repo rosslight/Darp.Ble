@@ -12,11 +12,15 @@ public interface IPlatformSpecificBleDevice : IDisposable
     IPlatformSpecificBleObserver? Observer { get; }
     /// <summary> Get access to the platform specific central </summary>
     IPlatformSpecificBleCentral? Central { get; }
+    /// <summary> Get access to the platform specific peripheral </summary>
+    IPlatformSpecificBlePeripheral? Peripheral { get; }
 
     /// <summary> An optional name </summary>
     string? Name { get; }
 
+
     /// <summary> Initializes the ble device. </summary>
+    /// <param name="cancellationToken"></param>
     /// <returns> The status of the initialization. Success or a custom error code. </returns>
-    Task<InitializeResult> InitializeAsync();
+    Task<InitializeResult> InitializeAsync(CancellationToken cancellationToken = default);
 }

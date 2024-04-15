@@ -71,10 +71,10 @@ public sealed class UnitTest1
 {
     private const string AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName = "0201010908546573744E616D65";
 
-    private static async Task<BleDevice> GetMockDeviceAsync(Action<BleMockFactory> configure)
+    private static async Task<BleDevice> GetMockDeviceAsync(Func<BleBroadcasterMock, MockBlePeripheral, Task> configure)
     {
         BleManager bleManager = new BleManagerBuilder()
-            .With(configure)
+            .With(new BleMockFactory { OnConfigure = configure } )
             .CreateManager();
         BleDevice device = bleManager.EnumerateDevices().First();
         InitializeResult result = await device.InitializeAsync();
@@ -88,15 +88,18 @@ public sealed class UnitTest1
         // Arrange
         var scheduler = new TestScheduler();
         AdvertisingData adData = AdvertisingData.From(AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName.ToByteArray());
-        void Configure(BleMockFactory factory)
-        {
-            IObservable<AdvertisingData> source = Observable.Interval(TimeSpan.FromMilliseconds(1000), scheduler)
-                .Select(_ => adData);
-            factory.Broadcaster.Advertise(source);
-        }
 
         // Act
         BleDevice device = await GetMockDeviceAsync(Configure);
+
+        Task Configure(BleBroadcasterMock broadcaster, MockBlePeripheral peripheral)
+        {
+            IObservable<AdvertisingData> source = Observable.Interval(TimeSpan.FromMilliseconds(1000), scheduler)
+                .Select(_ => adData);
+            broadcaster.Advertise(source);
+            return Task.CompletedTask;
+        }
+
         IGapAdvertisement adv = await device.Observer.RefCount().FirstAsync();
 
         // Assert
@@ -107,19 +110,23 @@ public sealed class UnitTest1
     public async Task Test2()
     {
         BleManager bleManager = new BleManagerBuilder()
-            .With<BleMockFactory>(factory =>
+            .With(new BleMockFactory
             {
-                /*
-                var heartRateService = factory.Peripheral.AddHeartRateService();
-                IObservable<byte[]> observable = Observable.Interval(TimeSpan.FromMilliseconds(100))
-                    .Select(BitConverter.GetBytes);
-                heartRateService.HeartRateMeasurement.NotifyAll(observable);
-                heartRateService.BodySensorLocation.UpdateReadAll<byte>(42);
-                heartRateService.HeartRateControlPoint.OnWrite((_, _) => { });
-*/
-                IObservable<AdvertisingData> source = Observable.Interval(TimeSpan.FromMilliseconds(1000))
-                    .Select(_ => AdvertisingData.Empty);
-                IDisposable disposable = factory.Broadcaster.Advertise(source);
+                OnConfigure = (broadcaster, _) =>
+                {
+                    /*
+                    var heartRateService = factory.Peripheral.AddHeartRateService();
+                    IObservable<byte[]> observable = Observable.Interval(TimeSpan.FromMilliseconds(100))
+                        .Select(BitConverter.GetBytes);
+                    heartRateService.HeartRateMeasurement.NotifyAll(observable);
+                    heartRateService.BodySensorLocation.UpdateReadAll<byte>(42);
+                    heartRateService.HeartRateControlPoint.OnWrite((_, _) => { });
+    */
+                    IObservable<AdvertisingData> source = Observable.Interval(TimeSpan.FromMilliseconds(1000))
+                        .Select(_ => AdvertisingData.Empty);
+                    IDisposable disposable = broadcaster.Advertise(source);
+                    return Task.CompletedTask;
+                },
             })
             .CreateManager();
         BleDevice device = bleManager.EnumerateDevices().First();

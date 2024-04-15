@@ -1,14 +1,11 @@
 using System.Reactive;
-using Darp.Ble.Implementation;
+using Darp.Ble.Data;
 
 namespace Darp.Ble.Gatt.Client;
 
 public interface IGattClientPeer
 {
+    bool IsConnected { get; }
     IObservable<Unit> WhenDisconnected { get; }
-}
-
-public sealed class GattClientPeer(IPlatformSpecificGattClientPeer clientPeer) : IGattClientPeer
-{
-    public IObservable<Unit> WhenDisconnected { get; } = clientPeer.WhenDisconnected;
+    BleAddress Address { get; }
 }

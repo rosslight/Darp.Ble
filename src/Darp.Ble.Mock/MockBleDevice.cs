@@ -4,17 +4,20 @@ using Darp.Ble.Implementation;
 namespace Darp.Ble.Mock;
 
 /// <summary> Provides windows specific implementation of a ble device </summary>
-public sealed class MockBleDevice(BleBroadcasterMock broadcaster, MockBlePeripheral peripheral) : IPlatformSpecificBleDevice
+public sealed class MockBleDevice(Func<BleBroadcasterMock, MockBlePeripheral, Task> configure) : IPlatformSpecificBleDevice
 {
-    private readonly BleBroadcasterMock _broadcaster = broadcaster;
-    private readonly MockBlePeripheral _peripheral = peripheral;
+    private readonly Func<BleBroadcasterMock, MockBlePeripheral, Task> _configure = configure;
+    private readonly BleBroadcasterMock _broadcaster = new();
+    private readonly MockBlePeripheral _peripheral = new();
 
+    /// <param name="cancellationToken"></param>
     /// <inheritdoc />
-    public Task<InitializeResult> InitializeAsync()
+    public async Task<InitializeResult> InitializeAsync(CancellationToken cancellationToken)
     {
         Observer = new MockBleObserver(_broadcaster);
         Central = new MockBleCentral(_peripheral);
-        return Task.FromResult(InitializeResult.Success);
+        await _configure.Invoke(_broadcaster, _peripheral);
+        return InitializeResult.Success;
     }
 
     /// <inheritdoc />
@@ -23,6 +26,8 @@ public sealed class MockBleDevice(BleBroadcasterMock broadcaster, MockBlePeriphe
     public IPlatformSpecificBleObserver? Observer { get; private set; }
     /// <inheritdoc />
     public IPlatformSpecificBleCentral? Central { get; private set; }
+    /// <inheritdoc />
+    public IPlatformSpecificBlePeripheral? Peripheral { get; }
 
     /// <inheritdoc />
 #pragma warning disable CA1822

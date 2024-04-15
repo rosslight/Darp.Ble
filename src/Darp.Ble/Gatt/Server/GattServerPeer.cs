@@ -2,7 +2,6 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
-using Darp.Ble.Gatt.Client;
 using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Gatt.Server;
@@ -32,7 +31,7 @@ public sealed class GattServerPeer : IAsyncDisposable, IDisposable
                            .ToAsyncEnumerable()
                            .WithCancellation(cancellationToken))
         {
-            var service = new GattServerService(this, platformSpecificService);
+            var service = new GattServerService(platformSpecificService);
             _services[service.Uuid] = service;
         }
     }

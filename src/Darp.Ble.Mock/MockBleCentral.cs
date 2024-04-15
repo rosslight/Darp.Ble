@@ -14,7 +14,7 @@ public sealed class MockBleCentral(MockBlePeripheral peripheralMock) : IPlatform
     public IObservable<GattServerPeer> ConnectToPeripheral(BleAddress address, BleConnectionParameters connectionParameters,
         BleScanParameters scanParameters)
     {
-        var gattClientPeer = new GattClientPeer(null!);
+        var gattClientPeer = new GattClientPeer(address, null!);
         var mockDevice = new MockGattServerPeer(_peripheralMock, gattClientPeer);
         var gattServerPeer = new GattServerPeer(mockDevice, isAlreadyConnected: true);
         _peripheralMock.OnNextConnected(gattClientPeer);

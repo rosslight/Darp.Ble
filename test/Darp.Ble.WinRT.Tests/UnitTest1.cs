@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Reactive.Linq;
+using Darp.Ble.Data;
 using Serilog;
 using Serilog.Events;
 using Xunit.Abstractions;
@@ -25,6 +26,20 @@ public sealed class UnitTest1(ITestOutputHelper outputHelper)
         await device.Observer
             .RefCount()
             .Take(100);
+        await Task.Delay(1000);
+    }
+
+    //[Fact]
+    public async Task Test2()
+    {
+        BleManager manager = new BleManagerBuilder()
+            .OnLog((_, logEvent) => _logger.Write((LogEventLevel)logEvent.Level, logEvent.Exception, logEvent.MessageTemplate, logEvent.Properties))
+            .With<WinBleFactory>()
+            .CreateManager();
+        BleDevice device = manager.EnumerateDevices().First();
+        await device.InitializeAsync();
+        var service = await device.Peripheral.AddServiceAsync(new BleUuid(0x1234));
+        var characteristic = await service.AddCharacteristicAsync(new BleUuid(0x1234), GattProperty.Notify);
         await Task.Delay(1000);
     }
 }

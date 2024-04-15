@@ -3,12 +3,11 @@ using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Gatt.Server;
 
-public sealed class GattServerService(GattServerPeer peer, IPlatformSpecificGattServerService platformSpecificService) : IGattServerService
+public sealed class GattServerService(IPlatformSpecificGattServerService platformSpecificService) : IGattServerService
 {
     private readonly IPlatformSpecificGattServerService _platformSpecificService = platformSpecificService;
     private readonly Dictionary<BleUuid, GattServerCharacteristic> _characteristics = new();
     public IReadOnlyDictionary<BleUuid, GattServerCharacteristic> Characteristics => _characteristics;
-    public GattServerPeer Peer { get; } = peer;
     /// <inheritdoc />
     public BleUuid Uuid => _platformSpecificService.Uuid;
 

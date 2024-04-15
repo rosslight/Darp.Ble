@@ -1,28 +1,29 @@
-using System.Reactive.Subjects;
 using Darp.Ble.Data;
+using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Gatt.Client;
 
-public sealed class GattClientCharacteristic(BleUuid uuid, IGattClientService service)
+public sealed class GattClientCharacteristic(BleUuid uuid, IPlatformSpecificGattClientCharacteristic characteristic)
 {
-    private readonly Subject<byte[]> _onWrite = new();
-    private readonly IGattClientService _service = service;
+    private readonly IPlatformSpecificGattClientCharacteristic _characteristic = characteristic;
 
     public BleUuid Uuid { get; } = uuid;
+    public GattProperty Property => _characteristic.Property;
 
-    public IDisposable OnWrite(Action<IGattClientPeer, byte[]> callback)
+    public IDisposable OnWrite(Func<IGattClientPeer, byte[], CancellationToken, Task<GattProtocolStatus>> callback)
     {
-        return _onWrite.Subscribe(bytes => callback(_service, bytes));
+        return _characteristic.OnWrite(callback);
     }
 
-    public void Notify(IGattClientPeer clientPeer, byte[] source)
+    public async Task<bool> NotifyAsync(IGattClientPeer clientPeer, byte[] source, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        return await _characteristic.NotifyAsync(clientPeer, source, cancellationToken);
     }
 }
 
-public sealed class GattClientCharacteristic<TProp1>(Characteristic<TProp1> characteristic, IGattClientService service)
+public sealed class GattClientCharacteristic<TProp1>(GattClientCharacteristic characteristic)
     : IGattClientCharacteristic<TProp1>
+    where TProp1 : IBleProperty
 {
-    public GattClientCharacteristic Characteristic { get; } = new(characteristic.Uuid, service);
+    public GattClientCharacteristic Characteristic { get; } = characteristic;
 }

@@ -13,6 +13,7 @@ public sealed class BleDevice
     private bool _isInitializing;
     private BleObserver? _bleObserver;
     private BleCentral? _bleCentral;
+    private BlePeripheral? _blePeripheral;
 
     internal BleDevice(IPlatformSpecificBleDevice platformSpecificBleDevice, IObserver<(BleDevice, LogEvent)>? logger)
     {
@@ -30,20 +31,23 @@ public sealed class BleDevice
     public string? Name => _platformSpecificBleDevice.Name;
 
     /// <summary> Initializes the ble device </summary>
+    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> Success or a custom error code </returns>
-    public async Task<InitializeResult> InitializeAsync()
+    public async Task<InitializeResult> InitializeAsync(CancellationToken cancellationToken = default)
     {
         if (_isInitializing) return InitializeResult.AlreadyInitializing;
         try
         {
             _isInitializing = true;
-            InitializeResult result = await _platformSpecificBleDevice.InitializeAsync();
+            InitializeResult result = await _platformSpecificBleDevice.InitializeAsync(cancellationToken);
             if (result is not InitializeResult.Success)
                 return result;
             if (_platformSpecificBleDevice.Observer is not null)
                 _bleObserver = new BleObserver(this, _platformSpecificBleDevice.Observer, _logger);
             if (_platformSpecificBleDevice.Central is not null)
                 _bleCentral = new BleCentral(this, _platformSpecificBleDevice.Central, _logger);
+            if (_platformSpecificBleDevice.Peripheral is not null)
+                _blePeripheral = new BlePeripheral(this, _platformSpecificBleDevice.Peripheral, _logger);
             IsInitialized = true;
             _logger?.Debug("Adapter Initialized!");
             return InitializeResult.Success;
@@ -61,10 +65,16 @@ public sealed class BleDevice
                                         | (_bleObserver is not null ? Capabilities.Observer : Capabilities.None);
 
     /// <summary> Returns a view of the device in Observer Role </summary>
-    /// <exception cref="NotSupportedException"> Thrown when the device has not been initialized or the role is not supported </exception>
+    /// <exception cref="NotInitializedException"> Thrown when the device has not been initialized </exception>
+    /// <exception cref="NotSupportedException"> Thrown when the role is not supported </exception>
     public BleObserver Observer => _bleObserver ?? throw (IsInitialized ? new NotSupportedException() : new NotInitializedException(this));
     /// <summary> Returns a view of the device in Central Role </summary>
-    /// <exception cref="NotSupportedException"> Thrown when the device has not been initialized or the role is not supported </exception>
+    /// <exception cref="NotInitializedException"> Thrown when the device has not been initialized </exception>
+    /// <exception cref="NotSupportedException"> Thrown when the role is not supported </exception>
     public BleCentral Central => _bleCentral ?? throw (IsInitialized ? new NotSupportedException() : new NotInitializedException(this));
+    /// <summary> Returns a view of the device in Peripheral Role </summary>
+    /// <exception cref="NotInitializedException"> Thrown when the device has not been initialized </exception>
+    /// <exception cref="NotSupportedException"> Thrown when the role is not supported </exception>
+    public BlePeripheral Peripheral => _blePeripheral ?? throw (IsInitialized ? new NotSupportedException() : new NotInitializedException(this));
 }
 

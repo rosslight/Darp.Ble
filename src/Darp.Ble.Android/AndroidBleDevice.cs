@@ -17,7 +17,7 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager) : IPlatf
 
     public string? Name => BluetoothAdapter?.Name;
 
-    public Task<InitializeResult> InitializeAsync()
+    public Task<InitializeResult> InitializeAsync(CancellationToken cancellationToken)
     {
         if (BluetoothAdapter is null) return Task.FromResult(InitializeResult.DeviceNotAvailable);
         if (!BluetoothAdapter.IsEnabled) return Task.FromResult(InitializeResult.DeviceNotEnabled);
@@ -38,6 +38,7 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager) : IPlatf
 
     public IPlatformSpecificBleObserver? Observer { get; private set; }
     public IPlatformSpecificBleCentral? Central { get; private set; }
+    public IPlatformSpecificBlePeripheral? Peripheral { get; private set; }
     public string Identifier => "Darp.Ble.Android";
 
     void IDisposable.Dispose()
