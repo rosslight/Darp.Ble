@@ -4,18 +4,26 @@ using Darp.Ble.Data;
 
 namespace Darp.Ble.Gatt.Server;
 
-public interface IGattServerPeer : IAsyncDisposable;
+public interface IGattServerPeer : IAsyncDisposable
+{
+    BleAddress Address { get; }
+    IReadOnlyDictionary<BleUuid, IGattServerService> Services { get; }
+    IObservable<ConnectionStatus> WhenConnectionStatusChanged { get; }
+    Task DiscoverServicesAsync(CancellationToken cancellationToken);
+    Task<IGattServerService> DiscoverServiceAsync(BleUuid uuid, CancellationToken cancellationToken);
+}
 
-public abstract class GattServerPeer : IGattServerPeer
+public abstract class GattServerPeer(BleAddress address) : IGattServerPeer
 {
     private readonly Dictionary<BleUuid, IGattServerService> _services = new();
 
+    public BleAddress Address { get; } = address;
     public IReadOnlyDictionary<BleUuid, IGattServerService> Services => _services;
     public abstract IObservable<ConnectionStatus> WhenConnectionStatusChanged { get; }
 
     public async Task DiscoverServicesAsync(CancellationToken cancellationToken)
     {
-        await foreach (IGattServerService service in DiscoverServicesInternal()
+        await foreach (IGattServerService service in DiscoverServicesCore()
                            .ToAsyncEnumerable()
                            .WithCancellation(cancellationToken))
         {
@@ -25,7 +33,7 @@ public abstract class GattServerPeer : IGattServerPeer
 
     public async Task<IGattServerService> DiscoverServiceAsync(BleUuid uuid, CancellationToken cancellationToken)
     {
-        IGattServerService service = await DiscoverServiceInternal(uuid)
+        IGattServerService service = await DiscoverServiceCore(uuid)
             .FirstAsync()
             .ToTask(cancellationToken);
 
@@ -33,8 +41,8 @@ public abstract class GattServerPeer : IGattServerPeer
         return service;
     }
 
-    protected abstract IObservable<IGattServerService> DiscoverServicesInternal();
-    protected abstract IObservable<IGattServerService> DiscoverServiceInternal(BleUuid uuid);
+    protected abstract IObservable<IGattServerService> DiscoverServicesCore();
+    protected abstract IObservable<IGattServerService> DiscoverServiceCore(BleUuid uuid);
 
     /// <inheritdoc />
     public async ValueTask DisposeAsync()

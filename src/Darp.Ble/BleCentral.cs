@@ -7,7 +7,7 @@ using Darp.Ble.Logger;
 
 namespace Darp.Ble;
 
-public interface IBleCentral
+public interface IBleCentral : IAsyncDisposable
 {
     /// <summary> Connect to remote peripheral </summary>
     /// <param name="address"> The address to be connected to </param>
@@ -21,7 +21,7 @@ public interface IBleCentral
 public abstract class BleCentral(BleDevice device, IObserver<LogEvent>? logger) : IBleCentral
 {
     private readonly IObserver<LogEvent>? _logger = logger;
-
+    private readonly Dictionary<BleAddress, IGattServerPeer> _peerDevices = new();
     /// <summary> The ble device </summary>
     public BleDevice Device { get; } = device;
 
@@ -48,6 +48,7 @@ public abstract class BleCentral(BleDevice device, IObserver<LogEvent>? logger) 
                 return Disposable.Empty;
             }
             return ConnectToPeripheralCore(address, connectionParameters, scanParameters)
+                .Do(peer => _peerDevices[peer.Address] = peer)
                 .Subscribe(observer);
         });
     }
@@ -55,4 +56,16 @@ public abstract class BleCentral(BleDevice device, IObserver<LogEvent>? logger) 
     protected abstract IObservable<IGattServerPeer> ConnectToPeripheralCore(BleAddress address,
         BleConnectionParameters connectionParameters,
         BleScanParameters scanParameters);
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        DisposeCore();
+        await DisposeAsyncCore();
+        GC.SuppressFinalize(this);
+    }
+    /// <inheritdoc cref="DisposeAsync"/>
+    protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
+    /// <inheritdoc cref="IDisposable.Dispose"/>
+    protected virtual void DisposeCore() { }
 }

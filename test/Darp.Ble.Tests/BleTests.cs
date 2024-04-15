@@ -34,12 +34,12 @@ public sealed class BleTests
 
     private sealed class SubstituteBleFactory : IBleFactory
     {
-        public IEnumerable<IPlatformSpecificBleDevice> EnumerateDevices()
+        public IEnumerable<IBleDevice> EnumerateDevices(IObserver<(BleDevice, LogEvent)>? logger)
         {
-            var impl = Substitute.For<IPlatformSpecificBleDevice>();
+            var impl = Substitute.For<IBleDevice>();
             impl.InitializeAsync().Returns(Task.FromResult(InitializeResult.Success));
-            var observer = Substitute.For<IPlatformSpecificBleObserver>();
-            observer.TryStartScan(Arg.Any<BleObserver>(), out _)
+            var observer = Substitute.For<IBleObserver>();
+            observer.TryStartScan(out _)
                 .Returns(info =>
                 {
                     info[1] = Observable.Return(GapAdvertisement.FromExtendedAdvertisingReport(
@@ -55,12 +55,12 @@ public sealed class BleTests
     [Fact]
     public async Task InitializeAsync_ShouldLog()
     {
-        List<(BleDevice, LogEvent)> resultList = [];
+        List<(IBleDevice, LogEvent)> resultList = [];
         BleManager manager = new BleManagerBuilder()
             .OnLog((bleDevice, logEvent) => resultList.Add((bleDevice, logEvent)))
             .With<SubstituteBleFactory>()
             .CreateManager();
-        BleDevice device = manager.EnumerateDevices().First();
+        IBleDevice device = manager.EnumerateDevices().First();
         await device.InitializeAsync();
         resultList.Should().HaveElementAt(0, (device, new LogEvent(1, null, "Adapter Initialized!", Array.Empty<object?>())));
     }
@@ -68,12 +68,11 @@ public sealed class BleTests
     [Fact]
     public async Task GeneralFlow()
     {
-
-        BleDevice[] adapters = _manager.EnumerateDevices().ToArray();
+        IBleDevice[] adapters = _manager.EnumerateDevices().ToArray();
 
         adapters.Should().ContainSingle();
 
-        BleDevice device = adapters.First();
+        IBleDevice device = adapters[0];
 
         device.IsInitialized.Should().BeFalse();
         device.Capabilities.Should().Be(Capabilities.None);
@@ -84,7 +83,7 @@ public sealed class BleTests
         device.IsInitialized.Should().BeTrue();
         device.Capabilities.Should().HaveFlag(Capabilities.Observer);
 
-        BleObserver observer = device.Observer;
+        IBleObserver observer = device.Observer;
 
         IGapAdvertisement<string> adv = await observer.RefCount()
             .Select(x => x.WithUserData(""))

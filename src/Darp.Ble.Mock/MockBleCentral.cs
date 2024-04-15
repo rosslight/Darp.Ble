@@ -18,9 +18,8 @@ public sealed class MockBleCentral(BleDevice device, MockBlePeripheral periphera
     {
         return Observable.Create<IGattServerPeer>(observer =>
         {
-            IMockBleConnection connection = new MockBleConnection();
-            var mockDevice = new MockGattServerPeer(connection);
-            _peripheralMock.OnCentralConnection(connection);
+            MockGattClientPeer clientPeer = _peripheralMock.OnCentralConnection(address);
+            var mockDevice = new MockGattServerPeer(address, clientPeer);
             observer.OnNext(mockDevice);
             return Disposable.Empty;
         });

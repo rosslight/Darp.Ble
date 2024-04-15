@@ -71,12 +71,12 @@ public sealed class UnitTest1
 {
     private const string AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName = "0201010908546573744E616D65";
 
-    private static async Task<BleDevice> GetMockDeviceAsync(Func<BleBroadcasterMock, BlePeripheral, Task> configure)
+    private static async Task<IBleDevice> GetMockDeviceAsync(Func<BleBroadcasterMock, BlePeripheral, Task> configure)
     {
         BleManager bleManager = new BleManagerBuilder()
             .With(new BleMockFactory { OnConfigure = configure } )
             .CreateManager();
-        BleDevice device = bleManager.EnumerateDevices().First();
+        IBleDevice device = bleManager.EnumerateDevices().First();
         InitializeResult result = await device.InitializeAsync();
         result.Should().Be(InitializeResult.Success);
         return device;
@@ -90,7 +90,7 @@ public sealed class UnitTest1
         AdvertisingData adData = AdvertisingData.From(AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName.ToByteArray());
 
         // Act
-        BleDevice device = await GetMockDeviceAsync(Configure);
+        IBleDevice device = await GetMockDeviceAsync(Configure);
 
         Task Configure(BleBroadcasterMock broadcaster, BlePeripheral peripheral)
         {
@@ -129,7 +129,7 @@ public sealed class UnitTest1
                 },
             })
             .CreateManager();
-        BleDevice device = bleManager.EnumerateDevices().First();
+        IBleDevice device = bleManager.EnumerateDevices().First();
 
         await device.InitializeAsync();
 

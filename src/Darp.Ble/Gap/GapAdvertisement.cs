@@ -9,14 +9,14 @@ public sealed class GapAdvertisement : IGapAdvertisement
 {
     private readonly byte[] _bytes;
 
-    private GapAdvertisement(byte[] bytes, BleObserver bleObserver)
+    private GapAdvertisement(byte[] bytes, IBleObserver bleObserver)
     {
         _bytes = bytes;
         Observer = bleObserver;
     }
 
     /// <inheritdoc />
-    public BleObserver Observer { get; }
+    public IBleObserver Observer { get; }
     /// <inheritdoc />
     public required DateTimeOffset Timestamp { get; init; }
     /// <inheritdoc />
@@ -95,7 +95,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
     /// <param name="directAddress"> The address of the device the advertisement is directed to </param>
     /// <param name="advertisingDataSections"> The data sections </param>
     /// <returns> The GapAdvertisement </returns>
-    public static GapAdvertisement FromExtendedAdvertisingReport(BleObserver bleObserver,
+    public static GapAdvertisement FromExtendedAdvertisingReport(IBleObserver bleObserver,
         DateTimeOffset timestamp,
         BleEventType eventType,
         BleAddress address,
@@ -127,7 +127,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
     /// <param name="directAddress"> The address of the device the advertisement is directed to </param>
     /// <param name="advertisingData"> The data sections </param>
     /// <returns> The GapAdvertisement </returns>
-    public static GapAdvertisement FromExtendedAdvertisingReport(BleObserver bleObserver,
+    public static GapAdvertisement FromExtendedAdvertisingReport(IBleObserver bleObserver,
         DateTimeOffset timestamp,
         BleEventType eventType,
         BleAddress address,
@@ -192,7 +192,7 @@ public sealed class GapAdvertisement<TUserData> : IGapAdvertisement<TUserData>, 
     }
 
     /// <inheritdoc />
-    public BleObserver Observer => _advertisement.Observer;
+    public IBleObserver Observer => _advertisement.Observer;
     /// <inheritdoc />
     public DateTimeOffset Timestamp => _advertisement.Timestamp;
     /// <inheritdoc />

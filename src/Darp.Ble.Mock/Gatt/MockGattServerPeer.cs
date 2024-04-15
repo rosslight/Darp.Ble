@@ -3,50 +3,46 @@ using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Client;
-using Darp.Ble.Implementation;
+using Darp.Ble.Gatt.Server;
 
 namespace Darp.Ble.Mock.Gatt;
 
-public sealed class MockGattServerPeer : IPlatformSpecificGattServerPeer
+public sealed class MockGattServerPeer : GattServerPeer
 {
     private readonly MockGattClientPeer _clientPeer;
-    private readonly IMockBleConnection _connection;
 
-    internal MockGattServerPeer(MockGattClientPeer clientPeer)
+    public MockGattServerPeer(BleAddress address, MockGattClientPeer clientPeer) : base(address)
     {
         _clientPeer = clientPeer;
-        _connection = connection;
     }
 
-    public IObservable<ConnectionStatus> WhenConnectionStatusChanged => _connection.WhenConnectionStatusChanged;
-    public IObservable<IPlatformSpecificGattServerService> DiscoverServices() => _clientPeer.GetServicesAsync();
-    public IObservable<IPlatformSpecificGattServerService> DiscoverService(BleUuid uuid) => _connection.GetServiceAsync(uuid);
-    public ValueTask DisposeAsync() => _connection.DisconnectAsync();
-
-    public IObservable<Unit> WhenDisconnected => _connection.WhenConnectionStatusChanged
-        .Where(x => x is ConnectionStatus.Disconnected)
-        .Select(_ => Unit.Default);
+    public override IObservable<ConnectionStatus> WhenConnectionStatusChanged => Observable.Empty<ConnectionStatus>();
+    protected override IObservable<IGattServerService> DiscoverServicesCore() => _clientPeer.GetServices();
+    protected override IObservable<IGattServerService> DiscoverServiceCore(BleUuid uuid) => _clientPeer.GetService(uuid);
+    public IObservable<Unit> WhenDisconnected => Observable.Empty<Unit>();
 }
 
 public sealed class MockGattClientPeer : IGattClientPeer
 {
-    private readonly IMockBleConnection _connection;
+    private readonly MockBlePeripheral _peripheral;
 
-    public MockGattClientPeer(BleAddress address, IPlatformSpecificGattServerPeer serverPeer)
+    public MockGattClientPeer(BleAddress address, MockBlePeripheral peripheral)
     {
-        serverPeer.
-        _connection.WhenService.
         Address = address;
+        _peripheral = peripheral;
     }
 
     public bool IsConnected => true;
-    public IObservable<Unit> WhenDisconnected => _connection.WhenConnectionStatusChanged
-        .Where(x => x is ConnectionStatus.Disconnected)
-        .Select(_ => Unit.Default);
+    public IObservable<Unit> WhenDisconnected => Observable.Empty<Unit>();
     public BleAddress Address { get; }
 
-    internal IObservable<IPlatformSpecificGattServerService> GetServicesAsync()
+    internal IObservable<IGattServerService> GetServices()
     {
-        return Observable.Return()
+        return _peripheral.Services.ToObservable()
+            .Select(x => new MockGattServerService(x.Key, new MockGattClientService(x.Key)));
+    }
+    internal IObservable<IGattServerService> GetService(BleUuid uuid)
+    {
+        return GetServices().Where(x => x.Uuid == uuid);
     }
 }

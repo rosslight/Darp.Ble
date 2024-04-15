@@ -1,23 +1,23 @@
 using Darp.Ble.Data;
-using Darp.Ble.Implementation;
+using Darp.Ble.Gatt.Server;
 
 namespace Darp.Ble.Mock.Gatt;
 
-public sealed class MockGattServerService(BleUuid uuid, IGattClientService service) : IPlatformSpecificGattServerService
+public sealed class MockGattServerService(BleUuid uuid, MockGattClientService service) : GattServerService(uuid)
 {
     private readonly Dictionary<BleUuid, MockGattServerCharacteristic> _characteristics = service.Characteristics
-        .Select(x => (x.Key, new MockGattServerCharacteristic(x.Key, x.Value)))
+        .Select(x => (x.Key, new MockGattServerCharacteristic(x.Key, new MockGattClientCharacteristic(x.Key, x.Value.Property))))
         .ToDictionary();
 
     public BleUuid Uuid { get; } = uuid;
 
-    public Task DiscoverCharacteristicsAsync(CancellationToken cancellationToken)
+    protected override Task DiscoverCharacteristicsAsyncCore(CancellationToken cancellationToken)
     {
         return Task.CompletedTask;
     }
 
-    public Task<IPlatformSpecificGattServerCharacteristic?> DiscoverCharacteristicAsync(BleUuid uuid, CancellationToken cancellationToken)
+    protected override Task<IGattServerCharacteristic?> DiscoverCharacteristicAsyncCore(BleUuid uuid, CancellationToken cancellationToken)
     {
-        return Task.FromResult<IPlatformSpecificGattServerCharacteristic?>(_characteristics.GetValueOrDefault(uuid));
+        return Task.FromResult<IGattServerCharacteristic?>(_characteristics.GetValueOrDefault(uuid));
     }
 }

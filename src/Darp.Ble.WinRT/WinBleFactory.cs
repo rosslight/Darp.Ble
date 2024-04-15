@@ -7,10 +7,8 @@ namespace Darp.Ble.WinRT;
 public sealed class WinBleFactory : IBleFactory
 {
     /// <inheritdoc />
-#pragma warning disable CA1822
-    public IEnumerable<IBleDevice> EnumerateDevices(IObserver<(BleDevice, LogEvent)>? logObserver)
-#pragma warning restore CA1822
+    public IEnumerable<IBleDevice> EnumerateDevices(IObserver<(BleDevice, LogEvent)>? logger)
     {
-        yield return new WinBleDevice();
+        yield return new WinBleDevice(logger);
     }
 }

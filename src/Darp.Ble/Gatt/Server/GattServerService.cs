@@ -10,14 +10,13 @@ public abstract class GattServerService(BleUuid uuid) : IGattServerService
     /// <inheritdoc />
     public BleUuid Uuid { get; } = uuid;
 
-    protected abstract Task DiscoverCharacteristicsInternalAsync(CancellationToken cancellationToken);
-    protected abstract Task<IGattServerCharacteristic?> DiscoverCharacteristicInternalAsync(
+    protected abstract Task DiscoverCharacteristicsAsyncCore(CancellationToken cancellationToken);
+    protected abstract Task<IGattServerCharacteristic?> DiscoverCharacteristicAsyncCore(
         BleUuid uuid, CancellationToken cancellationToken);
 
     public async Task<IGattServerCharacteristic> DiscoverCharacteristicAsync(BleUuid uuid, CancellationToken cancellationToken = default)
     {
-        IGattServerCharacteristic characteristic = await DiscoverCharacteristicInternalAsync(uuid, cancellationToken)
-                                                   ?? throw new Exception("Upsi");
+        IGattServerCharacteristic characteristic = await DiscoverCharacteristicAsyncCore(uuid, cancellationToken) ?? throw new Exception("Upsi");
         _characteristics[uuid] = characteristic;
         return characteristic;
     }
@@ -25,12 +24,12 @@ public abstract class GattServerService(BleUuid uuid) : IGattServerService
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
-        DisposeSyncInternal();
-        await DisposeInternalAsync();
+        DisposeCore();
+        await DisposeAsyncCore();
         GC.SuppressFinalize(this);
     }
     /// <inheritdoc cref="DisposeAsync"/>
-    protected virtual ValueTask DisposeInternalAsync() => ValueTask.CompletedTask;
+    protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
     /// <inheritdoc cref="IDisposable.Dispose"/>
-    protected virtual void DisposeSyncInternal() { }
+    protected virtual void DisposeCore() { }
 }

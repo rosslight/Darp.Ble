@@ -1,15 +1,10 @@
-using System.Reactive;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using Darp.Ble.Data;
-using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Client;
-using Darp.Ble.Implementation;
 using Darp.Ble.Logger;
 using Darp.Ble.Mock.Gatt;
 
 namespace Darp.Ble.Mock;
-
+/*
 public interface IMockBleConnection
 {
     IObservable<IPlatformSpecificGattServerService> GetServicesAsync();
@@ -63,36 +58,30 @@ public sealed class MockBleConnection : IMockBleConnection
     {
         throw new NotImplementedException();
     }
-}
+}*/
 
 public sealed class MockBlePeripheral(MockBleDevice device, IObserver<LogEvent>? logger) : BlePeripheral(device, logger)
 {
-    private readonly Dictionary<BleAddress, IGattClientPeer> _clients = new();
-    private readonly Subject<IGattClientPeer> _whenConnected = new();
-
-    public Task<IPlatformSpecificGattClientService> AddServiceAsync(BleUuid uuid, CancellationToken cancellationToken)
+    protected override Task<IGattClientService> CreateServiceAsyncCore(BleUuid uuid, CancellationToken cancellationToken)
     {
-        var specificService = new MockGattClientService();
-        return Task.FromResult<IPlatformSpecificGattClientService>(specificService);
+        var service = new MockGattClientService(uuid);
+        return Task.FromResult<IGattClientService>(service);
     }
 
-    public IObservable<IGattClientPeer> WhenConnected => _whenConnected.AsObservable();
-
-    public void OnCentralConnection(IMockBleConnection connection)
+    public MockGattClientPeer OnCentralConnection(BleAddress address)
     {
-        var clientPeer = new MockGattClientPeer(connection);
-        _whenConnected.OnNext(clientPeer);
-        _clients[clientPeer.Address] = clientPeer;
+        var clientPeer = new MockGattClientPeer(address, this);
+        OnConnectedCentral(clientPeer);
+        return clientPeer;
     }
 }
 
-public sealed class MockGattClientService : IPlatformSpecificGattClientService
+public sealed class MockGattClientService(BleUuid uuid) : GattClientService(uuid)
 {
-    public Task<IPlatformSpecificGattClientCharacteristic> AddCharacteristicAsync(BleUuid uuid,
+    protected override Task<IGattClientCharacteristic> CreateCharacteristicAsyncCore(BleUuid uuid,
         GattProperty gattProperty,
         CancellationToken cancellationToken)
     {
-        return Task.FromResult<IPlatformSpecificGattClientCharacteristic>(
-            new MockGattClientCharacteristic(gattProperty));
+        return Task.FromResult<IGattClientCharacteristic>(new MockGattClientCharacteristic(uuid, gattProperty));
     }
 }

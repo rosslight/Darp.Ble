@@ -43,14 +43,14 @@ public sealed class WinGattServerService(GattDeviceService winService)
     }
 
     /// <inheritdoc />
-    protected override async Task DiscoverCharacteristicsInternalAsync(CancellationToken cancellationToken)
+    protected override async Task DiscoverCharacteristicsAsyncCore(CancellationToken cancellationToken)
     {
         await DiscoverCharacteristic(() => _winService.GetCharacteristicsAsync())
             .ToTask(cancellationToken);
     }
 
     /// <inheritdoc />
-    protected override async Task<IGattServerCharacteristic?> DiscoverCharacteristicInternalAsync(BleUuid uuid, CancellationToken cancellationToken)
+    protected override async Task<IGattServerCharacteristic?> DiscoverCharacteristicAsyncCore(BleUuid uuid, CancellationToken cancellationToken)
     {
         return await DiscoverCharacteristic(() => _winService.GetCharacteristicsAsync())
             .FirstAsync()
@@ -58,7 +58,7 @@ public sealed class WinGattServerService(GattDeviceService winService)
     }
 
     /// <inheritdoc />
-    protected override void DisposeSyncInternal()
+    protected override void DisposeCore()
     {
         _winService.Dispose();
     }

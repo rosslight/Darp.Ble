@@ -16,7 +16,7 @@ public sealed class WinGattServerPeer : GattServerPeer
 {
     private readonly BluetoothLEDevice _winDev;
 
-    internal WinGattServerPeer(BluetoothLEDevice winDev)
+    internal WinGattServerPeer(BluetoothLEDevice winDev) : base(BleHelper.GetBleAddress(winDev.BluetoothAddress, winDev.BluetoothAddressType))
     {
         _winDev = winDev;
         WhenConnectionStatusChanged = Observable.FromEventPattern<TypedEventHandler<BluetoothLEDevice, object>, BluetoothLEDevice, object>(
@@ -59,13 +59,13 @@ public sealed class WinGattServerPeer : GattServerPeer
     }
 
     /// <inheritdoc />
-    protected override IObservable<IGattServerService> DiscoverServicesInternal()
+    protected override IObservable<IGattServerService> DiscoverServicesCore()
     {
         return DiscoverService(() => _winDev.GetGattServicesAsync());
     }
 
     /// <inheritdoc />
-    protected override IObservable<IGattServerService> DiscoverServiceInternal(BleUuid uuid)
+    protected override IObservable<IGattServerService> DiscoverServiceCore(BleUuid uuid)
     {
         return DiscoverService(() => _winDev.GetGattServicesForUuidAsync(uuid.Value));
     }

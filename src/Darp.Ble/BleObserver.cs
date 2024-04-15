@@ -10,7 +10,25 @@ namespace Darp.Ble;
 
 public interface IBleObserver : IConnectableObservable<IGapAdvertisement>, IAsyncDisposable
 {
-    
+    /// <summary> True if the observer is currently scanning </summary>
+    bool IsScanning { get; }
+    /// <summary> The parameters used for the current scan </summary>
+    BleScanParameters Parameters { get; }
+
+    /// <summary> The ble device </summary>
+    IBleDevice Device { get; }
+
+    /// <summary>
+    /// Set a new configuration for advertising observation. Setting is only allowed while observer is not scanning
+    /// </summary>
+    /// <param name="parameters"> The configuration to set </param>
+    /// <returns> True, if setting parameters was successful </returns>
+    bool Configure(BleScanParameters parameters);
+    /// <summary> Stop the scan that is currently running </summary>
+    /// <param name="reason">
+    /// Supply optional reason for stoppage. Supplying the reason will cause subscribers to complete with an error
+    /// </param>
+    void StopScan(Exception? reason = null);
 }
 
 /// <summary> The ble observer </summary>
@@ -22,24 +40,19 @@ public abstract class BleObserver(BleDevice device, IObserver<LogEvent>? logger)
     private IDisposable? _scanDisposable;
     private readonly object _lockObject = new();
 
-    /// <summary> The ble device </summary>
-    public BleDevice Device { get; } = device;
-    /// <summary> The parameters used for the current scan </summary>
+    /// <inheritdoc />
+    public IBleDevice Device { get; } = device;
+    /// <inheritdoc />
     public BleScanParameters Parameters { get; private set; } = new()
     {
         ScanType = ScanType.Passive,
         ScanInterval = ScanTiming.Ms100,
         ScanWindow = ScanTiming.Ms100,
     };
-
-    /// <summary> True if the observer is currently scanning </summary>
+    /// <inheritdoc />
     public bool IsScanning => _scanDisposable is not null;
 
-    /// <summary>
-    /// Set a new configuration for advertising observation. Setting is only allowed while observer is not scanning
-    /// </summary>
-    /// <param name="parameters"> The configuration to set </param>
-    /// <returns> True, if setting parameters was successful </returns>
+    /// <inheritdoc />
     public bool Configure(BleScanParameters parameters)
     {
         if (IsScanning) return false;
@@ -47,10 +60,7 @@ public abstract class BleObserver(BleDevice device, IObserver<LogEvent>? logger)
         return true;
     }
 
-    /// <summary> Stop the scan that is currently running </summary>
-    /// <param name="reason">
-    /// Supply optional reason for stoppage. Supplying the reason will cause subscribers to complete with an error
-    /// </param>
+    /// <inheritdoc />
     public void StopScan(Exception? reason = null)
     {
         lock (_lockObject)

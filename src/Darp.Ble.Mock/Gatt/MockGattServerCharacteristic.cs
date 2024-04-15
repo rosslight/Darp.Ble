@@ -1,15 +1,21 @@
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
-using Darp.Ble.Implementation;
+using Darp.Ble.Gatt.Server;
 
 namespace Darp.Ble.Mock.Gatt;
 
-public sealed class MockGattServerCharacteristic(BleUuid uuid, GattClientCharacteristic characteristic) : IPlatformSpecificGattServerCharacteristic
+public sealed class MockGattServerCharacteristic(BleUuid uuid, MockGattClientCharacteristic characteristic)
+    : GattServerCharacteristic(uuid)
 {
-    private readonly GattClientCharacteristic _characteristic = characteristic;
-    public BleUuid Uuid { get; } = uuid;
-    public Task WriteAsync(byte[] bytes, CancellationToken cancellationToken)
-    {
+    private readonly MockGattClientCharacteristic _characteristic = characteristic;
 
+    protected override Task WriteInternalAsync(byte[] bytes, CancellationToken cancellationToken)
+    {
+        return _characteristic.WriteAsync(null!, bytes, cancellationToken);
+    }
+
+    public async Task<bool> NotifyAsync(IGattClientPeer clientPeer, byte[] source, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
     }
 }

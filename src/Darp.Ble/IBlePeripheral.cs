@@ -30,10 +30,10 @@ public abstract class GattClientService(BleUuid uuid) : IGattClientService
         GattProperty property,
         CancellationToken cancellationToken)
     {
-        IGattClientCharacteristic characteristic = await AddCharacteristicAsyncCore(uuid, property, cancellationToken);
+        IGattClientCharacteristic characteristic = await CreateCharacteristicAsyncCore(uuid, property, cancellationToken);
         _characteristics[characteristic.Uuid] = characteristic;
         return characteristic;
     }
 
-    protected abstract Task<IGattClientCharacteristic> AddCharacteristicAsyncCore(BleUuid uuid, GattProperty gattProperty, CancellationToken cancellationToken);
+    protected abstract Task<IGattClientCharacteristic> CreateCharacteristicAsyncCore(BleUuid uuid, GattProperty gattProperty, CancellationToken cancellationToken);
 }

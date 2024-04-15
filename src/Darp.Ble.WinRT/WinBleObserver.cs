@@ -93,12 +93,6 @@ public sealed class WinBleObserver(BleDevice device, IObserver<LogEvent>? logger
             BluetoothLEAdvertisementType.ScanResponse => BleEventType.ScanResponse,
             _ => (BleEventType)eventArgs.AdvertisementType
         };
-        BleAddressType addressType = eventArgs.BluetoothAddressType switch
-        {
-            BluetoothAddressType.Public => BleAddressType.Public,
-            BluetoothAddressType.Random => BleAddressType.RandomPrivateNonResolvable,
-            _ => BleAddressType.NotAvailable
-        };
 
         (AdTypes, byte[])[] pduData = eventArgs
             .Advertisement
@@ -109,7 +103,7 @@ public sealed class WinBleObserver(BleDevice device, IObserver<LogEvent>? logger
         GapAdvertisement advertisement = GapAdvertisement.FromExtendedAdvertisingReport(bleObserver,
             eventArgs.Timestamp,
             advertisementType,
-            new BleAddress(addressType, (UInt48)eventArgs.BluetoothAddress),
+            BleHelper.GetBleAddress(eventArgs.BluetoothAddress, eventArgs.BluetoothAddressType),
             Physical.NotAvailable,
             Physical.NotAvailable,
             AdvertisingSId.NoAdIProvided,

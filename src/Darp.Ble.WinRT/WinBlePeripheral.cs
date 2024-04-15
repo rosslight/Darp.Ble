@@ -1,6 +1,5 @@
 using System.Reactive;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
@@ -16,16 +15,13 @@ namespace Darp.Ble.WinRT;
 public sealed class WinGattClientCharacteristic(
     WinGattClientService winService,
     GattLocalCharacteristic winCharacteristic)
-    : GattClientCharacteristic
+    : GattClientCharacteristic(new BleUuid(winCharacteristic.Uuid, inferType: true), (GattProperty)winCharacteristic.CharacteristicProperties)
 {
     public WinGattClientService WinService { get; } = winService;
     private readonly GattLocalCharacteristic _winCharacteristic = winCharacteristic;
 
     /// <inheritdoc />
-    public GattProperty Property => (GattProperty)_winCharacteristic.CharacteristicProperties;
-
-    /// <inheritdoc />
-    public IDisposable OnWrite(Func<IGattClientPeer, byte[], CancellationToken, Task<GattProtocolStatus>> callback)
+    protected override IDisposable OnWriteCore(Func<IGattClientPeer, byte[], CancellationToken, Task<GattProtocolStatus>> callback)
     {
         return Observable.FromEventPattern<TypedEventHandler<GattLocalCharacteristic, GattWriteRequestedEventArgs>,
                 GattLocalCharacteristic, GattWriteRequestedEventArgs>(
@@ -52,7 +48,7 @@ public sealed class WinGattClientCharacteristic(
     }
 
     /// <inheritdoc />
-    public async Task<bool> NotifyAsync(IGattClientPeer clientPeer, byte[] source, CancellationToken cancellationToken)
+    protected override async Task<bool> NotifyAsyncCore(IGattClientPeer clientPeer, byte[] source, CancellationToken cancellationToken)
     {
         GattSubscribedClient? subscribedClient = _winCharacteristic.SubscribedClients
             .FirstOrDefault(x => string.Equals(x.Session.DeviceId.Id, clientPeer.Address.ToString(), StringComparison.OrdinalIgnoreCase));
@@ -68,7 +64,7 @@ public sealed class WinGattClientService(WinBlePeripheral peripheral, GattLocalS
     private readonly GattLocalService _winService = winService;
     public WinBlePeripheral Peripheral { get; } = peripheral;
 
-    protected override async Task<IGattClientCharacteristic> AddCharacteristicAsyncCore(BleUuid uuid, GattProperty gattProperty, CancellationToken cancellationToken)
+    protected override async Task<IGattClientCharacteristic> CreateCharacteristicAsyncCore(BleUuid uuid, GattProperty gattProperty, CancellationToken cancellationToken)
     {
         GattLocalCharacteristicResult result = await _winService.CreateCharacteristicAsync(uuid.Value,
             new GattLocalCharacteristicParameters
@@ -89,10 +85,7 @@ public sealed class WinGattClientService(WinBlePeripheral peripheral, GattLocalS
 
 public sealed class WinBlePeripheral(WinBleDevice device, IObserver<LogEvent>? logger) : BlePeripheral(device, logger)
 {
-    private readonly Dictionary<BluetoothDeviceId, IGattClientPeer> _clients = new();
-    private readonly Subject<IGattClientPeer> _whenConnected = new();
-
-    protected override async Task<IGattClientService> AddServiceAsyncCore(BleUuid uuid,
+    protected override async Task<IGattClientService> CreateServiceAsyncCore(BleUuid uuid,
         CancellationToken cancellationToken)
     {
         GattServiceProviderResult result = await GattServiceProvider
@@ -103,17 +96,15 @@ public sealed class WinBlePeripheral(WinBleDevice device, IObserver<LogEvent>? l
         return new WinGattClientService(this, provider.Service);
     }
 
-    public override IObservable<IGattClientPeer> WhenConnected => _whenConnected.AsObservable();
-
     internal IGattClientPeer GetOrRegisterSession(GattSession gattSession)
     {
-        if (_clients.TryGetValue(gattSession.DeviceId, out IGattClientPeer? clientPeer) && clientPeer.IsConnected)
+        BleAddress address = BleAddress.Parse(gattSession.DeviceId.Id, provider: null);
+        if (PeerDevices.TryGetValue(address, out IGattClientPeer? clientPeer) && clientPeer.IsConnected)
         {
             return clientPeer;
         }
         clientPeer = new WinGattClientPeer(gattSession);
-        _clients[gattSession.DeviceId] = clientPeer;
-        _whenConnected.OnNext(clientPeer);
+        OnConnectedCentral(clientPeer);
         return clientPeer;
     }
 }

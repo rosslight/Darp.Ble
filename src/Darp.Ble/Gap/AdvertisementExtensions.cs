@@ -24,7 +24,7 @@ public static class AdvertisementExtensions
                     "Unable to connect to advertisement as it is not connectable"));
                 return Disposable.Empty;
             }
-            BleDevice device = advertisement.Observer.Device;
+            IBleDevice device = advertisement.Observer.Device;
             if (device.Capabilities.HasFlag(Capabilities.Central))
             {
                 observer.OnError(new BleDeviceException(device,

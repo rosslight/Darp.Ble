@@ -23,7 +23,7 @@ public sealed class UnitTest1(ITestOutputHelper outputHelper)
             .OnLog((_, logEvent) => _logger.Write((LogEventLevel)logEvent.Level, logEvent.Exception, logEvent.MessageTemplate, logEvent.Properties))
             .With<WinBleFactory>()
             .CreateManager();
-        BleDevice device = manager.EnumerateDevices().First();
+        IBleDevice device = manager.EnumerateDevices().First();
         await device.InitializeAsync();
         await device.Observer
             .RefCount()
@@ -38,7 +38,7 @@ public sealed class UnitTest1(ITestOutputHelper outputHelper)
             .OnLog((_, logEvent) => _logger.Write((LogEventLevel)logEvent.Level, logEvent.Exception, logEvent.MessageTemplate, logEvent.Properties))
             .With<WinBleFactory>()
             .CreateManager();
-        BleDevice device = manager.EnumerateDevices().First();
+        IBleDevice device = manager.EnumerateDevices().First();
         await device.InitializeAsync();
         var service = await device.Peripheral.AddServiceAsync(new BleUuid(0x1234));
         var characteristic = await service.AddCharacteristicAsync<Property.Notify>(new BleUuid(0x1234));

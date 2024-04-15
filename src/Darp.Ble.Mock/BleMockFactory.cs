@@ -44,7 +44,7 @@ public sealed class BleBroadcasterMock : IBleBroadcaster
 
 public sealed class BleMockFactory : IBleFactory
 {
-    public required Func<BleBroadcasterMock, BlePeripheral, Task> OnConfigure { get; init; }
+    public required Func<BleBroadcasterMock, IBlePeripheral, Task> OnConfigure { get; init; }
 
     public IEnumerable<IBleDevice> EnumerateDevices(IObserver<(BleDevice, LogEvent)>? logger)
     {
