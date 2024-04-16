@@ -7,7 +7,7 @@ using Darp.Ble.Mock.Gatt;
 
 namespace Darp.Ble.Mock;
 
-public sealed class MockBleCentral(BleDevice device, MockBlePeripheral peripheralMock, IObserver<LogEvent>? logger)
+internal sealed class MockBleCentral(BleDevice device, MockBlePeripheral peripheralMock, IObserver<LogEvent>? logger)
     : BleCentral(device, logger)
 {
     private readonly MockBlePeripheral _peripheralMock = peripheralMock;

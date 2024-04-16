@@ -1,3 +1,5 @@
+using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
 
 namespace Darp.Ble.Gatt.Server;
@@ -10,13 +12,14 @@ public abstract class GattServerService(BleUuid uuid) : IGattServerService
     /// <inheritdoc />
     public BleUuid Uuid { get; } = uuid;
 
-    protected abstract Task DiscoverCharacteristicsAsyncCore(CancellationToken cancellationToken);
-    protected abstract Task<IGattServerCharacteristic?> DiscoverCharacteristicAsyncCore(
-        BleUuid uuid, CancellationToken cancellationToken);
+    protected abstract IObservable<IGattServerCharacteristic> DiscoverCharacteristicsAsyncCore();
+    protected abstract IObservable<IGattServerCharacteristic> DiscoverCharacteristicAsyncCore(BleUuid uuid);
 
     public async Task<IGattServerCharacteristic> DiscoverCharacteristicAsync(BleUuid uuid, CancellationToken cancellationToken = default)
     {
-        IGattServerCharacteristic characteristic = await DiscoverCharacteristicAsyncCore(uuid, cancellationToken) ?? throw new Exception("Upsi");
+        IGattServerCharacteristic characteristic = await DiscoverCharacteristicAsyncCore(uuid)
+            .FirstAsync()
+            .ToTask(cancellationToken);
         _characteristics[uuid] = characteristic;
         return characteristic;
     }

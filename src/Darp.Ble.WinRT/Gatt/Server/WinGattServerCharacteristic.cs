@@ -10,8 +10,13 @@ public sealed class WinGattServerCharacteristic(GattCharacteristic gattCharacter
 {
     private readonly GattCharacteristic _gattCharacteristic = gattCharacteristic;
 
-    protected override async Task WriteInternalAsync(byte[] bytes, CancellationToken cancellationToken)
+    protected override async Task WriteAsyncCore(byte[] bytes, CancellationToken cancellationToken)
     {
         await _gattCharacteristic.WriteValueAsync(bytes.AsBuffer()).AsTask(cancellationToken);
+    }
+
+    protected override IObservable<byte[]> OnNotifyCore()
+    {
+        throw new NotImplementedException();
     }
 }

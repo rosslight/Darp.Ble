@@ -3,7 +3,7 @@ using Darp.Ble.Logger;
 
 namespace Darp.Ble.Mock;
 
-public sealed class MockBleObserver(MockBleDevice device, BleBroadcasterMock broadcaster, IObserver<LogEvent>? logger) : BleObserver(device, logger)
+internal sealed class MockBleObserver(MockBleDevice device, BleBroadcasterMock broadcaster, IObserver<LogEvent>? logger) : BleObserver(device, logger)
 {
     private readonly BleBroadcasterMock _broadcaster = broadcaster;
 

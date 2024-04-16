@@ -1,6 +1,5 @@
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Reactive.Threading.Tasks;
 using System.Reactive.Windows.Foundation;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Windows.Devices.Enumeration;
@@ -43,18 +42,15 @@ public sealed class WinGattServerService(GattDeviceService winService)
     }
 
     /// <inheritdoc />
-    protected override async Task DiscoverCharacteristicsAsyncCore(CancellationToken cancellationToken)
+    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicsAsyncCore()
     {
-        await DiscoverCharacteristic(() => _winService.GetCharacteristicsAsync())
-            .ToTask(cancellationToken);
+        return DiscoverCharacteristic(() => _winService.GetCharacteristicsAsync());
     }
 
     /// <inheritdoc />
-    protected override async Task<IGattServerCharacteristic?> DiscoverCharacteristicAsyncCore(BleUuid uuid, CancellationToken cancellationToken)
+    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicAsyncCore(BleUuid uuid)
     {
-        return await DiscoverCharacteristic(() => _winService.GetCharacteristicsAsync())
-            .FirstAsync()
-            .ToTask(cancellationToken);
+        return DiscoverCharacteristic(() => _winService.GetCharacteristicsAsync());
     }
 
     /// <inheritdoc />

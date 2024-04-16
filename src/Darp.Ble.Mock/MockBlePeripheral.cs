@@ -60,11 +60,11 @@ public sealed class MockBleConnection : IMockBleConnection
     }
 }*/
 
-public sealed class MockBlePeripheral(MockBleDevice device, IObserver<LogEvent>? logger) : BlePeripheral(device, logger)
+internal sealed class MockBlePeripheral(MockBleDevice device, IObserver<LogEvent>? logger) : BlePeripheral(device, logger)
 {
     protected override Task<IGattClientService> CreateServiceAsyncCore(BleUuid uuid, CancellationToken cancellationToken)
     {
-        var service = new MockGattClientService(uuid);
+        var service = new MockGattClientService(uuid, this);
         return Task.FromResult<IGattClientService>(service);
     }
 
@@ -76,12 +76,14 @@ public sealed class MockBlePeripheral(MockBleDevice device, IObserver<LogEvent>?
     }
 }
 
-public sealed class MockGattClientService(BleUuid uuid) : GattClientService(uuid)
+internal sealed class MockGattClientService(BleUuid uuid, MockBlePeripheral blePeripheral) : GattClientService(uuid)
 {
+    public MockBlePeripheral BlePeripheral { get; } = blePeripheral;
+
     protected override Task<IGattClientCharacteristic> CreateCharacteristicAsyncCore(BleUuid uuid,
         GattProperty gattProperty,
         CancellationToken cancellationToken)
     {
-        return Task.FromResult<IGattClientCharacteristic>(new MockGattClientCharacteristic(uuid, gattProperty));
+        return Task.FromResult<IGattClientCharacteristic>(new MockGattClientCharacteristic(uuid, gattProperty, this));
     }
 }

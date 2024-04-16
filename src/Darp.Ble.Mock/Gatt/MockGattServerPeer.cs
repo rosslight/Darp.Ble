@@ -7,7 +7,7 @@ using Darp.Ble.Gatt.Server;
 
 namespace Darp.Ble.Mock.Gatt;
 
-public sealed class MockGattServerPeer : GattServerPeer
+internal sealed class MockGattServerPeer : GattServerPeer
 {
     private readonly MockGattClientPeer _clientPeer;
 
@@ -19,29 +19,29 @@ public sealed class MockGattServerPeer : GattServerPeer
     public override IObservable<ConnectionStatus> WhenConnectionStatusChanged => Observable.Empty<ConnectionStatus>();
     protected override IObservable<IGattServerService> DiscoverServicesCore() => _clientPeer.GetServices();
     protected override IObservable<IGattServerService> DiscoverServiceCore(BleUuid uuid) => _clientPeer.GetService(uuid);
-    public IObservable<Unit> WhenDisconnected => Observable.Empty<Unit>();
 }
 
-public sealed class MockGattClientPeer : IGattClientPeer
+internal sealed class MockGattClientPeer : IGattClientPeer
 {
-    private readonly MockBlePeripheral _peripheral;
+    private readonly Dictionary<BleUuid, IGattServerService> _services;
 
     public MockGattClientPeer(BleAddress address, MockBlePeripheral peripheral)
     {
         Address = address;
-        _peripheral = peripheral;
+        _services = peripheral.Services
+            .Select(x => (x.Key, new MockGattServerService(x.Key, (MockGattClientService)x.Value, this)))
+            .ToDictionary(x => x.Key, x => (IGattServerService)x.Item2);
     }
+
+    public IReadOnlyDictionary<BleUuid, IGattServerService> Services => _services;
 
     public bool IsConnected => true;
     public IObservable<Unit> WhenDisconnected => Observable.Empty<Unit>();
     public BleAddress Address { get; }
 
-    internal IObservable<IGattServerService> GetServices()
-    {
-        return _peripheral.Services.ToObservable()
-            .Select(x => new MockGattServerService(x.Key, new MockGattClientService(x.Key)));
-    }
-    internal IObservable<IGattServerService> GetService(BleUuid uuid)
+    public IObservable<IGattServerService> GetServices() => Services.Values.ToObservable();
+
+    public IObservable<IGattServerService> GetService(BleUuid uuid)
     {
         return GetServices().Where(x => x.Uuid == uuid);
     }
