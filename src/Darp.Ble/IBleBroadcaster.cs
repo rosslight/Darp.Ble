@@ -7,4 +7,5 @@ public interface IBleBroadcaster
 {
     IDisposable Advertise(AdvertisingSet advertisingSet);
     IDisposable Advertise(IObservable<AdvertisingData> source, AdvertisingParameters? parameters = null);
+    void Stop();
 }

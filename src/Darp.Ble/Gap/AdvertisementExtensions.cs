@@ -37,9 +37,8 @@ public static class AdvertisementExtensions
         });
     }
 
-    public static IObservable<IGattServerPeer> ConnectToPeripheral<TAdv>(this IObservable<TAdv> source,
+    public static IObservable<IGattServerPeer> ConnectToPeripheral(this IObservable<IGapAdvertisement> source,
         BleConnectionParameters? connectionParameters = null)
-        where TAdv : IGapAdvertisement
     {
         return source.SelectMany(x => x.Connect(connectionParameters));
     }

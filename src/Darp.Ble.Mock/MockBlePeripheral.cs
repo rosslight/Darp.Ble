@@ -1,4 +1,5 @@
 using Darp.Ble.Data;
+using Darp.Ble.Gap;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Logger;
 using Darp.Ble.Mock.Gatt;
@@ -60,8 +61,11 @@ public sealed class MockBleConnection : IMockBleConnection
     }
 }*/
 
-internal sealed class MockBlePeripheral(MockBleDevice device, IObserver<LogEvent>? logger) : BlePeripheral(device, logger)
+internal sealed class MockBlePeripheral(MockBleDevice device, MockBleBroadcaster broadcaster, IObserver<LogEvent>? logger)
+    : BlePeripheral(device, logger), IBleBroadcaster
 {
+    public MockBleBroadcaster Broadcaster { get; } = broadcaster;
+
     protected override Task<IGattClientService> CreateServiceAsyncCore(BleUuid uuid, CancellationToken cancellationToken)
     {
         var service = new MockGattClientService(uuid, this);
@@ -74,6 +78,14 @@ internal sealed class MockBlePeripheral(MockBleDevice device, IObserver<LogEvent
         OnConnectedCentral(clientPeer);
         return clientPeer;
     }
+
+    public IDisposable Advertise(AdvertisingSet advertisingSet) => Broadcaster.Advertise(advertisingSet);
+
+    public IDisposable Advertise(IObservable<AdvertisingData> source, AdvertisingParameters? parameters = null)
+    {
+        return Broadcaster.Advertise(source, parameters);
+    }
+    public void Stop() => Broadcaster.Stop();
 }
 
 internal sealed class MockGattClientService(BleUuid uuid, MockBlePeripheral blePeripheral) : GattClientService(uuid)

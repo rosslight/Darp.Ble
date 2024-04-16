@@ -9,17 +9,20 @@ namespace Darp.Ble.Mock;
 
 
 
-public sealed class BleBroadcasterMock : IBleBroadcaster
+public sealed class MockBleBroadcaster : IBleBroadcaster
 {
     private IObservable<AdvertisingData>? _source;
     private AdvertisingParameters? _parameters;
+    private CancellationTokenSource? _cancellationTokenSource;
 
     public IObservable<IGapAdvertisement> GetAdvertisements(BleObserver observer)
     {
         BleAddress ownAddress = new(BleAddressType.Public, (UInt48)0xAABBCCDDEEFF);
 
         IObservable<AdvertisingData> dataSource = _source ?? Observable.Empty<AdvertisingData>();
-        return dataSource.Select(data => GapAdvertisement.FromExtendedAdvertisingReport(observer,
+        return dataSource
+            .TakeWhile(_ => _cancellationTokenSource?.IsCancellationRequested != true)
+            .Select(data => GapAdvertisement.FromExtendedAdvertisingReport(observer,
             DateTimeOffset.UtcNow,
             _parameters?.Type ?? BleEventType.None,
             ownAddress,
@@ -36,15 +39,22 @@ public sealed class BleBroadcasterMock : IBleBroadcaster
     public IDisposable Advertise(AdvertisingSet advertisingSet) => throw new NotImplementedException();
     public IDisposable Advertise(IObservable<AdvertisingData> source, AdvertisingParameters? parameters = null)
     {
+        _cancellationTokenSource = new CancellationTokenSource();
         _source = source;
         _parameters = parameters;
         return Disposable.Create(this, self => self._source = null);
+    }
+
+    public void Stop()
+    {
+        _cancellationTokenSource?.Cancel();
+        _cancellationTokenSource = null;
     }
 }
 
 public sealed class BleMockFactory : IBleFactory
 {
-    public required Func<BleBroadcasterMock, IBlePeripheral, Task> OnConfigure { get; init; }
+    public required Func<MockBleBroadcaster, IBlePeripheral, Task> OnConfigure { get; init; }
 
     public IEnumerable<IBleDevice> EnumerateDevices(IObserver<(BleDevice, LogEvent)>? logger)
     {
