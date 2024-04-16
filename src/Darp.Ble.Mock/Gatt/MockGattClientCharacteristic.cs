@@ -4,7 +4,6 @@ using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
-using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Mock.Gatt;
 

@@ -2,7 +2,6 @@ using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
-using Darp.Ble.Implementation;
 using Darp.Ble.Linq;
 using Darp.Ble.Tests.TestUtils;
 using Darp.Ble.Utils;
@@ -36,9 +35,9 @@ public sealed class BleTests
     {
         public IEnumerable<IBleDevice> EnumerateDevices(IObserver<(BleDevice, LogEvent)>? logger)
         {
-            var impl = Substitute.For<IBleDevice>();
-            impl.InitializeAsync().Returns(Task.FromResult(InitializeResult.Success));
-            var observer = Substitute.For<IBleObserver>();
+            var impl = Substitute.For<BleDevice>((IObserver<(BleDevice, LogEvent)>?)null);
+            impl.InitializeAsyncCore().Returns(Task.FromResult(InitializeResult.Success));
+            var observer = Substitute.For<BleObserver>(impl, null);
             observer.TryStartScan(out _)
                 .Returns(info =>
                 {

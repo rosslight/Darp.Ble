@@ -1,6 +1,6 @@
 using Darp.Ble.Logger;
 
-namespace Darp.Ble.Implementation;
+namespace Darp.Ble;
 
 /// <summary> The ble implementation config </summary>
 public interface IBleFactory

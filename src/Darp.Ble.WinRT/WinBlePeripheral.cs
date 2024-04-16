@@ -7,7 +7,6 @@ using Windows.Foundation;
 using Windows.Storage.Streams;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
-using Darp.Ble.Implementation;
 using Darp.Ble.Logger;
 
 namespace Darp.Ble.WinRT;

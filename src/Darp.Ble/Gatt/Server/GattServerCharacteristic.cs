@@ -20,3 +20,9 @@ public abstract class GattServerCharacteristic(BleUuid uuid) : IGattServerCharac
 
     protected abstract IObservable<byte[]> OnNotifyCore();
 }
+
+public sealed class GattServerCharacteristic<TProp1>(IGattServerCharacteristic serverCharacteristic) : IGattServerCharacteristic<TProp1>
+{
+    public BleUuid Uuid => Characteristic.Uuid;
+    public IGattServerCharacteristic Characteristic { get; } = serverCharacteristic;
+}

@@ -15,9 +15,3 @@ public interface IGattServerCharacteristic<TProp>
     BleUuid Uuid { get; }
     IGattServerCharacteristic Characteristic { get; }
 }
-
-public sealed class GattServerCharacteristic<TProp1>(IGattServerCharacteristic serverCharacteristic) : IGattServerCharacteristic<TProp1>
-{
-    public BleUuid Uuid => Characteristic.Uuid;
-    public IGattServerCharacteristic Characteristic { get; } = serverCharacteristic;
-}

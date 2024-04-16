@@ -1,5 +1,4 @@
 ﻿using System.Reactive;
-using Darp.Ble.Implementation;
 using Darp.Ble.Logger;
 
 namespace Darp.Ble;
