@@ -64,6 +64,7 @@ public abstract class BleDevice : IBleDevice
     /// <inheritdoc />
     public async Task<InitializeResult> InitializeAsync(CancellationToken cancellationToken = default)
     {
+        if (IsInitialized) return InitializeResult.Success;
         if (_isInitializing) return InitializeResult.AlreadyInitializing;
         try
         {

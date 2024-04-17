@@ -10,13 +10,14 @@ public sealed class BleMockFactory : IBleFactory
     public delegate Task InitializeAsync(IBleBroadcaster broadcaster, IBlePeripheral peripheral);
 
     /// <summary> Configuration callback when the mock device is initialized </summary>
-    public required InitializeAsync OnInitialize { get; init; }
+    public InitializeAsync? OnInitialize { get; init; }
     /// <summary> The name of the resulting device </summary>
     public string Name { get; set; } = "Mock";
 
     /// <inheritdoc />
     public IEnumerable<IBleDevice> EnumerateDevices(IObserver<(BleDevice, LogEvent)>? logger)
     {
-        yield return new MockBleDevice(OnInitialize, Name, logger);
+        var onInitialize = OnInitialize ?? ((_, _) => Task.CompletedTask);
+        yield return new MockBleDevice(onInitialize, Name, logger);
     }
 }

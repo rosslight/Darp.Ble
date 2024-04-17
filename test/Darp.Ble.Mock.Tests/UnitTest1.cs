@@ -1,9 +1,14 @@
 using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
+using Darp.Ble.Implementation;
+using Darp.Ble.Logger;
 using Darp.Ble.Utils;
 using FluentAssertions;
+using FluentAssertions.Reactive;
 using Microsoft.Reactive.Testing;
+using NSubstitute;
 
 namespace Darp.Ble.Mock.Tests;
 /*
@@ -100,8 +105,12 @@ public sealed class UnitTest1
             return Task.CompletedTask;
         }
 
-        IGapAdvertisement adv = await device.Observer.RefCount().FirstAsync();
-
+        Task<IGapAdvertisement> task = device.Observer.RefCount().FirstAsync().ToTask();
+        scheduler.AdvanceTo(TimeSpan.FromMilliseconds(999).Ticks);
+        task.IsCompleted.Should().BeFalse();
+        scheduler.AdvanceTo(TimeSpan.FromMilliseconds(1000).Ticks);
+        task.IsCompleted.Should().BeTrue();
+        IGapAdvertisement adv = await task;
         // Assert
         adv.Data.Should().BeEquivalentTo(adData);
     }
