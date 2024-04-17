@@ -7,20 +7,14 @@ using Darp.Ble.Gatt.Server;
 
 namespace Darp.Ble.Mock.Gatt;
 
-internal sealed class MockGattClientCharacteristic(
-    BleUuid uuid,
+internal sealed class MockGattClientCharacteristic(BleUuid uuid,
     GattProperty property,
     MockGattClientService clientService)
     : GattClientCharacteristic(uuid, property)
 {
-    public MockGattClientService ClientService { get; } = clientService;
+    private readonly MockGattClientService _clientService = clientService;
     private readonly List<Func<IGattClientPeer, byte[], CancellationToken, Task<GattProtocolStatus>>> _onWriteCallbacks = [];
 
-    protected override IDisposable OnWriteCore(Func<IGattClientPeer, byte[], CancellationToken, Task<GattProtocolStatus>> callback)
-    {
-        _onWriteCallbacks.Add(callback);
-        return Disposable.Create((List: _onWriteCallbacks, Callback: callback), x => x.List.Remove(x.Callback));
-    }
     public async Task WriteAsync(IGattClientPeer clientPeer, byte[] bytes, CancellationToken cancellationToken)
     {
         // Use inverse for loop as observers might be removed from list
@@ -32,10 +26,18 @@ internal sealed class MockGattClientCharacteristic(
         }
     }
 
+    /// <inheritdoc />
+    protected override IDisposable OnWriteCore(Func<IGattClientPeer, byte[], CancellationToken, Task<GattProtocolStatus>> callback)
+    {
+        _onWriteCallbacks.Add(callback);
+        return Disposable.Create((List: _onWriteCallbacks, Callback: callback), x => x.List.Remove(x.Callback));
+    }
+
+    /// <inheritdoc />
     protected override async Task<bool> NotifyAsyncCore(IGattClientPeer clientPeer, byte[] source, CancellationToken cancellationToken)
     {
         if (clientPeer is not MockGattClientPeer mockClientPeer) return false;
-        IGattServerService serverService = await mockClientPeer.GetService(ClientService.Uuid).FirstAsync().ToTask(cancellationToken);
+        IGattServerService serverService = await mockClientPeer.GetService(_clientService.Uuid).FirstAsync().ToTask(cancellationToken);
         if (!serverService.Characteristics.TryGetValue(Uuid, out IGattServerCharacteristic? characteristic)
             || characteristic is not MockGattServerCharacteristic serverCharacteristic)
         {

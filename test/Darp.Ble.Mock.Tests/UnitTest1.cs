@@ -74,7 +74,7 @@ public sealed class UnitTest1
     private static async Task<IBleDevice> GetMockDeviceAsync(Func<MockBleBroadcaster, IBlePeripheral, Task> configure)
     {
         BleManager bleManager = new BleManagerBuilder()
-            .With(new BleMockFactory { OnConfigure = configure } )
+            .With(new BleMockFactory { OnInitialize = configure } )
             .CreateManager();
         IBleDevice device = bleManager.EnumerateDevices().First();
         InitializeResult result = await device.InitializeAsync();
@@ -112,7 +112,7 @@ public sealed class UnitTest1
         BleManager bleManager = new BleManagerBuilder()
             .With(new BleMockFactory
             {
-                OnConfigure = (broadcaster, _) =>
+                OnInitialize = (broadcaster, _) =>
                 {
                     /*
                     var heartRateService = factory.Peripheral.AddHeartRateService();

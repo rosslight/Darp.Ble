@@ -7,12 +7,14 @@ internal sealed class MockBleObserver(MockBleDevice device, MockBleBroadcaster b
 {
     private readonly MockBleBroadcaster _broadcaster = broadcaster;
 
+    /// <inheritdoc />
     protected override bool TryStartScanCore(out IObservable<IGapAdvertisement> observable)
     {
         observable = _broadcaster.GetAdvertisements(this);
         return true;
     }
 
+    /// <inheritdoc />
     protected override void StopScanCore()
     {
     }

@@ -6,21 +6,22 @@ using Darp.Ble.Gatt.Server;
 
 namespace Darp.Ble.Mock.Gatt;
 
-internal sealed class MockGattServerCharacteristic(
-    BleUuid uuid,
+internal sealed class MockGattServerCharacteristic(BleUuid uuid,
     MockGattClientCharacteristic characteristic,
     MockGattServerService serverService)
     : GattServerCharacteristic(uuid)
 {
-    public MockGattServerService ServerService { get; } = serverService;
     private readonly MockGattClientCharacteristic _characteristic = characteristic;
     private readonly List<IObserver<byte[]>> _onNotifyObservers = [];
+    private readonly MockGattServerService _serverService = serverService;
 
+    /// <inheritdoc />
     protected override Task WriteAsyncCore(byte[] bytes, CancellationToken cancellationToken)
     {
-        return _characteristic.WriteAsync(ServerService.GattClient, bytes, cancellationToken);
+        return _characteristic.WriteAsync(_serverService.GattClient, bytes, cancellationToken);
     }
 
+    /// <inheritdoc />
     protected override IObservable<byte[]> OnNotifyCore() => Observable.Create<byte[]>(observer =>
     {
         _onNotifyObservers.Add(observer);

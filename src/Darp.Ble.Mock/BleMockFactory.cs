@@ -1,62 +1,21 @@
-﻿using System.Reactive.Disposables;
-using System.Reactive.Linq;
-using Darp.Ble.Data;
-using Darp.Ble.Gap;
-using Darp.Ble.Logger;
+﻿using Darp.Ble.Logger;
 
 namespace Darp.Ble.Mock;
 
-
-
-public sealed class MockBleBroadcaster : IBleBroadcaster
-{
-    private IObservable<AdvertisingData>? _source;
-    private AdvertisingParameters? _parameters;
-    private CancellationTokenSource? _cancellationTokenSource;
-
-    public IObservable<IGapAdvertisement> GetAdvertisements(BleObserver observer)
-    {
-        BleAddress ownAddress = new(BleAddressType.Public, (UInt48)0xAABBCCDDEEFF);
-
-        IObservable<AdvertisingData> dataSource = _source ?? Observable.Empty<AdvertisingData>();
-        return dataSource
-            .TakeWhile(_ => _cancellationTokenSource?.IsCancellationRequested != true)
-            .Select(data => GapAdvertisement.FromExtendedAdvertisingReport(observer,
-            DateTimeOffset.UtcNow,
-            _parameters?.Type ?? BleEventType.None,
-            ownAddress,
-            Physical.Le1M,
-            Physical.NotAvailable,
-            AdvertisingSId.NoAdIProvided,
-            (TxPowerLevel)20,
-            (Rssi)(-40),
-            PeriodicAdvertisingInterval.NoPeriodicAdvertising,
-            new BleAddress(BleAddressType.NotAvailable, UInt48.Zero),
-            data));
-    }
-
-    public IDisposable Advertise(AdvertisingSet advertisingSet) => throw new NotImplementedException();
-    public IDisposable Advertise(IObservable<AdvertisingData> source, AdvertisingParameters? parameters = null)
-    {
-        _cancellationTokenSource = new CancellationTokenSource();
-        _source = source;
-        _parameters = parameters;
-        return Disposable.Create(this, self => self._source = null);
-    }
-
-    public void Stop()
-    {
-        _cancellationTokenSource?.Cancel();
-        _cancellationTokenSource = null;
-    }
-}
-
+/// <summary> Provides a mock device to the available devices </summary>
 public sealed class BleMockFactory : IBleFactory
 {
-    public required Func<MockBleBroadcaster, IBlePeripheral, Task> OnConfigure { get; init; }
+    /// <summary> Delegate which describes configuration using a broadcaster and a peripheral </summary>
+    public delegate Task InitializeAsync(IBleBroadcaster broadcaster, IBlePeripheral peripheral);
 
+    /// <summary> Configuration callback when the mock device is initialized </summary>
+    public required InitializeAsync OnInitialize { get; init; }
+    /// <summary> The name of the resulting device </summary>
+    public string Name { get; set; } = "Mock";
+
+    /// <inheritdoc />
     public IEnumerable<IBleDevice> EnumerateDevices(IObserver<(BleDevice, LogEvent)>? logger)
     {
-        yield return new MockBleDevice(OnConfigure, logger);
+        yield return new MockBleDevice(OnInitialize, Name, logger);
     }
 }

@@ -12,6 +12,7 @@ internal sealed class MockBleCentral(BleDevice device, MockBlePeripheral periphe
 {
     private readonly MockBlePeripheral _peripheralMock = peripheralMock;
 
+    /// <inheritdoc />
     protected override IObservable<IGattServerPeer> ConnectToPeripheralCore(BleAddress address,
         BleConnectionParameters connectionParameters,
         BleScanParameters scanParameters)
