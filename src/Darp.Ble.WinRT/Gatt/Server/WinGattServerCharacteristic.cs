@@ -3,7 +3,7 @@ using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Server;
 
-namespace Darp.Ble.WinRT.Gatt;
+namespace Darp.Ble.WinRT.Gatt.Server;
 
 public sealed class WinGattServerCharacteristic(GattCharacteristic gattCharacteristic)
     : GattServerCharacteristic(new BleUuid(gattCharacteristic.Uuid, inferType: true))

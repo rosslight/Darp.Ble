@@ -3,6 +3,7 @@ using Android;
 using Android.Bluetooth;
 using Android.Content.PM;
 using Darp.Ble.Data;
+using Darp.Ble.Implementation;
 using Darp.Ble.Logger;
 
 namespace Darp.Ble.Android;
@@ -39,7 +40,7 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, IObserve
 
     public override string Identifier => "Darp.Ble.Android";
 
-    protected override void DisposeSyncInternal()
+    protected override void DisposeCore()
     {
         _bluetoothManager.Dispose();
     }

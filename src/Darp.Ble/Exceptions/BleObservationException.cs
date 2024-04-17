@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Exceptions;
 

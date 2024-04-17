@@ -5,10 +5,6 @@ using Darp.Ble.Hci.Payload.Event;
 namespace Darp.Ble.Hci.Payload.Result;
 
 //[System.Runtime.CompilerServices.InlineArray(64)]
-public struct InlineBitField64
-{
-    private byte _element0;
-}
 
 /// <summary>
 /// Example:

@@ -3,6 +3,7 @@ using Android.Bluetooth.LE;
 using Android.Runtime;
 using Android.Util;
 using Darp.Ble.Exceptions;
+using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Android;
 

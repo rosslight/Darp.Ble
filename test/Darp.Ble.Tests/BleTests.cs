@@ -2,6 +2,7 @@ using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
+using Darp.Ble.Implementation;
 using Darp.Ble.Linq;
 using Darp.Ble.Tests.TestUtils;
 using Darp.Ble.Utils;

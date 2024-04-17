@@ -2,8 +2,10 @@ using System.Reactive.Linq;
 using Windows.Devices.Bluetooth;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Server;
+using Darp.Ble.Implementation;
 using Darp.Ble.Logger;
 using Darp.Ble.WinRT.Gatt;
+using Darp.Ble.WinRT.Gatt.Server;
 
 namespace Darp.Ble.WinRT;
 

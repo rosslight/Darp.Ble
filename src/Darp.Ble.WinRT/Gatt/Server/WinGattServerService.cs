@@ -7,7 +7,7 @@ using Windows.Foundation;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Server;
 
-namespace Darp.Ble.WinRT.Gatt;
+namespace Darp.Ble.WinRT.Gatt.Server;
 
 public sealed class WinGattServerService(GattDeviceService winService)
     : GattServerService(new BleUuid(winService.Uuid, inferType: true))

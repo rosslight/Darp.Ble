@@ -2,12 +2,12 @@ namespace Darp.Ble.Gatt.Server;
 
 public static class GattServerCharacteristicExtensions
 {
-    public static IObservable<byte[]> OnNotify(this IGattServerCharacteristic<Property.Notify> characteristic)
+    public static IObservable<byte[]> OnNotify(this IGattServerCharacteristic<Properties.Notify> characteristic)
     {
         return characteristic.Characteristic.OnNotify();
     }
 
-    public static async Task WriteAsync(this IGattServerCharacteristic<Property.Write> characteristic,
+    public static async Task WriteAsync(this IGattServerCharacteristic<Properties.Write> characteristic,
         byte[] bytes,
         CancellationToken cancellationToken = default)
     {

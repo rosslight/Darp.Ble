@@ -1,40 +1,19 @@
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
 using Darp.Ble.Logger;
 
-namespace Darp.Ble;
-
-public interface IBleObserver : IConnectableObservable<IGapAdvertisement>, IAsyncDisposable
-{
-    /// <summary> True if the observer is currently scanning </summary>
-    bool IsScanning { get; }
-    /// <summary> The parameters used for the current scan </summary>
-    BleScanParameters Parameters { get; }
-
-    /// <summary> The ble device </summary>
-    IBleDevice Device { get; }
-
-    /// <summary>
-    /// Set a new configuration for advertising observation. Setting is only allowed while observer is not scanning
-    /// </summary>
-    /// <param name="parameters"> The configuration to set </param>
-    /// <returns> True, if setting parameters was successful </returns>
-    bool Configure(BleScanParameters parameters);
-    /// <summary> Stop the scan that is currently running </summary>
-    /// <param name="reason">
-    /// Supply optional reason for stoppage. Supplying the reason will cause subscribers to complete with an error
-    /// </param>
-    void StopScan(Exception? reason = null);
-}
+namespace Darp.Ble.Implementation;
 
 /// <summary> The ble observer </summary>
+/// <param name="device"> The ble device </param>
+/// <param name="logger"> The logger </param>
 public abstract class BleObserver(BleDevice device, IObserver<LogEvent>? logger) : IBleObserver
 {
-    private readonly IObserver<LogEvent>? _logger = logger;
+    /// <summary> The logger </summary>
+    protected IObserver<LogEvent>? Logger { get; } = logger;
     private readonly List<IObserver<IGapAdvertisement>> _observers = [];
     private IObservable<IGapAdvertisement>? _scanObservable;
     private IDisposable? _scanDisposable;
@@ -59,25 +38,6 @@ public abstract class BleObserver(BleDevice device, IObserver<LogEvent>? logger)
         Parameters = parameters;
         return true;
     }
-
-    /// <inheritdoc />
-    public void StopScan(Exception? reason = null)
-    {
-        lock (_lockObject)
-        {
-            if (reason is not null)
-            {
-                foreach (IObserver<IGapAdvertisement> observer in _observers.ToArray()) observer.OnError(reason);
-                _observers.Clear();
-            }
-            StopScanCore();
-            _scanDisposable?.Dispose();
-            _scanDisposable = null;
-            _scanObservable = null;
-        }
-    }
-
-    protected abstract void StopScanCore();
 
     /// <summary>
     /// Subscribe to the ble observer. Will not start the observation until <see cref="Connect"/> was called.
@@ -132,17 +92,45 @@ public abstract class BleObserver(BleDevice device, IObserver<LogEvent>? logger)
         }
     }
 
+    /// <summary> Core implementation of scan start </summary>
+    /// <param name="observable"> The resulting observable. Should be failing if there was an error </param>
+    /// <returns> True, if the start was successful </returns>
     protected abstract bool TryStartScanCore(out IObservable<IGapAdvertisement> observable);
+
+    void IBleObserver.StopScan() => StopScan(reason: null);
+
+    /// <inheritdoc cref="IBleObserver.StopScan"/>
+    /// <param name="reason">
+    /// Supply optional reason for stoppage. Supplying the reason will cause subscribers to complete with an error
+    /// </param>
+    public void StopScan(Exception? reason = null)
+    {
+        lock (_lockObject)
+        {
+            if (reason is not null)
+            {
+                foreach (IObserver<IGapAdvertisement> observer in _observers.ToArray()) observer.OnError(reason);
+                _observers.Clear();
+            }
+            StopScanCore();
+            _scanDisposable?.Dispose();
+            _scanDisposable = null;
+            _scanObservable = null;
+        }
+    }
+
+    /// <summary> Core implementation of stopping </summary>
+    protected abstract void StopScanCore();
 
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
-        DisposeSyncInternal();
-        await DisposeInternalAsync();
+        DisposeCore();
+        await DisposeAsyncCore();
         GC.SuppressFinalize(this);
     }
     /// <inheritdoc cref="DisposeAsync"/>
-    protected virtual ValueTask DisposeInternalAsync() => ValueTask.CompletedTask;
+    protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
     /// <inheritdoc cref="IDisposable.Dispose"/>
-    protected virtual void DisposeSyncInternal() { }
+    protected virtual void DisposeCore() { }
 }

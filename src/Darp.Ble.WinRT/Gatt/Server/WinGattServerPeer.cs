@@ -9,7 +9,7 @@ using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Server;
 
-namespace Darp.Ble.WinRT.Gatt;
+namespace Darp.Ble.WinRT.Gatt.Server;
 
 /// <inheritdoc />
 public sealed class WinGattServerPeer : GattServerPeer
@@ -71,7 +71,7 @@ public sealed class WinGattServerPeer : GattServerPeer
     }
 
     /// <inheritdoc />
-    protected override void DisposeSyncInternal()
+    protected override void DisposeCore()
     {
         _winDev.Dispose();
     }

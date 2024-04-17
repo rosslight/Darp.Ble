@@ -3,11 +3,6 @@ using Darp.Ble.Hci.Package;
 
 namespace Darp.Ble.Hci.Payload.Command;
 
-[Flags]
-public enum EventMask : ulong
-{
-}
-
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly record struct HciSetEventMaskCommand(EventMask Mask) : IHciCommand<HciSetEventMaskCommand>
 {

@@ -2,6 +2,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Server;
+using Darp.Ble.Implementation;
 using Darp.Ble.Logger;
 using Darp.Ble.Mock.Gatt;
 
@@ -20,7 +21,7 @@ internal sealed class MockBleCentral(BleDevice device, MockBlePeripheral periphe
         return Observable.Create<IGattServerPeer>(observer =>
         {
             MockGattClientPeer clientPeer = _peripheralMock.OnCentralConnection(address);
-            _peripheralMock.Stop();
+            _peripheralMock.StopAll();
             var mockDevice = new MockGattServerPeer(address, clientPeer);
             observer.OnNext(mockDevice);
             return Disposable.Empty;

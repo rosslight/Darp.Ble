@@ -41,7 +41,7 @@ public sealed class UnitTest1(ITestOutputHelper outputHelper)
         IBleDevice device = manager.EnumerateDevices().First();
         await device.InitializeAsync();
         var service = await device.Peripheral.AddServiceAsync(new BleUuid(0x1234));
-        var characteristic = await service.AddCharacteristicAsync<Property.Notify>(new BleUuid(0x1234));
+        var characteristic = await service.AddCharacteristicAsync<Properties.Notify>(new BleUuid(0x1234));
         await Task.Delay(1000);
     }
 }

@@ -7,6 +7,7 @@ using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.Hci.Payload.Result;
+using Darp.Ble.Implementation;
 using Darp.Ble.Logger;
 
 namespace Darp.Ble.HciHost;

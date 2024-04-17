@@ -2,10 +2,11 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
+using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Mock;
 
-internal sealed class MockBleBroadcaster : IBleBroadcaster
+internal sealed class MockBleBroadcaster : BleBroadcaster
 {
     private IObservable<AdvertisingData>? _source;
     private AdvertisingParameters? _parameters;
@@ -33,10 +34,7 @@ internal sealed class MockBleBroadcaster : IBleBroadcaster
     }
 
     /// <inheritdoc />
-    public IDisposable Advertise(AdvertisingSet advertisingSet) => throw new NotImplementedException();
-
-    /// <inheritdoc />
-    public IDisposable Advertise(IObservable<AdvertisingData> source, AdvertisingParameters? parameters = null)
+    protected override IDisposable AdvertiseCore(IObservable<AdvertisingData> source, AdvertisingParameters? parameters)
     {
         _cancellationTokenSource = new CancellationTokenSource();
         _source = source;
@@ -45,7 +43,7 @@ internal sealed class MockBleBroadcaster : IBleBroadcaster
     }
 
     /// <inheritdoc />
-    public void Stop()
+    protected override void StopAllCore()
     {
         _cancellationTokenSource?.Cancel();
         _cancellationTokenSource = null;

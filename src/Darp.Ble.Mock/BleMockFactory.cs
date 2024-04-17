@@ -1,4 +1,5 @@
-﻿using Darp.Ble.Logger;
+﻿using Darp.Ble.Implementation;
+using Darp.Ble.Logger;
 
 namespace Darp.Ble.Mock;
 

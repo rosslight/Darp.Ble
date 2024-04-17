@@ -1,4 +1,5 @@
 using Android.Bluetooth;
+using Darp.Ble.Implementation;
 using Darp.Ble.Logger;
 
 namespace Darp.Ble.Android;

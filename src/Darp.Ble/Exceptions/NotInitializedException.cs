@@ -1,3 +1,5 @@
+using Darp.Ble.Implementation;
+
 namespace Darp.Ble.Exceptions;
 
 /// <summary> Thrown if the device was not initialized </summary>

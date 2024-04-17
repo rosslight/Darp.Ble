@@ -3,6 +3,7 @@ using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Result;
 using Darp.Ble.Hci.Transport;
+using Darp.Ble.Implementation;
 using Darp.Ble.Logger;
 
 namespace Darp.Ble.HciHost;
@@ -31,5 +32,5 @@ public sealed class HciHostBleDevice(string port, IObserver<(BleDevice, LogEvent
     /// <inheritdoc />
     public override string Identifier => "Darp.Ble.WinRT";
 
-    protected override void DisposeSyncInternal() => Host.Dispose();
+    protected override void DisposeCore() => Host.Dispose();
 }

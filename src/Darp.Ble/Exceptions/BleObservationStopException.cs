@@ -1,3 +1,5 @@
+using Darp.Ble.Implementation;
+
 namespace Darp.Ble.Exceptions;
 
 /// <summary> Thrown if something went wrong during stopping the observation </summary>

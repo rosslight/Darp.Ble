@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
+using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Gap;
 

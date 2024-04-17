@@ -1,3 +1,5 @@
+using Darp.Ble.Implementation;
+
 namespace Darp.Ble.Exceptions;
 
 /// <summary> Thrown if start of advertising observation was unsuccessful </summary>

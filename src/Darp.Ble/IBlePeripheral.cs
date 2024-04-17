@@ -3,37 +3,22 @@ using Darp.Ble.Gatt.Client;
 
 namespace Darp.Ble;
 
-public interface IGattClientService
+/// <summary> The ble peripheral </summary>
+public interface IBlePeripheral : IAsyncDisposable
 {
-    BleUuid Uuid { get; }
-    IReadOnlyDictionary<BleUuid, IGattClientCharacteristic> Characteristics { get; }
-
-    Task<IGattClientCharacteristic> AddCharacteristicAsync(BleUuid uuid, GattProperty property, CancellationToken cancellationToken);
-}
-
-public interface IBlePeripheral
-{
+    /// <summary> The ble device </summary>
+    IBleDevice Device { get; }
+    /// <summary> A list of all centrals this peripheral is connected to </summary>
+    IReadOnlyDictionary<BleAddress, IGattClientPeer> PeerDevices { get; }
+    /// <summary> A collection of all added services </summary>
     IReadOnlyDictionary<BleUuid, IGattClientService> Services { get; }
+    /// <summary> Add a new service to this peripheral </summary>
+    /// <param name="uuid"> The uuid of the service to be added </param>
+    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
+    /// <returns> The newly added service </returns>
     Task<IGattClientService> AddServiceAsync(BleUuid uuid, CancellationToken cancellationToken = default);
+    /// <summary> An observable which fires when a new GattClient was connected </summary>
     IObservable<IGattClientPeer> WhenConnected { get; }
+    /// <summary> An observable which fires when a GattClient disconnected </summary>
     IObservable<IGattClientPeer> WhenDisconnected { get; }
-}
-
-public abstract class GattClientService(BleUuid uuid) : IGattClientService
-{
-    private readonly Dictionary<BleUuid, IGattClientCharacteristic> _characteristics = new();
-
-    public BleUuid Uuid { get; } = uuid;
-    public IReadOnlyDictionary<BleUuid, IGattClientCharacteristic> Characteristics => _characteristics;
-
-    public async Task<IGattClientCharacteristic> AddCharacteristicAsync(BleUuid uuid,
-        GattProperty property,
-        CancellationToken cancellationToken)
-    {
-        IGattClientCharacteristic characteristic = await CreateCharacteristicAsyncCore(uuid, property, cancellationToken);
-        _characteristics[characteristic.Uuid] = characteristic;
-        return characteristic;
-    }
-
-    protected abstract Task<IGattClientCharacteristic> CreateCharacteristicAsyncCore(BleUuid uuid, GattProperty gattProperty, CancellationToken cancellationToken);
 }

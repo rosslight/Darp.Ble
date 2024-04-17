@@ -38,13 +38,13 @@ public abstract class GattServerPeer(BleAddress address) : IGattServerPeer
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
-        DisposeSyncInternal();
-        await DisposeInternalAsync();
+        DisposeCore();
+        await DisposeAsyncCore();
         GC.SuppressFinalize(this);
     }
 
     /// <inheritdoc cref="DisposeAsync"/>
-    protected virtual ValueTask DisposeInternalAsync() => ValueTask.CompletedTask;
+    protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
     /// <inheritdoc cref="IDisposable.Dispose"/>
-    protected virtual void DisposeSyncInternal() { }
+    protected virtual void DisposeCore() { }
 }

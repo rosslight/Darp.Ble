@@ -9,6 +9,7 @@ using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
+using Darp.Ble.Implementation;
 using Darp.Ble.Logger;
 
 namespace Darp.Ble.WinRT;
