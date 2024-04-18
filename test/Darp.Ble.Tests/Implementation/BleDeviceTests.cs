@@ -1,10 +1,13 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Implementation;
 using Darp.Ble.Logger;
 using Darp.Ble.Mock;
 using FluentAssertions;
+using Microsoft.Reactive.Testing;
 using NSubstitute;
 
 namespace Darp.Ble.Tests.Implementation;
@@ -43,17 +46,18 @@ public sealed class BleDeviceTests
     [SuppressMessage("Non-substitutable member", "NS1004:Argument matcher used with a non-virtual member of a class.")]
     public async Task InitializeAsync_SecondInitialization_AlreadyInitializing()
     {
+        var testScheduler = new TestScheduler();
+
         var device = Substitute.For<BleDevice>((IObserver<(BleDevice, LogEvent)>?)null);
         device.InvokeNonPublicMethod("InitializeAsyncCore", Arg.Any<CancellationToken>())
-            .Returns(_ => Task.Delay(10).ContinueWith(_ => InitializeResult.Success));
+            .Returns(_ => Observable.Return(InitializeResult.Success)
+                .Delay(TimeSpan.FromMilliseconds(1000), testScheduler)
+                .ToTask());
 
-        Task<InitializeResult> init1Task = Task.Run(async () => await device.InitializeAsync());
-        Task<InitializeResult> init2Task = Task.Run(async () =>
-        {
-            await Task.Delay(5);
-            return await device.InitializeAsync();
-        });
-        await Task.WhenAll(init1Task, init2Task);
+        Task<InitializeResult> init1Task = device.InitializeAsync();
+        Task<InitializeResult> init2Task = device.InitializeAsync();
+
+        testScheduler.AdvanceTo(TimeSpan.FromMilliseconds(1001).Ticks);
 
         (await init1Task).Should().Be(InitializeResult.Success);
         (await init2Task).Should().Be(InitializeResult.AlreadyInitializing);
