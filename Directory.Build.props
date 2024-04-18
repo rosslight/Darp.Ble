@@ -13,7 +13,7 @@
         <RepositoryType>git</RepositoryType>
         <PackageProjectUrl>https://github.com/rosslight/Darp.Ble</PackageProjectUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
-        <PackageLicenseExpression>AGPL-3.0-only OR LicenseRef-rosslight-GmbH</PackageLicenseExpression>
+        <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
     </PropertyGroup>
 
     <ItemGroup>
