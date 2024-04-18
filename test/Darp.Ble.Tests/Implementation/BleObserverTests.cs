@@ -82,6 +82,8 @@ public sealed class BleObserverTests
         Task<IGapAdvertisement> task2 = device.Observer.RefCount().ToTask();
 
         device.Observer.StopScan();
+        task1.Status.Should().Be(TaskStatus.Faulted);
+        task2.Status.Should().Be(TaskStatus.Faulted);
         device.Observer.IsScanning.Should().BeFalse();
     }
 
