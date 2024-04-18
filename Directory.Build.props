@@ -13,10 +13,14 @@
         <RepositoryType>git</RepositoryType>
         <PackageProjectUrl>https://github.com/rosslight/Darp.Ble</PackageProjectUrl>
         <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageLicenseFile>LICENSE-GNU</PackageLicenseFile>
+        <PackageLicenseExpression>AGPL-3.0 OR COMMERCIAL</PackageLicenseExpression>
     </PropertyGroup>
 
     <ItemGroup>
         <None Include="../../README.md" Pack="true" PackagePath="/"/>
+        <None Include="../../LICENSE-GNU" Pack="true" PackagePath="/"/>
+        <None Include="../../LICENSE-COMMERCIAL" Pack="true" PackagePath="/"/>
     </ItemGroup>
 
     <ItemGroup>
