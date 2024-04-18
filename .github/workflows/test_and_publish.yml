@@ -1,0 +1,47 @@
+# This workflow will build a .NET project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
+
+name: .NET
+
+on:
+  push:
+    branches: [ "main" ]
+    tags: [ "v[0-9]+.[0-9]+.[0-9]+" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Install workloads
+        run: |
+          dotnet workload install android
+      - name: Build and Test
+        run: dotnet test --no-build --configuration Release --verbosity normal
+  publish:
+    runs-on: ubuntu-latest
+    needs: [build-test]
+    if: startsWith(github.ref, 'refs/tags')
+    steps:
+      - name: Verify commit exists in origin/main
+        run: |
+          git fetch --no-tags --prune --depth=1 origin +refs/heads/*:refs/remotes/origin/*
+          git branch --remote --contains | grep origin/main
+      - name: Set VERSION variable from tag
+        run: echo "VERSION=${GITHUB_REF/refs\/tags\/v/}" >> $GITHUB_ENV
+      - name: Pack
+        run: |
+          for d in ./src/**/*.csproj ; do \
+            dotnet pack "$d" --configuration Release \
+          done
+      - name: Push
+        run: |
+          for d in ./src/**/*.csproj ; do \
+            dotnet nuget push "$d" --configuration Release \
+          done
