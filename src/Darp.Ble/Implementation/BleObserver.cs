@@ -14,11 +14,12 @@ public abstract class BleObserver(BleDevice device, IObserver<LogEvent>? logger)
 {
     /// <summary> The logger </summary>
     protected IObserver<LogEvent>? Logger { get; } = logger;
-    private bool _isDisposed;
+    private readonly object _lockObject = new();
     private readonly List<IObserver<IGapAdvertisement>> _observers = [];
+    private bool _isDisposed;
+    private bool _stopping;
     private IObservable<IGapAdvertisement>? _scanObservable;
     private IDisposable? _scanDisposable;
-    private readonly object _lockObject = new();
 
     /// <inheritdoc />
     public IBleDevice Device { get; } = device;
@@ -113,15 +114,27 @@ public abstract class BleObserver(BleDevice device, IObserver<LogEvent>? logger)
     {
         lock (_lockObject)
         {
-            if (reason is not null)
+            if (_stopping) return;
+            _stopping = true;
+            try
             {
-                foreach (IObserver<IGapAdvertisement> observer in _observers.ToArray()) observer.OnError(reason);
+                for (int index = _observers.Count - 1; index >= 0; index--)
+                {
+                    IObserver<IGapAdvertisement> obs = _observers[index];
+                    if (reason is not null)
+                        obs.OnError(reason);
+                    else
+                        obs.OnCompleted();
+                }
                 _observers.Clear();
+                StopScanCore();
+                _scanDisposable?.Dispose();
+                _scanDisposable = null;
             }
-            StopScanCore();
-            _scanDisposable?.Dispose();
-            _scanDisposable = null;
-            _scanObservable = null;
+            finally
+            {
+                _stopping = false;
+            }
         }
     }
 

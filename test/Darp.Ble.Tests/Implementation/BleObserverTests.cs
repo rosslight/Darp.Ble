@@ -1,14 +1,20 @@
+using System.Diagnostics.CodeAnalysis;
+using System.Reactive;
 using System.Reactive.Concurrency;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
+using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
+using Darp.Ble.Implementation;
 using Darp.Ble.Mock;
+using Darp.Ble.Tests.Logger;
 using Darp.Ble.Utils;
 using FluentAssertions;
 using Microsoft.Reactive.Testing;
+using NSubstitute;
 
 namespace Darp.Ble.Tests.Implementation;
 
@@ -67,12 +73,111 @@ public sealed class BleObserverTests
     }
 
     [Fact]
+    public async Task StopScan_MultipleConnections_ShouldHaltAll()
+    {
+        // Arrange
+        var scheduler = new TestScheduler();
+        IBleDevice device = await Get1000MsAdvertisementMockDeviceAsync(scheduler);
+
+        // Act
+        Task<IGapAdvertisement> task1 = device.Observer.RefCount().ToTask();
+        Task<IGapAdvertisement> task2 = device.Observer.RefCount().ToTask();
+
+        device.Observer.StopScan();
+        device.Observer.IsScanning.Should().BeFalse();
+    }
+
+    [Fact]
+    [SuppressMessage("Non-substitutable member", "NS1000:Non-virtual setup specification.")]
+    [SuppressMessage("Argument specification", "NS3005:Could not set argument.")]
+    public void Observer_WhenFailedWithAnyException_ShouldReturnException()
+    {
+        var observer = Substitute.For<BleObserver>(null, null);
+        observer.InvokeNonPublicMethod("TryStartScanCore", Observable.Empty<IGapAdvertisement>())
+            .ReturnsForAnyArgs(info =>
+            {
+                info[0] = Observable.Throw<IGapAdvertisement>(new DummyException("Dummy"));
+                return false;
+            });
+
+        Action act = () => _ = observer.RefCount().FirstAsync().Subscribe();
+
+        act.Should().Throw<BleObservationException>()
+            .Where(x => typeof(DummyException).IsAssignableTo(x.InnerException!.GetType()));
+    }
+
+    [Fact]
+    [SuppressMessage("Non-substitutable member", "NS1000:Non-virtual setup specification.")]
+    [SuppressMessage("Argument specification", "NS3005:Could not set argument.")]
+    public void Observer_WhenFailedWithBleObservationException_ShouldReturnException()
+    {
+        var observer = Substitute.For<BleObserver>(null, null);
+        observer.InvokeNonPublicMethod("TryStartScanCore", Observable.Empty<IGapAdvertisement>())
+            .ReturnsForAnyArgs(info =>
+            {
+                info[0] = Observable.Throw<IGapAdvertisement>(new BleObservationException(observer!, message: null, innerException: null));
+                return false;
+            });
+
+        Action act = () => _ = observer.RefCount().FirstAsync().Subscribe();
+
+        act.Should().Throw<BleObservationException>();
+    }
+
+    [Fact]
+    [SuppressMessage("Non-substitutable member", "NS1000:Non-virtual setup specification.")]
+    [SuppressMessage("Argument specification", "NS3005:Could not set argument.")]
+    public void Connect_WhenFailed_ShouldFaultAndReturnEmptyDisposable()
+    {
+        var observer = Substitute.For<BleObserver>(null, null);
+        observer.InvokeNonPublicMethod("TryStartScanCore", Observable.Empty<IGapAdvertisement>())
+            .ReturnsForAnyArgs(info =>
+            {
+                info[0] = Observable.Throw<IGapAdvertisement>(new DummyException("Dummy"));
+                return false;
+            });
+
+        Task<IGapAdvertisement> task = observer.FirstAsync().ToTask();
+        IDisposable disposable = observer.Connect();
+        task.Status.Should().Be(TaskStatus.Faulted);
+        task.Exception?.InnerException.Should().BeOfType<BleObservationException>();
+        task.Exception?.InnerException?.InnerException.Should().BeOfType<DummyException>();
+        disposable.Should().Be(Disposable.Empty);
+    }
+
+    [Fact]
+    public async Task Configure_WhenCalled_ShouldSetParameters()
+    {
+        var targetParameters = new BleScanParameters
+        {
+            ScanType = ScanType.Active,
+        };
+        IBleDevice device = await GetMockDeviceAsync();
+
+        device.Observer.Parameters.Should().NotBe(targetParameters);
+        device.Observer.Configure(targetParameters);
+
+        device.Observer.Parameters.Should().Be(targetParameters);
+    }
+
+    [Fact]
     public async Task DisposeAsync_WhenDisposedTwice_ShouldIgnore()
     {
         IBleDevice device = await GetMockDeviceAsync();
 
         await device.DisposeAsync();
         await device.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task Connect_WhenConnectedTwice_ShouldReturnSame()
+    {
+        IBleDevice device = await GetMockDeviceAsync();
+
+        IDisposable disposable1 = device.Observer.Connect();
+        IDisposable disposable2 = device.Observer.Connect();
+
+        disposable1.Should().Be(disposable2);
     }
 
     [Fact]
