@@ -7,6 +7,10 @@
 
 Darp.Ble is an abstraction layer which aims to provide a simple, reactive way of using BLE with .Net while maintaining granular configuration options.
 
+## Disclaimer
+
+This package is under heavy development. Huge changes to the API are to be expected!
+
 ## Implementations
 
 | Implementation   | Observer | Central | Broadcaster | Peripheral | Nuget                                                                                                                        |
