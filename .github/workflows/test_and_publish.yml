@@ -29,11 +29,12 @@ jobs:
     needs: [build-test]
     if: startsWith(github.ref, 'refs/tags')
     steps:
+      - uses: actions/checkout@v4
       - name: Verify commit exists in origin/main
         run: |
           ls -la
-#          git fetch --no-tags --prune --depth=1 origin +refs/heads/*:refs/remotes/origin/*
-#          git branch --remote --contains | grep origin/main
+          git fetch --no-tags --prune --depth=1 origin +refs/heads/*:refs/remotes/origin/*
+          git branch --remote --contains | grep origin/main
       - name: Set VERSION variable from tag
         run: echo "VERSION=${GITHUB_REF/refs\/tags\/v/}" >> $GITHUB_ENV
       - name: Pack
