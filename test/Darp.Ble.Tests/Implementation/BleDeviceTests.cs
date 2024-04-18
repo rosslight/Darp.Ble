@@ -48,7 +48,11 @@ public sealed class BleDeviceTests
             .Returns(_ => Task.Delay(10).ContinueWith(_ => InitializeResult.Success));
 
         Task<InitializeResult> init1Task = Task.Run(async () => await device.InitializeAsync());
-        Task<InitializeResult> init2Task = Task.Run(async () => await device.InitializeAsync());
+        Task<InitializeResult> init2Task = Task.Run(async () =>
+        {
+            await Task.Delay(5);
+            return await device.InitializeAsync();
+        });
         await Task.WhenAll(init1Task, init2Task);
 
         (await init1Task).Should().Be(InitializeResult.Success);
