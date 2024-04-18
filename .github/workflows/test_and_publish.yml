@@ -19,9 +19,9 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
-      - name: Install workloads
-        run: |
-          dotnet workload install android
+#      - name: Install workloads
+#        run: |
+#          dotnet workload install android
       - name: Build and Test
         run: dotnet test --configuration Release
   publish:
