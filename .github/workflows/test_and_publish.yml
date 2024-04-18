@@ -35,8 +35,9 @@ jobs:
         uses: little-core-labs/get-git-tag@v3.0.2
       - name: Pack
         run: |
-          for d in ./src/**/*.csproj ; do \
-            dotnet pack "$d" --configuration Release /p:Version=${{ steps.tagName.outputs.tag }} \
+          for file_name in ./src/**/*.csproj ; do \
+            echo $file_name
+            dotnet pack $file_name --configuration Release /p:Version=${{ steps.tagName.outputs.tag }} \
           done
       - name: Push
         run: |
