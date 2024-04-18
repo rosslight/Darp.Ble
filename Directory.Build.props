@@ -12,7 +12,7 @@
         <Description>Abstraction for ble implementations</Description>
         <RepositoryType>git</RepositoryType>
         <PackageProjectUrl>https://github.com/rosslight/Darp.Ble</PackageProjectUrl>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageReadmeFile>../../README.md</PackageReadmeFile>
     </PropertyGroup>
 
     <ItemGroup>
