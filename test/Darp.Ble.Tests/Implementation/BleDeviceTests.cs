@@ -1,21 +1,16 @@
 using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data;
+using Darp.Ble.Exceptions;
 using Darp.Ble.Implementation;
 using Darp.Ble.Logger;
 using Darp.Ble.Mock;
 using FluentAssertions;
 using NSubstitute;
 
-namespace Darp.Ble.Tests;
+namespace Darp.Ble.Tests.Implementation;
 
 public sealed class BleDeviceTests
 {
-    private readonly IBleDevice _device = new BleManagerBuilder()
-        .With<BleMockFactory>()
-        .CreateManager()
-        .EnumerateDevices()
-        .First();
-
     [Fact]
     public async Task InitializeAsync_ShouldLog()
     {
@@ -76,5 +71,40 @@ public sealed class BleDeviceTests
         device.IsInitialized.Should().BeTrue();
         InitializeResult init2 = await device.InitializeAsync();
         init2.Should().Be(InitializeResult.Success);
+    }
+
+    [Fact]
+    public void Capability_NotInitialized_ShouldThrow()
+    {
+        var device = Substitute.For<BleDevice>((IObserver<(BleDevice, LogEvent)>?)null);
+        Action act = () => _ = device.Observer;
+        act.Should().Throw<NotInitializedException>();
+    }
+
+    [Fact]
+    [SuppressMessage("Non-substitutable member", "NS1000:Non-virtual setup specification.")]
+    [SuppressMessage("Non-substitutable member", "NS1004:Argument matcher used with a non-virtual member of a class.")]
+    public async Task Capability_NotSupported_ShouldThrow()
+    {
+        var device = Substitute.For<BleDevice>((IObserver<(BleDevice, LogEvent)>?)null);
+        device.InvokeNonPublicMethod("InitializeAsyncCore", Arg.Any<CancellationToken>())
+            .Returns(_ => Task.FromResult(InitializeResult.Success));
+
+        await device.InitializeAsync();
+
+        Action act = () => _ = device.Observer;
+        act.Should().Throw<NotSupportedException>();
+    }
+
+    [Fact]
+    [SuppressMessage("Usage", "NS5000:Received check.")]
+    public async Task DisposeAsync()
+    {
+        var device = Substitute.For<BleDevice>((IObserver<(BleDevice, LogEvent)>?)null);
+
+        await device.DisposeAsync();
+
+        device.ReceivedWithAnyArgs(1).InvokeNonPublicMethod("DisposeAsyncCore");
+        device.ReceivedWithAnyArgs(1).InvokeNonPublicMethod("DisposeCore");
     }
 }

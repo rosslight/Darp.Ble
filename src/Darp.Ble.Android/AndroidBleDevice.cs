@@ -43,5 +43,6 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, IObserve
     protected override void DisposeCore()
     {
         _bluetoothManager.Dispose();
+        base.DisposeCore();
     }
 }

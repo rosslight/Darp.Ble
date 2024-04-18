@@ -1,18 +1,13 @@
 using System.Reactive.Linq;
 using Darp.Ble.Data;
-using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
-using Darp.Ble.Implementation;
 using Darp.Ble.Linq;
 using Darp.Ble.Mock;
-using Darp.Ble.Tests.TestUtils;
 using Darp.Ble.Utils;
 using FluentAssertions;
-using NSubstitute;
 using Serilog;
 using Serilog.Events;
 using Xunit.Abstractions;
-using LogEvent = Darp.Ble.Logger.LogEvent;
 
 namespace Darp.Ble.Tests;
 
@@ -55,7 +50,7 @@ public sealed class BleTests
 
         IGapAdvertisement<string> adv = await observer.RefCount()
             .Select(x => x.WithUserData(""))
-            .Where(x => x.UserData == "")
+            .Where(x => x.UserData.Length == 0)
             .Timeout(TimeSpan.FromSeconds(1))
             .FirstAsync();
 

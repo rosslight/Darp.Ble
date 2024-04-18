@@ -33,7 +33,6 @@ public abstract class BleBroadcaster : IBleBroadcaster
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
-        StopAll();
         DisposeCore();
         await DisposeAsyncCore();
         GC.SuppressFinalize(this);
@@ -41,5 +40,8 @@ public abstract class BleBroadcaster : IBleBroadcaster
     /// <inheritdoc cref="DisposeAsync"/>
     protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
     /// <inheritdoc cref="IDisposable.Dispose"/>
-    protected virtual void DisposeCore() { }
+    protected virtual void DisposeCore()
+    {
+        StopAll();
+    }
 }

@@ -105,8 +105,19 @@ public abstract class BleDevice : IBleDevice
         await DisposeAsyncCore();
         GC.SuppressFinalize(this);
     }
+
     /// <inheritdoc cref="DisposeAsync"/>
-    protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
+    protected virtual async ValueTask DisposeAsyncCore()
+    {
+        if (Capabilities.HasFlag(Capabilities.Observer))
+            await Observer.DisposeAsync();
+        if (Capabilities.HasFlag(Capabilities.Central))
+            await Central.DisposeAsync();
+        if (Capabilities.HasFlag(Capabilities.Broadcaster))
+            await Broadcaster.DisposeAsync();
+        if (Capabilities.HasFlag(Capabilities.Peripheral))
+            await Peripheral.DisposeAsync();
+    }
     /// <inheritdoc cref="IDisposable.Dispose"/>
     protected virtual void DisposeCore() { }
 }

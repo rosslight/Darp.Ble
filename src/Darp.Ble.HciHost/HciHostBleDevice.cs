@@ -32,5 +32,9 @@ public sealed class HciHostBleDevice(string port, IObserver<(BleDevice, LogEvent
     /// <inheritdoc />
     public override string Identifier => "Darp.Ble.WinRT";
 
-    protected override void DisposeCore() => Host.Dispose();
+    protected override void DisposeCore()
+    {
+        Host.Dispose();
+        base.DisposeCore();
+    }
 }
