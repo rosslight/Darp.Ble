@@ -1,15 +1,3 @@
-using System.Reactive.Linq;
-using System.Reactive.Threading.Tasks;
-using Darp.Ble.Data;
-using Darp.Ble.Gap;
-using Darp.Ble.Implementation;
-using Darp.Ble.Logger;
-using Darp.Ble.Utils;
-using FluentAssertions;
-using FluentAssertions.Reactive;
-using Microsoft.Reactive.Testing;
-using NSubstitute;
-
 namespace Darp.Ble.Mock.Tests;
 /*
 public static class HeartRateServiceContract
