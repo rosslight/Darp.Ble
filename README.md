@@ -103,3 +103,11 @@ When deciding to write this library, we were unable to find a library meeting al
 - Cross-platform including the ability to communicate with BLE dongles
 - Granular configuration options if the platform supports it
 - (Reactive interface)
+
+## Create new release
+To create a release, simply push a new tag with pattern `vX.Y.Z`. This will trigger a workflow releasing the new version.
+```shell
+git tag vX.Y.Z
+git push origin vX.Y.Z
+```
+
