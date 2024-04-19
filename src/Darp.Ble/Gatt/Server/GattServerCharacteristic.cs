@@ -1,3 +1,4 @@
+using System.Reactive.Subjects;
 using Darp.Ble.Data;
 
 namespace Darp.Ble.Gatt.Server;
@@ -13,12 +14,12 @@ public abstract class GattServerCharacteristic(BleUuid uuid) : IGattServerCharac
 
     protected abstract Task WriteAsyncCore(byte[] bytes, CancellationToken cancellationToken);
 
-    public IObservable<byte[]> OnNotify()
+    public IConnectableObservable<byte[]> OnNotify()
     {
         return OnNotifyCore();
     }
 
-    protected abstract IObservable<byte[]> OnNotifyCore();
+    protected abstract IConnectableObservable<byte[]> OnNotifyCore();
 }
 
 public sealed class GattServerCharacteristic<TProp1>(IGattServerCharacteristic serverCharacteristic) : IGattServerCharacteristic<TProp1>

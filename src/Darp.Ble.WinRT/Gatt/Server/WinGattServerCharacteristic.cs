@@ -1,3 +1,4 @@
+using System.Reactive.Subjects;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Darp.Ble.Data;
@@ -15,7 +16,7 @@ public sealed class WinGattServerCharacteristic(GattCharacteristic gattCharacter
         await _gattCharacteristic.WriteValueAsync(bytes.AsBuffer()).AsTask(cancellationToken);
     }
 
-    protected override IObservable<byte[]> OnNotifyCore()
+    protected override IConnectableObservable<byte[]> OnNotifyCore()
     {
         throw new NotImplementedException();
     }

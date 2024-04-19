@@ -1,8 +1,10 @@
+using System.Reactive.Subjects;
+
 namespace Darp.Ble.Gatt.Server;
 
 public static class GattServerCharacteristicExtensions
 {
-    public static IObservable<byte[]> OnNotify(this IGattServerCharacteristic<Properties.Notify> characteristic)
+    public static IConnectableObservable<byte[]> OnNotify(this IGattServerCharacteristic<Properties.Notify> characteristic)
     {
         return characteristic.Characteristic.OnNotify();
     }

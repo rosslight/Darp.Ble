@@ -20,7 +20,9 @@ public abstract class BleCentral(BleDevice device, IObserver<LogEvent>? logger) 
     public IReadOnlyCollection<IGattServerPeer> PeerDevices => _peerDevices.Values;
 
     /// <inheritdoc />
-    public IObservable<IGattServerPeer> ConnectToPeripheral(BleAddress address, BleConnectionParameters? connectionParameters, BleScanParameters? scanParameters)
+    public IObservable<IGattServerPeer> ConnectToPeripheral(BleAddress address,
+        BleConnectionParameters? connectionParameters = null,
+        BleScanParameters? scanParameters = null)
     {
         connectionParameters ??= new BleConnectionParameters();
         scanParameters ??= Device.Observer.Parameters;

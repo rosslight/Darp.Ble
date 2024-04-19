@@ -17,6 +17,6 @@ public interface IBleCentral : IAsyncDisposable
     /// <param name="scanParameters"> The scan parameters to be used for initial discovery </param>
     /// <returns> An observable notifying when a gatt server was connected </returns>
     IObservable<IGattServerPeer> ConnectToPeripheral(BleAddress address,
-        BleConnectionParameters? connectionParameters,
-        BleScanParameters? scanParameters);
+        BleConnectionParameters? connectionParameters = null,
+        BleScanParameters? scanParameters = null);
 }

@@ -1,5 +1,6 @@
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
@@ -22,11 +23,11 @@ internal sealed class MockGattServerCharacteristic(BleUuid uuid,
     }
 
     /// <inheritdoc />
-    protected override IObservable<byte[]> OnNotifyCore() => Observable.Create<byte[]>(observer =>
+    protected override IConnectableObservable<byte[]> OnNotifyCore() => Observable.Create<byte[]>(observer =>
     {
         _onNotifyObservers.Add(observer);
         return Disposable.Create((Observers: _onNotifyObservers, Observer: observer), x => x.Observers.Remove(observer));
-    });
+    }).Publish();
 
     public Task<bool> NotifyAsync(IGattClientPeer clientPeer, byte[] source, CancellationToken cancellationToken)
     {
