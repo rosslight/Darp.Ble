@@ -1,4 +1,5 @@
 using Android.Bluetooth;
+using Android.Content.PM;
 using Darp.Ble.Implementation;
 using Darp.Ble.Logger;
 
@@ -16,6 +17,9 @@ public sealed class AndroidBleFactory(BluetoothManager manager) : IBleFactory
     public IEnumerable<IBleDevice> EnumerateDevices(IObserver<(BleDevice, LogEvent)>? logger)
     {
         if (_bluetoothManager.Adapter is null) yield break;
+        if (Application.Context.PackageManager?.HasSystemFeature(PackageManager.FeatureBluetoothLe) == false)
+            yield break;
+
         yield return new AndroidBleDevice(_bluetoothManager, logger);
     }
 }

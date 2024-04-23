@@ -15,6 +15,13 @@ public interface IBleBroadcaster : IAsyncDisposable
     /// <param name="parameters"> The parameters to be used </param>
     /// <returns> A disposable which allows for stopping </returns>
     IDisposable Advertise(IObservable<AdvertisingData> source, AdvertisingParameters? parameters = null);
+
+    /// <summary> Advertise an observable </summary>
+    /// <param name="data"> The advertising data </param>
+    /// <param name="interval"> The interval at which the advertisements will be published </param>
+    /// <param name="parameters"> The parameters to be used </param>
+    /// <returns> A disposable which allows for stopping </returns>
+    IDisposable Advertise(AdvertisingData data, TimeSpan interval, AdvertisingParameters? parameters);
     /// <summary> Stop all running advertisements </summary>
     void StopAll();
 }

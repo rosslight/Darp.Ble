@@ -5,7 +5,7 @@ using Darp.Ble.Gatt.Client;
 
 namespace Darp.Ble.WinRT.Gatt;
 
-public sealed class WinGattClientService(WinBlePeripheral peripheral, GattLocalService winService) : GattClientService(new BleUuid(winService.Uuid, true))
+internal sealed class WinGattClientService(WinBlePeripheral peripheral, GattLocalService winService) : GattClientService(new BleUuid(winService.Uuid, true))
 {
     private readonly GattLocalService _winService = winService;
     public WinBlePeripheral Peripheral { get; } = peripheral;

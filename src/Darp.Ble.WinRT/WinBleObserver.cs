@@ -15,7 +15,7 @@ using Darp.Ble.Logger;
 namespace Darp.Ble.WinRT;
 
 /// <inheritdoc />
-public sealed class WinBleObserver(BleDevice device, IObserver<LogEvent>? logger) : BleObserver(device, logger)
+internal sealed class WinBleObserver(BleDevice device, IObserver<LogEvent>? logger) : BleObserver(device, logger)
 {
     private BluetoothLEAdvertisementWatcher? _watcher;
 

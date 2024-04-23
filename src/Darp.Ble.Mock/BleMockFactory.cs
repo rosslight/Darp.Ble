@@ -17,7 +17,7 @@ public sealed class BleMockFactory : IBleFactory
     /// <inheritdoc />
     public IEnumerable<IBleDevice> EnumerateDevices(IObserver<(BleDevice, LogEvent)>? logger)
     {
-        var onInitialize = OnInitialize ?? ((_, _) => Task.CompletedTask);
+        InitializeAsync onInitialize = OnInitialize ?? ((_, _) => Task.CompletedTask);
         yield return new MockBleDevice(onInitialize, Name, logger);
     }
 }

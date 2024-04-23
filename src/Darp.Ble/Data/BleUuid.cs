@@ -42,7 +42,26 @@ public sealed record BleUuid : ISpanParsable<BleUuid>, ISpanFormattable, IUtf8Sp
 
     private static BleUuidType InferType(Guid value)
     {
-        throw new NotImplementedException();
+        Span<byte> bytes = stackalloc byte[16];
+        value.TryWriteBytes(bytes);
+        if (!(bytes[4] is 0x00
+              && bytes[5] is 0x00
+              && bytes[6] is 0x00
+              && bytes[7] is 0x10
+              && bytes[8] is 0x80
+              && bytes[9] is 0x00
+              && bytes[10] is 0x00
+              && bytes[11] is 0x80
+              && bytes[12] is 0x5F
+              && bytes[13] is 0x9B
+              && bytes[14] is 0x34
+              && bytes[15] is 0xFB))
+        {
+            return BleUuidType.Uuid128;
+        }
+        if (bytes[2] is 0x00 && bytes[3] is 0x00)
+            return BleUuidType.Uuid16;
+        return BleUuidType.Uuid32;
     }
 
     private static Guid CreateGuid(uint a) => new(a, 0x0000, 0x1000, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB);

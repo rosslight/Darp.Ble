@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace Darp.Ble.Tests;
+namespace Darp.Ble.Tests.TestUtils;
 
 public static class NSubstituteExtensions
 {

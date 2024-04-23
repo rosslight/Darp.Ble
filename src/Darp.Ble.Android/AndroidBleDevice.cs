@@ -25,8 +25,7 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, IObserve
         if (!BluetoothAdapter.IsEnabled) return Task.FromResult(InitializeResult.DeviceNotEnabled);
         if (!IsAvailable) return Task.FromResult(InitializeResult.DeviceNotAvailable);
 
-        if (HasScanPermissions()
-            && BluetoothAdapter.BluetoothLeScanner is not null)
+        if (HasScanPermissions() && BluetoothAdapter.BluetoothLeScanner is not null)
         {
             Observer = new AndroidBleObserver(this, BluetoothAdapter.BluetoothLeScanner, Logger);
         }

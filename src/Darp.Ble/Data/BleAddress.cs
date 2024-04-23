@@ -115,4 +115,7 @@ public sealed record BleAddress : ISpanParsable<BleAddress>
         result = default;
         return false;
     }
+
+    /// <summary> Zero BleAddress with type <see cref="BleAddressType.NotAvailable"/> </summary>
+    public static BleAddress NotAvailable { get; } = new(BleAddressType.NotAvailable, UInt48.Zero);
 }

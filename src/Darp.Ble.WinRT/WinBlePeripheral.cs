@@ -8,7 +8,7 @@ using Darp.Ble.WinRT.Gatt;
 
 namespace Darp.Ble.WinRT;
 
-public sealed class WinBlePeripheral(WinBleDevice device, IObserver<LogEvent>? logger) : BlePeripheral(device, logger)
+internal sealed class WinBlePeripheral(WinBleDevice device, IObserver<LogEvent>? logger) : BlePeripheral(device, logger)
 {
     protected override async Task<IGattClientService> AddServiceAsyncCore(BleUuid uuid,
         CancellationToken cancellationToken)

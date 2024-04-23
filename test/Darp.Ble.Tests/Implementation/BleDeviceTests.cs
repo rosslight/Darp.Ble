@@ -6,6 +6,7 @@ using Darp.Ble.Exceptions;
 using Darp.Ble.Implementation;
 using Darp.Ble.Logger;
 using Darp.Ble.Mock;
+using Darp.Ble.Tests.TestUtils;
 using FluentAssertions;
 using Microsoft.Reactive.Testing;
 using NSubstitute;

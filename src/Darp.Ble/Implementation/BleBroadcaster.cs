@@ -1,11 +1,15 @@
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
+using Darp.Ble.Logger;
 
 namespace Darp.Ble.Implementation;
 
 /// <summary> The broadcaster view of a ble device </summary>
-public abstract class BleBroadcaster : IBleBroadcaster
+public abstract class BleBroadcaster(IObserver<LogEvent>? logger) : IBleBroadcaster
 {
+    /// <summary> The logger </summary>
+    protected IObserver<LogEvent>? Logger { get; } = logger;
+
     /// <inheritdoc />
     public IDisposable Advertise(AdvertisingSet advertisingSet) => throw new NotImplementedException();
 
@@ -20,6 +24,14 @@ public abstract class BleBroadcaster : IBleBroadcaster
     /// <param name="parameters"> The parameters to be used </param>
     /// <returns> A disposable which allows for stopping </returns>
     protected abstract IDisposable AdvertiseCore(IObservable<AdvertisingData> source, AdvertisingParameters? parameters);
+
+    /// <inheritdoc />
+    public IDisposable Advertise(AdvertisingData data, TimeSpan interval, AdvertisingParameters? parameters)
+    {
+        return AdvertiseCore(data, interval, parameters);
+    }
+
+    protected abstract IDisposable AdvertiseCore(AdvertisingData data, TimeSpan timeSpan, AdvertisingParameters? parameters);
 
     /// <inheritdoc />
     public void StopAll()

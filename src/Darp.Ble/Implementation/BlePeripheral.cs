@@ -67,5 +67,10 @@ public abstract class BlePeripheral(BleDevice device, IObserver<LogEvent>? logge
     {
         return Device.Broadcaster.Advertise(source, parameters);
     }
+    IDisposable IBleBroadcaster.Advertise(AdvertisingData data, TimeSpan interval, AdvertisingParameters? parameters)
+    {
+        return Device.Broadcaster.Advertise(data, interval, parameters);
+    }
+
     void IBleBroadcaster.StopAll() => Device.Broadcaster.StopAll();
 }

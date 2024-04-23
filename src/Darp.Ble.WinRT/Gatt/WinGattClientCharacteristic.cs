@@ -8,7 +8,7 @@ using Darp.Ble.Gatt.Client;
 
 namespace Darp.Ble.WinRT.Gatt;
 
-public sealed class WinGattClientCharacteristic(
+internal sealed class WinGattClientCharacteristic(
     WinGattClientService winService,
     GattLocalCharacteristic winCharacteristic)
     : GattClientCharacteristic(new BleUuid(winCharacteristic.Uuid, inferType: true), (GattProperty)winCharacteristic.CharacteristicProperties)

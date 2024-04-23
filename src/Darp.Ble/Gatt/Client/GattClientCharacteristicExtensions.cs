@@ -22,6 +22,14 @@ public static class GattClientCharacteristicExtensions
         return new GattClientCharacteristic<TProp1>(clientCharacteristic);
     }
 
+    public static async Task<IGattClientCharacteristic<TProp1>> AddCharacteristicAsync<TProp1>(this IGattClientService service,
+        ushort uuid,
+        CancellationToken cancellationToken = default)
+        where TProp1 : IBleProperty
+    {
+        return await service.AddCharacteristicAsync<TProp1>(new BleUuid(uuid), cancellationToken);
+    }
+
     public static async Task NotifyAsync(this IGattClientCharacteristic<Properties.Notify> characteristic,
         IGattClientPeer clientPeer, byte[] source, CancellationToken cancellationToken = default)
     {

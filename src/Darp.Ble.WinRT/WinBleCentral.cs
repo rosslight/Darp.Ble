@@ -9,7 +9,7 @@ using Darp.Ble.WinRT.Gatt.Server;
 namespace Darp.Ble.WinRT;
 
 /// <inheritdoc />
-public sealed class WinBleCentral(BleDevice device, IObserver<LogEvent>? logger) : BleCentral(device, logger)
+internal sealed class WinBleCentral(BleDevice device, IObserver<LogEvent>? logger) : BleCentral(device, logger)
 {
     /// <inheritdoc />
     protected override IObservable<IGattServerPeer> ConnectToPeripheralCore(BleAddress address,

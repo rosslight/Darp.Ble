@@ -3,10 +3,11 @@ using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
+using Darp.Ble.Logger;
 
 namespace Darp.Ble.Mock;
 
-internal sealed class MockBleBroadcaster : BleBroadcaster
+internal sealed class MockBleBroadcaster(IObserver<LogEvent>? logger) : BleBroadcaster(logger)
 {
     private IObservable<AdvertisingData>? _source;
     private AdvertisingParameters? _parameters;
@@ -29,7 +30,7 @@ internal sealed class MockBleBroadcaster : BleBroadcaster
                 (TxPowerLevel)20,
                 (Rssi)(-40),
                 PeriodicAdvertisingInterval.NoPeriodicAdvertising,
-                new BleAddress(BleAddressType.NotAvailable, UInt48.Zero),
+                BleAddress.NotAvailable,
                 data));
     }
 
@@ -40,6 +41,11 @@ internal sealed class MockBleBroadcaster : BleBroadcaster
         _source = source;
         _parameters = parameters;
         return Disposable.Create(this, self => self._source = null);
+    }
+
+    protected override IDisposable AdvertiseCore(AdvertisingData data, TimeSpan timeSpan, AdvertisingParameters? parameters)
+    {
+        throw new NotImplementedException();
     }
 
     /// <inheritdoc />

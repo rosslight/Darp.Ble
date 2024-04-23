@@ -7,7 +7,7 @@ using Darp.Ble.Gatt.Client;
 
 namespace Darp.Ble.WinRT.Gatt;
 
-public sealed class WinGattClientPeer(GattSession session) : IGattClientPeer
+internal sealed class WinGattClientPeer(GattSession session) : IGattClientPeer
 {
     private readonly GattSession _session = session;
     public BleAddress Address { get; } = BleAddress.Parse(session.DeviceId.Id, provider: null);

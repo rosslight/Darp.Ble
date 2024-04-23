@@ -20,7 +20,7 @@ internal sealed class MockBleDevice(
     /// <inheritdoc />
     protected override async Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
     {
-        var broadcaster = new MockBleBroadcaster();
+        var broadcaster = new MockBleBroadcaster(Logger);
         var peripheral = new MockBlePeripheral(this, broadcaster, Logger);
         Observer = new MockBleObserver(this, broadcaster, Logger);
         Central = new MockBleCentral(this, peripheral, Logger);
