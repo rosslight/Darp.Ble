@@ -41,7 +41,7 @@ jobs:
       - name: Restore dependencies
         run:  dotnet restore /p:EnableWindowsTargeting=true
       - name: Build
-        run: dotnet build --no-restore --configuration Release
+        run: dotnet build --no-restore --configuration Release /p:EnableWindowsTargeting=true
       - name: Test
         run: dotnet test --no-build --configuration Release
 
