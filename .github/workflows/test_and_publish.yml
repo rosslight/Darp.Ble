@@ -39,7 +39,7 @@ jobs:
           dotnet workload install android
 
       - name: Restore dependencies
-        run:  dotnet restore
+        run:  dotnet restore /p:EnableWindowsTargeting=true
       - name: Build
         run: dotnet build --no-restore --configuration Release
       - name: Test
