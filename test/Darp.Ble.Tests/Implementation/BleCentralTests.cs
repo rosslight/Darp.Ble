@@ -1,8 +1,11 @@
 using System.Reactive.Concurrency;
 using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
+using Darp.Ble.Gatt;
+using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Mock;
 using FluentAssertions;
@@ -44,8 +47,8 @@ public sealed class BleCentralTests
     public async Task ConnectToPeripheral_BleConnectionParameters_WithDifferentParameters(ConnectionTiming connectionInterval, bool expectedResult)
     {
         var address = new BleAddress((UInt48)0xAABBCCDDEEFF);
-        IBleDevice central = await GetMockDeviceAsync((_, _) => Task.CompletedTask);
-        IObservable<IGattServerPeer> observable = central.Central.ConnectToPeripheral(address, new BleConnectionParameters
+        IBleDevice device = await GetMockDeviceAsync((_, _) => Task.CompletedTask);
+        IObservable<IGattServerPeer> observable = device.Central.ConnectToPeripheral(address, new BleConnectionParameters
         {
             ConnectionInterval = connectionInterval,
         });
@@ -69,8 +72,8 @@ public sealed class BleCentralTests
     public async Task ConnectToPeripheral_BleScanParameters_WithDifferentParameters(ScanTiming scanInterval, ScanTiming scanWindow, bool expectedResult)
     {
         var address = new BleAddress((UInt48)0xAABBCCDDEEFF);
-        IBleDevice central = await GetMockDeviceAsync((_, _) => Task.CompletedTask);
-        IObservable<IGattServerPeer> observable = central.Central.ConnectToPeripheral(address, scanParameters: new BleScanParameters()
+        IBleDevice device = await GetMockDeviceAsync((_, _) => Task.CompletedTask);
+        IObservable<IGattServerPeer> observable = device.Central.ConnectToPeripheral(address, scanParameters: new BleScanParameters()
         {
             ScanInterval = scanInterval,
             ScanWindow = scanWindow,
@@ -86,5 +89,34 @@ public sealed class BleCentralTests
         {
             await testObserver.Should().ThrowAsync<BleCentralConnectionFailedException>();
         }
+    }
+
+    [Fact]
+    public async Task ConnectToPeripheral_ShouldWork()
+    {
+        byte[] dataToWrite = [0x01, 0x02, 0x03, 0x04];
+        var address = new BleAddress((UInt48)0xAABBCCDDEEFF);
+        IBleDevice device = await GetMockDeviceAsync(async (_, peripheral) =>
+        {
+            IGattClientService service = await peripheral.AddServiceAsync(0xABCD);
+            var writeChar = await service.AddCharacteristicAsync<Properties.Write>(0x1234);
+            var notifyChar = await service.AddCharacteristicAsync<Properties.Notify>(0x5678);
+            writeChar.OnWrite(async (peer, bytes, token) =>
+            {
+                await notifyChar.NotifyAsync(peer, bytes, token);
+                return GattProtocolStatus.Success;
+            });
+        });
+
+        IGattServerPeer serverPeer = await device.Central.ConnectToPeripheral(address).FirstAsync();
+        IGattServerService service = await serverPeer.DiscoverServiceAsync(0xABCD);
+        var writeChar = await service.DiscoverCharacteristicAsync<Properties.Write>(0x1234);
+        var notifyChar = await service.DiscoverCharacteristicAsync<Properties.Notify>(0x5678);
+
+        Task<byte[]> notifyTask = notifyChar.OnNotify().RefCount().FirstAsync().ToTask();
+        await writeChar.WriteAsync(dataToWrite);
+        byte[] result = await notifyTask;
+
+        result.Should().BeEquivalentTo(dataToWrite);
     }
 }

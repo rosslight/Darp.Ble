@@ -1,6 +1,7 @@
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
+using Darp.Ble.Linq;
 using Darp.Ble.Mock;
 using Darp.Ble.Utils;
 using FluentAssertions;
@@ -76,5 +77,31 @@ public sealed class GapAdvertisementTests
         adv.Data.Should().HaveCount(2);
         adv.Data.Should().HaveElementAt(0, (advertisingDataType1, sectionData1));
         adv.Data.Should().HaveElementAt(1, (advertisingDataType2, sectionData2));
+    }
+
+    [Theory]
+    [InlineData("130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB")]
+    public void WithUserData_WithTestData_ShouldHaveEquivalentValues(string reportHex)
+    {
+        const int testData = 12345;
+        GapAdvertisement adv = GapAdvertisement.FromExtendedAdvertisingReport(null!, DateTimeOffset.UtcNow, reportHex.ToByteArray());
+
+        IGapAdvertisement<int> advWithData = adv.WithUserData(testData);
+
+        advWithData.Observer.Should().Be(adv.Observer);
+        advWithData.Timestamp.Should().Be(adv.Timestamp);
+        advWithData.EventType.Should().Be(adv.EventType);
+        advWithData.Address.Should().Be(adv.Address);
+        advWithData.PrimaryPhy.Should().Be(adv.PrimaryPhy);
+        advWithData.SecondaryPhy.Should().Be(adv.SecondaryPhy);
+        advWithData.AdvertisingSId.Should().Be(adv.AdvertisingSId);
+        advWithData.TxPower.Should().Be(adv.TxPower);
+        advWithData.Rssi.Should().Be(adv.Rssi);
+        advWithData.PeriodicAdvertisingInterval.Should().Be(adv.PeriodicAdvertisingInterval);
+        advWithData.DirectAddress.Should().Be(adv.DirectAddress);
+        advWithData.Data.Should().BeEquivalentTo(adv.Data);
+        advWithData.UserData.Should().Be(testData);
+        (advWithData as IGapAdvertisementWithUserData)?.UserData.Should().Be(testData);
+        advWithData.AsByteArray().Should().BeEquivalentTo(adv.AsByteArray());
     }
 }

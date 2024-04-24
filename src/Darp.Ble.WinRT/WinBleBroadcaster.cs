@@ -1,7 +1,7 @@
 using System.Reactive.Disposables;
 using System.Runtime.InteropServices.WindowsRuntime;
+using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.Advertisement;
-using Windows.Storage.Streams;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
@@ -61,18 +61,20 @@ internal sealed class WinBleBroadcaster(WinBleDevice winBleDevice, IObserver<Log
                 Logger?.Warning("Ignoring data section {Type}. This type is reserved by Windows", type);
                 continue;
             }
-            //publisher.IncludeTransmitPowerLevel = true;
-            publisher.UseExtendedAdvertisement = true;
             publisher.Advertisement.DataSections.Add(new BluetoothLEAdvertisementDataSection((byte)type, bytes.ToArray().AsBuffer()));
         }
+
+        IDisposable disposable = Disposable.Create(publisher, state => state.Stop());
         // //publisher.UseExtendedAdvertisement = true;
         // //publisher.IncludeTransmitPowerLevel = true;
-        publisher.StatusChanged += (sender, args) =>
+        publisher.StatusChanged += (_, args) =>
         {
-            int ii = 0;
+            if (args.Error is BluetoothError.Success) return;
+            Logger?.Warning("Publisher status changed to {Status} with {Error}", args.Status, args.Error);
+            disposable.Dispose();
         };
         publisher.Start();
-        return Disposable.Create(publisher, state => state.Stop());
+        return disposable;
     }
 
     protected override void StopAllCore()
