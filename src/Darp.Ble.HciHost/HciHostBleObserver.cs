@@ -41,28 +41,31 @@ public sealed class HciHostBleObserver(HciHostBleDevice device, IObserver<LogEve
     {
         (HciSetExtendedScanParametersCommand Parameters, HciSetExtendedScanEnableCommand Enable) commands = CreateConfiguration(Parameters);
         //Logger.Verbose("AdvertisingScanner: Using scan params {@ScanParams} and enable params {@EnableParams}", commands.Parameters, commands.Enable);
-        HciSetExtendedScanParametersResult paramSetResult = _device.Host
-            .QueryCommandCompletionAsync<HciSetExtendedScanParametersCommand, HciSetExtendedScanParametersResult>(commands.Parameters)
-            .Result;
-        if (paramSetResult.Status is not HciCommandStatus.Success)
+        observable = Observable.Create<IGapAdvertisement>(async (observer, token) =>
         {
-            observable = Observable.Throw<IGapAdvertisement>(new Exception($"Could not set scan parameters: {paramSetResult.Status}"));
-            return false;
-        }
-        HciSetExtendedScanEnableResult enableResult = _device.Host
-            .QueryCommandCompletionAsync<HciSetExtendedScanEnableCommand, HciSetExtendedScanEnableResult>(commands.Enable)
-            .Result;
-        if (enableResult.Status is not HciCommandStatus.Success)
-        {
-            observable = Observable.Throw<IGapAdvertisement>(new Exception($"Could not enable scan: {enableResult.Status}"));
-            return false;
-        }
+            HciSetExtendedScanParametersResult paramSetResult = await _device.Host
+                .QueryCommandCompletionAsync<HciSetExtendedScanParametersCommand, HciSetExtendedScanParametersResult>(
+                    commands.Parameters, cancellationToken: token);
+            if (paramSetResult.Status is not HciCommandStatus.Success)
+            {
+                observer.OnError(new Exception($"Could not set scan parameters: {paramSetResult.Status}"));
+                return;
+            }
+            HciSetExtendedScanEnableResult enableResult = await _device.Host.QueryCommandCompletionAsync<HciSetExtendedScanEnableCommand, HciSetExtendedScanEnableResult>(commands.Enable, cancellationToken: token);
+            if (enableResult.Status is not HciCommandStatus.Success)
+            {
+                observer.OnError(new Exception($"Could not enable scan: {enableResult.Status}"));
+                return;
+            }
 
-        observable = _device.Host
-            .WhenHciEventPackageReceived
-            .SelectWhereEvent<HciLeExtendedAdvertisingReportEvent>()
-            .SelectMany(x => x.Data.Reports)
-            .Select(x => OnAdvertisementReport(this, x));
+            _device.Host
+                .WhenHciEventPackageReceived
+                .SelectWhereEvent<HciLeExtendedAdvertisingReportEvent>()
+                .SelectMany(x => x.Data.Reports)
+                .Select(x => OnAdvertisementReport(this, x))
+                .Subscribe(observer, token);
+            await Task.Delay(TimeSpan.MaxValue, token);
+        });
         return true;
     }
 

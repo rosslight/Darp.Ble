@@ -1,4 +1,5 @@
-﻿using System.Globalization;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
@@ -9,7 +10,8 @@ namespace Darp.Ble.Data;
 public readonly struct UInt48 : IComparable<UInt48>,
     IEquatable<UInt48>,
     IComparisonOperators<UInt48, UInt48, bool>,
-    IMinMaxValue<UInt48>
+    IMinMaxValue<UInt48>,
+    ISpanFormattable
 {
     private readonly byte _b0;
     private readonly byte _b1;
@@ -86,6 +88,16 @@ public readonly struct UInt48 : IComparable<UInt48>,
 
     /// <inheritdoc />
     public override string ToString() => ((ulong)this).ToString(CultureInfo.InvariantCulture);
+    /// <inheritdoc />
+    public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
+    {
+        return ((ulong)this).ToString(format, formatProvider);
+    }
+    /// <inheritdoc />
+    public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+    {
+        return ((ulong)this).TryFormat(destination, out charsWritten, format, provider);
+    }
 
     /// <inheritdoc />
     public int CompareTo(UInt48 other)
