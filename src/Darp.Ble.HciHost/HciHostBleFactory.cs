@@ -9,6 +9,13 @@ public sealed class HciHostBleFactory : IBleFactory
 {
     private readonly string? _port;
 
+    /// <summary> A simple mapping of vendorId and productId to the name of the device </summary>
+    public IDictionary<(ushort VendorId, ushort ProductId), string> DeviceNameMapping { get; } =
+        new Dictionary<(ushort VendorId, ushort ProductId), string>
+        {
+            [(0x2FE3, 0x0004)] = "nrf52840 dongle",
+        };
+
     /// <summary> Initialize a new BleFactory which will enumerate all Ports </summary>
     public HciHostBleFactory()
     {
@@ -26,16 +33,17 @@ public sealed class HciHostBleFactory : IBleFactory
     {
         if (_port is not null)
         {
-            yield return new HciHostBleDevice(_port, logger);
+            yield return new HciHostBleDevice(_port, _port, logger);
             yield break;
         }
 
         // Using vendorId of NordicSemiconductor and productId self defined
-        foreach (UsbPortInfo portInfo in UsbPort.GetPortInfos()
-                     .Where(x => x.VendorId is 0x2FE3 && x.ProductId is 0x0004))
+        foreach (UsbPortInfo portInfo in UsbPort.GetPortInfos())
         {
             if (portInfo.Port is null) continue;
-            yield return new HciHostBleDevice(portInfo.Port, logger);
+            if (!DeviceNameMapping.TryGetValue((portInfo.VendorId, portInfo.ProductId), out string? deviceName))
+                continue;
+            yield return new HciHostBleDevice(portInfo.Port, $"{deviceName} ({portInfo.Port})", logger);
         }
     }
 }

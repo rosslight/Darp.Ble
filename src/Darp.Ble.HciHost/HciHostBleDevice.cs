@@ -9,11 +9,11 @@ using Darp.Ble.Logger;
 namespace Darp.Ble.HciHost;
 
 /// <summary> Provides windows specific implementation of a ble device </summary>
-public sealed class HciHostBleDevice(string port, IObserver<(BleDevice, LogEvent)>? logger) : BleDevice(logger)
+public sealed class HciHostBleDevice(string port, string name, IObserver<(BleDevice, LogEvent)>? logger) : BleDevice(logger)
 {
     public Hci.HciHost Host { get; } = new(new H4TransportLayer(port, logger: null), logger: null);
 
-    public override string Name => port;
+    public override string Name { get; } = name;
 
     /// <param name="cancellationToken"></param>
     /// <inheritdoc />
