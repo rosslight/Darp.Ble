@@ -6,11 +6,11 @@ using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
-using Darp.Ble.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Android;
 
-public sealed class AndroidBleObserver(BleDevice device, BluetoothLeScanner bluetoothLeScanner, IObserver<LogEvent>? logger)
+public sealed class AndroidBleObserver(BleDevice device, BluetoothLeScanner bluetoothLeScanner, ILogger? logger)
     : BleObserver(device, logger)
 {
     private readonly BluetoothLeScanner _bluetoothLeScanner = bluetoothLeScanner;

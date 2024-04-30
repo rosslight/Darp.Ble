@@ -18,7 +18,7 @@ public sealed class BleCentralTests
     private static async Task<IBleDevice> GetMockDeviceAsync(BleMockFactory.InitializeAsync configure)
     {
         BleManager bleManager = new BleManagerBuilder()
-            .With(new BleMockFactory { OnInitialize = configure } )
+            .Add(new BleMockFactory { OnInitialize = configure } )
             .CreateManager();
         IBleDevice device = bleManager.EnumerateDevices().First();
         InitializeResult result = await device.InitializeAsync();

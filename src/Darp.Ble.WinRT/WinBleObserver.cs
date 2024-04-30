@@ -10,12 +10,12 @@ using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
-using Darp.Ble.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.WinRT;
 
 /// <inheritdoc />
-internal sealed class WinBleObserver(BleDevice device, IObserver<LogEvent>? logger) : BleObserver(device, logger)
+internal sealed class WinBleObserver(BleDevice device, ILogger? logger) : BleObserver(device, logger)
 {
     private BluetoothLEAdvertisementWatcher? _watcher;
 

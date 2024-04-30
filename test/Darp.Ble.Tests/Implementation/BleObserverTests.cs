@@ -12,19 +12,22 @@ using Darp.Ble.Tests.Logger;
 using Darp.Ble.Tests.TestUtils;
 using Darp.Ble.Utils;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Reactive.Testing;
 using NSubstitute;
 
 namespace Darp.Ble.Tests.Implementation;
 
-public sealed class BleObserverTests
+public sealed class BleObserverTests(ILogger<BleObserverTests> logger)
 {
+    private readonly ILogger<BleObserverTests> _logger = logger;
     private const string AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName = "0201010908546573744E616D65";
 
-    private static async Task<IBleDevice> GetMockDeviceAsync(BleMockFactory.InitializeAsync configure)
+    private async Task<IBleDevice> GetMockDeviceAsync(BleMockFactory.InitializeAsync configure)
     {
         BleManager bleManager = new BleManagerBuilder()
-            .With(new BleMockFactory { OnInitialize = configure } )
+            .SetLogger(_logger)
+            .Add(new BleMockFactory { OnInitialize = configure } )
             .CreateManager();
         IBleDevice device = bleManager.EnumerateDevices().First();
         InitializeResult result = await device.InitializeAsync();
@@ -32,7 +35,7 @@ public sealed class BleObserverTests
         return device;
     }
 
-    private static async Task<IBleDevice> Get1000MsAdvertisementMockDeviceAsync(IScheduler scheduler)
+    private async Task<IBleDevice> Get1000MsAdvertisementMockDeviceAsync(IScheduler scheduler)
     {
         AdvertisingData adData = AdvertisingData.From(AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName.ToByteArray());
         return await GetMockDeviceAsync(Configure);
@@ -46,7 +49,7 @@ public sealed class BleObserverTests
         }
     }
 
-    private static async Task<IBleDevice> GetMockDeviceAsync()
+    private async Task<IBleDevice> GetMockDeviceAsync()
     {
         return await GetMockDeviceAsync((_, _) => Task.CompletedTask);
     }

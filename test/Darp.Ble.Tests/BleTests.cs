@@ -5,28 +5,17 @@ using Darp.Ble.Linq;
 using Darp.Ble.Mock;
 using Darp.Ble.Utils;
 using FluentAssertions;
-using Serilog;
-using Serilog.Events;
-using Xunit.Abstractions;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Tests;
 
-public sealed class BleTests
+public sealed class BleTests(ILogger<BleTests> logger)
 {
     private static readonly byte[] AdvBytes = "130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB".ToByteArray();
-    private readonly BleManager _manager;
-
-    public BleTests(ITestOutputHelper outputHelper)
-    {
-        Serilog.Core.Logger logger = new LoggerConfiguration()
-            .MinimumLevel.Verbose()
-            .WriteTo.TestOutput(outputHelper, formatProvider: null)
-            .CreateLogger();
-        _manager = new BleManagerBuilder()
-            .OnLog((_, logEvent) => logger.Write((LogEventLevel)logEvent.Level, logEvent.Exception, logEvent.MessageTemplate, logEvent.Properties))
-            .With<BleMockFactory>()
-            .CreateManager();
-    }
+    private readonly BleManager _manager = new BleManagerBuilder()
+        .SetLogger(logger)
+        .Add<BleMockFactory>()
+        .CreateManager();
 
     //[Fact]
     public async Task GeneralFlow()

@@ -4,11 +4,11 @@ using Android.Bluetooth;
 using Android.Content.PM;
 using Darp.Ble.Data;
 using Darp.Ble.Implementation;
-using Darp.Ble.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Android;
 
-public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, IObserver<(BleDevice, LogEvent)>? logger)
+public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, ILogger? logger)
     : BleDevice(logger)
 {
     private readonly BluetoothManager _bluetoothManager = bluetoothManager;

@@ -1,5 +1,4 @@
-using Darp.Ble.Implementation;
-using Darp.Ble.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.WinRT;
 
@@ -7,7 +6,7 @@ namespace Darp.Ble.WinRT;
 public sealed class WinBleFactory : IBleFactory
 {
     /// <inheritdoc />
-    public IEnumerable<IBleDevice> EnumerateDevices(IObserver<(BleDevice, LogEvent)>? logger)
+    public IEnumerable<IBleDevice> EnumerateDevices(ILogger? logger)
     {
         yield return new WinBleDevice(logger);
     }

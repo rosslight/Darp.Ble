@@ -4,12 +4,12 @@ using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Result;
 using Darp.Ble.Hci.Transport;
 using Darp.Ble.Implementation;
-using Darp.Ble.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost;
 
 /// <summary> Provides windows specific implementation of a ble device </summary>
-public sealed class HciHostBleDevice(string port, string name, IObserver<(BleDevice, LogEvent)>? logger) : BleDevice(logger)
+public sealed class HciHostBleDevice(string port, string name, ILogger? logger) : BleDevice(logger)
 {
     public Hci.HciHost Host { get; } = new(new H4TransportLayer(port, logger: null), logger: null);
 

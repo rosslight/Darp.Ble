@@ -8,6 +8,7 @@ using Darp.Ble.Logger;
 using Darp.Ble.Mock;
 using Darp.Ble.Tests.TestUtils;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
 using Microsoft.Reactive.Testing;
 using NSubstitute;
 
@@ -18,14 +19,14 @@ public sealed class BleDeviceTests
     [Fact]
     public async Task InitializeAsync_ShouldLog()
     {
-        List<(IBleDevice, LogEvent)> resultList = [];
+        var logger = Substitute.For<ILogger>();
         BleManager manager = new BleManagerBuilder()
-            .OnLog((bleDevice, logEvent) => resultList.Add((bleDevice, logEvent)))
-            .With<BleMockFactory>()
+            .SetLogger(logger)
+            .Add<BleMockFactory>()
             .CreateManager();
         IBleDevice device = manager.EnumerateDevices().First();
         await device.InitializeAsync();
-        resultList.Should().HaveElementAt(0, (device, new LogEvent(1, null, "Adapter Initialized!", Array.Empty<object?>())));
+        logger.Received().LogBleDeviceInitialized();
     }
 
     [Fact]

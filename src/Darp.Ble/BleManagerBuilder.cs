@@ -1,5 +1,4 @@
-using Darp.Ble.Implementation;
-using Darp.Ble.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble;
 
@@ -7,35 +6,35 @@ namespace Darp.Ble;
 public sealed class BleManagerBuilder
 {
     private readonly List<IBleFactory> _factories = [];
-    private readonly List<Action<BleDevice, LogEvent>> _logActions = [];
+    private ILogger? _logger;
 
     /// <summary> Add a new factory </summary>
     /// <param name="config"> An optional callback to modify the implementation config </param>
     /// <typeparam name="TFactory"> The type of the factory </typeparam>
     /// <returns> The current builder </returns>
-    public BleManagerBuilder With<TFactory>(Action<TFactory>? config = null)
+    public BleManagerBuilder Add<TFactory>(Action<TFactory>? config = null)
         where TFactory : IBleFactory, new()
     {
         var factory = new TFactory();
         config?.Invoke(factory);
-        return With(factory);
+        return Add(factory);
     }
 
     /// <summary> Add a new factory directly </summary>
     /// <param name="factory"> The factory to be added </param>
     /// <returns> The current builder  </returns>
-    public BleManagerBuilder With(IBleFactory factory)
+    public BleManagerBuilder Add(IBleFactory factory)
     {
         _factories.Add(factory);
         return this;
     }
 
     /// <summary> Register a handler for log events </summary>
-    /// <param name="onLog"> Called when any part of the ble library logs something </param>
+    /// <param name="logger"> Called when any part of the ble library logs something </param>
     /// <returns> The current builder </returns>
-    public BleManagerBuilder OnLog(Action<BleDevice, LogEvent> onLog)
+    public BleManagerBuilder SetLogger(ILogger logger)
     {
-        _logActions.Add(onLog);
+        _logger = logger;
         return this;
     }
 
@@ -43,6 +42,6 @@ public sealed class BleManagerBuilder
     /// <returns> The new ble manager </returns>
     public BleManager CreateManager()
     {
-        return new BleManager(_factories, _logActions);
+        return new BleManager(_factories, _logger);
     }
 }

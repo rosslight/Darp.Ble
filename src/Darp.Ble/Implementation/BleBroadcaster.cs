@@ -1,14 +1,14 @@
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
-using Darp.Ble.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Implementation;
 
 /// <summary> The broadcaster view of a ble device </summary>
-public abstract class BleBroadcaster(IObserver<LogEvent>? logger) : IBleBroadcaster
+public abstract class BleBroadcaster(ILogger? logger) : IBleBroadcaster
 {
     /// <summary> The logger </summary>
-    protected IObserver<LogEvent>? Logger { get; } = logger;
+    protected ILogger? Logger { get; } = logger;
 
     /// <inheritdoc />
     public IDisposable Advertise(AdvertisingSet advertisingSet) => throw new NotImplementedException();

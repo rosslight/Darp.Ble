@@ -6,11 +6,11 @@ using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
-using Darp.Ble.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.WinRT;
 
-internal sealed class WinBleBroadcaster(WinBleDevice winBleDevice, IObserver<LogEvent>? logger) : BleBroadcaster(logger)
+internal sealed class WinBleBroadcaster(WinBleDevice winBleDevice, ILogger? logger) : BleBroadcaster(logger)
 {
     private readonly WinBleDevice _winBleDevice = winBleDevice;
 
@@ -58,7 +58,7 @@ internal sealed class WinBleBroadcaster(WinBleDevice winBleDevice, IObserver<Log
                 or AdTypes.SimplePairingRandomizerR256
                 or AdTypes.ThreeDInformationData)
             {
-                Logger?.Warning("Ignoring data section {Type}. This type is reserved by Windows", type);
+                Logger?.LogIgnoreDataSectionReservedType(type);
                 continue;
             }
             publisher.Advertisement.DataSections.Add(new BluetoothLEAdvertisementDataSection((byte)type, bytes.ToArray().AsBuffer()));
@@ -70,7 +70,7 @@ internal sealed class WinBleBroadcaster(WinBleDevice winBleDevice, IObserver<Log
         publisher.StatusChanged += (_, args) =>
         {
             if (args.Error is BluetoothError.Success) return;
-            Logger?.Warning("Publisher status changed to {Status} with {Error}", args.Status, args.Error);
+            Logger?.LogPublisherChangedToError(args.Status, args.Error);
             disposable.Dispose();
         };
         publisher.Start();

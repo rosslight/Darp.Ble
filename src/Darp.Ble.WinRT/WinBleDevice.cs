@@ -1,12 +1,12 @@
 using Windows.Devices.Bluetooth;
 using Darp.Ble.Data;
 using Darp.Ble.Implementation;
-using Darp.Ble.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.WinRT;
 
 /// <summary> Provides windows specific implementation of a ble device </summary>
-internal sealed class WinBleDevice(IObserver<(BleDevice, LogEvent)>? logger) : BleDevice(logger)
+internal sealed class WinBleDevice(ILogger? logger) : BleDevice(logger)
 {
     /// <inheritdoc />
     protected override async Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)

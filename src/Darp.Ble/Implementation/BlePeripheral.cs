@@ -3,15 +3,15 @@ using System.Reactive.Subjects;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Darp.Ble.Gatt.Client;
-using Darp.Ble.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Implementation;
 
 /// <summary> The central view of a ble device </summary>
-public abstract class BlePeripheral(BleDevice device, IObserver<LogEvent>? logger) : IBlePeripheral, IBleBroadcaster
+public abstract class BlePeripheral(BleDevice device, ILogger? logger) : IBlePeripheral, IBleBroadcaster
 {
     /// <summary> The logger </summary>
-    protected IObserver<LogEvent>? Logger { get; } = logger;
+    protected ILogger? Logger { get; } = logger;
     private readonly Dictionary<BleUuid, IGattClientService> _services = new();
     private readonly Dictionary<BleAddress, IGattClientPeer> _peerDevices = new();
     private readonly Subject<IGattClientPeer> _whenConnected = new();

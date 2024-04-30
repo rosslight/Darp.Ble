@@ -1,27 +1,21 @@
 using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
-using Darp.Ble.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Implementation;
 
 /// <inheritdoc />
-public abstract class BleDevice : IBleDevice
+/// <param name="logger"> The logger </param>
+public abstract class BleDevice(ILogger? logger) : IBleDevice
 {
     /// <summary> The logger </summary>
-    protected IObserver<LogEvent>? Logger { get; }
+    protected ILogger? Logger { get; } = logger;
     private bool _isInitializing;
     private IBleObserver? _bleObserver;
     private IBleCentral? _bleCentral;
     private IBleBroadcaster? _bleBroadcaster;
     private IBlePeripheral? _blePeripheral;
-
-    /// <summary> Initialize a new ble device </summary>
-    /// <param name="logger"> The logger </param>
-    protected BleDevice(IObserver<(BleDevice, LogEvent)>? logger)
-    {
-        if (logger is not null) Logger = System.Reactive.Observer.Create<LogEvent>(x => logger.OnNext((this, x)));
-    }
 
     /// <inheritdoc />
     public bool IsInitialized { get; private set; }
@@ -72,7 +66,7 @@ public abstract class BleDevice : IBleDevice
             InitializeResult result = await InitializeAsyncCore(cancellationToken);
             if (result is not InitializeResult.Success)
                 return result;
-            Logger?.Debug("Adapter Initialized!");
+            Logger?.LogBleDeviceInitialized();
             IsInitialized = true;
             return InitializeResult.Success;
         }

@@ -1,5 +1,4 @@
-﻿using Darp.Ble.Implementation;
-using Darp.Ble.Logger;
+﻿using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock;
 
@@ -15,7 +14,7 @@ public sealed class BleMockFactory : IBleFactory
     public string Name { get; set; } = "Mock";
 
     /// <inheritdoc />
-    public IEnumerable<IBleDevice> EnumerateDevices(IObserver<(BleDevice, LogEvent)>? logger)
+    public IEnumerable<IBleDevice> EnumerateDevices(ILogger? logger)
     {
         InitializeAsync onInitialize = OnInitialize ?? ((_, _) => Task.CompletedTask);
         yield return new MockBleDevice(onInitialize, Name, logger);

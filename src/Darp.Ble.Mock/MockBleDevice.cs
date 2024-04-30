@@ -1,6 +1,6 @@
 using Darp.Ble.Data;
 using Darp.Ble.Implementation;
-using Darp.Ble.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock;
 
@@ -8,7 +8,7 @@ namespace Darp.Ble.Mock;
 internal sealed class MockBleDevice(
     BleMockFactory.InitializeAsync onInitialize,
     string name,
-    IObserver<(BleDevice, LogEvent)>? logger) : BleDevice(logger)
+    ILogger? logger) : BleDevice(logger)
 {
     private readonly BleMockFactory.InitializeAsync _onInitialize = onInitialize;
 

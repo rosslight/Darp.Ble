@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci;
 
-public static partial class Logging
+internal static partial class Logging
 {
     [LoggerMessage(Level = LogLevel.Trace, Message = "Enqueueing packet {@Packet}")]
     public static partial void LogEnqueuePacket(this ILogger logger, IHciPacket packet);

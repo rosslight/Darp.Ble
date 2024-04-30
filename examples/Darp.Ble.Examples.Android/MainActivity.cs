@@ -14,7 +14,7 @@ public sealed class MainActivity : Activity
         if (GetSystemService(BluetoothService) is not BluetoothManager manager) return;
 
         _bleManager = new BleManagerBuilder()
-            .With(new AndroidBleFactory(manager))
+            .Add(new AndroidBleFactory(manager))
             .CreateManager();
 
         base.OnCreate(savedInstanceState);

@@ -3,13 +3,13 @@ using Windows.Devices.Bluetooth;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Implementation;
-using Darp.Ble.Logger;
 using Darp.Ble.WinRT.Gatt.Server;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.WinRT;
 
 /// <inheritdoc />
-internal sealed class WinBleCentral(BleDevice device, IObserver<LogEvent>? logger) : BleCentral(device, logger)
+internal sealed class WinBleCentral(BleDevice device, ILogger? logger) : BleCentral(device, logger)
 {
     /// <inheritdoc />
     protected override IObservable<IGattServerPeer> ConnectToPeripheralCore(BleAddress address,

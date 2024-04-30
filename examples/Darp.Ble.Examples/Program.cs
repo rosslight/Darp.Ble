@@ -9,7 +9,7 @@ using Darp.Ble.Gatt.Client;
 using Darp.Ble.WinRT;
 
 BleManager manager = new BleManagerBuilder()
-    .With<WinBleFactory>()
+    .Add<WinBleFactory>()
     .CreateManager();
 
 IBleDevice x = manager.EnumerateDevices().First();

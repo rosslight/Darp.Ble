@@ -2,12 +2,12 @@ using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Implementation;
-using Darp.Ble.Logger;
 using Darp.Ble.Mock.Gatt;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock;
 
-internal sealed class MockBlePeripheral(MockBleDevice device, MockBleBroadcaster broadcaster, IObserver<LogEvent>? logger)
+internal sealed class MockBlePeripheral(MockBleDevice device, MockBleBroadcaster broadcaster, ILogger? logger)
     : BlePeripheral(device, logger)
 {
     private readonly MockBleBroadcaster _broadcaster = broadcaster;

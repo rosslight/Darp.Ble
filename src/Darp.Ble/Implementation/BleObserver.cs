@@ -3,17 +3,17 @@ using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
-using Darp.Ble.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Implementation;
 
 /// <summary> The ble observer </summary>
 /// <param name="device"> The ble device </param>
 /// <param name="logger"> The logger </param>
-public abstract class BleObserver(BleDevice device, IObserver<LogEvent>? logger) : IBleObserver
+public abstract class BleObserver(BleDevice device, ILogger? logger) : IBleObserver
 {
     /// <summary> The logger </summary>
-    protected IObserver<LogEvent>? Logger { get; } = logger;
+    protected ILogger? Logger { get; } = logger;
     private readonly object _lockObject = new();
     private readonly List<IObserver<IGapAdvertisement>> _observers = [];
     private bool _isDisposed;

@@ -1,6 +1,5 @@
 using Darp.Ble.HciHost.Usb;
-using Darp.Ble.Implementation;
-using Darp.Ble.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost;
 
@@ -29,7 +28,7 @@ public sealed class HciHostBleFactory : IBleFactory
     }
 
     /// <inheritdoc />
-    public IEnumerable<IBleDevice> EnumerateDevices(IObserver<(BleDevice, LogEvent)>? logger)
+    public IEnumerable<IBleDevice> EnumerateDevices(ILogger? logger)
     {
         if (_port is not null)
         {

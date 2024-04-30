@@ -1,10 +1,10 @@
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
-using Darp.Ble.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock;
 
-internal sealed class MockBleObserver(MockBleDevice device, MockBleBroadcaster broadcaster, IObserver<LogEvent>? logger) : BleObserver(device, logger)
+internal sealed class MockBleObserver(MockBleDevice device, MockBleBroadcaster broadcaster, ILogger? logger) : BleObserver(device, logger)
 {
     private readonly MockBleBroadcaster _broadcaster = broadcaster;
 

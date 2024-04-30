@@ -3,16 +3,16 @@ using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gatt.Server;
-using Darp.Ble.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Implementation;
 
 /// <summary> The central view of a ble device </summary>
-public abstract class BleCentral(BleDevice device, IObserver<LogEvent>? logger) : IBleCentral
+public abstract class BleCentral(BleDevice device, ILogger? logger) : IBleCentral
 {
     private readonly Dictionary<BleAddress, IGattServerPeer> _peerDevices = new();
     /// <summary> The logger </summary>
-    protected IObserver<LogEvent>? Logger { get; } = logger;
+    protected ILogger? Logger { get; } = logger;
 
     /// <inheritdoc />
     public IBleDevice Device { get; } = device;

@@ -3,12 +3,12 @@ using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Implementation;
-using Darp.Ble.Logger;
 using Darp.Ble.Mock.Gatt;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock;
 
-internal sealed class MockBleCentral(BleDevice device, MockBlePeripheral peripheralMock, IObserver<LogEvent>? logger)
+internal sealed class MockBleCentral(BleDevice device, MockBlePeripheral peripheralMock, ILogger? logger)
     : BleCentral(device, logger)
 {
     private readonly MockBlePeripheral _peripheralMock = peripheralMock;

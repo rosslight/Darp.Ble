@@ -1,33 +1,15 @@
-﻿using System.Reactive;
-using Darp.Ble.Implementation;
-using Darp.Ble.Logger;
+﻿using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble;
 
 /// <summary> The base manager class. Holds all implementations </summary>
-public sealed class BleManager
+public sealed class BleManager(IReadOnlyCollection<IBleFactory> factories, ILogger? logger)
 {
-    private readonly IReadOnlyCollection<IBleFactory> _factories;
-    private readonly IObserver<(BleDevice, LogEvent)>? _logObserver;
-
-    internal BleManager(IReadOnlyCollection<IBleFactory> factories,
-        IReadOnlyCollection<Action<BleDevice, LogEvent>> logActions)
-    {
-        _factories = factories;
-        if (logActions.Count > 0)
-        {
-            _logObserver = Observer.Create<(BleDevice Device, LogEvent Event)>(next =>
-            {
-                foreach (Action<BleDevice, LogEvent> logAction in logActions)
-                {
-                    logAction(next.Device, next.Event);
-                }
-            });
-        }
-    }
+    private readonly IReadOnlyCollection<IBleFactory> _factories = factories;
+    private readonly ILogger? _logger = logger;
 
     /// <summary> Enumerate all implementations for devices </summary>
     /// <returns> A list of all available devices </returns>
     public IEnumerable<IBleDevice> EnumerateDevices() => _factories
-        .SelectMany(x => x.EnumerateDevices(_logObserver));
+        .SelectMany(x => x.EnumerateDevices(_logger));
 }

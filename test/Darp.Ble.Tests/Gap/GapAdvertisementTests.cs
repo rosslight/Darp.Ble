@@ -5,27 +5,16 @@ using Darp.Ble.Linq;
 using Darp.Ble.Mock;
 using Darp.Ble.Utils;
 using FluentAssertions;
-using Serilog;
-using Serilog.Events;
-using Xunit.Abstractions;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Tests.Gap;
 
-public sealed class GapAdvertisementTests
+public sealed class GapAdvertisementTests(ILogger<GapAdvertisementTests> logger)
 {
-    private readonly BleManager _manager;
-
-    public GapAdvertisementTests(ITestOutputHelper outputHelper)
-    {
-        Serilog.Core.Logger logger = new LoggerConfiguration()
-            .MinimumLevel.Verbose()
-            .WriteTo.TestOutput(outputHelper, formatProvider: null)
-            .CreateLogger();
-        _manager = new BleManagerBuilder()
-            .OnLog((_, logEvent) => logger.Write((LogEventLevel)logEvent.Level, logEvent.Exception, logEvent.MessageTemplate, logEvent.Properties))
-            .With<BleMockFactory>()
-            .CreateManager();
-    }
+    private readonly BleManager _manager = new BleManagerBuilder()
+        .SetLogger(logger)
+        .Add<BleMockFactory>()
+        .CreateManager();
 
     [Theory]
     [InlineData(BleEventType.AdvInd, BleAddressType.Public, 0xAABBCCDDEEFF, Physical.Le1M, Physical.NotAvailable,

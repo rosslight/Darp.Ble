@@ -1,5 +1,4 @@
-using Darp.Ble.Implementation;
-using Darp.Ble.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble;
 
@@ -9,5 +8,5 @@ public interface IBleFactory
     /// <summary> Enumerate all adapters which can be found by the implementation </summary>
     /// <param name="logger"> An observable for logs </param>
     /// <returns> All implementation specific ble devices </returns>
-    IEnumerable<IBleDevice> EnumerateDevices(IObserver<(BleDevice, LogEvent)>? logger);
+    IEnumerable<IBleDevice> EnumerateDevices(ILogger? logger);
 }

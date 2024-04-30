@@ -1,5 +1,6 @@
 using System.Reactive.Linq;
 using Darp.Ble.Data;
+using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
 using Darp.Ble.Hci;
 using Darp.Ble.Hci.Package;
@@ -8,12 +9,12 @@ using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.Hci.Payload.Result;
 using Darp.Ble.Implementation;
-using Darp.Ble.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost;
 
 /// <inheritdoc />
-public sealed class HciHostBleObserver(HciHostBleDevice device, IObserver<LogEvent>? logger) : BleObserver(device, logger)
+public sealed class HciHostBleObserver(HciHostBleDevice device, ILogger? logger) : BleObserver(device, logger)
 {
     private readonly HciHostBleDevice _device = device;
     private static (HciSetExtendedScanParametersCommand, HciSetExtendedScanEnableCommand) CreateConfiguration(BleScanParameters parameters)
@@ -48,13 +49,13 @@ public sealed class HciHostBleObserver(HciHostBleDevice device, IObserver<LogEve
                     commands.Parameters, cancellationToken: token);
             if (paramSetResult.Status is not HciCommandStatus.Success)
             {
-                observer.OnError(new Exception($"Could not set scan parameters: {paramSetResult.Status}"));
+                observer.OnError(new BleObservationStartException(this, $"Could not set scan parameters: {paramSetResult.Status}"));
                 return;
             }
             HciSetExtendedScanEnableResult enableResult = await _device.Host.QueryCommandCompletionAsync<HciSetExtendedScanEnableCommand, HciSetExtendedScanEnableResult>(commands.Enable, cancellationToken: token);
             if (enableResult.Status is not HciCommandStatus.Success)
             {
-                observer.OnError(new Exception($"Could not enable scan: {enableResult.Status}"));
+                observer.OnError(new BleObservationStartException(this, $"Could not enable scan: {enableResult.Status}"));
                 return;
             }
 

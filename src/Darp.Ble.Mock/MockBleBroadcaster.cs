@@ -3,11 +3,11 @@ using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
-using Darp.Ble.Logger;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock;
 
-internal sealed class MockBleBroadcaster(IObserver<LogEvent>? logger) : BleBroadcaster(logger)
+internal sealed class MockBleBroadcaster(ILogger? logger) : BleBroadcaster(logger)
 {
     private IObservable<AdvertisingData>? _source;
     private AdvertisingParameters? _parameters;
