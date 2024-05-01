@@ -66,7 +66,7 @@ public abstract class BleDevice(ILogger? logger) : IBleDevice
             InitializeResult result = await InitializeAsyncCore(cancellationToken);
             if (result is not InitializeResult.Success)
                 return result;
-            Logger?.LogBleDeviceInitialized();
+            Logger?.LogBleDeviceInitialized(Name);
             IsInitialized = true;
             return InitializeResult.Success;
         }
@@ -97,6 +97,7 @@ public abstract class BleDevice(ILogger? logger) : IBleDevice
     {
         DisposeCore();
         await DisposeAsyncCore();
+        Logger?.LogBleDeviceDisposed(Name);
         GC.SuppressFinalize(this);
     }
 

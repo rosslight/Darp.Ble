@@ -26,7 +26,7 @@ public sealed class BleDeviceTests
             .CreateManager();
         IBleDevice device = manager.EnumerateDevices().First();
         await device.InitializeAsync();
-        logger.Received().LogBleDeviceInitialized();
+        logger.Received().LogBleDeviceInitialized(device.Name);
     }
 
     [Fact]

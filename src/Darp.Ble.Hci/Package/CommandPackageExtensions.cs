@@ -32,8 +32,8 @@ public static class CommandPackageExtensions
             })
             .SelectWhereEvent<HciCommandCompleteEvent<TParameters>>()
             .Where(x => x.Data.CommandOpCode == TCommand.OpCode)
-            .Do(completePacket => hciHost.Logger.LogQueryCompleted(command, completePacket.EventCode, completePacket),
-                exception => hciHost.Logger.LogQueryWithException(exception, command, exception.Message))
+            .Do(completePacket => hciHost.Logger?.LogQueryCompleted(command, completePacket.EventCode, completePacket),
+                exception => hciHost.Logger?.LogQueryWithException(exception, command, exception.Message))
             .FirstAsync()
             .Timeout(timeout.Value)
             .ToTask(cancellationToken);
@@ -61,8 +61,8 @@ public static class CommandPackageExtensions
                         observer.OnError(e);
                     }
                 }, observer.OnError, observer.OnCompleted))
-            .Do(statusPacket => hciHost.Logger.LogQueryStarted(command, statusPacket.Data.Status, statusPacket.EventCode, statusPacket),
-                exception => hciHost.Logger.LogQueryWithException(exception, command, exception.Message))
+            .Do(statusPacket => hciHost.Logger?.LogQueryStarted(command, statusPacket.Data.Status, statusPacket.EventCode, statusPacket),
+                exception => hciHost.Logger?.LogQueryWithException(exception, command, exception.Message))
             .FirstAsync()
             .Timeout(timeout.Value);
     }
@@ -106,7 +106,7 @@ public static class CommandPackageExtensions
             IDisposable disposable = hciHost.WhenHciEventPackageReceived
                 .Subscribe(observer.OnNextEventPacket<TCommand>, observer.OnError, observer.OnCompleted);
             var commandPacket = new HciCommandPacket<TCommand>(command);
-            hciHost.Logger.LogStartQuery(commandPacket);
+            hciHost.Logger?.LogStartQuery(commandPacket);
             hciHost.EnqueuePacket(commandPacket);
             return disposable;
         });

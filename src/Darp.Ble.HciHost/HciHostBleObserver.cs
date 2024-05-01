@@ -1,3 +1,4 @@
+using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
@@ -50,22 +51,21 @@ public sealed class HciHostBleObserver(HciHostBleDevice device, ILogger? logger)
             if (paramSetResult.Status is not HciCommandStatus.Success)
             {
                 observer.OnError(new BleObservationStartException(this, $"Could not set scan parameters: {paramSetResult.Status}"));
-                return;
+                return Disposable.Empty;
             }
             HciSetExtendedScanEnableResult enableResult = await _device.Host.QueryCommandCompletionAsync<HciSetExtendedScanEnableCommand, HciSetExtendedScanEnableResult>(commands.Enable, cancellationToken: token);
             if (enableResult.Status is not HciCommandStatus.Success)
             {
                 observer.OnError(new BleObservationStartException(this, $"Could not enable scan: {enableResult.Status}"));
-                return;
+                return Disposable.Empty;
             }
 
-            _device.Host
+            return _device.Host
                 .WhenHciEventPackageReceived
                 .SelectWhereEvent<HciLeExtendedAdvertisingReportEvent>()
                 .SelectMany(x => x.Data.Reports)
                 .Select(x => OnAdvertisementReport(this, x))
-                .Subscribe(observer, token);
-            await Task.Delay(TimeSpan.MaxValue, token);
+                .Subscribe(observer);
         });
         return true;
     }

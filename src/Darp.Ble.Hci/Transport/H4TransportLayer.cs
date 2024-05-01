@@ -11,7 +11,7 @@ namespace Darp.Ble.Hci.Transport;
 
 public sealed class H4TransportLayer : ITransportLayer
 {
-    private readonly ILogger<H4TransportLayer> _logger;
+    private readonly ILogger? _logger;
     private readonly SerialPort _serialPort;
     private readonly ConcurrentQueue<IHciPacket> _txQueue;
     private readonly CancellationTokenSource _cancelSource;
@@ -19,9 +19,9 @@ public sealed class H4TransportLayer : ITransportLayer
     private readonly Subject<IHciPacket> _rxSubject;
     private bool _isDisposing;
 
-    public H4TransportLayer(string portName, ILogger<H4TransportLayer>? logger)
+    public H4TransportLayer(string portName, ILogger? logger)
     {
-        _logger = logger ?? NullLogger<H4TransportLayer>.Instance;
+        _logger = logger;
         _serialPort = new SerialPort(portName);
         _txQueue = new ConcurrentQueue<IHciPacket>();
         _rxSubject = new Subject<IHciPacket>();
@@ -42,11 +42,11 @@ public sealed class H4TransportLayer : ITransportLayer
                 bytes[0] = (byte)packet.PacketType;
                 if (!packet.TryEncode(bytes.AsSpan()[1..]))
                 {
-                    _logger.LogPacketSendingErrorEncoding(packet);
+                    _logger?.LogPacketSendingErrorEncoding(packet);
                     continue;
                 }
 
-                _logger.LogPacketSending(packet, bytes);
+                _logger?.LogPacketSending(packet, bytes);
                 await _serialPort.BaseStream.WriteAsync(bytes, _cancelToken);
             }
         }
@@ -54,9 +54,9 @@ public sealed class H4TransportLayer : ITransportLayer
         {
             if (_isDisposing)
             {
-                _logger.LogTransportDisconnected("Tx");
+                _logger?.LogTransportDisconnected("Tx");
             }
-            _logger.LogTransportWithError(e, "Tx", e.Message);
+            _logger?.LogTransportWithError(e, "Tx", e.Message);
         }
     }
 
@@ -72,11 +72,11 @@ public sealed class H4TransportLayer : ITransportLayer
         await _serialPort.BaseStream.ReadExactlyAsync(payloadBuffer, _cancelToken);
         if (!TPacket.TryDecode(buffer[..(TPacket.HeaderLength + payloadLength)], out TPacket? packet, out _))
         {
-            _logger.LogPacketReceivingDecodingFailed((byte)TPacket.Type, buffer[..(TPacket.HeaderLength + payloadLength)].ToArray(), typeof(TPacket).Name);
+            _logger?.LogPacketReceivingDecodingFailed((byte)TPacket.Type, buffer[..(TPacket.HeaderLength + payloadLength)].ToArray(), typeof(TPacket).Name);
             return;
         }
 
-        _logger.LogPacketReceiving((byte)packet.PacketType, packet.ToByteArray(), packet.PacketType, packet);
+        _logger?.LogPacketReceiving((byte)packet.PacketType, packet.ToByteArray(), packet.PacketType, packet);
         _rxSubject.OnNext(packet);
     }
 
@@ -101,7 +101,7 @@ public sealed class H4TransportLayer : ITransportLayer
                         break;
                     case HciPacketType.HciCommand:
                     default:
-                        _logger.LogPacketReceivingUnknownPacket((byte)type);
+                        _logger?.LogPacketReceivingUnknownPacket((byte)type);
                         _serialPort.ReadExisting();
                         continue;
                 }
@@ -112,11 +112,11 @@ public sealed class H4TransportLayer : ITransportLayer
         {
             if (_isDisposing)
             {
-                _logger.LogTransportDisconnected("Rx");
+                _logger?.LogTransportDisconnected("Rx");
                 _rxSubject.OnCompleted();
                 return;
             }
-            _logger.LogTransportWithError(e, "Rx", e.Message);
+            _logger?.LogTransportWithError(e, "Rx", e.Message);
             _rxSubject.OnError(e);
         }
     }
