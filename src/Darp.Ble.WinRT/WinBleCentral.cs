@@ -29,7 +29,7 @@ internal sealed class WinBleCentral(BleDevice device, ILogger? logger) : BleCent
                 observer.OnError(new Exception("PeripheralConnection: Failed!"));
                 return;
             }
-            observer.OnNext(new WinGattServerPeer(winDev));
+            observer.OnNext(new WinGattServerPeer(winDev, Logger));
         });
     }
 }

@@ -22,7 +22,7 @@ internal sealed class MockBleCentral(BleDevice device, MockBlePeripheral periphe
         {
             MockGattClientPeer clientPeer = _peripheralMock.OnCentralConnection(address);
             _peripheralMock.StopAll();
-            var mockDevice = new MockGattServerPeer(address, clientPeer);
+            var mockDevice = new MockGattServerPeer(address, clientPeer, Logger);
             observer.OnNext(mockDevice);
             return Disposable.Empty;
         });

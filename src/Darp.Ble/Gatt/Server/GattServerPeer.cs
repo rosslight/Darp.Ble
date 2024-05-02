@@ -1,15 +1,18 @@
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Gatt.Server;
 
 /// <summary> The gatt server peer </summary>
 /// <param name="address"> The address of the service </param>
-public abstract class GattServerPeer(BleAddress address) : IGattServerPeer
+public abstract class GattServerPeer(BleAddress address, ILogger? logger) : IGattServerPeer
 {
     private readonly Dictionary<BleUuid, IGattServerService> _services = new();
 
+    /// <summary> The logger </summary>
+    protected ILogger? Logger { get; } = logger;
     /// <inheritdoc />
     public BleAddress Address { get; } = address;
     /// <inheritdoc />

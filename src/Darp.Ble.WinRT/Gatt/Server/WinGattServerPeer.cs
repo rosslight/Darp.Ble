@@ -8,6 +8,7 @@ using Windows.Foundation;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Server;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.WinRT.Gatt.Server;
 
@@ -16,7 +17,8 @@ public sealed class WinGattServerPeer : GattServerPeer
 {
     private readonly BluetoothLEDevice _winDev;
 
-    internal WinGattServerPeer(BluetoothLEDevice winDev) : base(BleHelper.GetBleAddress(winDev.BluetoothAddress, winDev.BluetoothAddressType))
+    internal WinGattServerPeer(BluetoothLEDevice winDev, ILogger? logger)
+        : base(BleHelper.GetBleAddress(winDev.BluetoothAddress, winDev.BluetoothAddressType), logger)
     {
         _winDev = winDev;
         WhenConnectionStatusChanged = Observable.FromEventPattern<TypedEventHandler<BluetoothLEDevice, object>, BluetoothLEDevice, object>(
@@ -52,7 +54,7 @@ public sealed class WinGattServerPeer : GattServerPeer
 
                     foreach (GattDeviceService gattDeviceService in result.Services)
                     {
-                        observer.OnNext(new WinGattServerService(gattDeviceService));
+                        observer.OnNext(new WinGattServerService(gattDeviceService, Logger));
                     }
                 }, observer.OnError, observer.OnCompleted);
         });

@@ -45,26 +45,34 @@ public static class CommandPackageExtensions
         where TCommand : unmanaged, IHciCommand<TCommand>
     {
         timeout ??= TimeSpan.FromSeconds(10);
-        return Observable
-            .Create<HciEventPacket<HciCommandStatusEvent>>(observer => hciHost
-                .QueryCommand(command)
-                .SelectWhereEvent<HciCommandStatusEvent>()
-                .Subscribe(statusPackage =>
-                {
-                    try
+        try
+        {
+            return Observable.Create<HciEventPacket<HciCommandStatusEvent>>(observer => hciHost
+                    .QueryCommand(command)
+                    .SelectWhereEvent<HciCommandStatusEvent>()
+                    .Subscribe(statusPackage =>
                     {
-                        if (statusPackage.Data.CommandOpCode != TCommand.OpCode) return;
-                        observer.OnNext(statusPackage);
-                    }
-                    catch (Exception e)
-                    {
-                        observer.OnError(e);
-                    }
-                }, observer.OnError, observer.OnCompleted))
-            .Do(statusPacket => hciHost.Logger?.LogQueryStarted(command, statusPacket.Data.Status, statusPacket.EventCode, statusPacket),
-                exception => hciHost.Logger?.LogQueryWithException(exception, command, exception.Message))
-            .FirstAsync()
-            .Timeout(timeout.Value);
+                        try
+                        {
+                            if (statusPackage.Data.CommandOpCode != TCommand.OpCode) return;
+                            observer.OnNext(statusPackage);
+                        }
+                        catch (Exception e)
+                        {
+                            observer.OnError(e);
+                        }
+                    }, observer.OnError, observer.OnCompleted))
+                .Do(
+                    statusPacket => hciHost.Logger?.LogQueryStarted(command, statusPacket.Data.Status,
+                        statusPacket.EventCode, statusPacket),
+                    exception => hciHost.Logger?.LogQueryWithException(exception, command, exception.Message))
+                .FirstAsync()
+                .Timeout(timeout.Value);
+        }
+        catch (Exception e)
+        {
+            return Observable.Throw<HciEventPacket<HciCommandStatusEvent>>(e);
+        }
     }
 
     public static async Task<HciCommandStatus> QueryCommandStatusAsync<TCommand>(this HciHost hciHost,

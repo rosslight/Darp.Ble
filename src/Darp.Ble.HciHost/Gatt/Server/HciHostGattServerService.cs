@@ -1,0 +1,73 @@
+using System.Buffers.Binary;
+using System.Reactive.Linq;
+using Darp.Ble.Data;
+using Darp.Ble.Gatt.Server;
+using Darp.Ble.Hci.Package;
+using Darp.Ble.Hci.Payload.Att;
+using Microsoft.Extensions.Logging;
+
+namespace Darp.Ble.HciHost.Gatt.Server;
+
+public sealed class HciHostGattServerService(BleUuid uuid, ushort attHandle, ushort endGroupHandle,
+    HciHostGattServerPeer serverPeer, ILogger? logger) : GattServerService(uuid, logger)
+{
+    private readonly ushort _attHandle = attHandle;
+    private readonly ushort _endGroupHandle = endGroupHandle;
+    private readonly HciHostGattServerPeer _serverPeer = serverPeer;
+
+    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicsAsyncCore()
+    {
+         return Observable.Create<IGattServerCharacteristic>(async (observer, token) =>
+        {
+            ushort startingHandle = _attHandle;
+            HciHostGattServerCharacteristic? lastCharacteristic = null;
+            while (!token.IsCancellationRequested && startingHandle < 0xFFFF)
+            {
+                AttReadResult response = await _serverPeer.QueryAttPduAsync<AttReadByTypeReq<ushort>, AttReadByTypeRsp>(
+                    new AttReadByTypeReq<ushort>
+                {
+                    StartingHandle = startingHandle,
+                    EndingHandle = _endGroupHandle,
+                    AttributeType = 0x2803,
+                }, cancellationToken: token);
+                if (response.OpCode is AttOpCode.ATT_ERROR_RSP
+                    && AttErrorRsp.TryDecode(response.Pdu, out AttErrorRsp errorRsp, out _))
+                {
+                    if (errorRsp.ErrorCode is AttErrorCode.AttributeNotFoundError) break;
+                    throw new Exception($"Could not discover characteristics due to error {errorRsp.ErrorCode}");
+                }
+                if (!(response.OpCode is AttOpCode.ATT_READ_BY_TYPE_RSP
+                     && AttReadByTypeRsp.TryDecode(response.Pdu, out AttReadByTypeRsp rsp, out _)))
+                {
+                    throw new Exception($"Received unexpected att response {response.OpCode}");
+                }
+                if (rsp.AttributeDataList.Length == 0) break;
+                foreach ((ushort handle, byte[] value) in rsp.AttributeDataList)
+                {
+                    if (handle < startingHandle)
+                        throw new Exception("Handle of discovered characteristic is smaller than starting handle of service");
+                    var properties = (GattProperty)value[0];
+                    ReadOnlyMemory<byte> memory = value;
+                    ushort characteristicHandle = BinaryPrimitives.ReadUInt16LittleEndian(memory.Span[1..]);
+                    var uuid = new BleUuid(memory.Span[3..]);
+                    var characteristic = new HciHostGattServerCharacteristic(_serverPeer, uuid, characteristicHandle, properties, Logger);
+                    if (!await characteristic.DiscoverAllDescriptorsAsync(token))
+                    {
+                        Logger?.LogWarning("Could not discover descriptors of characteristic {@Characteristic}", characteristic);
+                        continue;
+                    }
+                    observer.OnNext(characteristic);
+                    if (lastCharacteristic is not null) lastCharacteristic.EndHandle = handle;
+                    lastCharacteristic = characteristic;
+                }
+                startingHandle = (ushort)(rsp.AttributeDataList[^1].Handle + 1);
+            }
+            if (lastCharacteristic is not null) lastCharacteristic.EndHandle = _endGroupHandle;
+        });
+    }
+
+    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicAsyncCore(BleUuid uuid)
+    {
+        return DiscoverCharacteristicsAsyncCore().Where(x => x.Uuid == uuid);
+    }
+}

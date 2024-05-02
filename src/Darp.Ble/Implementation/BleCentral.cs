@@ -43,11 +43,19 @@ public abstract class BleCentral(BleDevice device, ILogger? logger) : IBleCentra
                 observer.OnError(new BleCentralConnectionFailedException(this, "Supplied invalid scanWindow"));
                 return Disposable.Empty;
             }
-            return ConnectToPeripheralCore(address, connectionParameters, scanParameters)
-                .Do(peer => _peerDevices[peer.Address] = peer)
+            device.Observer.StopScan();
+            return DoAfterConnection(ConnectToPeripheralCore(address, connectionParameters, scanParameters)
+                    .Do(peer => _peerDevices[peer.Address] = peer))
                 .Subscribe(observer);
         });
     }
+
+    /// <summary>
+    /// A core implementation can overwrite this method for additional calls after the connection was established
+    /// </summary>
+    /// <param name="source"> The source </param>
+    /// <returns> The resulting peer observable  </returns>
+    protected virtual IObservable<IGattServerPeer> DoAfterConnection(IObservable<IGattServerPeer> source) => source;
 
     /// <summary> The core implementation of connecting to the peripheral </summary>
     /// <param name="address"> The address to be connected to </param>

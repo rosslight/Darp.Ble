@@ -1,7 +1,7 @@
 namespace Darp.Ble.Data;
 
 /// <summary> The connection timing. Units in [1.25 ms] </summary>
-public enum ConnectionTiming
+public enum ConnectionTiming : ushort
 {
     /// <summary> The minimum connection timing of 7.5ms (6) </summary>
     MinValue = 0x0006,

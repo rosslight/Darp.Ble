@@ -14,7 +14,7 @@ internal sealed class MockBlePeripheral(MockBleDevice device, MockBleBroadcaster
 
     public MockGattClientPeer OnCentralConnection(BleAddress address)
     {
-        var clientPeer = new MockGattClientPeer(address, this);
+        var clientPeer = new MockGattClientPeer(address, this, Logger);
         OnConnectedCentral(clientPeer);
         return clientPeer;
     }

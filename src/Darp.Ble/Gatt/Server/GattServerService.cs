@@ -1,12 +1,13 @@
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Gatt.Server;
 
 /// <summary> The abstract gatt server service implementation </summary>
 /// <param name="uuid"> The uuid of the gatt service </param>
-public abstract class GattServerService(BleUuid uuid) : IGattServerService
+public abstract class GattServerService(BleUuid uuid, ILogger? logger) : IGattServerService
 {
     private readonly Dictionary<BleUuid, IGattServerCharacteristic> _characteristics = new();
 
@@ -14,6 +15,10 @@ public abstract class GattServerService(BleUuid uuid) : IGattServerService
     public IReadOnlyDictionary<BleUuid, IGattServerCharacteristic> Characteristics => _characteristics;
     /// <inheritdoc />
     public BleUuid Uuid { get; } = uuid;
+
+    /// <summary> The logger </summary>
+    public ILogger? Logger { get; } = logger;
+
     /// <inheritdoc />
     public async Task<IGattServerCharacteristic> DiscoverCharacteristicAsync(BleUuid uuid, CancellationToken cancellationToken = default)
     {

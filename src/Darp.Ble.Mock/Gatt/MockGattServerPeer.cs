@@ -2,10 +2,12 @@ using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Server;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock.Gatt;
 
-internal sealed class MockGattServerPeer(BleAddress address, MockGattClientPeer clientPeer) : GattServerPeer(address)
+internal sealed class MockGattServerPeer(BleAddress address, MockGattClientPeer clientPeer, ILogger? logger)
+    : GattServerPeer(address, logger)
 {
     private readonly MockGattClientPeer _clientPeer = clientPeer;
 

@@ -1,13 +1,15 @@
 using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Server;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock.Gatt;
 
 internal sealed class MockGattServerService(
     BleUuid uuid,
     MockGattClientService service,
-    MockGattClientPeer gattClient) : GattServerService(uuid)
+    MockGattClientPeer gattClient,
+    ILogger? logger) : GattServerService(uuid, logger)
 {
     public MockGattClientPeer GattClient { get; } = gattClient;
     private readonly MockGattClientService _service = service;
