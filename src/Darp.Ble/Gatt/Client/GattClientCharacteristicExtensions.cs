@@ -47,6 +47,12 @@ public static class GattClientCharacteristicExtensions
     {
         throw new NotImplementedException();
     }
+    
+    public static IDisposable OnWrite(this IGattClientCharacteristic<Properties.Write> characteristic,
+        Func<IGattClientPeer, byte[], Task<GattProtocolStatus>> callback)
+    {
+        return characteristic.Characteristic.OnWrite((peer, bytes, _) => callback(peer, bytes));
+    }
 
     public static IDisposable OnWrite(this IGattClientCharacteristic<Properties.Write> characteristic,
         Func<IGattClientPeer, byte[], CancellationToken, Task<GattProtocolStatus>> callback)

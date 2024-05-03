@@ -26,7 +26,6 @@ public sealed class HciHostBleCentral(HciHostBleDevice device, ILogger? logger) 
         TimeSpan timeout = TimeSpan.FromSeconds(10);
         return Observable.Create<IGattServerPeer>(async observer =>
         {
-            await Task.Delay(1000);
             var packet = new HciLeExtendedCreateConnectionV1Command
             {
                 InitiatorFilterPolicy = 0x00,
@@ -55,9 +54,7 @@ public sealed class HciHostBleCentral(HciHostBleDevice device, ILogger? logger) 
                 .Timeout(timeout)
                 .SelectWhereLeMetaEvent<HciLeEnhancedConnectionCompleteV1Event>()
                 .Select(x => new HciHostGattServerPeer(_host, x.Data, address, Logger))
-                .Subscribe(peer => observer.OnNext(peer),
-                    exception => observer.OnError(exception),
-                    () => observer.OnCompleted());
+                .Subscribe(observer.OnNext, observer.OnError, observer.OnCompleted);
         });
     }
 

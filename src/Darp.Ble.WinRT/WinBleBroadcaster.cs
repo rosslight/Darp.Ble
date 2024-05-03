@@ -21,6 +21,14 @@ internal sealed class WinBleBroadcaster(WinBleDevice winBleDevice, ILogger? logg
 
     protected override IDisposable AdvertiseCore(AdvertisingData data, TimeSpan timeSpan, AdvertisingParameters? parameters)
     {
+        if (_winBleDevice.Capabilities.HasFlag(Capabilities.Peripheral))
+        {
+            var peripheral = (WinBlePeripheral)_winBleDevice.Peripheral;
+            if (peripheral.Services.Count > 0)
+            {
+                return peripheral.AdvertiseServices(parameters);
+            }
+        }
         var publisher = new BluetoothLEAdvertisementPublisher();
 
         foreach ((AdTypes type, ReadOnlyMemory<byte> bytes) in data)

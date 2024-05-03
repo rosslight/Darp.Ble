@@ -7,10 +7,10 @@ using Darp.Ble.Gatt.Client;
 
 namespace Darp.Ble.WinRT.Gatt;
 
-internal sealed class WinGattClientPeer(GattSession session) : IGattClientPeer
+internal sealed class WinGattClientPeer(GattSession session, BleAddress address) : IGattClientPeer
 {
     private readonly GattSession _session = session;
-    public BleAddress Address { get; } = BleAddress.Parse(session.DeviceId.Id, provider: null);
+    public BleAddress Address { get; } = address;
     public bool IsConnected => _session.SessionStatus is GattSessionStatus.Active;
     public IObservable<Unit> WhenDisconnected => Observable
         .FromEventPattern<TypedEventHandler<GattSession,GattSessionStatusChangedEventArgs>,

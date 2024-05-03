@@ -25,7 +25,7 @@ public static class AdvertisementExtensions
                 return Disposable.Empty;
             }
             IBleDevice device = advertisement.Observer.Device;
-            if (device.Capabilities.HasFlag(Capabilities.Central))
+            if (!device.Capabilities.HasFlag(Capabilities.Central))
             {
                 observer.OnError(new BleDeviceException(device,
                     "Unable to connect to advertisement as it was captured by a device which does not support connections"));

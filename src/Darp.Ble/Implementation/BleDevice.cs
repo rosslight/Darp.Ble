@@ -28,7 +28,10 @@ public abstract class BleDevice(ILogger? logger) : IBleDevice
 
     /// <inheritdoc />
     public Capabilities Capabilities => Capabilities.None
-                                        | (_bleObserver is not null ? Capabilities.Observer : Capabilities.None);
+                                        | (_bleObserver is not null ? Capabilities.Observer : Capabilities.None)
+                                        | (_bleCentral is not null ? Capabilities.Central : Capabilities.None)
+                                        | (_bleBroadcaster is not null ? Capabilities.Broadcaster : Capabilities.None)
+                                        | (_blePeripheral is not null ? Capabilities.Peripheral : Capabilities.None);
 
     /// <inheritdoc />
     public IBleObserver Observer

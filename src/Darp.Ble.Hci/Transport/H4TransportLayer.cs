@@ -136,7 +136,15 @@ public sealed class H4TransportLayer : ITransportLayer
         _serialPort.Dispose();
     }
 
-    public void Enqueue(IHciPacket packet) => _txQueue.Enqueue(packet);
+    public void Enqueue(IHciPacket packet)
+    {
+        _cancelToken.ThrowIfCancellationRequested();
+        _txQueue.Enqueue(packet);
+    }
 
-    public IObservable<IHciPacket> WhenReceived() => _rxSubject.AsObservable();
+    public IObservable<IHciPacket> WhenReceived()
+    {
+        _cancelToken.ThrowIfCancellationRequested();
+        return _rxSubject.AsObservable();
+    }
 }

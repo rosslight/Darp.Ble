@@ -19,28 +19,38 @@ internal sealed class WinGattClientCharacteristic(
     /// <inheritdoc />
     protected override IDisposable OnWriteCore(Func<IGattClientPeer, byte[], CancellationToken, Task<GattProtocolStatus>> callback)
     {
+        _winCharacteristic.WriteRequested += (sender, args) =>
+        {
+            int i = 0;
+        };
         return Observable.FromEventPattern<TypedEventHandler<GattLocalCharacteristic, GattWriteRequestedEventArgs>,
                 GattLocalCharacteristic, GattWriteRequestedEventArgs>(
                 addHandler => _winCharacteristic.WriteRequested += addHandler,
                 removeHandler => _winCharacteristic.WriteRequested -= removeHandler)
-            .Select(pattern => Observable.FromAsync(async token =>
+            .Subscribe(async pattern =>
             {
                 using Deferral deferral = pattern.EventArgs.GetDeferral();
-                GattWriteRequest request = await pattern.EventArgs.GetRequestAsync().AsTask(token);
-                IGattClientPeer peerClient = WinService.Peripheral.GetOrRegisterSession(pattern.EventArgs.Session);
-                DataReader reader = DataReader.FromBuffer(request.Value);
-                byte[] bytes = reader.DetachBuffer().ToArray();
-                GattProtocolStatus status = await callback(peerClient, bytes, token);
-                if (request.Option == GattWriteOption.WriteWithResponse)
+                GattWriteRequest request = await pattern.EventArgs.GetRequestAsync().AsTask();
+                try
                 {
-                    if (status is GattProtocolStatus.Success)
-                        request.Respond();
-                    else
-                        request.RespondWithProtocolError((byte)status);
+                    IGattClientPeer peerClient =
+                        WinService.Peripheral.GetOrRegisterSession(pattern.EventArgs.Session);
+                    DataReader reader = DataReader.FromBuffer(request.Value);
+                    byte[] bytes = reader.DetachBuffer().ToArray();
+                    GattProtocolStatus status = await callback(peerClient, bytes, default);
+                    if (request.Option == GattWriteOption.WriteWithResponse)
+                    {
+                        if (status is GattProtocolStatus.Success)
+                            request.Respond();
+                        else
+                            request.RespondWithProtocolError((byte)status);
+                    }
                 }
-            }))
-            .Concat()
-            .Subscribe();
+                catch
+                {
+                    // ignored
+                }
+            });
     }
 
     /// <inheritdoc />

@@ -1,3 +1,4 @@
+using System.Reactive.Disposables;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Darp.Ble.Data;
@@ -18,18 +19,32 @@ internal sealed class WinBlePeripheral(WinBleDevice device, ILogger? logger) : B
             .AsTask(cancellationToken);
         if (result.Error is not BluetoothError.Success) throw new Exception("Nope");
         GattServiceProvider provider = result.ServiceProvider;
-        return new WinGattClientService(this, provider.Service);
+        return new WinGattClientService(this, provider);
     }
 
     internal IGattClientPeer GetOrRegisterSession(GattSession gattSession)
     {
-        BleAddress address = BleAddress.Parse(gattSession.DeviceId.Id, provider: null);
+        BleAddress address = BleAddress.Parse(gattSession.DeviceId.Id[^17..], provider: null);
         if (PeerDevices.TryGetValue(address, out IGattClientPeer? clientPeer) && clientPeer.IsConnected)
         {
             return clientPeer;
         }
-        clientPeer = new WinGattClientPeer(gattSession);
+        clientPeer = new WinGattClientPeer(gattSession, address);
         OnConnectedCentral(clientPeer);
         return clientPeer;
+    }
+
+    public IDisposable AdvertiseServices(AdvertisingParameters? parameters)
+    {
+        List<IDisposable> disposables = [];
+        foreach ((BleUuid _, IGattClientService value) in Services)
+        {
+            if (value is WinGattClientService service)
+                disposables.Add(service.Advertise(parameters));
+        }
+        return Disposable.Create(disposables, list =>
+        {
+            foreach (IDisposable disposable in list) disposable.Dispose();
+        });
     }
 }
