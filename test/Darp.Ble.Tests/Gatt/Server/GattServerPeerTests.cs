@@ -28,7 +28,7 @@ public sealed class GattServerPeerTests
             observer.OnCompleted();
             return Disposable.Empty;
         });
-        var serverPeer = Substitute.For<GattServerPeer>(BleAddress.NotAvailable);
+        var serverPeer = Substitute.For<GattServerPeer>(BleAddress.NotAvailable, null);
         serverPeer.DiscoverServicesCore().Returns(observable);
 
         await serverPeer.DiscoverServicesAsync();
@@ -40,7 +40,7 @@ public sealed class GattServerPeerTests
     [Fact]
     public async Task DisposeAsync_ShouldCallCoreImplementation()
     {
-        var device = Substitute.For<GattServerPeer>(BleAddress.NotAvailable);
+        var device = Substitute.For<GattServerPeer>(BleAddress.NotAvailable, null);
 
         await device.DisposeAsync();
 
