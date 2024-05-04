@@ -17,7 +17,7 @@ This package is under heavy development. Huge changes to the API are to be expec
 |------------------|----------|---------|-------------|------------|------------------------------------------------------------------------------------------------------------------------------|
 | Darp.Ble.WinRT   | X        | X       | X           | X          | [![Darp.Ble.WinRT](https://img.shields.io/nuget/v/Darp.Ble.WinRT.svg)](https://www.nuget.org/packages/Darp.Ble.WinRT/)       |
 | Darp.Ble.Android | X        | X       |             |            | [![Darp.Ble.Android](https://img.shields.io/nuget/v/Darp.Ble.Android.svg)](https://www.nuget.org/packages/Darp.Ble.Android/) |
-| Darp.Ble.HciHost | X        |         |             |            | [![Darp.Ble.HciHost](https://img.shields.io/nuget/v/Darp.Ble.HciHost.svg)](https://www.nuget.org/packages/Darp.Ble.HciHost/) |
+| Darp.Ble.HciHost | X        | X       |             |            | [![Darp.Ble.HciHost](https://img.shields.io/nuget/v/Darp.Ble.HciHost.svg)](https://www.nuget.org/packages/Darp.Ble.HciHost/) |
 | Darp.Ble.iOS     |          |         |             |            | planned                                                                                                                      |
 | Darp.Ble.Mac     |          |         |             |            | planned                                                                                                                      |
 | Darp.Ble.BlueZ   |          |         |             |            | planned                                                                                                                      |
