@@ -57,7 +57,11 @@ internal sealed class WinGattClientCharacteristic(
     protected override async Task<bool> NotifyAsyncCore(IGattClientPeer clientPeer, byte[] source, CancellationToken cancellationToken)
     {
         GattSubscribedClient? subscribedClient = _winCharacteristic.SubscribedClients
-            .FirstOrDefault(x => string.Equals(x.Session.DeviceId.Id, clientPeer.Address.ToString(), StringComparison.OrdinalIgnoreCase));
+            .FirstOrDefault(x =>
+            {
+                BleAddress address = BleAddress.Parse(x.Session.DeviceId.Id[^17..], provider: null);
+                return address == clientPeer.Address;
+            });
         if (subscribedClient is null) return false;
 
         GattClientNotificationResult result = await _winCharacteristic.NotifyValueAsync(source.AsBuffer(), subscribedClient).AsTask(cancellationToken);

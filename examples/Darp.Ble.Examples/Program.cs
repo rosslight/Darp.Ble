@@ -16,9 +16,10 @@ IBleDevice x = manager.EnumerateDevices().First();
 await x.InitializeAsync();
 IGattClientService service = await x.Peripheral.AddServiceAsync(0x1234);
 IGattClientCharacteristic<Properties.Write> characteristic = await service.AddCharacteristicAsync<Properties.Write>(0x1235);
-characteristic.OnWrite((peer, bytes) =>
+IGattClientCharacteristic<Properties.Notify> notify = await service.AddCharacteristicAsync<Properties.Notify>(0x1236);
+characteristic.OnWrite(async (peer, bytes, token) =>
 {
-    int i = 0;
+    await notify.NotifyAsync(peer, bytes, token);
     return GattProtocolStatus.Success;
 });
 
@@ -31,4 +32,4 @@ x.Broadcaster.Advertise(AdvertisingData.From([
     Type = BleEventType.Connectable,
 });
 
-await Task.Delay(200000);
+await Task.Delay(20000000);

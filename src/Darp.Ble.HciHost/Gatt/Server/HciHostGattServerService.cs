@@ -21,6 +21,7 @@ public sealed class HciHostGattServerService(BleUuid uuid, ushort attHandle, ush
         {
             ushort startingHandle = _attHandle;
             HciHostGattServerCharacteristic? lastCharacteristic = null;
+            List<HciHostGattServerCharacteristic> discoveredCharacteristics = [];
             while (!token.IsCancellationRequested && startingHandle < 0xFFFF)
             {
                 AttReadResult response = await _serverPeer.QueryAttPduAsync<AttReadByTypeReq<ushort>, AttReadByTypeRsp>(
@@ -49,20 +50,24 @@ public sealed class HciHostGattServerService(BleUuid uuid, ushort attHandle, ush
                     var properties = (GattProperty)value[0];
                     ReadOnlyMemory<byte> memory = value;
                     ushort characteristicHandle = BinaryPrimitives.ReadUInt16LittleEndian(memory.Span[1..]);
-                    var uuid = new BleUuid(memory.Span[3..]);
-                    var characteristic = new HciHostGattServerCharacteristic(_serverPeer, uuid, characteristicHandle, properties, Logger);
-                    if (!await characteristic.DiscoverAllDescriptorsAsync(token))
-                    {
-                        Logger?.LogWarning("Could not discover descriptors of characteristic {@Characteristic}", characteristic);
-                        continue;
-                    }
-                    observer.OnNext(characteristic);
+                    var characteristicUuid = new BleUuid(memory.Span[3..]);
+                    var characteristic = new HciHostGattServerCharacteristic(_serverPeer, characteristicUuid, characteristicHandle, properties, Logger);
+                    discoveredCharacteristics.Add(characteristic);
                     if (lastCharacteristic is not null) lastCharacteristic.EndHandle = handle;
                     lastCharacteristic = characteristic;
                 }
                 startingHandle = (ushort)(rsp.AttributeDataList[^1].Handle + 1);
             }
             if (lastCharacteristic is not null) lastCharacteristic.EndHandle = _endGroupHandle;
+            foreach (HciHostGattServerCharacteristic characteristic in discoveredCharacteristics)
+            {
+                if (!await characteristic.DiscoverAllDescriptorsAsync(token))
+                {
+                    Logger?.LogWarning("Could not discover descriptors of characteristic {@Characteristic}", characteristic);
+                    continue;
+                }
+                observer.OnNext(characteristic);
+            }
         });
     }
 

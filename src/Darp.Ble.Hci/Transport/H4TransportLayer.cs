@@ -5,7 +5,6 @@ using System.Reactive.Subjects;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Event;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Darp.Ble.Hci.Transport;
 
@@ -63,7 +62,7 @@ public sealed class H4TransportLayer : ITransportLayer
     private async ValueTask RunRxPacket<TPacket>(Memory<byte> buffer, byte payloadLengthIndex)
         where TPacket : IHciPacketImpl<TPacket>, IDecodable<TPacket>
     {
-        //Log.Logger.Verbose("Starting to read packet of type {Type}", TPacket.Type);
+        // _logger?.LogTrace("Starting to read packet of type {Type}", TPacket.Type);
         // Read Header
         await _serialPort.BaseStream.ReadExactlyAsync(buffer[..TPacket.HeaderLength], _cancelToken);
         byte payloadLength = buffer.Span[payloadLengthIndex];

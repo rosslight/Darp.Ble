@@ -36,10 +36,10 @@ public sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer server
                 new AttFindInformationReq
                 {
                     StartingHandle = startingHandle,
-                    EndingHandle = EndHandle
+                    EndingHandle = EndHandle,
                 }, cancellationToken: token);
-            if (response.OpCode is AttOpCode.ATT_ERROR_RSP
-                && AttErrorRsp.TryDecode(response.Pdu, out AttErrorRsp errorRsp, out _))
+            if (response.OpCode is AttOpCode.ATT_ERROR_RSP && AttErrorRsp
+                    .TryDecode(response.Pdu, out AttErrorRsp errorRsp, out _))
             {
                 if (errorRsp.ErrorCode is AttErrorCode.AttributeNotFoundError) break;
                 throw new Exception($"Could not discover descriptors due to error {errorRsp.ErrorCode}");

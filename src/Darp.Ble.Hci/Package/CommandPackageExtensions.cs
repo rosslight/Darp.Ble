@@ -50,10 +50,6 @@ public static class CommandPackageExtensions
             return Observable.Create<HciEventPacket<HciCommandStatusEvent>>(observer => hciHost
                     .QueryCommand(command)
                     .SelectWhereEvent<HciCommandStatusEvent>()
-                    .Do(_ => {}, () =>
-                    {
-                        int i = 0;
-                    })
                     .Subscribe(statusPackage =>
                     {
                         try
@@ -69,11 +65,7 @@ public static class CommandPackageExtensions
                 .Do(
                     statusPacket => hciHost.Logger?.LogQueryStarted(command, statusPacket.Data.Status,
                         statusPacket.EventCode, statusPacket),
-                    exception => hciHost.Logger?.LogQueryWithException(exception, command, exception.Message),
-                    () =>
-                    {
-                        int i = 0;
-                    })
+                    exception => hciHost.Logger?.LogQueryWithException(exception, command, exception.Message))
                 .FirstAsync()
                 .Timeout(timeout.Value);
         }
@@ -120,10 +112,6 @@ public static class CommandPackageExtensions
         return Observable.Create<HciEventPacket>(observer =>
         {
             IDisposable disposable = hciHost.WhenHciEventPackageReceived
-                .Do(_ => {}, () =>
-                {
-                    int i = 0;
-                })
                 .Subscribe(observer.OnNextEventPacket<TCommand>, observer.OnError, observer.OnCompleted);
             var commandPacket = new HciCommandPacket<TCommand>(command);
             hciHost.Logger?.LogStartQuery(commandPacket);

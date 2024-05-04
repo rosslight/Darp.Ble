@@ -24,7 +24,7 @@ public sealed class HciHostBleCentral(HciHostBleDevice device, ILogger? logger) 
         var scanWindow = (ushort)scanParameters.ScanWindow;
         var interval = (ushort)connectionParameters.ConnectionInterval;
         TimeSpan timeout = TimeSpan.FromSeconds(10);
-        return Observable.Create<IGattServerPeer>(async observer =>
+        return Observable.Create<IGattServerPeer>(observer =>
         {
             var packet = new HciLeExtendedCreateConnectionV1Command
             {

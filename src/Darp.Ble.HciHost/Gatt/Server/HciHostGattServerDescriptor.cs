@@ -1,5 +1,4 @@
 using Darp.Ble.Data;
-using Darp.Ble.Gatt;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Att;
 using Microsoft.Extensions.Logging;
