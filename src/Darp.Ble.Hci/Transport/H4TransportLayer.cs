@@ -75,7 +75,7 @@ public sealed class H4TransportLayer : ITransportLayer
             return;
         }
 
-        _logger?.LogPacketReceiving((byte)packet.PacketType, packet.ToByteArray(), packet.PacketType, packet);
+        // _logger?.LogPacketReceiving((byte)packet.PacketType, packet.ToByteArray(), packet.PacketType, packet);
         _rxSubject.OnNext(packet);
     }
 
