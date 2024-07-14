@@ -64,7 +64,6 @@ public sealed class H4TransportLayer : ITransportLayer
     private async ValueTask RunRxPacket<TPacket>(Memory<byte> buffer, byte payloadLengthIndex)
         where TPacket : IHciPacketImpl<TPacket>, IDecodable<TPacket>
     {
-        // _logger?.LogTrace("Starting to read packet of type {Type}", TPacket.Type);
         // Read Header
         await _serialPort.BaseStream.ReadExactlyAsync(buffer[..TPacket.HeaderLength], _cancelToken);
         byte payloadLength = buffer.Span[payloadLengthIndex];
@@ -76,8 +75,6 @@ public sealed class H4TransportLayer : ITransportLayer
             _logger?.LogPacketReceivingDecodingFailed((byte)TPacket.Type, buffer[..(TPacket.HeaderLength + payloadLength)].ToArray(), typeof(TPacket).Name);
             return;
         }
-
-        // _logger?.LogPacketReceiving((byte)packet.PacketType, packet.ToByteArray(), packet.PacketType, packet);
         _rxSubject.OnNext(packet);
     }
 
