@@ -56,14 +56,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.semantic.outputs.new_release_published
-        name: Pack
+        name: Pack and push to nuget.org
         run: |
           for file_name in ./src/**/*.csproj; do
             dotnet pack $file_name --configuration Release --no-restore /p:Version=${{ steps.semantic.outputs.new_release_version }}
           done
-      - if: false
-        name: Push to nuget.org
-        run: |
           for pkg_name in ./src/**/bin/Release/*.nupkg; do
             dotnet nuget push $pkg_name --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
           done
