@@ -20,10 +20,12 @@ public static class GattServerServiceExtensions
         return service.DiscoverCharacteristicAsync<TProp1>(new BleUuid(uuid), cancellationToken);
     }
 
-    public static async Task<IGattServerCharacteristic<TProp1>> DiscoverCharacteristicAsync<TProp1>(this IGattServerService service, Characteristic<TProp1> characteristic)
+    public static async Task<IGattServerCharacteristic<TProp1>> DiscoverCharacteristicAsync<TProp1>(this IGattServerService service,
+        Characteristic<TProp1> characteristic,
+        CancellationToken cancellationToken = default)
         where TProp1 : IBleProperty
     {
-        IGattServerCharacteristic serverCharacteristic = await service.DiscoverCharacteristicAsync(characteristic.Uuid);
+        IGattServerCharacteristic serverCharacteristic = await service.DiscoverCharacteristicAsync(characteristic.Uuid, cancellationToken);
         return new GattServerCharacteristic<TProp1>(serverCharacteristic);
     }
 }

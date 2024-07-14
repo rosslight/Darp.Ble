@@ -171,10 +171,8 @@ public sealed class HciHostGattServerPeer : GattServerPeer
         return Observable.FromAsync<HciHostGattServerPeer>(async token =>
         {
             AttReadResult response = await this.QueryAttPduAsync<AttExchangeMtuReq, AttExchangeMtuRsp>(
-                new AttExchangeMtuReq
-                {
-                    ClientRxMtu = mtu
-                }, cancellationToken: token);
+                new AttExchangeMtuReq { ClientRxMtu = mtu, },
+                cancellationToken: token);
             if (response.OpCode is AttOpCode.ATT_ERROR_RSP
                 && AttErrorRsp.TryDecode(response.Pdu, out AttErrorRsp errorRsp, out _))
             {
@@ -190,6 +188,21 @@ public sealed class HciHostGattServerPeer : GattServerPeer
             Logger?.LogInformation("Mtu updated to min of {AttMtu} with maximum possible {ServerRxMtu}", AttMtu, rsp.ServerRxMtu);
             return this;
         });
+    }
+
+    protected override async ValueTask DisposeAsyncCore()
+    {
+        Task<ConnectionStatus> task = WhenConnectionStatusChanged
+            .Where(x => x == ConnectionStatus.Disconnected)
+            .FirstAsync()
+            .ToTask();
+        await _host.QueryCommandStatusAsync(new HciDisconnectCommand
+        {
+            ConnectionHandle = ConnectionHandle,
+            Reason = HciCommandStatus.RemoteUserTerminatedConnection,
+        });
+        await task;
+        await Task.Delay(200);
     }
 
     private void ProcessAclPackagesIfPossible()
@@ -318,7 +331,7 @@ public static class Extensions2
         const ushort cId = 0x04;
         server.SendL2CapBasicCommand(cId, request.ToByteArray(), token);
     }
-    
+
     public static async Task<AttReadResult> QueryAttPduAsync<TAttRequest, TResponse>(this HciHostGattServerPeer client,
         TAttRequest request, TimeSpan timeout = default, CancellationToken cancellationToken = default)
         where TAttRequest : IAttPdu, IEncodable
