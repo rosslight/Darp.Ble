@@ -41,6 +41,17 @@ public sealed class BleUuidTests
     }
 
     [Theory]
+    [InlineData(0xabcd, "cdab")]
+    public void Constructor_WithByteSpanAndUShort_IsEquivalent(ushort value, string hexString)
+    {
+        byte[] bytes = Convert.FromHexString(hexString);
+        var bytesUuid = new BleUuid(bytes);
+        var uint16Uuid = new BleUuid(value);
+
+        bytesUuid.Should().Be(uint16Uuid);
+    }
+
+    [Theory]
     [InlineData("0229", BleUuidType.Uuid16)]
     [InlineData("AABBCCDD", BleUuidType.Uuid32)]
     [InlineData("89335C0EFA27364BBEB1AD3B472AF3F1", BleUuidType.Uuid128)]

@@ -34,9 +34,11 @@ public sealed class H4TransportLayer : ITransportLayer
         {
             while (!_cancelToken.IsCancellationRequested)
             {
-                if (!_serialPort.IsOpen) continue;
-                if (_txQueue.IsEmpty) continue;
-                if (!_txQueue.TryDequeue(out IHciPacket? packet)) continue;
+                if (!_serialPort.IsOpen || _txQueue.IsEmpty || !_txQueue.TryDequeue(out IHciPacket? packet))
+                {
+                    await Task.Delay(1, _cancelToken);
+                    continue;
+                }
                 var bytes = new byte[1 + packet.Length];
                 bytes[0] = (byte)packet.PacketType;
                 if (!packet.TryEncode(bytes.AsSpan()[1..]))
@@ -62,7 +64,6 @@ public sealed class H4TransportLayer : ITransportLayer
     private async ValueTask RunRxPacket<TPacket>(Memory<byte> buffer, byte payloadLengthIndex)
         where TPacket : IHciPacketImpl<TPacket>, IDecodable<TPacket>
     {
-        // _logger?.LogTrace("Starting to read packet of type {Type}", TPacket.Type);
         // Read Header
         await _serialPort.BaseStream.ReadExactlyAsync(buffer[..TPacket.HeaderLength], _cancelToken);
         byte payloadLength = buffer.Span[payloadLengthIndex];
@@ -74,8 +75,6 @@ public sealed class H4TransportLayer : ITransportLayer
             _logger?.LogPacketReceivingDecodingFailed((byte)TPacket.Type, buffer[..(TPacket.HeaderLength + payloadLength)].ToArray(), typeof(TPacket).Name);
             return;
         }
-
-        _logger?.LogPacketReceiving((byte)packet.PacketType, packet.ToByteArray(), packet.PacketType, packet);
         _rxSubject.OnNext(packet);
     }
 
