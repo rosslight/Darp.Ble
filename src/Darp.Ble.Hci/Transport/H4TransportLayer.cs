@@ -34,9 +34,11 @@ public sealed class H4TransportLayer : ITransportLayer
         {
             while (!_cancelToken.IsCancellationRequested)
             {
-                if (!_serialPort.IsOpen) continue;
-                if (_txQueue.IsEmpty) continue;
-                if (!_txQueue.TryDequeue(out IHciPacket? packet)) continue;
+                if (!_serialPort.IsOpen || _txQueue.IsEmpty || !_txQueue.TryDequeue(out IHciPacket? packet))
+                {
+                    await Task.Delay(1, _cancelToken);
+                    continue;
+                }
                 var bytes = new byte[1 + packet.Length];
                 bytes[0] = (byte)packet.PacketType;
                 if (!packet.TryEncode(bytes.AsSpan()[1..]))
