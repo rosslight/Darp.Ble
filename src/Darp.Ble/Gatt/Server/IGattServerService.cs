@@ -3,7 +3,7 @@ using Darp.Ble.Data;
 namespace Darp.Ble.Gatt.Server;
 
 /// <summary> The gatt server service interface </summary>
-public interface IGattServerService : IAsyncDisposable
+public interface IGattServerService
 {
     /// <summary> The service uuid </summary>
     BleUuid Uuid { get; }

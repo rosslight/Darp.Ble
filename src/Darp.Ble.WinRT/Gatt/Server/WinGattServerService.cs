@@ -53,10 +53,4 @@ public sealed class WinGattServerService(GattDeviceService winService, ILogger? 
     {
         return DiscoverCharacteristic(() => _winService.GetCharacteristicsAsync());
     }
-
-    /// <inheritdoc />
-    protected override void DisposeCore()
-    {
-        _winService.Dispose();
-    }
 }

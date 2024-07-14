@@ -36,16 +36,4 @@ public abstract class GattServerService(BleUuid uuid, ILogger? logger) : IGattSe
     /// <param name="uuid"> The characteristic uuid to be discoevered </param>
     /// <returns> An observable with all characteristics </returns>
     protected abstract IObservable<IGattServerCharacteristic> DiscoverCharacteristicAsyncCore(BleUuid uuid);
-
-    /// <inheritdoc />
-    public async ValueTask DisposeAsync()
-    {
-        DisposeCore();
-        await DisposeAsyncCore();
-        GC.SuppressFinalize(this);
-    }
-    /// <inheritdoc cref="DisposeAsync"/>
-    protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
-    /// <inheritdoc cref="IDisposable.Dispose"/>
-    protected virtual void DisposeCore() { }
 }
