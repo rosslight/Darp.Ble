@@ -13,7 +13,7 @@
         <PackageProjectUrl>https://github.com/rosslight/Darp.Ble</PackageProjectUrl>
         <RepositoryType>git</RepositoryType>
         <PackageReadmeFile>README.md</PackageReadmeFile>
-        <PackageLicenseExpression>AGPL-3.0-only</PackageLicenseExpression>
+        <PackageLicenseExpression>(AGPL-3.0-only OR LicenseRef-darp-ble-suite-commercial)</PackageLicenseExpression>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(MSBuildProjectDirectory)' != '' and $(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)src'))">
