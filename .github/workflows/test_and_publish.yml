@@ -57,11 +57,19 @@ jobs:
         name: Pack and push to nuget.org
         run: |
           for file_name in ./src/**/*.csproj; do
-            dotnet pack $file_name --configuration Release --no-restore /p:Version=${{ steps.semantic.outputs.new_release_version }}
+            dotnet pack $file_name --configuration Release --no-restore --artifacts-path build/noncommercial /p:PackageLicenseExpression=PolyForm-Noncommercial-1.0.0 /p:Version=${{ steps.semantic.outputs.new_release_version }}
+            dotnet pack $file_name --configuration Release --no-restore --artifacts-path build/commercial /p:PackageLicenseFile=LICENSE-COMMERCIAL.md /p:Version=${{ steps.semantic.outputs.new_release_version }}
           done
-          for pkg_name in ./src/**/bin/Release/*.nupkg; do
+          for pkg_name in ./build/noncommercial/package**/*.nupkg; do
             dotnet nuget push $pkg_name --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
           done
+          dotnet nuget add source ${{ env.AZURE_ARTIFACTS_FEED_URL }} --name AzureFeed --username ${{ secrets.AZURE_USERNAME }} --password ${{ secrets.AZURE_DEVOPS_TOKEN }}
+          for pkg_name in ./build/commercial/package**/*.nupkg; do
+            dotnet nuget push $pkg_name --api-key AzureArtifacts --source AzureFeed --skip-duplicate
+          done
+        env:
+          AZURE_ARTIFACTS_FEED_URL: https://pkgs.dev.azure.com/rosslight-engineering/darp.ble/_packaging/darp.ble.subscription/nuget/v3/index.json
+
       - if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.semantic.outputs.new_release_published == 'true'
         name: Semantic Release
         id: release

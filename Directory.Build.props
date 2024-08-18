@@ -7,20 +7,7 @@
         <AnalysisLevel>latest</AnalysisLevel>
         <Nullable>enable</Nullable>
         <WarningsAsErrors>Nullable</WarningsAsErrors>
-
-        <Authors>rosslight GmbH</Authors>
-        <Description>Abstraction for BLE implementations</Description>
-        <PackageProjectUrl>https://github.com/rosslight/Darp.Ble</PackageProjectUrl>
-        <RepositoryType>git</RepositoryType>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
-        <PackageLicenseExpression>(AGPL-3.0-only OR LicenseRef-darp-ble-suite-commercial)</PackageLicenseExpression>
     </PropertyGroup>
-
-    <ItemGroup Condition="'$(MSBuildProjectDirectory)' != '' and $(MSBuildProjectDirectory.StartsWith('$(MSBuildThisFileDirectory)src'))">
-        <None Include="../../README.md" Pack="true" PackagePath="/"/>
-        <None Include="../../LICENSE-GNU" Pack="true" PackagePath="/"/>
-        <None Include="../../LICENSE-COMMERCIAL" Pack="true" PackagePath="/"/>
-    </ItemGroup>
 
     <ItemGroup>
         <PackageReference Include="Meziantou.Analyzer" Version="2.0.160">
