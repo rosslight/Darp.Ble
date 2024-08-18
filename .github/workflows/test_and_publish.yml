@@ -53,12 +53,13 @@ jobs:
           dry_run: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - if: github.event_name == 'push' && github.ref == 'refs/heads/main' && steps.semantic.outputs.new_release_published == 'true'
         name: Pack and push to nuget.org
         run: |
           for file_name in ./src/**/*.csproj; do
-            dotnet pack $file_name --configuration Release --no-restore --artifacts-path build/noncommercial /p:PackageLicenseExpression=PolyForm-Noncommercial-1.0.0 /p:Version=${{ steps.semantic.outputs.new_release_version }}
-            dotnet pack $file_name --configuration Release --no-restore --artifacts-path build/commercial /p:PackageLicenseFile=LICENSE-COMMERCIAL.md /p:Version=${{ steps.semantic.outputs.new_release_version }}
+            dotnet pack $file_name --configuration Release --artifacts-path build/noncommercial /p:PackageLicenseExpression=PolyForm-Noncommercial-1.0.0 /p:Version=${{ steps.semantic.outputs.new_release_version }}
+            dotnet pack $file_name --configuration Release --artifacts-path build/commercial /p:PackageLicenseFile=LICENSE-COMMERCIAL.md /p:Version=${{ steps.semantic.outputs.new_release_version }}
           done
           for pkg_name in ./build/noncommercial/package**/*.nupkg; do
             dotnet nuget push $pkg_name --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
