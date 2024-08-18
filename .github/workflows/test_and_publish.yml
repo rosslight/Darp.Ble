@@ -58,7 +58,7 @@ jobs:
         name: Pack and push to nuget.org
         run: |
           for file_name in ./src/**/*.csproj; do
-            dotnet pack $file_name --configuration Release --artifacts-path build/noncommercial /p:PackageLicenseExpression=PolyForm-Noncommercial-1.0.0 /p:Version=${{ steps.semantic.outputs.new_release_version }}
+            dotnet pack $file_name --configuration Release --artifacts-path build/noncommercial /p:PackageLicenseFile=LICENSE.md /p:Version=${{ steps.semantic.outputs.new_release_version }}
             dotnet pack $file_name --configuration Release --artifacts-path build/commercial /p:PackageLicenseFile=LICENSE-COMMERCIAL.md /p:Version=${{ steps.semantic.outputs.new_release_version }}
           done
           for pkg_name in ./build/noncommercial/package**/*.nupkg; do
