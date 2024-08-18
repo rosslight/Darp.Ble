@@ -64,7 +64,7 @@ jobs:
           for pkg_name in ./build/noncommercial/package**/*.nupkg; do
             dotnet nuget push $pkg_name --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
           done
-          dotnet nuget add source ${{ env.AZURE_ARTIFACTS_FEED_URL }} --name AzureFeed --username ${{ secrets.AZURE_USERNAME }} --password ${{ secrets.AZURE_DEVOPS_TOKEN }}
+          dotnet nuget add source ${{ env.AZURE_ARTIFACTS_FEED_URL }} --name AzureFeed --username ${{ secrets.AZURE_USERNAME }} --password ${{ secrets.AZURE_DEVOPS_TOKEN }} --store-password-in-clear-text
           for pkg_name in ./build/commercial/package**/*.nupkg; do
             dotnet nuget push $pkg_name --api-key AzureArtifacts --source AzureFeed --skip-duplicate
           done
