@@ -33,7 +33,7 @@ public abstract class GattServerService(BleUuid uuid, ILogger? logger) : IGattSe
     /// <returns> An observable with all characteristics </returns>
     protected abstract IObservable<IGattServerCharacteristic> DiscoverCharacteristicsAsyncCore();
     /// <summary> Core implementation to discover a characteristic with a given <see cref="uuid"/> </summary>
-    /// <param name="uuid"> The characteristic uuid to be discoevered </param>
+    /// <param name="uuid"> The characteristic uuid to be discovered </param>
     /// <returns> An observable with all characteristics </returns>
     protected abstract IObservable<IGattServerCharacteristic> DiscoverCharacteristicAsyncCore(BleUuid uuid);
 }
