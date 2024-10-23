@@ -56,6 +56,7 @@ public sealed class H4TransportLayer : ITransportLayer
             if (_isDisposing)
             {
                 _logger?.LogTransportDisconnected("Tx");
+                return;
             }
             _logger?.LogTransportWithError(e, "Tx", e.Message);
         }
