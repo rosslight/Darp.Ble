@@ -8,7 +8,6 @@ using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
 using Darp.Ble.Mock;
-using Darp.Ble.Tests.Logger;
 using Darp.Ble.Tests.TestUtils;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
