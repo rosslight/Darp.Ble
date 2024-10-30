@@ -3,7 +3,6 @@ using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Darp.Ble.Linq;
 using Darp.Ble.Mock;
-using Darp.Ble.Utils;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 

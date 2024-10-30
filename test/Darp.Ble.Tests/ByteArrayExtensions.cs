@@ -1,4 +1,4 @@
-﻿namespace Darp.Ble.Utils;
+﻿namespace Darp.Ble.Tests;
 
 /// <summary> Extensions for byte arrays </summary>
 public static class ByteArrayExtensions
