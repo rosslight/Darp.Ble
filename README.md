@@ -104,10 +104,20 @@ When deciding to write this library, we were unable to find a library meeting al
 - Granular configuration options if the platform supports it
 - (Reactive interface)
 
-## Create new release
-To create a release, simply push a new tag with pattern `vX.Y.Z`. This will trigger a workflow releasing the new version.
-```shell
-git tag vX.Y.Z
-git push origin vX.Y.Z
-```
+## Setup Android development
 
+You can install JDK and AndroidSDK using the [InstallAndroidDependencies](https://learn.microsoft.com/en-us/dotnet/android/getting-started/installation/dependencies#using-installandroiddependencies-target) target.
+Optionally, you can set the environment variables to avoid having to set the directories in each build.
+
+Note: The path `C:/work/...` is just an example
+
+After that, restore the dotnet workloads to install the required android workload.
+
+```powershell
+dotnet build -t:InstallAndroidDependencies -f net8.0-android -p:AndroidSdkDirectory=c:\work\android-sdk -p:JavaSdkDirectory=c:\work\jdk -p:AcceptAndroidSdkLicenses=True
+setx JAVA_HOME C:\work\jdk\
+setx ANDROID_HOME C:\work\android-sdk\
+
+# Restore android workload
+dotnet workload restore
+```
