@@ -45,7 +45,8 @@ public abstract class GattServerPeer : IGattServerPeer
     {
         IGattServerService service = await DiscoverServiceCore(uuid)
             .FirstAsync()
-            .ToTask(cancellationToken);
+            .ToTask(cancellationToken)
+            .ConfigureAwait(false);
 
         _services[service.Uuid] = service;
         return service;

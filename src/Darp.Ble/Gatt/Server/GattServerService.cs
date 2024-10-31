@@ -7,6 +7,7 @@ namespace Darp.Ble.Gatt.Server;
 
 /// <summary> The abstract gatt server service implementation </summary>
 /// <param name="uuid"> The uuid of the gatt service </param>
+/// <param name="logger"> An optional logger </param>
 public abstract class GattServerService(BleUuid uuid, ILogger? logger) : IGattServerService
 {
     private readonly Dictionary<BleUuid, IGattServerCharacteristic> _characteristics = new();
@@ -24,7 +25,8 @@ public abstract class GattServerService(BleUuid uuid, ILogger? logger) : IGattSe
     {
         IGattServerCharacteristic characteristic = await DiscoverCharacteristicAsyncCore(uuid)
             .FirstAsync()
-            .ToTask(cancellationToken);
+            .ToTask(cancellationToken)
+            .ConfigureAwait(false);
         _characteristics[uuid] = characteristic;
         return characteristic;
     }
@@ -32,7 +34,7 @@ public abstract class GattServerService(BleUuid uuid, ILogger? logger) : IGattSe
     /// <summary> Core implementation to discover all characteristics </summary>
     /// <returns> An observable with all characteristics </returns>
     protected abstract IObservable<IGattServerCharacteristic> DiscoverCharacteristicsAsyncCore();
-    /// <summary> Core implementation to discover a characteristic with a given <see cref="uuid"/> </summary>
+    /// <summary> Core implementation to discover a characteristic with a given <paramref name="uuid"/> </summary>
     /// <param name="uuid"> The characteristic uuid to be discovered </param>
     /// <returns> An observable with all characteristics </returns>
     protected abstract IObservable<IGattServerCharacteristic> DiscoverCharacteristicAsyncCore(BleUuid uuid);

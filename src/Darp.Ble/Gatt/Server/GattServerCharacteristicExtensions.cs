@@ -9,6 +9,7 @@ public static class GattServerCharacteristicExtensions
     /// <param name="characteristic">The characteristic with notify property</param>
     public static IConnectableObservable<byte[]> OnNotify(this IGattServerCharacteristic<Properties.Notify> characteristic)
     {
+        ArgumentNullException.ThrowIfNull(characteristic);
         return characteristic.Characteristic.OnNotify();
     }
 
@@ -20,6 +21,7 @@ public static class GattServerCharacteristicExtensions
         byte[] bytes,
         CancellationToken cancellationToken = default)
     {
-        await characteristic.Characteristic.WriteAsync(bytes, cancellationToken);
+        ArgumentNullException.ThrowIfNull(characteristic);
+        await characteristic.Characteristic.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
     }
 }

@@ -43,7 +43,7 @@ internal sealed class MockBleBroadcaster(ILogger? logger) : BleBroadcaster(logge
         return Disposable.Create(this, self => self._source = null);
     }
 
-    protected override IDisposable AdvertiseCore(AdvertisingData data, TimeSpan timeSpan, AdvertisingParameters? parameters)
+    protected override IDisposable AdvertiseCore(AdvertisingData data, TimeSpan interval, AdvertisingParameters? parameters)
     {
         throw new NotImplementedException();
     }

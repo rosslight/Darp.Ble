@@ -7,7 +7,7 @@ namespace Darp.Ble.Gatt.Server;
 /// </summary>
 public static class GattServerServiceExtensions
 {
-    /// <summary> Discover a characteristic with a given <see cref="uuid"/> as <see cref="BleUuid"/> </summary>
+    /// <summary> Discover a characteristic with a given <paramref name="uuid"/> as <see cref="BleUuid"/> </summary>
     /// <param name="service"> The service to discover the characteristics on </param>
     /// <param name="uuid"> The characteristic uuid to be discovered </param>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
@@ -18,11 +18,12 @@ public static class GattServerServiceExtensions
         CancellationToken cancellationToken = default)
         where TProp1 : IBleProperty
     {
-        IGattServerCharacteristic serverCharacteristic = await service.DiscoverCharacteristicAsync(uuid, cancellationToken);
+        ArgumentNullException.ThrowIfNull(service);
+        IGattServerCharacteristic serverCharacteristic = await service.DiscoverCharacteristicAsync(uuid, cancellationToken).ConfigureAwait(false);
         return new GattServerCharacteristic<TProp1>(serverCharacteristic);
     }
 
-    /// <summary> Discover a characteristic with a given <see cref="uuid"/> as <see cref="ushort"/> </summary>
+    /// <summary> Discover a characteristic with a given <paramref name="uuid"/> as <see cref="ushort"/> </summary>
     /// <param name="service"> The service to discover the characteristics on </param>
     /// <param name="uuid"> The characteristic uuid to be discovered </param>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
@@ -37,7 +38,7 @@ public static class GattServerServiceExtensions
     }
 
     /// <summary>
-    /// Discover a characteristic with a given <see cref="characteristic"/> as <see cref="Characteristic{TProp1}"/>
+    /// Discover a characteristic with a given <paramref name="characteristic"/> as <see cref="Characteristic{TProp1}"/>
     /// </summary>
     /// <param name="service"> The service to discover the characteristics on </param>
     /// <param name="characteristic"> The characteristic to be discovered </param>
@@ -49,7 +50,9 @@ public static class GattServerServiceExtensions
         CancellationToken cancellationToken = default)
         where TProp1 : IBleProperty
     {
-        IGattServerCharacteristic serverCharacteristic = await service.DiscoverCharacteristicAsync(characteristic.Uuid, cancellationToken);
+        ArgumentNullException.ThrowIfNull(service);
+        ArgumentNullException.ThrowIfNull(characteristic);
+        IGattServerCharacteristic serverCharacteristic = await service.DiscoverCharacteristicAsync(characteristic.Uuid, cancellationToken).ConfigureAwait(false);
         return new GattServerCharacteristic<TProp1>(serverCharacteristic);
     }
 }

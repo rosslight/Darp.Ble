@@ -19,7 +19,7 @@ internal sealed class WinBleBroadcaster(WinBleDevice winBleDevice, ILogger? logg
         throw new NotImplementedException();
     }
 
-    protected override IDisposable AdvertiseCore(AdvertisingData data, TimeSpan timeSpan, AdvertisingParameters? parameters)
+    protected override IDisposable AdvertiseCore(AdvertisingData data, TimeSpan interval, AdvertisingParameters? parameters)
     {
         if (_winBleDevice.Capabilities.HasFlag(Capabilities.Peripheral))
         {

@@ -12,7 +12,7 @@ public abstract class GattServerCharacteristic(BleUuid uuid) : IGattServerCharac
     /// <inheritdoc />
     public async Task WriteAsync(byte[] bytes, CancellationToken cancellationToken = default)
     {
-        await WriteAsyncCore(bytes, cancellationToken);
+        await WriteAsyncCore(bytes, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>

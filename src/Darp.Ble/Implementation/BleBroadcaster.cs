@@ -31,7 +31,8 @@ public abstract class BleBroadcaster(ILogger? logger) : IBleBroadcaster
         return AdvertiseCore(data, interval, parameters);
     }
 
-    protected abstract IDisposable AdvertiseCore(AdvertisingData data, TimeSpan timeSpan, AdvertisingParameters? parameters);
+    /// <inheritdoc cref="Advertise(AdvertisingData, TimeSpan, AdvertisingParameters)"/>
+    protected abstract IDisposable AdvertiseCore(AdvertisingData data, TimeSpan interval, AdvertisingParameters? parameters);
 
     /// <inheritdoc />
     public void StopAll()
@@ -46,7 +47,7 @@ public abstract class BleBroadcaster(ILogger? logger) : IBleBroadcaster
     public async ValueTask DisposeAsync()
     {
         DisposeCore();
-        await DisposeAsyncCore();
+        await DisposeAsyncCore().ConfigureAwait(false);
         GC.SuppressFinalize(this);
     }
     /// <inheritdoc cref="DisposeAsync"/>

@@ -30,7 +30,7 @@ public abstract class BlePeripheral(BleDevice device, ILogger? logger) : IBlePer
     /// <inheritdoc />
     public async Task<IGattClientService> AddServiceAsync(BleUuid uuid, CancellationToken cancellationToken = default)
     {
-        IGattClientService service = await AddServiceAsyncCore(uuid, cancellationToken);
+        IGattClientService service = await AddServiceAsyncCore(uuid, cancellationToken).ConfigureAwait(false);
         _services[service.Uuid] = service;
         return service;
     }
@@ -45,6 +45,7 @@ public abstract class BlePeripheral(BleDevice device, ILogger? logger) : IBlePer
     /// <param name="clientPeer"> The GattClient peer </param>
     protected void OnConnectedCentral(IGattClientPeer clientPeer)
     {
+        ArgumentNullException.ThrowIfNull(clientPeer);
         _whenConnected.OnNext(clientPeer);
         _peerDevices[clientPeer.Address] = clientPeer;
         clientPeer.WhenDisconnected.Subscribe(_ => _peerDevices.Remove(clientPeer.Address));
@@ -54,7 +55,7 @@ public abstract class BlePeripheral(BleDevice device, ILogger? logger) : IBlePer
     public async ValueTask DisposeAsync()
     {
         DisposeCore();
-        await DisposeAsyncCore();
+        await DisposeAsyncCore().ConfigureAwait(false);
         GC.SuppressFinalize(this);
     }
     /// <inheritdoc cref="DisposeAsync"/>

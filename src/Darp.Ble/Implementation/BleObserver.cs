@@ -147,7 +147,7 @@ public abstract class BleObserver(BleDevice device, ILogger? logger) : IBleObser
         if(_isDisposed) return;
         _isDisposed = true;
         DisposeCore();
-        await DisposeAsyncCore();
+        await DisposeAsyncCore().ConfigureAwait(false);
         GC.SuppressFinalize(this);
     }
     /// <inheritdoc cref="DisposeAsync"/>

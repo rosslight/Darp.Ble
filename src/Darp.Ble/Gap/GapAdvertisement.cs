@@ -141,6 +141,9 @@ public sealed class GapAdvertisement : IGapAdvertisement
         BleAddress directAddress,
         AdvertisingData advertisingData)
     {
+        ArgumentNullException.ThrowIfNull(address);
+        ArgumentNullException.ThrowIfNull(directAddress);
+        ArgumentNullException.ThrowIfNull(advertisingData);
         ReadOnlySpan<byte> dataSpan = advertisingData.AsReadOnlyMemory().Span;
         var bytes = new byte[24 + dataSpan.Length];
         Span<byte> buffer = bytes;

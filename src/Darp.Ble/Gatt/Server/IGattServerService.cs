@@ -9,7 +9,7 @@ public interface IGattServerService
     BleUuid Uuid { get; }
     /// <summary> All discovered characteristics </summary>
     IReadOnlyDictionary<BleUuid, IGattServerCharacteristic> Characteristics { get; }
-    /// <summary> Discover a characteristic with a given <see cref="uuid"/> </summary>
+    /// <summary> Discover a characteristic with a given <paramref name="uuid"/> </summary>
     /// <param name="uuid"> The characteristic uuid to be discovered </param>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> The discovered gatt server characteristic </returns>

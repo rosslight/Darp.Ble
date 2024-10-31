@@ -66,7 +66,7 @@ public abstract class BleDevice(ILogger? logger) : IBleDevice
         try
         {
             _isInitializing = true;
-            InitializeResult result = await InitializeAsyncCore(cancellationToken);
+            InitializeResult result = await InitializeAsyncCore(cancellationToken).ConfigureAwait(false);
             if (result is not InitializeResult.Success)
                 return result;
             Logger?.LogBleDeviceInitialized(Name);
@@ -99,7 +99,7 @@ public abstract class BleDevice(ILogger? logger) : IBleDevice
     public async ValueTask DisposeAsync()
     {
         DisposeCore();
-        await DisposeAsyncCore();
+        await DisposeAsyncCore().ConfigureAwait(false);
         Logger?.LogBleDeviceDisposed(Name);
         GC.SuppressFinalize(this);
     }
@@ -108,13 +108,13 @@ public abstract class BleDevice(ILogger? logger) : IBleDevice
     protected virtual async ValueTask DisposeAsyncCore()
     {
         if (Capabilities.HasFlag(Capabilities.Observer))
-            await Observer.DisposeAsync();
+            await Observer.DisposeAsync().ConfigureAwait(false);
         if (Capabilities.HasFlag(Capabilities.Central))
-            await Central.DisposeAsync();
+            await Central.DisposeAsync().ConfigureAwait(false);
         if (Capabilities.HasFlag(Capabilities.Broadcaster))
-            await Broadcaster.DisposeAsync();
+            await Broadcaster.DisposeAsync().ConfigureAwait(false);
         if (Capabilities.HasFlag(Capabilities.Peripheral))
-            await Peripheral.DisposeAsync();
+            await Peripheral.DisposeAsync().ConfigureAwait(false);
     }
     /// <inheritdoc cref="IDisposable.Dispose"/>
     protected virtual void DisposeCore() { }

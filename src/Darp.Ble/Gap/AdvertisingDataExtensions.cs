@@ -8,12 +8,13 @@ namespace Darp.Ble.Gap;
 /// <summary> Extensions for advertising data </summary>
 public static class AdvertisingDataExtensions
 {
-    /// <summary> Get the AD Flags if its contained in the given data. </summary>
+    /// <summary> Get the AD Flags if it's contained in the given data. </summary>
     /// <param name="data"> The data to be looked at </param>
     /// <param name="flags"> The resulting flags if the return is true </param>
     /// <returns> True, if the data type and bytes were present </returns>
     public static bool TryGetFlags(this AdvertisingData data, out AdvertisingDataFlags flags)
     {
+        ArgumentNullException.ThrowIfNull(data);
         flags = default;
         var adTypeFound = false;
         foreach ((AdTypes adTypes, ReadOnlyMemory<byte> bytes) in data)
@@ -46,6 +47,7 @@ public static class AdvertisingDataExtensions
     /// <returns> True, if the data type was present </returns>
     public static bool TryGetCompleteLocalName(this AdvertisingData data, [NotNullWhen(true)] out string? name)
     {
+        ArgumentNullException.ThrowIfNull(data);
         if (data.TryGetFirstType(AdTypes.CompleteLocalName, out ReadOnlyMemory<byte> buffer))
         {
             name = Encoding.UTF8.GetString(buffer.Span);
@@ -64,6 +66,7 @@ public static class AdvertisingDataExtensions
     /// <returns> True, if the data type was present </returns>
     public static bool TryGetShortenedLocalName(this AdvertisingData data, [NotNullWhen(true)] out string? name)
     {
+        ArgumentNullException.ThrowIfNull(data);
         if (data.TryGetFirstType(AdTypes.ShortenedLocalName, out ReadOnlyMemory<byte> buffer))
         {
             name = Encoding.UTF8.GetString(buffer.Span);
@@ -93,20 +96,26 @@ public static class AdvertisingDataExtensions
     /// <returns> An array with services </returns>
     public static IEnumerable<BleUuid> GetServices(this AdvertisingData data)
     {
-        foreach ((AdTypes sectionType, ReadOnlyMemory<byte> bytes) in data)
+        ArgumentNullException.ThrowIfNull(data);
+        return GetServicesInt(data);
+
+        IEnumerable<BleUuid> GetServicesInt(AdvertisingData d)
         {
-            int guidLength = sectionType switch
+            foreach ((AdTypes sectionType, ReadOnlyMemory<byte> bytes) in d)
             {
-                AdTypes.IncompleteListOf16BitServiceClassUuids or AdTypes.CompleteListOf16BitServiceClassUuids => 2,
-                AdTypes.IncompleteListOf32BitServiceClassUuids or AdTypes.CompleteListOf32BitServiceClassUuids => 4,
-                AdTypes.IncompleteListOf128BitServiceClassUuids or AdTypes.CompleteListOf128BitServiceClassUuids => 16,
-                _ => -1,
-            };
-            if (guidLength < 0)
-                continue;
-            // Using length - 1 to avoid crashing if invalid lengths were transmitted
-            for (var i = 0; i < bytes.Length + 1 - guidLength; i += guidLength)
-                yield return new BleUuid(bytes[i..(i + guidLength)].Span);
+                int guidLength = sectionType switch
+                {
+                    AdTypes.IncompleteListOf16BitServiceClassUuids or AdTypes.CompleteListOf16BitServiceClassUuids => 2,
+                    AdTypes.IncompleteListOf32BitServiceClassUuids or AdTypes.CompleteListOf32BitServiceClassUuids => 4,
+                    AdTypes.IncompleteListOf128BitServiceClassUuids or AdTypes.CompleteListOf128BitServiceClassUuids => 16,
+                    _ => -1,
+                };
+                if (guidLength < 0)
+                    continue;
+                // Using length - 1 to avoid crashing if invalid lengths were transmitted
+                for (var i = 0; i < bytes.Length + 1 - guidLength; i += guidLength)
+                    yield return new BleUuid(bytes[i..(i + guidLength)].Span);
+            }
         }
     }
 
@@ -120,6 +129,7 @@ public static class AdvertisingDataExtensions
     public static bool TryGetManufacturerSpecificData(this AdvertisingData data,
         out (CompanyIdentifiers Company, byte[] Bytes) manufacturerData)
     {
+        ArgumentNullException.ThrowIfNull(data);
         if (!data.TryGetFirstType(AdTypes.ManufacturerSpecificData, out ReadOnlyMemory<byte> bytes)
             || bytes.Length < 2)
         {

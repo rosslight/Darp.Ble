@@ -10,6 +10,7 @@ public static class GattServerPeerExtensions
         ushort uuid,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(peer);
         return peer.DiscoverServiceAsync(new BleUuid(uuid), cancellationToken);
     }
 }

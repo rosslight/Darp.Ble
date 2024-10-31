@@ -37,9 +37,14 @@ public static class AdvertisementExtensions
         });
     }
 
+    /// <summary> Call <see cref="Connect"/> on a source of advertisements </summary>
+    /// <param name="source"> The source of advertisements to be connected to </param>
+    /// <param name="connectionParameters"> The connection parameters to be used </param>
+    /// <returns> An observable of the connection </returns>
     public static IObservable<IGattServerPeer> ConnectToPeripheral(this IObservable<IGapAdvertisement> source,
         BleConnectionParameters? connectionParameters = null)
     {
+        ArgumentNullException.ThrowIfNull(source);
         return source.SelectMany(x => x.Connect(connectionParameters));
     }
 }

@@ -70,7 +70,7 @@ public abstract class BleCentral(BleDevice device, ILogger? logger) : IBleCentra
     public async ValueTask DisposeAsync()
     {
         DisposeCore();
-        await DisposeAsyncCore();
+        await DisposeAsyncCore().ConfigureAwait(false);
         GC.SuppressFinalize(this);
     }
     /// <inheritdoc cref="DisposeAsync"/>
