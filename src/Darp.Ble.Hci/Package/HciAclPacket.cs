@@ -16,6 +16,8 @@ public class HciAclPacket(
     public static int HeaderLength => 4;
     public int Length => HeaderLength + DataTotalLength;
 
+    /// <summary> Connection_Handle </summary>
+    /// <remarks> Range: 0x0000 to 0x0EFF </remarks>
     public ushort ConnectionHandle { get; } = connectionHandle;
     public PacketBoundaryFlag PacketBoundaryFlag { get; } = packetBoundaryFlag;
     public BroadcastFlag BroadcastFlag { get; } = broadcastFlag;

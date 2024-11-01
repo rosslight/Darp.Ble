@@ -12,6 +12,8 @@ public readonly struct HciLeEnhancedConnectionCompleteV1Event
     public required HciLeMetaSubEventType SubEventCode { get; init; }
 
     public required HciCommandStatus Status { get; init; }
+    /// <summary> Connection_Handle </summary>
+    /// <remarks> Range: 0x0000 to 0x0EFF </remarks>
     public required ushort ConnectionHandle { get; init; }
     public required byte Role { get; init; }
     public required byte PeerAddressType { get; init; }

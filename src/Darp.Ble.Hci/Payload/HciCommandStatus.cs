@@ -1,6 +1,7 @@
 namespace Darp.Ble.Hci.Payload;
 
 /// <summary> BLUETOOTH CORE SPECIFICATION Version 5.4 | Vol 1, Part F, 1 OVERVIEW OF ERROR CODES </summary>
+/// <remarks> https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/architecture,-change-history,-and-conventions/controller-error-codes.html </remarks>
 public enum HciCommandStatus : byte
 {
     /// <summary> The command succeeded </summary>

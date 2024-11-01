@@ -23,7 +23,7 @@ public sealed class HciHostBleObserver(HciHostBleDevice device, ILogger? logger)
         bool isInActiveMode = parameters.ScanType is ScanType.Active;
         return (new HciSetExtendedScanParametersCommand
         {
-            OwnDeviceAddress = 0x01,
+            OwnAddressType = 0x01,
             ScanningFilterPolicy = 0x00,
             ScanPhys = 0b00000001,
             ScanType = isInActiveMode ? (byte)0x01 : (byte)0x00,
