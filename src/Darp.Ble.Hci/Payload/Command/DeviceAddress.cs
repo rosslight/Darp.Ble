@@ -5,12 +5,12 @@ using Darp.Ble.Hci.Payload.Event;
 namespace Darp.Ble.Hci.Payload.Command;
 
 /// <summary> A 48 bit device address </summary>
-/// <param name="byte0"></param>
-/// <param name="byte1"></param>
-/// <param name="byte2"></param>
-/// <param name="byte3"></param>
-/// <param name="byte4"></param>
-/// <param name="byte5"></param>
+/// <param name="byte0"> The first byte </param>
+/// <param name="byte1"> The second byte </param>
+/// <param name="byte2"> The third byte </param>
+/// <param name="byte3"> The fourth byte </param>
+/// <param name="byte4"> The firth byte </param>
+/// <param name="byte5"> The sixth byte </param>
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly struct DeviceAddress(byte byte0, byte byte1, byte byte2, byte byte3, byte byte4, byte byte5)
     : IDecodable<DeviceAddress>

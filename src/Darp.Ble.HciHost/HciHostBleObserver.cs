@@ -18,10 +18,10 @@ namespace Darp.Ble.HciHost;
 public sealed class HciHostBleObserver(HciHostBleDevice device, ILogger? logger) : BleObserver(device, logger)
 {
     private readonly HciHostBleDevice _device = device;
-    private static (HciSetExtendedScanParametersCommand, HciSetExtendedScanEnableCommand) CreateConfiguration(BleScanParameters parameters)
+    private static (HciLeSetExtendedScanParametersCommand, HciLeSetExtendedScanEnableCommand) CreateConfiguration(BleScanParameters parameters)
     {
         bool isInActiveMode = parameters.ScanType is ScanType.Active;
-        return (new HciSetExtendedScanParametersCommand
+        return (new HciLeSetExtendedScanParametersCommand
         {
             OwnAddressType = 0x01,
             ScanningFilterPolicy = 0x00,
@@ -29,7 +29,7 @@ public sealed class HciHostBleObserver(HciHostBleDevice device, ILogger? logger)
             ScanType = isInActiveMode ? (byte)0x01 : (byte)0x00,
             ScanInterval = (ushort)parameters.ScanInterval,
             ScanWindow = (ushort)parameters.ScanWindow,
-        }, new HciSetExtendedScanEnableCommand
+        }, new HciLeSetExtendedScanEnableCommand
         {
             Enable = 0x01,
             FilterDuplicates = 0x00,
@@ -41,19 +41,19 @@ public sealed class HciHostBleObserver(HciHostBleDevice device, ILogger? logger)
     /// <inheritdoc />
     protected override bool TryStartScanCore(out IObservable<IGapAdvertisement> observable)
     {
-        (HciSetExtendedScanParametersCommand Parameters, HciSetExtendedScanEnableCommand Enable) commands = CreateConfiguration(Parameters);
+        (HciLeSetExtendedScanParametersCommand Parameters, HciLeSetExtendedScanEnableCommand Enable) commands = CreateConfiguration(Parameters);
         //Logger.Verbose("AdvertisingScanner: Using scan params {@ScanParams} and enable params {@EnableParams}", commands.Parameters, commands.Enable);
         observable = Observable.Create<IGapAdvertisement>(async (observer, token) =>
         {
             HciSetExtendedScanParametersResult paramSetResult = await _device.Host
-                .QueryCommandCompletionAsync<HciSetExtendedScanParametersCommand, HciSetExtendedScanParametersResult>(
+                .QueryCommandCompletionAsync<HciLeSetExtendedScanParametersCommand, HciSetExtendedScanParametersResult>(
                     commands.Parameters, cancellationToken: token);
             if (paramSetResult.Status is not HciCommandStatus.Success)
             {
                 observer.OnError(new BleObservationStartException(this, $"Could not set scan parameters: {paramSetResult.Status}"));
                 return Disposable.Empty;
             }
-            HciSetExtendedScanEnableResult enableResult = await _device.Host.QueryCommandCompletionAsync<HciSetExtendedScanEnableCommand, HciSetExtendedScanEnableResult>(commands.Enable, cancellationToken: token);
+            HciSetExtendedScanEnableResult enableResult = await _device.Host.QueryCommandCompletionAsync<HciLeSetExtendedScanEnableCommand, HciSetExtendedScanEnableResult>(commands.Enable, cancellationToken: token);
             if (enableResult.Status is not HciCommandStatus.Success)
             {
                 observer.OnError(new BleObservationStartException(this, $"Could not enable scan: {enableResult.Status}"));
@@ -73,14 +73,14 @@ public sealed class HciHostBleObserver(HciHostBleDevice device, ILogger? logger)
     /// <inheritdoc />
     protected override void StopScanCore()
     {
-        var stopScanCommand = new HciSetExtendedScanEnableCommand
+        var stopScanCommand = new HciLeSetExtendedScanEnableCommand
         {
             Enable = 0x00,
             FilterDuplicates = 0x00,
             Duration = 0x0000,
             Period = 0x0000,
         };
-        _ = _device.Host.QueryCommandCompletionAsync<HciSetExtendedScanEnableCommand, HciSetExtendedScanEnableResult>(stopScanCommand);
+        _ = _device.Host.QueryCommandCompletionAsync<HciLeSetExtendedScanEnableCommand, HciSetExtendedScanEnableResult>(stopScanCommand);
     }
 
     private static GapAdvertisement OnAdvertisementReport(BleObserver bleObserver, HciLeExtendedAdvertisingReport report)

@@ -15,14 +15,14 @@ namespace Darp.Ble.Hci.Payload.Command;
 /// <param name="Period"> The Period </param>
 /// <remarks> https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-b96b8577-a22d-4009-cac0-dca78f793b59 </remarks>
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct HciSetExtendedScanEnableCommand(byte Enable,
+public readonly record struct HciLeSetExtendedScanEnableCommand(byte Enable,
     byte FilterDuplicates,
     ushort Duration,
-    ushort Period) : IHciCommand<HciSetExtendedScanEnableCommand>
+    ushort Period) : IHciCommand<HciLeSetExtendedScanEnableCommand>
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_LE_Set_Extended_Scan_Enable;
 
     /// <inheritdoc />
-    public HciSetExtendedScanEnableCommand GetThis() => this;
+    public HciLeSetExtendedScanEnableCommand GetThis() => this;
 }

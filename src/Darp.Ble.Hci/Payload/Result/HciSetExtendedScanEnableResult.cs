@@ -4,7 +4,7 @@ using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci.Payload.Result;
 
-/// <summary> Response to <see cref="HciSetExtendedScanEnableCommand"/> </summary>
+/// <summary> Response to <see cref="HciLeSetExtendedScanEnableCommand"/> </summary>
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly record struct HciSetExtendedScanEnableResult : IDefaultDecodable<HciSetExtendedScanEnableResult>
 {

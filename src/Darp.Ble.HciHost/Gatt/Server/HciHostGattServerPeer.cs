@@ -61,7 +61,7 @@ public sealed class HciHostGattServerPeer : GattServerPeer
             .TakeUntil(WhenConnectionStatusChanged.Where(x => x is ConnectionStatus.Disconnected))
             .Subscribe(subject);
         _host.WhenHciEventPackageReceived
-            .SelectWhereEvent<HciNumberOfCompletedPackets>()
+            .SelectWhereEvent<HciNumberOfCompletedPacketsEvent>()
             .SelectMany(x => x.Data.Handles)
             .Where(x => x.ConnectionHandle == ConnectionHandle)
             .Subscribe(x =>

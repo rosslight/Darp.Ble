@@ -2,9 +2,14 @@ using System.Runtime.InteropServices;
 
 namespace Darp.Ble.Hci.Payload.Event;
 
+/// <summary> The LE Meta event is used to encapsulate all LE Controller specific events </summary>
+/// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-bacd71f4-fabc-238d-72ee-f9aaaf5cbf22"/>
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly struct HciLeMetaEvent : IHciEvent<HciLeMetaEvent>, IDefaultDecodable<HciLeMetaEvent>
+public readonly record struct HciLeMetaEvent : IHciEvent<HciLeMetaEvent>, IDefaultDecodable<HciLeMetaEvent>
 {
+    /// <inheritdoc />
     public static HciEventCode EventCode => HciEventCode.HCI_LE_Meta;
+
+    /// <summary> The SubEventCode </summary>
     public required HciLeMetaSubEventType SubEventCode { get; init; }
 }

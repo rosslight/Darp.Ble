@@ -5,25 +5,42 @@ using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci.Package;
 
+/// <summary> HCI ACL Data packets are used to exchange data between the Host and Controller </summary>
+/// <param name="connectionHandle"> Connection_Handle to be used for transmitting a data packet over a Controller. </param>
+/// <param name="packetBoundaryFlag"> The Packet_Boundary_Flag </param>
+/// <param name="broadcastFlag"> The Broadcast_Flag </param>
+/// <param name="dataTotalLength"> The Data_Total_Length </param>
+/// <param name="dataBytes"> The actual data </param>
+/// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-bc4ffa33-44ef-e93c-16c8-14aa99597cfc"/>
 public class HciAclPacket(
     ushort connectionHandle,
     PacketBoundaryFlag packetBoundaryFlag,
     BroadcastFlag broadcastFlag,
     ushort dataTotalLength,
-    byte[] dataBytes) : IHciPacketImpl<HciAclPacket>, IDecodable<HciAclPacket>
+    byte[] dataBytes) : IHciPacket<HciAclPacket>, IDecodable<HciAclPacket>
 {
+    /// <inheritdoc />
     public static HciPacketType Type => HciPacketType.HciAclData;
+
+    /// <inheritdoc />
     public static int HeaderLength => 4;
+
+    /// <inheritdoc />
     public int Length => HeaderLength + DataTotalLength;
 
-    /// <summary> Connection_Handle </summary>
-    /// <remarks> Range: 0x0000 to 0x0EFF </remarks>
+    /// <summary> Connection_Handle to be used for transmitting a data packet over a Controller </summary>
+    /// <value> Range: 0x0000 to 0x0EFF </value>
     public ushort ConnectionHandle { get; } = connectionHandle;
+    /// <summary> The Packet_Boundary_Flag </summary>
     public PacketBoundaryFlag PacketBoundaryFlag { get; } = packetBoundaryFlag;
+    /// <summary> The Broadcast_Flag </summary>
     public BroadcastFlag BroadcastFlag { get; } = broadcastFlag;
+    /// <summary> The Data_Total_Length </summary>
     public ushort DataTotalLength { get; } = dataTotalLength;
+    /// <summary> The actual data </summary>
     public byte[] DataBytes { get; } = dataBytes;
 
+    /// <inheritdoc />
     public bool TryEncode(Span<byte> destination)
     {
         if (destination.Length < Length) return false;
@@ -33,6 +50,7 @@ public class HciAclPacket(
         return DataBytes.AsSpan().TryCopyTo(destination[4..]);
     }
 
+    /// <inheritdoc />
     public static bool TryDecode(in ReadOnlyMemory<byte> source, [NotNullWhen(true)] out HciAclPacket? result, out int bytesDecoded)
     {
         result = null;
@@ -53,9 +71,17 @@ public class HciAclPacket(
         return true;
     }
 
+    /// <inheritdoc />
     public override string ToString() => Convert.ToHexString((this as IEncodable).ToByteArray());
 }
 
+/// <summary> HCI ACL Data packets are used to exchange data between the Host and Controller </summary>
+/// <param name="connectionHandle"> Connection_Handle to be used for transmitting a data packet over a Controller. </param>
+/// <param name="packetBoundaryFlag"> The Packet_Boundary_Flag </param>
+/// <param name="broadcastFlag"> The Broadcast_Flag </param>
+/// <param name="dataTotalLength"> The Data_Total_Length </param>
+/// <param name="data"> The actual data </param>
+/// <typeparam name="TData"> The type of the data </typeparam>
 public sealed class HciAclPacket<TData>(ushort connectionHandle,
     PacketBoundaryFlag packetBoundaryFlag,
     BroadcastFlag broadcastFlag,
@@ -65,9 +91,11 @@ public sealed class HciAclPacket<TData>(ushort connectionHandle,
         IHciPacket<HciAclPacket<TData>, TData>
     where TData : IEncodable
 {
+    /// <inheritdoc />
     public HciPacketType PacketType => Type;
-    static HciPacketType IHciPacketImpl<HciAclPacket<TData>>.Type => Type;
-    static int IHciPacketImpl<HciAclPacket<TData>>.HeaderLength => HeaderLength;
+    static HciPacketType IHciPacket<HciAclPacket<TData>>.Type => Type;
+    static int IHciPacket<HciAclPacket<TData>>.HeaderLength => HeaderLength;
 
+    /// <inheritdoc />
     public TData Data { get; } = data;
 }
