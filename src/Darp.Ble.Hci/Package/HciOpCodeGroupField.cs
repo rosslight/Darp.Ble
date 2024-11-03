@@ -8,7 +8,7 @@ public enum HciOpCodeGroupField : byte
     /// <summary> The Link Control commands allow a Controller to control connections to other BR/EDR Controllers </summary>
     /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-7ae7f387-3f16-9fd8-fb80-1b957b3a4c4d"/>
     LinkControl = 0x01,
-    /// <summary> The Controller & Baseband commands provide access and control to various capabilities of the Bluetooth hardware </summary>
+    /// <summary> The Controller and Baseband commands provide access and control to various capabilities of the Bluetooth hardware </summary>
     /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-ded9b390-e137-1e8b-9527-f64b9bedbf27"/>
     Controller = 0x03,
     /// <summary> The informational parameters are fixed by the manufacturer of the Bluetooth hardware </summary>

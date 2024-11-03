@@ -18,7 +18,4 @@ public readonly record struct HciLeWriteSuggestedDefaultDataLengthCommand(ushort
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_LE_Write_Suggested_Default_Data_Length;
-
-    /// <inheritdoc />
-    public HciLeWriteSuggestedDefaultDataLengthCommand GetThis() => this;
 }

@@ -27,7 +27,4 @@ public readonly record struct HciDisconnectCommand : IHciCommand<HciDisconnectCo
     /// or <see cref="HciCommandStatus.PairingWithUnitKeyNotSupported"/>
     /// or <see cref="HciCommandStatus.UnacceptableConnectionParameters"/> </remarks>
     public required HciCommandStatus Reason { get; init; }
-
-    /// <inheritdoc />
-    public HciDisconnectCommand GetThis() => this;
 }

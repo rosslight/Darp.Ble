@@ -13,7 +13,4 @@ public readonly record struct HciReadLocalSupportedCommandsCommand : IHciCommand
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_Read_Local_Supported_Commands;
-
-    /// <inheritdoc />
-    public HciReadLocalSupportedCommandsCommand GetThis() => this;
 }

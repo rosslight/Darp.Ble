@@ -15,7 +15,4 @@ public readonly record struct HciLeReadSuggestedDefaultDataLengthCommand : IHciC
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_LE_Read_Suggested_Default_Data_Length;
-
-    /// <inheritdoc />
-    public HciLeReadSuggestedDefaultDataLengthCommand GetThis() => this;
 }

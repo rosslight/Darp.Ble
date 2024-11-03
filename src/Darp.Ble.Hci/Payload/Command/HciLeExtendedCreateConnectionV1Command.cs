@@ -42,7 +42,4 @@ public readonly record struct HciLeExtendedCreateConnectionV1Command : IHciComma
     public required ushort MinCeLength { get; init; }
     /// <summary> The Min_CE_Length[i] and Max_CE_Length[i] parameters provide the Controller with the expected minimum and maximum length of the connection events </summary>
     public required ushort MaxCeLength { get; init; }
-
-    /// <inheritdoc />
-    public HciLeExtendedCreateConnectionV1Command GetThis() => this;
 }

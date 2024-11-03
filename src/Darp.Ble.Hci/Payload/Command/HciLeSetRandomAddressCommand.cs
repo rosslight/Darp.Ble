@@ -17,7 +17,4 @@ public readonly record struct HciLeSetRandomAddressCommand(DeviceAddress RandomA
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_LE_Set_Random_Address;
-
-    /// <inheritdoc />
-    public HciLeSetRandomAddressCommand GetThis() => this;
 }

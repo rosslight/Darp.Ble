@@ -13,7 +13,4 @@ public readonly record struct HciReadLocalVersionInformationCommand : IHciComman
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_Read_Local_Version_Information;
-
-    /// <inheritdoc />
-    public HciReadLocalVersionInformationCommand GetThis() => this;
 }

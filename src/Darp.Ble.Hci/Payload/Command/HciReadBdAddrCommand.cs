@@ -15,7 +15,4 @@ public readonly record struct HciReadBdAddrCommand : IHciCommand<HciReadBdAddrCo
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_Read_BD_ADDR;
-
-    /// <inheritdoc />
-    public HciReadBdAddrCommand GetThis() => this;
 }

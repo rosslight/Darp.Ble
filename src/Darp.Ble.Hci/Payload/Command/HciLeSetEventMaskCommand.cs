@@ -16,7 +16,4 @@ public readonly record struct HciLeSetEventMaskCommand(LeEventMask Mask) : IHciC
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_LE_Set_Event_Mask;
-
-    /// <inheritdoc />
-    public HciLeSetEventMaskCommand GetThis() => this;
 }

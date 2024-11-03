@@ -141,7 +141,7 @@ public sealed class HciHostGattServerPeer : GattServerPeer
                 {
                     return new HciHostGattServerService(uuid, handle, endGroup, this, Logger);
                 }
-                startingHandle = rsp.HandlesInformationList[^1].EndGroup;
+                startingHandle = rsp.HandlesInformationList[^1].GroupEndHandle;
             }
             throw new Exception("Could not find a service");
         });

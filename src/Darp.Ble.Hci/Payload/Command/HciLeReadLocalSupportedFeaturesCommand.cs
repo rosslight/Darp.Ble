@@ -15,7 +15,4 @@ public readonly record struct HciLeReadLocalSupportedFeaturesCommand : IHciComma
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_LE_Read_Local_Supported_Features;
-
-    /// <inheritdoc />
-    public HciLeReadLocalSupportedFeaturesCommand GetThis() => this;
 }

@@ -2,17 +2,24 @@ using System.Buffers.Binary;
 
 namespace Darp.Ble.Hci.Payload.Att;
 
-/// <summary>
-/// BLUETOOTH CORE SPECIFICATION Version 5.4 | Vol 3, Part F, 3.4.5.1 ATT_WRITE_REQ
-/// </summary>
-public readonly struct AttWriteReq : IAttPdu, IEncodable
+/// <summary> The ATT_WRITE_REQ PDU is used to request the server to write the value of an attribute and acknowledge that this has been achieved in an ATT_WRITE_RSP PDU </summary>
+/// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/attribute-protocol--att-.html#UUID-1c620bba-1248-f7dd-9a8d-df41506670e7"/>
+public readonly record struct AttWriteReq : IAttPdu, IEncodable
 {
+    /// <inheritdoc />
     public static AttOpCode ExpectedOpCode => AttOpCode.ATT_WRITE_REQ;
+
+    /// <inheritdoc />
     public AttOpCode OpCode => ExpectedOpCode;
+    /// <summary> The handle of the attribute to be written </summary>
     public required ushort Handle { get; init; }
+    /// <summary> The value to be written to the attribute </summary>
     public required byte[] Value { get; init; }
 
+    /// <inheritdoc />
     public int Length => 3 + Value.Length;
+
+    /// <inheritdoc />
     public bool TryEncode(Span<byte> destination)
     {
         if (destination.Length < Length) return false;

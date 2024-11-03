@@ -26,7 +26,4 @@ public readonly record struct HciLeSetExtendedScanParametersCommand(byte OwnAddr
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_LE_Set_Extended_Scan_Parameters;
-
-    /// <inheritdoc />
-    public HciLeSetExtendedScanParametersCommand GetThis() => this;
 }

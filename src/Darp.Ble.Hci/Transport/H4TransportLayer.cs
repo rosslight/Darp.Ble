@@ -55,7 +55,7 @@ public sealed class H4TransportLayer : ITransportLayer
                 await _serialPort.BaseStream.WriteAsync(bytes, _cancelToken).ConfigureAwait(false);
             }
         }
-#pragma warning disable CA1031 - Modify 'RunRx' to catch a more specific allowed exception type, or rethrow the exception
+#pragma warning disable CA1031
         catch (Exception e)
         {
             if (_isDisposing)
@@ -113,7 +113,7 @@ public sealed class H4TransportLayer : ITransportLayer
             }
             _rxSubject.OnCompleted();
         }
-#pragma warning disable CA1031 - Modify 'RunRx' to catch a more specific allowed exception type, or rethrow the exception
+#pragma warning disable CA1031
         catch (Exception e)
         {
             if (_isDisposing)

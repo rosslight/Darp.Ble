@@ -22,7 +22,4 @@ public readonly record struct HciLeSetExtendedScanEnableCommand(byte Enable,
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_LE_Set_Extended_Scan_Enable;
-
-    /// <inheritdoc />
-    public HciLeSetExtendedScanEnableCommand GetThis() => this;
 }

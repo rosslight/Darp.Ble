@@ -15,7 +15,4 @@ public readonly record struct HciResetCommand : IHciCommand<HciResetCommand>
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_Reset;
-
-    /// <inheritdoc />
-    public HciResetCommand GetThis() => this;
 }

@@ -22,7 +22,4 @@ public readonly record struct HciLeSetDataLengthCommand : IHciCommand<HciLeSetDa
     public required ushort TxOctets { get; init; }
     /// <summary> Preferred maximum number of microseconds that the local Controller should use to transmit a single Link Layer packet containing an LL Data PDU on this connection. </summary>
     public required ushort TxTime { get; init; }
-
-    /// <inheritdoc />
-    public HciLeSetDataLengthCommand GetThis() => this;
 }

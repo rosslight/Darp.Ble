@@ -1,17 +1,24 @@
 using System.Buffers.Binary;
+using System.Runtime.InteropServices;
 using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci.Payload.Att;
 
-/// <summary>
-/// BLUETOOTH CORE SPECIFICATION Version 5.4 | Vol 3, Part F, 3.4.7.1 ATT_HANDLE_VALUE_NTF
-/// </summary>
-public readonly struct AttHandleValueNtf : IAttPdu, IDecodable<AttHandleValueNtf>
+/// <summary> A server can send a notification of an attribute’s value at any time </summary>
+/// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/attribute-protocol--att-.html#UUID-40393db4-55e7-1a22-5eff-2bbcce21de5d"/>
+[StructLayout(LayoutKind.Sequential, Pack = 1)]
+public readonly record struct AttHandleValueNtf : IAttPdu, IDecodable<AttHandleValueNtf>
 {
+    /// <inheritdoc />
     public static AttOpCode ExpectedOpCode => AttOpCode.ATT_HANDLE_VALUE_NTF;
+    /// <inheritdoc />
     public required AttOpCode OpCode { get; init; }
+    /// <summary> The handle of the attribute </summary>
     public required ushort Handle { get; init; }
+    /// <summary> The current value of the attribute </summary>
     public required byte[] Value { get; init; }
+
+    /// <inheritdoc />
     public static bool TryDecode(in ReadOnlyMemory<byte> source, out AttHandleValueNtf result, out int bytesDecoded)
     {
         result = default;
