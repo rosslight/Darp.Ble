@@ -21,7 +21,7 @@ public readonly record struct AttExchangeMtuRsp : IAttPdu, IDecodable<AttExchang
     public static bool TryDecode(in ReadOnlyMemory<byte> source, out AttExchangeMtuRsp result, out int bytesDecoded)
     {
         result = default;
-        bytesDecoded = source.Length;
+        bytesDecoded = 0;
         if (source.Length < 3) return false;
         ReadOnlySpan<byte> span = source.Span;
         var opCode = (AttOpCode)span[0];
@@ -29,8 +29,9 @@ public readonly record struct AttExchangeMtuRsp : IAttPdu, IDecodable<AttExchang
         result = new AttExchangeMtuRsp
         {
             OpCode = opCode,
-            ServerRxMtu = BinaryPrimitives.ReadUInt16BigEndian(span[1..]),
+            ServerRxMtu = BinaryPrimitives.ReadUInt16LittleEndian(span[1..]),
         };
+        bytesDecoded = 3;
         return true;
     }
 }

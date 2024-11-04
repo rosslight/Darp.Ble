@@ -25,7 +25,7 @@ public readonly record struct AttErrorRsp : IAttPdu, IDecodable<AttErrorRsp>
     public static bool TryDecode(in ReadOnlyMemory<byte> source, out AttErrorRsp result, out int bytesDecoded)
     {
         result = default;
-        bytesDecoded = source.Length;
+        bytesDecoded = 0;
         if (source.Length < 5) return false;
         ReadOnlySpan<byte> span = source.Span;
         var opCode = (AttOpCode)span[0];
@@ -37,6 +37,7 @@ public readonly record struct AttErrorRsp : IAttPdu, IDecodable<AttErrorRsp>
             Handle = BinaryPrimitives.ReadUInt16LittleEndian(span[2..]),
             ErrorCode = (AttErrorCode)span[4],
         };
+        bytesDecoded = 5;
         return true;
     }
 }

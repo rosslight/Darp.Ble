@@ -18,7 +18,7 @@ public readonly record struct AttFindByTypeValueRsp : IAttPdu, IDecodable<AttFin
     public static bool TryDecode(in ReadOnlyMemory<byte> source, out AttFindByTypeValueRsp result, out int bytesDecoded)
     {
         result = default;
-        bytesDecoded = source.Length;
+        bytesDecoded = 0;
         if (source.Length < 5) return false;
         ReadOnlySpan<byte> span = source.Span;
         var opCode = (AttOpCode)span[0];
@@ -29,6 +29,7 @@ public readonly record struct AttFindByTypeValueRsp : IAttPdu, IDecodable<AttFin
             OpCode = opCode,
             HandlesInformationList = MemoryMarshal.Cast<byte, AttFindByTypeHandlesInformation>(span[1..]).ToArray(),
         };
+        bytesDecoded = source.Length;
         return true;
     }
 }

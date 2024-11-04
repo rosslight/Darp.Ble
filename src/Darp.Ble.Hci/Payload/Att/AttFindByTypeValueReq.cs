@@ -21,7 +21,7 @@ public readonly record struct AttFindByTypeValueReq : IAttPdu, IEncodable
     public required byte[] AttributeValue { get; init; }
 
     /// <inheritdoc />
-    public int Length => 7 + AttributeValue.Length;
+    public int Length => 7 + AttributeValue?.Length ?? 0;
 
     /// <inheritdoc />
     public bool TryEncode(Span<byte> destination)
