@@ -10,7 +10,7 @@ public interface IHciPacket : IEncodable
 }
 
 /// <summary> An abstract hci packet with a defined self </summary>
-/// <typeparam name="TSelf"></typeparam>
+/// <typeparam name="TSelf"> The type of the implementation </typeparam>
 public interface IHciPacket<TSelf> : IHciPacket
     where TSelf : IHciPacket<TSelf>
 {
@@ -24,8 +24,8 @@ public interface IHciPacket<TSelf> : IHciPacket
 }
 
 /// <summary> An abstract hci packet with a data </summary>
-/// <typeparam name="TSelf"> The  </typeparam>
-/// <typeparam name="TData"> The data of the packet </typeparam>
+/// <typeparam name="TSelf"> The type of the implementation </typeparam>
+/// <typeparam name="TData"> The type of the data of the packet </typeparam>
 public interface IHciPacket<TSelf, out TData> : IHciPacket<TSelf>
     where TSelf : IHciPacket<TSelf>
 {

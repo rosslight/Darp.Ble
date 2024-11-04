@@ -8,7 +8,7 @@ namespace Darp.Ble.Hci.Payload.Att;
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/attribute-protocol--att-.html#UUID-915a47c5-8e31-f97d-ce9c-e24fa4406014_table-idm13358910852784"/>
 [SuppressMessage("ReSharper", "InconsistentNaming")]
 [SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores")]
-public enum AttOpCode
+public enum AttOpCode : byte
 {
     /// <summary> Invalid OpCode </summary>
     None,
