@@ -24,7 +24,7 @@ public readonly record struct AttReadByGroupTypeRsp<TAttributeValue> : IAttPdu, 
     public static bool TryDecode(in ReadOnlyMemory<byte> source, out AttReadByGroupTypeRsp<TAttributeValue> result, out int bytesDecoded)
     {
         result = default;
-        bytesDecoded = source.Length;
+        bytesDecoded = 0;
         if (source.Length < 6) return false;
         ReadOnlySpan<byte> span = source.Span;
         var opCode = (AttOpCode)span[0];
@@ -38,6 +38,7 @@ public readonly record struct AttReadByGroupTypeRsp<TAttributeValue> : IAttPdu, 
             Length = length,
             AttributeDataList = MemoryMarshal.Cast<byte, AttGroupTypeData<TAttributeValue>>(span[2..]).ToArray(),
         };
+        bytesDecoded = source.Length;
         return true;
     }
 }

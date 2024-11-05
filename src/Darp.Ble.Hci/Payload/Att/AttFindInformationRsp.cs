@@ -34,6 +34,7 @@ public readonly record struct AttFindInformationRsp : IAttPdu, IDecodable<AttFin
             _ => -1,
         };
         if (informationDataLength < 4) return false;
+
         if ((source.Length - 2) % informationDataLength != 0) return false;
         int numberOfAttributes = (source.Length - 2) / informationDataLength;
         var attributeDataList = new AttFindInformationData[numberOfAttributes];

@@ -18,4 +18,29 @@ public static class Extensions
             isFirstState = true;
         }
     }
+
+    public static IEnumerable<T[]> PairsOf<T>(this IEnumerable<T> source, int numberOfItems)
+    {
+        T[]? items = null;
+        var i = 0;
+        foreach (T item in source)
+        {
+            if (i < numberOfItems - 1)
+            {
+                items ??= new T[numberOfItems];
+                items[i] = item;
+                i++;
+                continue;
+            }
+            items![i] = item;
+            yield return items;
+            items = null;
+            i = 0;
+        }
+
+        if (i is not 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(source), $"Size of enumerable is not of a multiple of {numberOfItems}");
+        }
+    }
 }

@@ -20,7 +20,11 @@ public sealed class AttFindByTypeValueRspTests
         byte[] bytes = Convert.FromHexString(hexBytes);
         AttFindByTypeHandlesInformation[] handlesInformation =
         [
-            new(foundAttributeHandle, groupEndHandle),
+            new()
+            {
+                FoundAttributeHandle = foundAttributeHandle,
+                GroupEndHandle = groupEndHandle,
+            },
         ];
 
         bool success = AttFindByTypeValueRsp.TryDecode(bytes, out AttFindByTypeValueRsp value, out int decoded);

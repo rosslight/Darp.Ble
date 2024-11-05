@@ -31,7 +31,11 @@ public sealed class AttFindInformationRspTests
             {
                 var uuidBuffer = new byte[2];
                 BinaryPrimitives.WriteUInt16LittleEndian(uuidBuffer, (ushort)x.Second);
-                return new AttFindInformationData((ushort)x.First, uuidBuffer);
+                return new AttFindInformationData()
+                {
+                    Handle = (ushort)x.First,
+                    Uuid = uuidBuffer,
+                };
             })
             .ToArray();
 
@@ -75,6 +79,7 @@ public sealed class AttFindInformationRspTests
 
     [Theory]
     [InlineData("", 0)]
+    [InlineData("0503190061FF", 0)]
     [InlineData("0401190061FF", 0)]
     [InlineData("0501190061FF00", 0)]
     [InlineData("0501190061", 0)]

@@ -16,13 +16,13 @@ public readonly record struct AttHandleValueNtf : IAttPdu, IDecodable<AttHandleV
     /// <summary> The handle of the attribute </summary>
     public required ushort Handle { get; init; }
     /// <summary> The current value of the attribute </summary>
-    public required byte[] Value { get; init; }
+    public required ReadOnlyMemory<byte> Value { get; init; }
 
     /// <inheritdoc />
     public static bool TryDecode(in ReadOnlyMemory<byte> source, out AttHandleValueNtf result, out int bytesDecoded)
     {
         result = default;
-        bytesDecoded = source.Length;
+        bytesDecoded = 0;
         if (source.Length < 3) return false;
         ReadOnlySpan<byte> span = source.Span;
         var opCode = (AttOpCode)span[0];
@@ -34,6 +34,7 @@ public readonly record struct AttHandleValueNtf : IAttPdu, IDecodable<AttHandleV
             Handle = handle,
             Value = span[3..].ToArray(),
         };
+        bytesDecoded = source.Length;
         return true;
     }
 }

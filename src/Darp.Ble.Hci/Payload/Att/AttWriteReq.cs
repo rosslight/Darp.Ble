@@ -14,7 +14,7 @@ public readonly record struct AttWriteReq : IAttPdu, IEncodable
     /// <summary> The handle of the attribute to be written </summary>
     public required ushort Handle { get; init; }
     /// <summary> The value to be written to the attribute </summary>
-    public required byte[] Value { get; init; }
+    public required ReadOnlyMemory<byte> Value { get; init; }
 
     /// <inheritdoc />
     public int Length => 3 + Value.Length;
@@ -25,6 +25,6 @@ public readonly record struct AttWriteReq : IAttPdu, IEncodable
         if (destination.Length < Length) return false;
         destination[0] = (byte)OpCode;
         BinaryPrimitives.WriteUInt16LittleEndian(destination[1..], Handle);
-        return Value.AsSpan().TryCopyTo(destination[3..]);
+        return Value.Span.TryCopyTo(destination[3..]);
     }
 }

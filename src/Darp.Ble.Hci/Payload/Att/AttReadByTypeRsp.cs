@@ -21,14 +21,27 @@ public readonly record struct AttReadByTypeRsp : IAttPdu, IDecodable<AttReadByTy
     public static bool TryDecode(in ReadOnlyMemory<byte> source, out AttReadByTypeRsp result, out int bytesDecoded)
     {
         result = default;
-        bytesDecoded = source.Length;
-        if (source.Length < 6) return false;
+        bytesDecoded = 0;
+        if (source.Length < 6)
+        {
+            return false;
+        }
         ReadOnlySpan<byte> span = source.Span;
         var opCode = (AttOpCode)span[0];
-        if (opCode != ExpectedOpCode) return false;
+        if (opCode != ExpectedOpCode)
+        {
+            return false;
+        }
         byte length = span[1];
-        if (length < 2) return false;
-        if ((source.Length - 2) % length != 0) return false;
+        if (length < 2)
+        {
+            return false;
+        }
+
+        if ((source.Length - 2) % length != 0)
+        {
+            return false;
+        }
         int numberOfAttributes = (source.Length - 2) / length;
         var attributeDataList = new AttReadByTypeData[numberOfAttributes];
         for (var i = 0; i < numberOfAttributes; i ++)
@@ -36,7 +49,7 @@ public readonly record struct AttReadByTypeRsp : IAttPdu, IDecodable<AttReadByTy
             int attStart = 2 + i * length;
             attributeDataList[i] = new AttReadByTypeData(
                 BinaryPrimitives.ReadUInt16LittleEndian(span[attStart..]),
-                span[(attStart + 2)..(attStart + length)].ToArray());
+                source.Slice(attStart + 2, length - 2));
         }
         result = new AttReadByTypeRsp
         {
@@ -44,6 +57,7 @@ public readonly record struct AttReadByTypeRsp : IAttPdu, IDecodable<AttReadByTy
             Length = length,
             AttributeDataList = attributeDataList,
         };
+        bytesDecoded = source.Length;
         return true;
     }
 }

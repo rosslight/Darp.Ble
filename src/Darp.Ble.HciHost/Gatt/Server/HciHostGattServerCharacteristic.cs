@@ -93,7 +93,7 @@ public sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer server
                         s = null;
                         return false;
                     }
-                    s = res.Value;
+                    s = res.Value.ToArray();
                     return true;
                 })
                 .Subscribe(observer);

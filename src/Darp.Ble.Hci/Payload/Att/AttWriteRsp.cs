@@ -16,7 +16,7 @@ public readonly record struct AttWriteRsp : IAttPdu, IDecodable<AttWriteRsp>
     public static bool TryDecode(in ReadOnlyMemory<byte> source, out AttWriteRsp result, out int bytesDecoded)
     {
         result = default;
-        bytesDecoded = source.Length;
+        bytesDecoded = 0;
         if (source.Length == 0) return false;
         var opCode = (AttOpCode)source.Span[0];
         if (opCode != ExpectedOpCode) return false;
@@ -24,6 +24,7 @@ public readonly record struct AttWriteRsp : IAttPdu, IDecodable<AttWriteRsp>
         {
             OpCode = opCode,
         };
+        bytesDecoded = 1;
         return true;
     }
 }
