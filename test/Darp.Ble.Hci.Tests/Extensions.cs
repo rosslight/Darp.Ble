@@ -1,3 +1,5 @@
+using Darp.Ble.Hci.Payload;
+
 namespace Darp.Ble.Hci.Tests;
 
 public static class Extensions
@@ -43,4 +45,11 @@ public static class Extensions
             throw new ArgumentOutOfRangeException(nameof(source), $"Size of enumerable is not of a multiple of {numberOfItems}");
         }
     }
+
+    public static bool TryEncode<T>(this T encodable, Span<byte> destination)
+        where T : IEncodable =>
+        encodable.TryEncode(destination);
+    public static int GetLength<T>(this T encodable)
+        where T : IEncodable =>
+        encodable.Length;
 }
