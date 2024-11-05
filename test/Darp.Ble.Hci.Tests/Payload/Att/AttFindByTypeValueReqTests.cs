@@ -5,12 +5,10 @@ namespace Darp.Ble.Hci.Tests.Payload.Att;
 
 public sealed class AttFindByTypeValueReqTests
 {
-    private const AttOpCode ExpectedOpCode = AttOpCode.ATT_FIND_BY_TYPE_VALUE_REQ;
-
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        AttFindByTypeValueReq.ExpectedOpCode.Should().Be(ExpectedOpCode);
+        AttFindByTypeValueReq.ExpectedOpCode.Should().HaveValue(0x06);
     }
 
     [Theory]
@@ -32,7 +30,7 @@ public sealed class AttFindByTypeValueReqTests
 
         bool success = value.TryEncode(buffer);
 
-        value.OpCode.Should().Be(ExpectedOpCode);
+        value.OpCode.Should().Be(AttOpCode.ATT_FIND_BY_TYPE_VALUE_REQ);
         value.Length.Should().Be(9);
         success.Should().BeTrue();
         Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
@@ -42,7 +40,7 @@ public sealed class AttFindByTypeValueReqTests
     [InlineData(6, "")]
     [InlineData(8, "ABCD")]
     [InlineData(22, "0000FFE000001000800000805F9B34FB")]
-    public void TryDecode_ShouldBeInvalid(int bufferLength, string valueHexBytes)
+    public void TryEncode_ShouldBeInvalid(int bufferLength, string valueHexBytes)
     {
         var buffer = new byte[bufferLength];
         var value = new AttFindByTypeValueReq

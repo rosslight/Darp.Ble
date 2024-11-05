@@ -50,11 +50,11 @@ public sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer server
                 throw new Exception($"Received unexpected att response {response.OpCode}");
             }
             if (rsp.InformationData.Length == 0) break;
-            foreach ((ushort handle, ushort uuid) in rsp.InformationData)
+            foreach ((ushort handle, ReadOnlyMemory<byte> uuid) in rsp.InformationData)
             {
                 if (handle < startingHandle)
                     throw new Exception("Handle of discovered characteristic is smaller than starting handle of service");
-                var bleUuid = new BleUuid(uuid);
+                var bleUuid = new BleUuid(uuid.Span);
                 _descriptorDictionary[bleUuid] = new HciHostGattServerDescriptor(_serverPeer, bleUuid, handle, _logger);
             }
             ushort lastHandle = rsp.InformationData[^1].Handle;

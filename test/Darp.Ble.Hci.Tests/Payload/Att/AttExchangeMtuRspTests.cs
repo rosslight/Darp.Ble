@@ -5,12 +5,10 @@ namespace Darp.Ble.Hci.Tests.Payload.Att;
 
 public sealed class AttExchangeMtuRspTests
 {
-    private const AttOpCode ExpectedOpCode = AttOpCode.ATT_EXCHANGE_MTU_RSP;
-
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        AttExchangeMtuRsp.ExpectedOpCode.Should().Be(ExpectedOpCode);
+        AttExchangeMtuRsp.ExpectedOpCode.Should().HaveValue(0x03);
     }
 
     [Theory]
@@ -23,7 +21,7 @@ public sealed class AttExchangeMtuRspTests
 
         success.Should().BeTrue();
         decoded.Should().Be(3);
-        value.OpCode.Should().Be(ExpectedOpCode);
+        value.OpCode.Should().Be(AttOpCode.ATT_EXCHANGE_MTU_RSP);
         value.ServerRxMtu.Should().Be(serverRxMtu);
     }
 

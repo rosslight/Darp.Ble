@@ -21,28 +21,28 @@ public readonly record struct AttFindInformationRsp : IAttPdu, IDecodable<AttFin
     public static bool TryDecode(in ReadOnlyMemory<byte> source, out AttFindInformationRsp result, out int bytesDecoded)
     {
         result = default;
-        bytesDecoded = source.Length;
+        bytesDecoded = 0;
         if (source.Length < 6) return false;
         ReadOnlySpan<byte> span = source.Span;
         var opCode = (AttOpCode)span[0];
         if (opCode != ExpectedOpCode) return false;
         var format = (AttFindInformationFormat)span[1];
-        int length = 2 + format switch
+        int informationDataLength = 2 + format switch
         {
             AttFindInformationFormat.HandleAnd16BitUuid => 2,
             AttFindInformationFormat.HandleAnd128BitUuid => 16,
             _ => -1,
         };
-        if (length < 4) return false;
-        if ((source.Length - 2) % length != 0) return false;
-        int numberOfAttributes = (source.Length - 2) / (2 + 2);
+        if (informationDataLength < 4) return false;
+        if ((source.Length - 2) % informationDataLength != 0) return false;
+        int numberOfAttributes = (source.Length - 2) / informationDataLength;
         var attributeDataList = new AttFindInformationData[numberOfAttributes];
         for (var i = 0; i < numberOfAttributes; i ++)
         {
-            int attStart = 2 + i * length;
+            int attStart = 2 + i * informationDataLength;
             attributeDataList[i] = new AttFindInformationData(
                 BinaryPrimitives.ReadUInt16LittleEndian(span[attStart..]),
-                BinaryPrimitives.ReadUInt16LittleEndian(span[(attStart + 2)..]));
+                source.Slice(attStart + 2, informationDataLength - 2));
         }
         result = new AttFindInformationRsp
         {
@@ -50,6 +50,7 @@ public readonly record struct AttFindInformationRsp : IAttPdu, IDecodable<AttFin
             Format = format,
             InformationData = attributeDataList,
         };
+        bytesDecoded = source.Length;
         return true;
     }
 }

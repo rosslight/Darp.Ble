@@ -5,12 +5,10 @@ namespace Darp.Ble.Hci.Tests.Payload.Att;
 
 public sealed class AttExchangeMtuReqTests
 {
-    private const AttOpCode ExpectedOpCode = AttOpCode.ATT_EXCHANGE_MTU_REQ;
-
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        AttExchangeMtuReq.ExpectedOpCode.Should().Be(ExpectedOpCode);
+        AttExchangeMtuReq.ExpectedOpCode.Should().HaveValue(0x02);
     }
 
     [Theory]
@@ -22,14 +20,14 @@ public sealed class AttExchangeMtuReqTests
 
         bool success = value.TryEncode(buffer);
 
-        value.OpCode.Should().Be(ExpectedOpCode);
+        value.OpCode.Should().Be(AttOpCode.ATT_EXCHANGE_MTU_REQ);
         value.Length.Should().Be(3);
         success.Should().BeTrue();
         Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
     }
 
     [Fact]
-    public void TryDecode_ShouldBeInvalid()
+    public void TryEncode_ShouldBeInvalid()
     {
         var buffer = new byte[2];
         AttExchangeMtuReq value = default;

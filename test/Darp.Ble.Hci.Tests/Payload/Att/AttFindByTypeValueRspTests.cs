@@ -5,12 +5,10 @@ namespace Darp.Ble.Hci.Tests.Payload.Att;
 
 public sealed class AttFindByTypeValueRspTests
 {
-    private const AttOpCode ExpectedOpCode = AttOpCode.ATT_FIND_BY_TYPE_VALUE_RSP;
-
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        AttFindByTypeValueRsp.ExpectedOpCode.Should().Be(ExpectedOpCode);
+        AttFindByTypeValueRsp.ExpectedOpCode.Should().HaveValue(0x07);
     }
 
     [Theory]
@@ -29,7 +27,7 @@ public sealed class AttFindByTypeValueRspTests
 
         success.Should().BeTrue();
         decoded.Should().Be(1 + 4 *handlesInformation.Length);
-        value.OpCode.Should().Be(ExpectedOpCode);
+        value.OpCode.Should().Be(AttOpCode.ATT_FIND_BY_TYPE_VALUE_RSP);
         value.HandlesInformationList.Should().BeEquivalentTo(handlesInformation);
     }
 
