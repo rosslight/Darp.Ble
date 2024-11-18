@@ -31,7 +31,7 @@ public sealed class HciHostBleDevice(string port, string name, ILogger? logger) 
     }
 
     /// <inheritdoc />
-    public override string Identifier => "Darp.Ble.WinRT";
+    public override string Identifier => "Darp.Ble.HciHost";
 
     protected override void DisposeCore()
     {
