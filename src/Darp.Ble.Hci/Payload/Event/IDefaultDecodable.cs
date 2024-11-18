@@ -16,13 +16,15 @@ public interface IDefaultDecodable<TSelf> : IDecodable<TSelf>
         out int bytesRead)
 #pragma warning restore CA1033
     {
-        bytesRead = Marshal.SizeOf<TSelf>();
-        if (source.Length < bytesRead)
+        int size = Marshal.SizeOf<TSelf>();
+        if (source.Length < size)
         {
             result = default;
+            bytesRead = 0;
             return false;
         }
         result = ToStructUnsafe<TSelf>(source);
+        bytesRead = size;
         return true;
     }
 

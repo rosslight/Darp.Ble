@@ -20,19 +20,21 @@ public readonly record struct HciCommandCompleteEvent<TParameters> : IHciEvent<H
     /// <summary> This is the return parameter(s) for the command specified in the Command_Opcode event parameter. See each command’s definition for the list of return parameters associated with that command </summary>
     public required TParameters ReturnParameters { get; init; }
 
-    static bool IDecodable<HciCommandCompleteEvent<TParameters>>.TryDecode(in ReadOnlyMemory<byte> buffer,
+    /// <inheritdoc />
+    public static bool TryDecode(in ReadOnlyMemory<byte> source,
         out HciCommandCompleteEvent<TParameters> hciEvent,
-        out int bytesRead)
+        out int bytesDecoded)
     {
-        bytesRead = default;
+        bytesDecoded = default;
         hciEvent = default;
-        ReadOnlySpan<byte> span = buffer.Span;
+        if (source.Length < 3)
+            return false;
+        ReadOnlySpan<byte> span = source.Span;
         byte numHciCommandPackets = span[0];
-        if (!BinaryPrimitives.TryReadUInt16LittleEndian(span[1..], out ushort commandOpCode))
+        ushort commandOpCode = BinaryPrimitives.ReadUInt16LittleEndian(span[1..]);
+        if (!TParameters.TryDecode(source[3..], out TParameters? returnParameters, out int parameterBytesRead))
             return false;
-        if (!TParameters.TryDecode(buffer[3..], out TParameters? returnParameters, out int parameterBytesRead))
-            return false;
-        bytesRead = 3 + parameterBytesRead;
+        bytesDecoded = 3 + parameterBytesRead;
         hciEvent = new HciCommandCompleteEvent<TParameters>
         {
             NumHciCommandPackets = numHciCommandPackets,

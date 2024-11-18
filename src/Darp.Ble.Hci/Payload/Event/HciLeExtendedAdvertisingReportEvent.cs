@@ -35,7 +35,9 @@ public readonly record struct HciLeExtendedAdvertisingReportEvent : IHciLeMetaEv
             if (!HciLeExtendedAdvertisingReport.TryDecode(source[bytesDecoded..],
                     out HciLeExtendedAdvertisingReport data,
                     out int dataBytesRead))
+            {
                 return false;
+            }
             bytesDecoded += dataBytesRead;
             reports[i] = data;
         }
