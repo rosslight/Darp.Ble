@@ -105,9 +105,9 @@ public static class AdvertisingDataExtensions
             {
                 int guidLength = sectionType switch
                 {
-                    AdTypes.IncompleteListOf16BitServiceClassUuids or AdTypes.CompleteListOf16BitServiceClassUuids => 2,
-                    AdTypes.IncompleteListOf32BitServiceClassUuids or AdTypes.CompleteListOf32BitServiceClassUuids => 4,
-                    AdTypes.IncompleteListOf128BitServiceClassUuids or AdTypes.CompleteListOf128BitServiceClassUuids => 16,
+                    AdTypes.IncompleteListOf16BitServiceOrServiceClassUuids or AdTypes.CompleteListOf16BitServiceOrServiceClassUuids => 2,
+                    AdTypes.IncompleteListOf32BitServiceOrServiceClassUuids or AdTypes.CompleteListOf32BitServiceOrServiceClassUuids => 4,
+                    AdTypes.IncompleteListOf128BitServiceOrServiceClassUuids or AdTypes.CompleteListOf128BitServiceOrServiceClassUuids => 16,
                     _ => -1,
                 };
                 if (guidLength < 0)

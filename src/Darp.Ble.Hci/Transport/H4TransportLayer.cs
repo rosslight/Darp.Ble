@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci.Transport;
 
+/// <summary> A transport layer which sends HCI packets via a <see cref="SerialPort"/> </summary>
 public sealed class H4TransportLayer : ITransportLayer
 {
     private readonly ILogger? _logger;
@@ -18,6 +19,9 @@ public sealed class H4TransportLayer : ITransportLayer
     private readonly Subject<IHciPacket> _rxSubject;
     private bool _isDisposing;
 
+    /// <summary> Instantiate a new h4 transport layer </summary>
+    /// <param name="portName"> The name of the serial port </param>
+    /// <param name="logger"> An optional logger </param>
     public H4TransportLayer(string portName, ILogger? logger)
     {
         _logger = logger;
@@ -36,7 +40,7 @@ public sealed class H4TransportLayer : ITransportLayer
             {
                 if (!_serialPort.IsOpen || _txQueue.IsEmpty || !_txQueue.TryDequeue(out IHciPacket? packet))
                 {
-                    await Task.Delay(1, _cancelToken);
+                    await Task.Delay(1, _cancelToken).ConfigureAwait(false);
                     continue;
                 }
                 var bytes = new byte[1 + packet.Length];
@@ -48,9 +52,10 @@ public sealed class H4TransportLayer : ITransportLayer
                 }
 
                 _logger?.LogPacketSending(packet, bytes);
-                await _serialPort.BaseStream.WriteAsync(bytes, _cancelToken);
+                await _serialPort.BaseStream.WriteAsync(bytes, _cancelToken).ConfigureAwait(false);
             }
         }
+#pragma warning disable CA1031
         catch (Exception e)
         {
             if (_isDisposing)
@@ -60,17 +65,18 @@ public sealed class H4TransportLayer : ITransportLayer
             }
             _logger?.LogTransportWithError(e, "Tx", e.Message);
         }
+#pragma warning restore CA1031
     }
 
     private async ValueTask RunRxPacket<TPacket>(Memory<byte> buffer, byte payloadLengthIndex)
-        where TPacket : IHciPacketImpl<TPacket>, IDecodable<TPacket>
+        where TPacket : IHciPacket<TPacket>, IDecodable<TPacket>
     {
         // Read Header
-        await _serialPort.BaseStream.ReadExactlyAsync(buffer[..TPacket.HeaderLength], _cancelToken);
+        await _serialPort.BaseStream.ReadExactlyAsync(buffer[..TPacket.HeaderLength], _cancelToken).ConfigureAwait(false);
         byte payloadLength = buffer.Span[payloadLengthIndex];
         // Read Payload
         Memory<byte> payloadBuffer = buffer[TPacket.HeaderLength..(TPacket.HeaderLength + payloadLength)];
-        await _serialPort.BaseStream.ReadExactlyAsync(payloadBuffer, _cancelToken);
+        await _serialPort.BaseStream.ReadExactlyAsync(payloadBuffer, _cancelToken).ConfigureAwait(false);
         if (!TPacket.TryDecode(buffer[..(TPacket.HeaderLength + payloadLength)], out TPacket? packet, out _))
         {
             _logger?.LogPacketReceivingDecodingFailed((byte)TPacket.Type, buffer[..(TPacket.HeaderLength + payloadLength)].ToArray(), typeof(TPacket).Name);
@@ -93,10 +99,10 @@ public sealed class H4TransportLayer : ITransportLayer
                 switch (type)
                 {
                     case HciPacketType.HciEvent:
-                        await RunRxPacket<HciEventPacket>(buffer, 1);
+                        await RunRxPacket<HciEventPacket>(buffer, 1).ConfigureAwait(false);
                         break;
                     case HciPacketType.HciAclData:
-                        await RunRxPacket<HciAclPacket>(buffer, 2);
+                        await RunRxPacket<HciAclPacket>(buffer, 2).ConfigureAwait(false);
                         break;
                     case HciPacketType.HciCommand:
                     default:
@@ -107,6 +113,7 @@ public sealed class H4TransportLayer : ITransportLayer
             }
             _rxSubject.OnCompleted();
         }
+#pragma warning disable CA1031
         catch (Exception e)
         {
             if (_isDisposing)
@@ -118,8 +125,10 @@ public sealed class H4TransportLayer : ITransportLayer
             _logger?.LogTransportWithError(e, "Rx", e.Message);
             _rxSubject.OnError(e);
         }
+#pragma warning restore CA1031
     }
 
+    /// <inheritdoc />
     public void Initialize()
     {
         _ = Task.Run(RunTx, _cancelToken);
@@ -127,6 +136,7 @@ public sealed class H4TransportLayer : ITransportLayer
         _serialPort.Open();
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
         if (_isDisposing) return;
@@ -135,12 +145,14 @@ public sealed class H4TransportLayer : ITransportLayer
         _serialPort.Dispose();
     }
 
+    /// <inheritdoc />
     public void Enqueue(IHciPacket packet)
     {
         _cancelToken.ThrowIfCancellationRequested();
         _txQueue.Enqueue(packet);
     }
 
+    /// <inheritdoc />
     public IObservable<IHciPacket> WhenReceived()
     {
         _cancelToken.ThrowIfCancellationRequested();
