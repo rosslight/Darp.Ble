@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost.Gatt.Server;
 
-public sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer serverPeer,
+internal sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer serverPeer,
     BleUuid uuid,
     ushort attHandle,
     GattProperty property,
@@ -37,7 +37,8 @@ public sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer server
                 {
                     StartingHandle = startingHandle,
                     EndingHandle = EndHandle,
-                }, cancellationToken: token);
+                }, cancellationToken: token)
+                .ConfigureAwait(false);
             if (response.OpCode is AttOpCode.ATT_ERROR_RSP && AttErrorRsp
                     .TryDecode(response.Pdu, out AttErrorRsp errorRsp, out _))
             {
@@ -65,11 +66,12 @@ public sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer server
         return true;
     }
 
+    /// <inheritdoc />
     protected override async Task WriteAsyncCore(byte[] bytes, CancellationToken cancellationToken)
     {
         if (!_descriptorDictionary.TryGetValue(Uuid, out HciHostGattServerDescriptor? descriptor))
             return;
-        await descriptor.WriteWithResponseAsync(bytes, cancellationToken);
+        await descriptor.WriteWithResponseAsync(bytes, cancellationToken).ConfigureAwait(false);
     }
 
     protected override IConnectableObservable<byte[]> OnNotifyCore()
@@ -97,9 +99,10 @@ public sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer server
                     return true;
                 })
                 .Subscribe(observer);
-            if (!await cccd.WriteWithResponseAsync([0x01, 0x00], cancellationToken))
+            if (!await cccd.WriteWithResponseAsync([0x01, 0x00], cancellationToken).ConfigureAwait(false))
             {
                 observer.OnError(new Exception("Could not write notification status to cccd"));
+                disposable.Dispose();
                 return Disposable.Empty;
             }
             _logger?.LogTrace("Enabled notifications on {@Characteristic}", this);

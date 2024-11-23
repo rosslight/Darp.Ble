@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.WinRT.Gatt.Server;
 
-public sealed class WinGattServerService(GattDeviceService winService, ILogger? logger)
+internal sealed class WinGattServerService(GattDeviceService winService, ILogger? logger)
     : GattServerService(new BleUuid(winService.Uuid, inferType: true), logger)
 {
     private readonly GattDeviceService _winService = winService;
@@ -19,7 +19,9 @@ public sealed class WinGattServerService(GattDeviceService winService, ILogger? 
     {
         return Observable.Create<IGattServerCharacteristic>(async (observer, cancellationToken) =>
         {
-            DeviceAccessStatus accessStatus = await _winService.RequestAccessAsync().AsTask(cancellationToken);
+            DeviceAccessStatus accessStatus = await _winService.RequestAccessAsync()
+                .AsTask(cancellationToken)
+                .ConfigureAwait(false);
             if (accessStatus is not DeviceAccessStatus.Allowed)
             {
                 observer.OnError(new Exception($"Access request disallowed: {accessStatus}..."));
@@ -36,7 +38,7 @@ public sealed class WinGattServerService(GattDeviceService winService, ILogger? 
 
                     foreach (GattCharacteristic gattCharacteristic in result.Characteristics)
                     {
-                        observer.OnNext(new WinGattServerCharacteristic(gattCharacteristic));
+                        observer.OnNext(new WinGattServerCharacteristic(gattCharacteristic, Logger));
                     }
                 }, observer.OnError, observer.OnCompleted);
         });
@@ -51,6 +53,6 @@ public sealed class WinGattServerService(GattDeviceService winService, ILogger? 
     /// <inheritdoc />
     protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicAsyncCore(BleUuid uuid)
     {
-        return DiscoverCharacteristic(() => _winService.GetCharacteristicsAsync());
+        return DiscoverCharacteristic(() => _winService.GetCharacteristicsForUuidAsync(uuid.Value));
     }
 }

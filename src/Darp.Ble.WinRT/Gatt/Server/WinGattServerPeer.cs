@@ -12,8 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.WinRT.Gatt.Server;
 
-/// <inheritdoc />
-public sealed class WinGattServerPeer : GattServerPeer
+internal sealed class WinGattServerPeer : GattServerPeer
 {
     private readonly BluetoothLEDevice _winDev;
 
@@ -37,7 +36,9 @@ public sealed class WinGattServerPeer : GattServerPeer
     {
         return Observable.Create<IGattServerService>(async (observer, cancellationToken) =>
         {
-            DeviceAccessStatus accessStatus = await _winDev.RequestAccessAsync().AsTask(cancellationToken);
+            DeviceAccessStatus accessStatus = await _winDev.RequestAccessAsync()
+                .AsTask(cancellationToken)
+                .ConfigureAwait(false);
             if (accessStatus is not DeviceAccessStatus.Allowed)
             {
                 observer.OnError(new Exception($"Access request disallowed: {accessStatus}..."));
@@ -63,13 +64,13 @@ public sealed class WinGattServerPeer : GattServerPeer
     /// <inheritdoc />
     protected override IObservable<IGattServerService> DiscoverServicesCore()
     {
-        return DiscoverService(() => _winDev.GetGattServicesAsync());
+        return DiscoverService(() => _winDev.GetGattServicesAsync(BluetoothCacheMode.Uncached));
     }
 
     /// <inheritdoc />
     protected override IObservable<IGattServerService> DiscoverServiceCore(BleUuid uuid)
     {
-        return DiscoverService(() => _winDev.GetGattServicesForUuidAsync(uuid.Value));
+        return DiscoverService(() => _winDev.GetGattServicesForUuidAsync(uuid.Value, BluetoothCacheMode.Uncached));
     }
 
     /// <inheritdoc />
