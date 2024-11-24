@@ -22,7 +22,7 @@ public interface IGattServerCharacteristic
     /// A task which completes when notifications are enabled.
     /// Contains an <see cref="IDisposable"/> which can be used to unsubscribe from notifications.
     /// </returns>
-    Task<IDisposable> OnNotifyAsync<TState>(TState state, Action<TState, byte[]> onNotify, CancellationToken cancellationToken);
+    Task<IAsyncDisposable> OnNotifyAsync<TState>(TState state, Action<TState, byte[]> onNotify, CancellationToken cancellationToken);
 
 /*
     /// <summary>

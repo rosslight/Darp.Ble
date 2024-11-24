@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Reactive.Disposables;
 using Darp.Ble.Data;
 using Microsoft.Extensions.Logging;
@@ -8,6 +9,8 @@ namespace Darp.Ble.Gatt.Server;
 public abstract class GattServerCharacteristic(BleUuid uuid, ILogger? logger) : IGattServerCharacteristic
 {
     private readonly SemaphoreSlim _notifySemaphore = new(1, 1);
+    private IDisposable? _notifyDisposable;
+    private readonly List<Action<byte[]>> _actions = [];
 
     /// <summary> The optional logger </summary>
     protected ILogger? Logger { get; } = logger;
@@ -30,29 +33,50 @@ public abstract class GattServerCharacteristic(BleUuid uuid, ILogger? logger) : 
     protected abstract Task WriteAsyncCore(byte[] bytes, CancellationToken cancellationToken);
 
     /// <inheritdoc />
-    public async Task<IDisposable> OnNotifyAsync<TState>(TState state,
+    public async Task<IAsyncDisposable> OnNotifyAsync<TState>(TState state,
         Action<TState, byte[]> onNotify,
         CancellationToken cancellationToken)
     {
-        IDisposable disposable = await EnableNotificationsAsync(state, onNotify, cancellationToken);
-        Logger?.LogTrace("Enabled notifications on {@Characteristic}", this);
-        return Disposable.Create(() =>
+        Action<byte[]> action = bytes => onNotify(state, bytes);
+        await _notifySemaphore.WaitAsync(default(CancellationToken)).ConfigureAwait(false);
+        try
         {
-            disposable.Dispose();
-            _ = Task.Run(async () =>
+            if (_notifyDisposable is null)
             {
-                await _notifySemaphore.WaitAsync(default(CancellationToken)).ConfigureAwait(false);
-                try
+                _notifyDisposable = await EnableNotificationsAsync(this, (characteristic, bytes) =>
                 {
-                    Logger?.LogTrace("Starting to disable notifications on {@Characteristic}", this);
-                    await DisableNotificationsAsync();
-                    Logger?.LogTrace("Disabled notifications on {@Characteristic}", this);
-                }
-                finally
+                    foreach (Action<byte[]> item1Action in characteristic._actions)
+                    {
+                        item1Action(bytes);
+                    }
+                }, cancellationToken);
+                Logger?.LogTrace("Enabled notifications on {@Characteristic}", this);
+            }
+            _actions.Add(action);
+        }
+        finally
+        {
+            _notifySemaphore.Release();
+        }
+        return AsyncDisposable.Create(async () =>
+        {
+            await _notifySemaphore.WaitAsync(default(CancellationToken)).ConfigureAwait(false);
+            try
+            {
+                _actions.Remove(action);
+                if (_actions.Count != 0)
                 {
-                    _notifySemaphore.Release();
+                    return;
                 }
-            }, default);
+                _notifyDisposable.Dispose();
+                Logger?.LogTrace("Starting to disable notifications on {@Characteristic}", this);
+                await DisableNotificationsAsync();
+                Logger?.LogTrace("Disabled notifications on {@Characteristic}", this);
+            }
+            finally
+            {
+                _notifySemaphore.Release();
+            }
         });
     }
 
