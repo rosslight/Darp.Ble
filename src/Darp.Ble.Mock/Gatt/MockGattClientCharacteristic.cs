@@ -2,18 +2,25 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
+using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
 
 namespace Darp.Ble.Mock.Gatt;
 
-internal sealed class MockGattClientCharacteristic(BleUuid uuid,
-    GattProperty property,
-    MockGattClientService clientService)
-    : GattClientCharacteristic(uuid, property)
+internal interface IMockGattClientCharacteristic
 {
-    private readonly MockGattClientService _clientService = clientService;
+    Task WriteAsync(IGattClientPeer clientPeer, byte[] bytes, CancellationToken cancellationToken);
+    Task EnableNotificationsAsync(Action<byte[]> onNotify, CancellationToken cancellationToken);
+    Task DisableNotificationsAsync();
+}
+
+internal sealed class MockGattClientCharacteristic(BleUuid uuid,
+    GattProperty property)
+    : GattClientCharacteristic(uuid, property), IMockGattClientCharacteristic
+{
     private readonly List<Func<IGattClientPeer, byte[], CancellationToken, Task<GattProtocolStatus>>> _onWriteCallbacks = [];
+    private Action<byte[]>? _notifyAction;
 
     public async Task WriteAsync(IGattClientPeer clientPeer, byte[] bytes, CancellationToken cancellationToken)
     {
@@ -22,8 +29,20 @@ internal sealed class MockGattClientCharacteristic(BleUuid uuid,
         {
             Func<IGattClientPeer, byte[], CancellationToken, Task<GattProtocolStatus>> onWriteCallback =
                 _onWriteCallbacks[index];
-            await onWriteCallback(clientPeer, bytes, cancellationToken);
+            await onWriteCallback(clientPeer, bytes, cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    public Task EnableNotificationsAsync(Action<byte[]> onNotify, CancellationToken cancellationToken)
+    {
+        _notifyAction = onNotify;
+        return Task.CompletedTask;
+    }
+
+    public Task DisableNotificationsAsync()
+    {
+        _notifyAction = null;
+        return Task.CompletedTask;
     }
 
     /// <inheritdoc />
@@ -34,15 +53,11 @@ internal sealed class MockGattClientCharacteristic(BleUuid uuid,
     }
 
     /// <inheritdoc />
-    protected override async Task<bool> NotifyAsyncCore(IGattClientPeer clientPeer, byte[] source, CancellationToken cancellationToken)
+    protected override Task<bool> NotifyAsyncCore(IGattClientPeer clientPeer, byte[] source, CancellationToken cancellationToken)
     {
-        if (clientPeer is not MockGattClientPeer mockClientPeer) return false;
-        IGattServerService serverService = await mockClientPeer.GetService(_clientService.Uuid).FirstAsync().ToTask(cancellationToken);
-        if (!serverService.Characteristics.TryGetValue(Uuid, out IGattServerCharacteristic? characteristic)
-            || characteristic is not MockGattServerCharacteristic serverCharacteristic)
-        {
-            return false;
-        }
-        return await serverCharacteristic.NotifyAsync(clientPeer, source, cancellationToken);
+        if (_notifyAction is null)
+            return Task.FromResult(false);
+        _notifyAction(source);
+        return Task.FromResult(true);
     }
 }

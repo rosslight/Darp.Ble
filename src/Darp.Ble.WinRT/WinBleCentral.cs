@@ -32,4 +32,9 @@ internal sealed class WinBleCentral(BleDevice device, ILogger? logger) : BleCent
             observer.OnNext(new WinGattServerPeer(winDev, Logger));
         });
     }
+
+    protected override ValueTask DisposeAsyncCore()
+    {
+        return base.DisposeAsyncCore();
+    }
 }

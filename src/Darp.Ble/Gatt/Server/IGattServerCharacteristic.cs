@@ -1,4 +1,3 @@
-using System.Reactive.Subjects;
 using Darp.Ble.Data;
 
 namespace Darp.Ble.Gatt.Server;
@@ -12,10 +11,41 @@ public interface IGattServerCharacteristic
     /// <param name="bytes"> The array of bytes to be written </param>
     /// <param name="cancellationToken"> The CancellationToken to cancel the operation </param>
     /// <returns> A Task which represents the operation </returns>
-    Task WriteAsync(byte[] bytes, CancellationToken cancellationToken = default);
-    /// <summary> Subscribe to notification events of the characteristic </summary>
-    /// <returns> An observable which can be connected to, to start the subscription </returns>
-    IConnectableObservable<byte[]> OnNotify();
+    Task WriteAsync(byte[] bytes, CancellationToken cancellationToken);
+
+    /// <summary> Subscribe to notification events </summary>
+    /// <param name="state"> The state to be accessible when <paramref name="onNotify"/> is called </param>
+    /// <param name="onNotify"> The callback to be called when a notification event was received </param>
+    /// <param name="cancellationToken"> The CancellationToken to cancel the initial subscription process </param>
+    /// <typeparam name="TState"> The type of the <paramref name="state"/> </typeparam>
+    /// <returns>
+    /// A task which completes when notifications are enabled.
+    /// Contains an <see cref="IDisposable"/> which can be used to unsubscribe from notifications.
+    /// </returns>
+    Task<IDisposable> OnNotifyAsync<TState>(TState state, Action<TState, byte[]> onNotify, CancellationToken cancellationToken);
+
+/*
+    /// <summary>
+    /// Read a specific value from the
+    /// </summary>
+    /// <param name="state"> The state to be accessible when <paramref name="onRead"/> is called </param>
+    /// <param name="onRead"> The callback to be called when the response was received </param>
+    /// <param name="cancellationToken"> The CancellationToken to cancel the operation </param>
+    /// <typeparam name="TState"> The type of the <paramref name="state"/> </typeparam>
+    /// <returns> A task which completes when the value was read </returns>
+    Task ReadAsync<TState>(TState state, Action<TState, ReadOnlyMemory<byte>> onRead, CancellationToken cancellationToken);
+
+    /// <summary> Subscribe to indication events </summary>
+    /// <param name="state"> The state to be accessible when <paramref name="onIndicate"/> is called </param>
+    /// <param name="onIndicate"> The callback to be called when an indication event was received </param>
+    /// <param name="cancellationToken"> The CancellationToken to cancel the initial subscription process </param>
+    /// <typeparam name="TState"> The type of the <paramref name="state"/> </typeparam>
+    /// <returns>
+    /// A task which completes when indications are enabled.
+    /// Contains an <see cref="IDisposable"/> which can be used to unsubscribe from indications.
+    /// </returns>
+    Task<IDisposable> OnIndicateAsync<TState>(TState state, Func<TState, ReadOnlyMemory<byte>, bool> onIndicate, CancellationToken cancellationToken);
+*/
 }
 
 /// <summary> The interface defining a strongly typed characteristic </summary>

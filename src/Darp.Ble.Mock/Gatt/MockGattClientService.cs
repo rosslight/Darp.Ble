@@ -12,6 +12,6 @@ internal sealed class MockGattClientService(BleUuid uuid, MockBlePeripheral bleP
         GattProperty gattProperty,
         CancellationToken cancellationToken)
     {
-        return Task.FromResult<IGattClientCharacteristic>(new MockGattClientCharacteristic(uuid, gattProperty, this));
+        return Task.FromResult<IGattClientCharacteristic>(new MockGattClientCharacteristic(uuid, gattProperty));
     }
 }
