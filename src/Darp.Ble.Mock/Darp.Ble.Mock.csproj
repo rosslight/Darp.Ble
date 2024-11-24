@@ -10,5 +10,6 @@
 
     <ItemGroup>
         <InternalsVisibleTo Include="Darp.Ble.Tests" />
+        <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
     </ItemGroup>
 </Project>

@@ -75,6 +75,7 @@ public abstract class GattServerCharacteristic(BleUuid uuid, ILogger? logger) : 
 /// <param name="serverCharacteristic"> The underlying characteristic </param>
 /// <typeparam name="TProp1"> <inheritdoc cref="IGattServerCharacteristic{TProp1}"/> </typeparam>
 public sealed class GattServerCharacteristic<TProp1>(IGattServerCharacteristic serverCharacteristic) : IGattServerCharacteristic<TProp1>
+    where TProp1 : IBleProperty
 {
     /// <inheritdoc />
     public IGattServerCharacteristic Characteristic { get; } = serverCharacteristic;

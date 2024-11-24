@@ -34,4 +34,12 @@ internal sealed class MockGattClientPeer : IGattClientPeer
     {
         return GetServices().Where(x => x.Uuid == uuid);
     }
+
+    private MockGattClientPeer()
+    {
+        Address = BleAddress.NotAvailable;
+        _services = [];
+    }
+
+    internal static MockGattClientPeer TestClientPeer { get; } = new();
 }
