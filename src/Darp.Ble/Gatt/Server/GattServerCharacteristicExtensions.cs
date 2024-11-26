@@ -85,4 +85,13 @@ public static class GattServerCharacteristicExtensions
         ArgumentNullException.ThrowIfNull(characteristic);
         await characteristic.Characteristic.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
     }
+
+    /// <inheritdoc cref="IGattServerCharacteristic.WriteWithoutResponse"/>
+    /// <param name="characteristic">The characteristic with notify property</param>
+    /// <param name="bytes"> The array of bytes to be written </param>
+    public static void WriteWithoutResponse(this IGattServerCharacteristic<Properties.Write> characteristic, byte[] bytes)
+    {
+        ArgumentNullException.ThrowIfNull(characteristic);
+        characteristic.Characteristic.WriteWithoutResponse(bytes);
+    }
 }

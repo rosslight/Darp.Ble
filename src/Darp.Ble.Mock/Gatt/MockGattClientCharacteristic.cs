@@ -6,16 +6,9 @@ using Darp.Ble.Gatt.Client;
 
 namespace Darp.Ble.Mock.Gatt;
 
-internal interface IMockGattClientCharacteristic
-{
-    Task WriteAsync(IGattClientPeer clientPeer, byte[] bytes, CancellationToken cancellationToken);
-    Task EnableNotificationsAsync(IGattClientPeer clientPeer, Action<byte[]> onNotify, CancellationToken cancellationToken);
-    Task DisableNotificationsAsync(IGattClientPeer clientPeer);
-}
-
 internal sealed class MockGattClientCharacteristic(BleUuid uuid,
     GattProperty property)
-    : GattClientCharacteristic(uuid, property), IMockGattClientCharacteristic
+    : GattClientCharacteristic(uuid, property)
 {
     private readonly List<Func<IGattClientPeer, byte[], CancellationToken, Task<GattProtocolStatus>>> _onWriteCallbacks = [];
     private readonly ConcurrentDictionary<IGattClientPeer, Action<byte[]>> _notifyActions = [];

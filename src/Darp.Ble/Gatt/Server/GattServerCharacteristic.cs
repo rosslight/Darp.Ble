@@ -1,5 +1,3 @@
-using System.Collections.Concurrent;
-using System.Reactive.Disposables;
 using Darp.Ble.Data;
 using Microsoft.Extensions.Logging;
 
@@ -24,6 +22,12 @@ public abstract class GattServerCharacteristic(BleUuid uuid, ILogger? logger) : 
         await WriteAsyncCore(bytes, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <inheritdoc />
+    public void WriteWithoutResponse(byte[] bytes)
+    {
+        WriteWithoutResponseCore(bytes);
+    }
+
     /// <summary>
     /// Core implementation to write bytes to the characteristic
     /// </summary>
@@ -31,6 +35,10 @@ public abstract class GattServerCharacteristic(BleUuid uuid, ILogger? logger) : 
     /// <param name="cancellationToken"> The CancellationToken to cancel the operation </param>
     /// <returns> A Task which represents the operation </returns>
     protected abstract Task WriteAsyncCore(byte[] bytes, CancellationToken cancellationToken);
+
+    /// <summary> Core implementation to write bytes to the characteristic without waiting on a response </summary>
+    /// <param name="bytes"> The array of bytes to be written </param>
+    protected abstract void WriteWithoutResponseCore(byte[] bytes);
 
     /// <inheritdoc />
     public async Task<IAsyncDisposable> OnNotifyAsync<TState>(TState state,
@@ -43,10 +51,14 @@ public abstract class GattServerCharacteristic(BleUuid uuid, ILogger? logger) : 
         {
             if (_notifyDisposable is null)
             {
-                _notifyDisposable = await EnableNotificationsAsync(this, (characteristic, bytes) =>
+                _notifyDisposable = await EnableNotificationsAsync(this, static (characteristic, bytes) =>
                 {
-                    foreach (Action<byte[]> item1Action in characteristic._actions)
+                    // Reversed for loop. Actions might be removed from list on involke
+                    for (int index = characteristic._actions.Count - 1; index >= 0; index--)
                     {
+                        if (characteristic._actions.Count is 0)
+                            return;
+                        Action<byte[]> item1Action = characteristic._actions[index];
                         item1Action(bytes);
                     }
                 }, cancellationToken);

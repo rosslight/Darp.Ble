@@ -231,7 +231,7 @@ public sealed class HciHostGattServerPeer : GattServerPeer
         });
     }
 
-    public void SendL2CapBasicCommand(ushort channelIdentifier, byte[] payloadBytes, CancellationToken token)
+    public void SendL2CapBasicCommand(ushort channelIdentifier, byte[] payloadBytes)
     {
         EnqueueL2CapBasic(channelIdentifier, payloadBytes);
     }
@@ -325,11 +325,11 @@ public sealed class HciHostGattServerPeer : GattServerPeer
 
 public static class Extensions2
 {
-    public static void SendAttMtuCommand<TAttCommand>(this HciHostGattServerPeer server, TAttCommand request, CancellationToken token = default)
+    public static void SendAttMtuCommand<TAttCommand>(this HciHostGattServerPeer server, TAttCommand request)
         where TAttCommand : IAttPdu, IEncodable
     {
         const ushort cId = 0x04;
-        server.SendL2CapBasicCommand(cId, request.ToByteArray(), token);
+        server.SendL2CapBasicCommand(cId, request.ToByteArray());
     }
 
     public static async Task<AttReadResult> QueryAttPduAsync<TAttRequest, TResponse>(this HciHostGattServerPeer client,

@@ -1,8 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using Darp.Ble.Data;
+using Darp.Ble.Exceptions;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Hci;
 using Darp.Ble.Hci.Package;
@@ -43,18 +42,18 @@ internal sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer serv
                     .TryDecode(response.Pdu, out AttErrorRsp errorRsp, out _))
             {
                 if (errorRsp.ErrorCode is AttErrorCode.AttributeNotFoundError) break;
-                throw new Exception($"Could not discover descriptors due to error {errorRsp.ErrorCode}");
+                throw new GattCharacteristicException(this, $"Could not discover descriptors due to error {errorRsp.ErrorCode}");
             }
             if (!(response.OpCode is AttOpCode.ATT_FIND_INFORMATION_RSP && AttFindInformationRsp
                     .TryDecode(response.Pdu, out AttFindInformationRsp rsp, out _)))
             {
-                throw new Exception($"Received unexpected att response {response.OpCode}");
+                throw new GattCharacteristicException(this, $"Received unexpected att response {response.OpCode}");
             }
             if (rsp.AttributeDataList.Length == 0) break;
             foreach ((ushort handle, ushort uuid) in rsp.AttributeDataList)
             {
                 if (handle < startingHandle)
-                    throw new Exception("Handle of discovered characteristic is smaller than starting handle of service");
+                    throw new GattCharacteristicException(this, "Handle of discovered characteristic is smaller than starting handle of service");
                 var bleUuid = new BleUuid(uuid);
                 _descriptorDictionary[bleUuid] = new HciHostGattServerDescriptor(_serverPeer, bleUuid, handle, _logger);
             }
@@ -70,8 +69,15 @@ internal sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer serv
     protected override async Task WriteAsyncCore(byte[] bytes, CancellationToken cancellationToken)
     {
         if (!_descriptorDictionary.TryGetValue(Uuid, out HciHostGattServerDescriptor? descriptor))
-            throw new Exception("No descriptor defining self available");
-        await descriptor.WriteWithResponseAsync(bytes, cancellationToken).ConfigureAwait(false);
+            throw new GattCharacteristicException(this, "No descriptor defining self available");
+        await descriptor.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+    }
+
+    protected override void WriteWithoutResponseCore(byte[] bytes)
+    {
+        if (!_descriptorDictionary.TryGetValue(Uuid, out HciHostGattServerDescriptor? descriptor))
+            throw new GattCharacteristicException(this, "No descriptor defining self available");
+        descriptor.WriteWithoutResponse(bytes);
     }
 
     protected override async Task<IDisposable> EnableNotificationsAsync<TState>(TState state,
@@ -80,15 +86,15 @@ internal sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer serv
     {
         if (!_descriptorDictionary.TryGetValue(new BleUuid(0x2902), out HciHostGattServerDescriptor? cccd))
         {
-            throw new Exception("No cccd available");
+            throw new GattCharacteristicException(this, "No cccd available");
         }
         if (!Property.HasFlag(GattProperty.Notify))
         {
-            throw new Exception("Characteristic does not support notification");
+            throw new GattCharacteristicException(this, "Characteristic does not support notification");
         }
-        if (!await cccd.WriteWithResponseAsync([0x01, 0x00], cancellationToken).ConfigureAwait(false))
+        if (!await cccd.WriteAsync([0x01, 0x00], cancellationToken).ConfigureAwait(false))
         {
-            throw new Exception("Could not write notification status to cccd");
+            throw new GattCharacteristicException(this, "Could not write notification status to cccd");
         }
         return _serverPeer.WhenAttPduReceived
             .Where(x => x.OpCode is AttOpCode.ATT_HANDLE_VALUE_NTF)
@@ -111,6 +117,6 @@ internal sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer serv
         {
             return;
         }
-        await cccd.WriteWithResponseAsync([0x00, 0x00], default).ConfigureAwait(false);
+        await cccd.WriteAsync([0x00, 0x00], default).ConfigureAwait(false);
     }
 }

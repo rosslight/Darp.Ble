@@ -7,11 +7,19 @@ public interface IGattServerCharacteristic
 {
     /// <summary> The <see cref="BleUuid"/> of the characteristic </summary>
     BleUuid Uuid { get; }
-    /// <summary> Write <paramref name="bytes"/> to the characteristic </summary>
+
+    /// <summary> Write <paramref name="bytes"/> to the characteristic depending on the length, </summary>
     /// <param name="bytes"> The array of bytes to be written </param>
     /// <param name="cancellationToken"> The CancellationToken to cancel the operation </param>
-    /// <returns> A Task which represents the operation </returns>
+    /// <returns> A Task which completes when the response was received. True, when the write was successful </returns>
+    /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/generic-attribute-profile--gatt-.html#UUID-53b00647-5dd9-99ae-3e74-8fc688b108d1">Write Characteristic Value</seealso>
+    /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/generic-attribute-profile--gatt-.html#UUID-6dec55a7-3938-eaa1-286d-80dfd34a8ab5">Write Long Characteristic Value</seealso>
     Task WriteAsync(byte[] bytes, CancellationToken cancellationToken);
+
+    /// <summary> Write <paramref name="bytes"/> to the characteristic without waiting for a response </summary>
+    /// <param name="bytes"> The bytes to be sent </param>
+    /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/generic-attribute-profile--gatt-.html#UUID-5bcdaffa-d6e9-9d99-01b6-dd6bacc09656">Write Without Response</seealso>
+    void WriteWithoutResponse(byte[] bytes);
 
     /// <summary> Subscribe to notification events </summary>
     /// <param name="state"> The state to be accessible when <paramref name="onNotify"/> is called </param>
