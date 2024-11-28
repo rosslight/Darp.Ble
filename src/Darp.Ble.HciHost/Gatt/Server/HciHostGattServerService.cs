@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost.Gatt.Server;
 
-public sealed class HciHostGattServerService(BleUuid uuid, ushort attHandle, ushort endGroupHandle,
+internal sealed class HciHostGattServerService(BleUuid uuid, ushort attHandle, ushort endGroupHandle,
     HciHostGattServerPeer serverPeer, ILogger? logger) : GattServerService(uuid, logger)
 {
     private readonly ushort _attHandle = attHandle;
@@ -30,7 +30,7 @@ public sealed class HciHostGattServerService(BleUuid uuid, ushort attHandle, ush
                     StartingHandle = startingHandle,
                     EndingHandle = _endGroupHandle,
                     AttributeType = 0x2803,
-                }, cancellationToken: token);
+                }, cancellationToken: token).ConfigureAwait(false);
                 if (response.OpCode is AttOpCode.ATT_ERROR_RSP
                     && AttErrorRsp.TryDecode(response.Pdu, out AttErrorRsp errorRsp, out _))
                 {

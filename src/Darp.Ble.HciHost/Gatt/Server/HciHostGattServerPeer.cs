@@ -18,9 +18,9 @@ using L2CAp = (ushort ChannelId, byte[] Payload);
 
 namespace Darp.Ble.HciHost.Gatt.Server;
 
-public sealed class HciHostGattServerPeer : GattServerPeer
+internal sealed class HciHostGattServerPeer : GattServerPeer
 {
-    public const ushort DefaultAttMtu = 27;
+    private const ushort DefaultAttMtu = 27;
     private const int MaxNumAclPackagesInFlight = 1;
 
     private readonly Hci.HciHost _host;
@@ -31,20 +31,23 @@ public sealed class HciHostGattServerPeer : GattServerPeer
     public ushort ConnectionHandle { get; }
     public ushort AttMtu { get; private set; } = DefaultAttMtu;
 
-    private int _aclPacketsInFlight = 0;
+    private int _aclPacketsInFlight;
 
-    public HciHostGattServerPeer(Hci.HciHost host,
+    public HciHostGattServerPeer(HciHostBleCentral central,
+        Hci.HciHost host,
         HciLeEnhancedConnectionCompleteV1Event connectionCompleteEvent,
         BleAddress address,
-        ILogger? logger) : base(address, logger)
+        ILogger? logger) : base(central, address, logger)
     {
         _host = host;
         ConnectionHandle = connectionCompleteEvent.ConnectionHandle;
-        WhenConnectionStatusChanged = _host.WhenHciEventPackageReceived
+        _host.WhenHciEventPackageReceived
             .Where(x => x.EventCode is HciEventCode.HCI_Disconnection_Complete)
             .SelectWhereEvent<HciDisconnectionCompleteEvent>()
             .Where(x => x.Data.ConnectionHandle == ConnectionHandle)
-            .Select(_ => ConnectionStatus.Disconnected);
+            .Select(_ => ConnectionStatus.Disconnected)
+            .FirstAsync()
+            .Subscribe(ConnectionSubject);
         IObservable<L2CAp> whenL2CApReceived = AssembleL2CAp(_host.WhenHciPacketReceived);
         _disposables.Add(_host.WhenHciLeMetaEventPackageReceived
             .SelectWhereLeMetaEvent<HciLeDataLengthChangeEvent>()
@@ -57,7 +60,7 @@ public sealed class HciHostGattServerPeer : GattServerPeer
         whenL2CApReceived
             .Where(tuple => tuple.Payload.Length > 0)
             .Select(x => ((AttOpCode)x.Payload[0], x.Payload))
-            //.Do(x => Logger.Verbose("Received {OpCode} {@Payload}", x.Item1, x.Payload))
+            //.Do(x => Logger?.LogTrace("Received {OpCode} {@Payload}", x.Item1, x.Payload))
             .TakeUntil(WhenConnectionStatusChanged.Where(x => x is ConnectionStatus.Disconnected))
             .Subscribe(subject);
         _host.WhenHciEventPackageReceived
@@ -71,7 +74,6 @@ public sealed class HciHostGattServerPeer : GattServerPeer
             });
     }
 
-    public override IObservable<ConnectionStatus> WhenConnectionStatusChanged { get; }
     public IObservable<(AttOpCode OpCode, byte[] Pdu)> WhenAttPduReceived { get; }
 
     protected override IObservable<IGattServerService> DiscoverServicesCore()
@@ -87,7 +89,8 @@ public sealed class HciHostGattServerPeer : GattServerPeer
                         StartingHandle = startingHandle,
                         EndingHandle = 0xFFFF,
                         AttributeType = 0x2800,
-                    }, cancellationToken: token);
+                    }, cancellationToken: token)
+                    .ConfigureAwait(false);
                 if (response.OpCode is AttOpCode.ATT_ERROR_RSP
                     && AttErrorRsp.TryDecode(response.Pdu, out AttErrorRsp errorRsp, out _))
                 {
@@ -124,7 +127,8 @@ public sealed class HciHostGattServerPeer : GattServerPeer
                         EndingHandle = 0xFFFF,
                         AttributeType = 0x2800,
                         AttributeValue = uuid.Value.ToByteArray()[..2], // TODO Don't treat all uuids as 16 bit uuids
-                    }, cancellationToken: token);
+                    }, cancellationToken: token)
+                    .ConfigureAwait(false);
                 if (response.OpCode is AttOpCode.ATT_ERROR_RSP
                     && AttErrorRsp.TryDecode(response.Pdu, out AttErrorRsp errorRsp, out _))
                 {
@@ -161,7 +165,7 @@ public sealed class HciHostGattServerPeer : GattServerPeer
                 ConnectionHandle = ConnectionHandle,
                 TxOctets = txOctets,
                 TxTime = txTime,
-            }, cancellationToken: token);
+            }, cancellationToken: token).ConfigureAwait(false);
             return this;
         });
     }
@@ -172,7 +176,7 @@ public sealed class HciHostGattServerPeer : GattServerPeer
         {
             AttReadResult response = await this.QueryAttPduAsync<AttExchangeMtuReq, AttExchangeMtuRsp>(
                 new AttExchangeMtuReq { ClientRxMtu = mtu, },
-                cancellationToken: token);
+                cancellationToken: token).ConfigureAwait(false);
             if (response.OpCode is AttOpCode.ATT_ERROR_RSP
                 && AttErrorRsp.TryDecode(response.Pdu, out AttErrorRsp errorRsp, out _))
             {
@@ -192,17 +196,24 @@ public sealed class HciHostGattServerPeer : GattServerPeer
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        Task<ConnectionStatus> task = WhenConnectionStatusChanged
-            .Where(x => x == ConnectionStatus.Disconnected)
-            .FirstAsync()
-            .ToTask();
-        await _host.QueryCommandStatusAsync(new HciDisconnectCommand
+        if (IsConnected)
         {
-            ConnectionHandle = ConnectionHandle,
-            Reason = HciCommandStatus.RemoteUserTerminatedConnection,
-        });
-        await task;
-        await Task.Delay(200);
+            Task<ConnectionStatus> task = WhenConnectionStatusChanged
+                .Where(x => x == ConnectionStatus.Disconnected)
+                .FirstAsync()
+                .ToTask();
+            await _host.QueryCommandStatusAsync(new HciDisconnectCommand
+            {
+                ConnectionHandle = ConnectionHandle,
+                Reason = HciCommandStatus.RemoteUserTerminatedConnection,
+            }).ConfigureAwait(false);
+            await task.ConfigureAwait(false);
+            await Task.Delay(200).ConfigureAwait(false);
+        }
+        foreach (IDisposable disposable in _disposables)
+        {
+            disposable.Dispose();
+        }
     }
 
     private void ProcessAclPackagesIfPossible()
@@ -323,7 +334,7 @@ public sealed class HciHostGattServerPeer : GattServerPeer
     }
 }
 
-public static class Extensions2
+internal static class Extensions2
 {
     public static void SendAttMtuCommand<TAttCommand>(this HciHostGattServerPeer server, TAttCommand request)
         where TAttCommand : IAttPdu, IEncodable
@@ -339,9 +350,19 @@ public static class Extensions2
     {
         IObservable<AttReadResult> observable = client.QueryAttPduRequest<TAttRequest, TResponse>(request);
         if (timeout.TotalNanoseconds > 0) observable = observable.Timeout(timeout);
-        AttReadResult result = await observable.FirstAsync()
-            .ToTask(cancellationToken);
-        client.Logger?.LogTrace("HciClient: Finished att request {@Request} with result {@Result}", request, result);
-        return result;
+        try
+        {
+            AttReadResult result = await observable
+                .FirstAsync()
+                .ToTask(cancellationToken)
+                .ConfigureAwait(false);
+            client.Logger?.LogTrace("HciClient: Finished att request {@Request} with result {@Result}", request, result);
+            return result;
+        }
+        catch (Exception e)
+        {
+            client.Logger?.LogWarning(e, "HciClient: Could not finish att request {@Request} because of {Message}", request, e.Message);
+            throw;
+        }
     }
 }

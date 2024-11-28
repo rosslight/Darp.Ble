@@ -20,11 +20,11 @@ public sealed class HciHostBleDevice(string port, string name, ILogger? logger) 
     protected override async Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
     {
         Host.Initialize();
-        await Host.QueryCommandCompletionAsync<HciResetCommand, HciResetResult>(cancellationToken: cancellationToken);
+        await Host.QueryCommandCompletionAsync<HciResetCommand, HciResetResult>(cancellationToken: cancellationToken).ConfigureAwait(false);
         //await Host.QueryCommandCompletionAsync<HciReadLocalSupportedCommandsCommand, HciReadLocalSupportedCommandsResult>();
-        await Host.QueryCommandCompletionAsync<HciSetEventMaskCommand, HciSetEventMaskResult>(new HciSetEventMaskCommand((EventMask)0x3fffffffffffffff), cancellationToken: cancellationToken);
-        await Host.QueryCommandCompletionAsync<HciLeSetEventMaskCommand, HciLeSetEventMaskResult>(new HciLeSetEventMaskCommand((LeEventMask)0xf0ffff), cancellationToken: cancellationToken);
-        await Host.QueryCommandCompletionAsync<HciLeSetRandomAddressCommand, HciLeSetRandomAddressResult>(new HciLeSetRandomAddressCommand(0xF0F1F2F3F4F5), cancellationToken: cancellationToken);
+        await Host.QueryCommandCompletionAsync<HciSetEventMaskCommand, HciSetEventMaskResult>(new HciSetEventMaskCommand((EventMask)0x3fffffffffffffff), cancellationToken: cancellationToken).ConfigureAwait(false);
+        await Host.QueryCommandCompletionAsync<HciLeSetEventMaskCommand, HciLeSetEventMaskResult>(new HciLeSetEventMaskCommand((LeEventMask)0xf0ffff), cancellationToken: cancellationToken).ConfigureAwait(false);
+        await Host.QueryCommandCompletionAsync<HciLeSetRandomAddressCommand, HciLeSetRandomAddressResult>(new HciLeSetRandomAddressCommand(0xF0F1F2F3F4F5), cancellationToken: cancellationToken).ConfigureAwait(false);
         Observer = new HciHostBleObserver(this, Logger);
         Central = new HciHostBleCentral(this, Logger);
         return InitializeResult.Success;
@@ -33,6 +33,7 @@ public sealed class HciHostBleDevice(string port, string name, ILogger? logger) 
     /// <inheritdoc />
     public override string Identifier => "Darp.Ble.HciHost";
 
+    /// <inheritdoc />
     protected override void DisposeCore()
     {
         Host.Dispose();
