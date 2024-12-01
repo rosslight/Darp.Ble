@@ -4,6 +4,13 @@ using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci.Payload.Command;
 
+/// <summary> A 48 bit device address </summary>
+/// <param name="byte0"> The first byte </param>
+/// <param name="byte1"> The second byte </param>
+/// <param name="byte2"> The third byte </param>
+/// <param name="byte3"> The fourth byte </param>
+/// <param name="byte4"> The firth byte </param>
+/// <param name="byte5"> The sixth byte </param>
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
 public readonly struct DeviceAddress(byte byte0, byte byte1, byte byte2, byte byte3, byte byte4, byte byte5)
     : IDecodable<DeviceAddress>
@@ -15,10 +22,13 @@ public readonly struct DeviceAddress(byte byte0, byte byte1, byte byte2, byte by
     private readonly byte _byte4 = byte4;
     private readonly byte _byte5 = byte5;
 
+    /// <summary> The address as a ulong </summary>
     public ulong Address => _byte0 | (ulong)_byte1 << 8 | (ulong)_byte2 << 16
                             | (ulong)_byte3 << 24 | (ulong)_byte4 << 32 | (ulong)_byte5 << 40;
 
-    public static implicit operator DeviceAddress(long value) => (ulong)value;
+    /// <summary> Get te device address from a ulong </summary>
+    /// <param name="value"> The ulong </param>
+    /// <returns> The device address </returns>
     public static implicit operator DeviceAddress(ulong value)
     {
         unsafe
@@ -28,20 +38,15 @@ public readonly struct DeviceAddress(byte byte0, byte byte1, byte byte2, byte by
         }
     }
 
+    /// <summary> Get the address as ulong </summary>
+    /// <param name="address"> The address </param>
+    /// <returns> The ulong </returns>
     public static implicit operator ulong(DeviceAddress address) => address.Address;
 
-    public static DeviceAddress CreateRandomStatic(int? seed = null)
+    /// <inheritdoc />
+    public static bool TryDecode(in ReadOnlyMemory<byte> source, out DeviceAddress result, out int bytesDecoded)
     {
-        Random random = seed is null ? new Random() : new Random(seed.Value);
-        long nextValue = random.NextInt64(0, 1L << 48);
-        // Random static
-        nextValue |= 0b11000000_00000000_00000000_00000000_00000000_00000000;
-        return nextValue;
-    }
-
-    public static bool TryDecode(in ReadOnlyMemory<byte> source, out DeviceAddress result, out int bytesRead)
-    {
-        bytesRead = 6;
+        bytesDecoded = 6;
         result = default;
         if (source.Length < 6) return false;
         ReadOnlySpan<byte> span = source.Span;

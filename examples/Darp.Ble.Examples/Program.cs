@@ -24,7 +24,7 @@ characteristic.OnWrite(async (peer, bytes, token) =>
 });
 
 x.Broadcaster.Advertise(AdvertisingData.From([
-        (AdTypes.CompleteListOf16BitServiceClassUuids, [0x34, 0x12]),
+        (AdTypes.CompleteListOf16BitServiceOrServiceClassUuids, [0x34, 0x12]),
         (AdTypes.ManufacturerSpecificData, [0x04, 0x00, 0x01, 0x02, 0x03, 0x04]),
     ]),
     TimeSpan.FromMilliseconds(100),  new AdvertisingParameters

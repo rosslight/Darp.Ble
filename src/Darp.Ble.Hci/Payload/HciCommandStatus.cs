@@ -1,6 +1,7 @@
 namespace Darp.Ble.Hci.Payload;
 
 /// <summary> BLUETOOTH CORE SPECIFICATION Version 5.4 | Vol 1, Part F, 1 OVERVIEW OF ERROR CODES </summary>
+/// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/architecture,-change-history,-and-conventions/controller-error-codes.html"/>
 public enum HciCommandStatus : byte
 {
     /// <summary> The command succeeded </summary>
@@ -18,7 +19,10 @@ public enum HciCommandStatus : byte
     /// not exist or does not identify the correct type of connection.
     /// </summary>
     UnknownConnectionIdentifier = 0x02,
-    Pending = 0x04,
+    /// <summary>
+    /// The Page Timeout error code indicates that a page timed out because of the Page Timeout configuration parameter. This error code shall only be used with the HCI_Remote_Name_Request and HCI_Create_Connection commands or with equivalent mechanisms when HCI is not supported
+    /// </summary>
+    PageTimeout = 0x04,
     /// <summary>
     /// The Authentication Failure error code indicates that pairing or authentication failed due to incorrect results
     /// in the pairing or authentication procedure. This could be due to an incorrect PIN or Link Key.

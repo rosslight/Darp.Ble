@@ -1,44 +1,15 @@
-using System.Buffers.Binary;
 using System.Runtime.InteropServices;
 
 namespace Darp.Ble.Hci.Payload.Event;
 
+/// <summary> All parameters of the <see cref="HciNumberOfCompletedPacketsEvent"/> </summary>
+/// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-ca477bbf-f878-bda9-4eab-174c458d7a94"/>
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly struct HciNumberOfCompletedPackets : IHciEvent<HciNumberOfCompletedPackets>
+public readonly record struct HciNumberOfCompletedPackets : IDefaultDecodable<HciNumberOfCompletedPackets>
 {
-    public static HciEventCode EventCode => HciEventCode.HCI_Number_Of_Completed_Packets;
-
-    public required byte NumHandles { get; init; }
-    public required HciNumberOfCompletedPacketsInfo[] Handles { get; init; }
-
-    public static bool TryDecode(in ReadOnlyMemory<byte> buffer,
-        out HciNumberOfCompletedPackets hciEvent,
-        out int bytesRead)
-    {
-        bytesRead = default;
-        hciEvent = default;
-        ReadOnlySpan<byte> span = buffer.Span;
-        if (span.Length < 1) return false;
-        byte numHandles = span[0];
-        if (span.Length < 1 + numHandles * 4) return false;
-        var handles = new HciNumberOfCompletedPacketsInfo[numHandles];
-        for (var i = 0; i < numHandles; i++)
-        {
-            int startingIndex = 1 + i * 4;
-            ushort connectionHandle = BinaryPrimitives.ReadUInt16LittleEndian(span[startingIndex..]);
-            ushort numCompletedPackets = BinaryPrimitives.ReadUInt16LittleEndian(span[(startingIndex + 2)..]);
-            handles[i] = new HciNumberOfCompletedPacketsInfo
-            {
-                ConnectionHandle = connectionHandle,
-                NumCompletedPackets = numCompletedPackets,
-            };
-        }
-        bytesRead = 1 + numHandles * 4;
-        hciEvent = new HciNumberOfCompletedPackets
-        {
-            NumHandles = numHandles,
-            Handles = handles,
-        };
-        return true;
-    }
+    /// <summary> The Connection_Handle </summary>
+    /// <remarks> Range: 0x0000 to 0x0EFF </remarks>
+    public required ushort ConnectionHandle { get; init; }
+    /// <summary> The Num_Completed_Packets </summary>
+    public required ushort NumCompletedPackets { get; init; }
 }

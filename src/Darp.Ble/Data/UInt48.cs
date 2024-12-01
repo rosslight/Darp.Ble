@@ -30,31 +30,13 @@ public readonly struct UInt48 : IComparable<UInt48>,
     public UInt48(byte b0, byte b1, byte b2, byte b3, byte b4, byte b5) =>
         (_b0, _b1, _b2, _b3, _b4, _b5) = (b0, b1, b2, b3, b4, b5);
 
-    /// <summary> Cast a ulong to a 48 bit integer</summary>
-    /// <param name="value"> The ulong to cast </param>
-    /// <returns> The resulting 48 bit integer </returns>
-    public static explicit operator UInt48(ulong value)
-    {
-        unsafe
-        {
-            ulong* valuePtr = &value;
-            var resPtr = (UInt48*)valuePtr;
-            return *resPtr;
-        }
-    }
+    /// <inheritdoc cref="ToUInt48"/>
+    public static explicit operator UInt48(ulong value) => ToUInt48(value);
 
-    /// <summary> Cast a 48 bit integer to a ulong </summary>
+    /// <summary> Cast a 48 bit integer to an ulong </summary>
     /// <param name="value"> The 48 bit integer </param>
-    /// <returns> A ulong </returns>
-    public static implicit operator ulong(UInt48 value)
-    {
-        unsafe
-        {
-            UInt48* valuePtr = &value;
-            var resPtr = (ulong*)valuePtr;
-            return *resPtr;
-        }
-    }
+    /// <returns> An ulong </returns>
+    public static implicit operator ulong(UInt48 value) => value.ToUInt64();
 
     /// <summary>Reverses a primitive value by performing an endianness swap of the specified <see cref="UInt48" /> value.</summary>
     /// <param name="value">The value to reverse.</param>
@@ -142,4 +124,30 @@ public readonly struct UInt48 : IComparable<UInt48>,
     public static bool operator >(UInt48 left, UInt48 right) => left.CompareTo(right) > 0;
     /// <inheritdoc />
     public static bool operator >=(UInt48 left, UInt48 right) => left.CompareTo(right) >= 0;
+
+    /// <summary> Cast an ulong to a 48 bit integer</summary>
+    /// <param name="value"> The ulong to cast </param>
+    /// <returns> The resulting 48 bit integer </returns>
+    public static UInt48 ToUInt48(ulong value)
+    {
+        unsafe
+        {
+            ulong* valuePtr = &value;
+            var resPtr = (UInt48*)valuePtr;
+            return *resPtr;
+        }
+    }
+
+    /// <summary> Cast to an ulong </summary>
+    /// <returns> An ulong </returns>
+    public ulong ToUInt64()
+    {
+        unsafe
+        {
+            UInt48 value = this;
+            UInt48* valuePtr = &value;
+            var resPtr = (ulong*)valuePtr;
+            return *resPtr;
+        }
+    }
 }

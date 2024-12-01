@@ -35,12 +35,12 @@ internal sealed class WinBleBroadcaster(WinBleDevice winBleDevice, ILogger? logg
         {
             // Reserved types: https://learn.microsoft.com/en-us/uwp/api/windows.devices.bluetooth.advertisement.bluetoothleadvertisementpublisher?view=winrt-22621
             if (type is AdTypes.Flags
-                or AdTypes.IncompleteListOf16BitServiceClassUuids
-                or AdTypes.CompleteListOf16BitServiceClassUuids
-                or AdTypes.IncompleteListOf32BitServiceClassUuids
-                or AdTypes.CompleteListOf32BitServiceClassUuids
-                or AdTypes.IncompleteListOf128BitServiceClassUuids
-                or AdTypes.CompleteListOf128BitServiceClassUuids
+                or AdTypes.IncompleteListOf16BitServiceOrServiceClassUuids
+                or AdTypes.CompleteListOf16BitServiceOrServiceClassUuids
+                or AdTypes.IncompleteListOf32BitServiceOrServiceClassUuids
+                or AdTypes.CompleteListOf32BitServiceOrServiceClassUuids
+                or AdTypes.IncompleteListOf128BitServiceOrServiceClassUuids
+                or AdTypes.CompleteListOf128BitServiceOrServiceClassUuids
                 or AdTypes.ShortenedLocalName
                 or AdTypes.CompleteLocalName
                 or AdTypes.TxPowerLevel

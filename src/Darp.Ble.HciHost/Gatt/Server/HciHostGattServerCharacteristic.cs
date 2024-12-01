@@ -49,15 +49,15 @@ internal sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer serv
             {
                 throw new GattCharacteristicException(this, $"Received unexpected att response {response.OpCode}");
             }
-            if (rsp.AttributeDataList.Length == 0) break;
-            foreach ((ushort handle, ushort uuid) in rsp.AttributeDataList)
+            if (rsp.InformationData.Length == 0) break;
+            foreach ((ushort handle, ReadOnlyMemory<byte> uuid) in rsp.InformationData)
             {
                 if (handle < startingHandle)
                     throw new GattCharacteristicException(this, "Handle of discovered characteristic is smaller than starting handle of service");
-                var bleUuid = new BleUuid(uuid);
+                var bleUuid = new BleUuid(uuid.Span);
                 _descriptorDictionary[bleUuid] = new HciHostGattServerDescriptor(_serverPeer, bleUuid, handle, _logger);
             }
-            ushort lastHandle = rsp.AttributeDataList[^1].Handle;
+            ushort lastHandle = rsp.InformationData[^1].Handle;
             if (lastHandle == EndHandle) break;
             startingHandle = (ushort)(lastHandle + 1);
         }
@@ -105,7 +105,7 @@ internal sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer serv
                     result = null;
                     return false;
                 }
-                result = notification.Value;
+                result = notification.Value.ToArray();
                 return true;
             })
             .Subscribe(bytes => onNotify(state, bytes));

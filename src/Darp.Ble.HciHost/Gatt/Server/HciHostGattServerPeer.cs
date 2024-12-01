@@ -64,7 +64,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
             .TakeUntil(WhenConnectionStatusChanged.Where(x => x is ConnectionStatus.Disconnected))
             .Subscribe(subject);
         _host.WhenHciEventPackageReceived
-            .SelectWhereEvent<HciNumberOfCompletedPackets>()
+            .SelectWhereEvent<HciNumberOfCompletedPacketsEvent>()
             .SelectMany(x => x.Data.Handles)
             .Where(x => x.ConnectionHandle == ConnectionHandle)
             .Subscribe(x =>
@@ -145,7 +145,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
                 {
                     return new HciHostGattServerService(uuid, handle, endGroup, this, Logger);
                 }
-                startingHandle = rsp.HandlesInformationList[^1].EndGroup;
+                startingHandle = rsp.HandlesInformationList[^1].GroupEndHandle;
             }
             throw new Exception("Could not find a service");
         });
