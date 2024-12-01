@@ -1,7 +1,6 @@
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Event;
 using FluentAssertions;
-using MemoryPack;
 
 namespace Darp.Ble.Hci.Tests.Payload.Event;
 

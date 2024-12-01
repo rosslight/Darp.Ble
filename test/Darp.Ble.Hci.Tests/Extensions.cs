@@ -1,4 +1,6 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Hci.Payload;
+using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci.Tests;
 
@@ -52,4 +54,8 @@ public static class Extensions
     public static int GetLength<T>(this T encodable)
         where T : IEncodable =>
         encodable.Length;
+
+    public static bool TryDecode<T>(ReadOnlyMemory<byte> memory, [NotNullWhen(true)] out T? result, out int decoded)
+        where T : IDecodable<T> =>
+        T.TryDecode(memory, out result, out decoded);
 }
