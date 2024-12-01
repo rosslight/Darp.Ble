@@ -45,7 +45,7 @@ public sealed class HciHostBleCentral(HciHostBleDevice device, ILogger? logger) 
             return _host.QueryCommandStatus(packet)
                 .SelectMany(status =>
                 {
-                    if (status.Data.Status is not (HciCommandStatus.Pending or HciCommandStatus.Success))
+                    if (status.Data.Status is not (HciCommandStatus.PageTimeout or HciCommandStatus.Success))
                     {
                         throw new BleCentralConnectionFailedException(this, $"Started connection but is not pending but {status}");
                     }

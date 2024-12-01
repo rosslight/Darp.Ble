@@ -1,6 +1,7 @@
 namespace Darp.Ble.Hci.Payload.Att;
 
-public enum AttInformationFormat
+/// <summary> The format of the <see cref="AttFindInformationRsp.InformationData"/> </summary>
+public enum AttFindInformationFormat
 {
     /// <summary> A list of 1 or more handles with their 16-bit Bluetooth UUIDs </summary>
     HandleAnd16BitUuid = 0x01,
