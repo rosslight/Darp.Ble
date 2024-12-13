@@ -1,13 +1,14 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+using Darp.BinaryObjects;
 
 namespace Darp.Ble.Hci.Payload.Att;
 
 /// <summary> The ATT_READ_BY_TYPE_REQ PDU is used to obtain the values of attributes where the attribute type is known but the handle is not known </summary>
 /// <typeparam name="TAttributeType">The type of the attribute</typeparam>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/attribute-protocol--att-.html#UUID-2c2cdcd4-6173-9654-82fc-c4c7bd74fe3a"/>
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct AttReadByGroupTypeReq<TAttributeType> : IAttPdu, IEncodable
+[BinaryObject]
+public readonly partial record struct AttReadByGroupTypeReq<TAttributeType> : IAttPdu, IEncodable
     where TAttributeType : unmanaged
 {
     /// <inheritdoc />

@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Exceptions;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Event;
@@ -12,7 +13,7 @@ public static class CommandPackageExtensions
 {
     [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
     private static void OnNextEventPacket<TCommand>(this IObserver<HciEventPacket> observer, HciEventPacket package)
-        where TCommand : unmanaged, IHciCommand<TCommand>
+        where TCommand : unmanaged, IHciCommand
     {
         try
         {
@@ -34,7 +35,7 @@ public static class CommandPackageExtensions
 
     private static IObservable<HciEventPacket> QueryCommand<TCommand>(this HciHost hciHost,
         TCommand command = default)
-        where TCommand : unmanaged, IHciCommand<TCommand>
+        where TCommand : unmanaged, IHciCommand
     {
         return Observable.Create<HciEventPacket>(observer =>
         {
@@ -58,8 +59,8 @@ public static class CommandPackageExtensions
     public static async Task<TParameters> QueryCommandCompletionAsync<TCommand, TParameters>(this HciHost hciHost,
         TCommand command = default, TimeSpan? timeout = null,
         CancellationToken cancellationToken = default)
-        where TCommand : unmanaged, IHciCommand<TCommand>
-        where TParameters : unmanaged, IDecodable<TParameters>
+        where TCommand : unmanaged, IHciCommand
+        where TParameters : unmanaged, ISpanReadable<TParameters>
     {
         timeout ??= TimeSpan.FromSeconds(10);
         HciEventPacket<HciCommandCompleteEvent<TParameters>> packet = await Observable
@@ -97,7 +98,7 @@ public static class CommandPackageExtensions
     [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
     public static IObservable<HciEventPacket<HciCommandStatusEvent>> QueryCommandStatus<TCommand>(this HciHost hciHost,
         TCommand command = default, TimeSpan? timeout = null)
-        where TCommand : unmanaged, IHciCommand<TCommand>
+        where TCommand : unmanaged, IHciCommand
     {
         timeout ??= TimeSpan.FromSeconds(10);
         try
@@ -139,7 +140,7 @@ public static class CommandPackageExtensions
     public static async Task<HciCommandStatus> QueryCommandStatusAsync<TCommand>(this HciHost hciHost,
         TCommand command = default,
         CancellationToken cancellationToken = default)
-        where TCommand : unmanaged, IHciCommand<TCommand>
+        where TCommand : unmanaged, IHciCommand
     {
         HciEventPacket<HciCommandStatusEvent> packet = await hciHost.QueryCommandStatus(command)
             .ToTask(cancellationToken)

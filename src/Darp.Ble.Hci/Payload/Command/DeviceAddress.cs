@@ -1,5 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci.Payload.Command;
@@ -11,9 +12,8 @@ namespace Darp.Ble.Hci.Payload.Command;
 /// <param name="byte3"> The fourth byte </param>
 /// <param name="byte4"> The firth byte </param>
 /// <param name="byte5"> The sixth byte </param>
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
+[BinaryObject]
 public readonly struct DeviceAddress(byte byte0, byte byte1, byte byte2, byte byte3, byte byte4, byte byte5)
-    : IDecodable<DeviceAddress>
 {
     private readonly byte _byte0 = byte0;
     private readonly byte _byte1 = byte1;

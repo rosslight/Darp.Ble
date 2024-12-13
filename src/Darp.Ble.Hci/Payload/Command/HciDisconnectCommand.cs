@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Event;
 
@@ -9,8 +10,8 @@ namespace Darp.Ble.Hci.Payload.Command;
 /// Produces a <see cref="HciCommandStatusEvent"/> and a <see cref="HciDisconnectionCompleteEvent"/>
 /// </summary>
 /// <remarks> https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-a211724f-97dc-d1f7-2c28-240854fb271c </remarks>
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct HciDisconnectCommand : IHciCommand<HciDisconnectCommand>
+[BinaryObject]
+public readonly partial record struct HciDisconnectCommand : IHciCommand
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_Disconnect;

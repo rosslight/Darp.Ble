@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Darp.BinaryObjects;
 
 namespace Darp.Ble.Hci.Payload.Att;
 
@@ -8,6 +9,6 @@ namespace Darp.Ble.Hci.Payload.Att;
 /// <param name="Value"> The Attribute Value </param>
 /// <typeparam name="TAttributeValue"> The type of the value </typeparam>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/attribute-protocol--att-.html#UUID-3ca57165-f2ce-1531-4583-95d33d899fff_table-idm13358909789874"/>
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct AttGroupTypeData<TAttributeValue>(ushort Handle, ushort EndGroup, TAttributeValue Value)
+[BinaryObject]
+public readonly partial record struct AttGroupTypeData<TAttributeValue>(ushort Handle, ushort EndGroup, TAttributeValue Value)
     where TAttributeValue : unmanaged;

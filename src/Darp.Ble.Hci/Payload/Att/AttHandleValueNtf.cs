@@ -1,13 +1,14 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci.Payload.Att;
 
 /// <summary> A server can send a notification of an attribute’s value at any time </summary>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/attribute-protocol--att-.html#UUID-40393db4-55e7-1a22-5eff-2bbcce21de5d"/>
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct AttHandleValueNtf : IAttPdu, IDecodable<AttHandleValueNtf>
+[BinaryObject]
+public readonly partial record struct AttHandleValueNtf : IAttPdu
 {
     /// <inheritdoc />
     public static AttOpCode ExpectedOpCode => AttOpCode.ATT_HANDLE_VALUE_NTF;

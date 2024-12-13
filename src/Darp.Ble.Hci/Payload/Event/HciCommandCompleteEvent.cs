@@ -1,14 +1,15 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
 
 namespace Darp.Ble.Hci.Payload.Event;
 
 /// <summary> The HCI_Command_Complete event is used by the Controller for most commands to transmit return status of a command and the other event parameters that are specified for the issued HCI command </summary>
 /// <typeparam name="TParameters"></typeparam>
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct HciCommandCompleteEvent<TParameters> : IHciEvent<HciCommandCompleteEvent<TParameters>>
-    where TParameters : IDecodable<TParameters>
+[BinaryObject]
+public readonly partial record struct HciCommandCompleteEvent<TParameters> : IHciEvent<HciCommandCompleteEvent<TParameters>>
+    where TParameters : ISpanReadable<TParameters>
 {
     /// <inheritdoc />
     public static HciEventCode EventCode => HciEventCode.HCI_Command_Complete;

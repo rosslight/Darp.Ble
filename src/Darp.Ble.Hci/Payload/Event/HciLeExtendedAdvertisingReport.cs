@@ -1,13 +1,14 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Payload.Command;
 
 namespace Darp.Ble.Hci.Payload.Event;
 
 /// <summary> All parameters of the <see cref="HciLeExtendedAdvertisingReportEvent"/> </summary>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-e88970dc-edc8-ca27-58d8-153b97751686"/>
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct HciLeExtendedAdvertisingReport : IDecodable<HciLeExtendedAdvertisingReport>
+[BinaryObject]
+public readonly partial record struct HciLeExtendedAdvertisingReport
 {
     /// <summary> The Event_Type </summary>
     public required ushort EventType { get; init; }
@@ -34,6 +35,7 @@ public readonly record struct HciLeExtendedAdvertisingReport : IDecodable<HciLeE
     /// <summary> The Data_Length </summary>
     public required byte DataLength { get; init; }
     /// <summary> The Data </summary>
+    [BinaryElementCount(nameof(DataLength))]
     public required ReadOnlyMemory<byte> Data { get; init; }
 
     /// <inheritdoc />

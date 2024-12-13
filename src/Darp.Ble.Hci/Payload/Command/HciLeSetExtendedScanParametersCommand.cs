@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.Hci.Payload.Result;
@@ -16,13 +17,13 @@ namespace Darp.Ble.Hci.Payload.Command;
 /// <param name="ScanInterval"> The Scan_Interval[i] and Scan_Window[i] parameters are recommendations from the Host on how long (Scan_Window[i]) and how frequently (Scan_Interval[i]) the Controller should scan </param>
 /// <param name="ScanWindow"> The Scan_Interval[i] and Scan_Window[i] parameters are recommendations from the Host on how long (Scan_Window[i]) and how frequently (Scan_Interval[i]) the Controller should scan </param>
 /// <remarks> https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-f5242ce9-9acb-fff4-3e8f-8f6465b2f24c </remarks>
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct HciLeSetExtendedScanParametersCommand(byte OwnAddressType,
+[BinaryObject]
+public readonly partial record struct HciLeSetExtendedScanParametersCommand(byte OwnAddressType,
     byte ScanningFilterPolicy,
     byte ScanPhys,
     byte ScanType,
     ushort ScanInterval,
-    ushort ScanWindow) : IHciCommand<HciLeSetExtendedScanParametersCommand>
+    ushort ScanWindow) : IHciCommand
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_LE_Set_Extended_Scan_Parameters;

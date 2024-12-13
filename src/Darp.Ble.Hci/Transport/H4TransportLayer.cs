@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.IO.Ports;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Event;
 using Microsoft.Extensions.Logging;
@@ -69,7 +70,7 @@ public sealed class H4TransportLayer : ITransportLayer
     }
 
     private async ValueTask RunRxPacket<TPacket>(Memory<byte> buffer, byte payloadLengthIndex)
-        where TPacket : IHciPacket<TPacket>, IDecodable<TPacket>
+        where TPacket : IHciPacket<TPacket>, ISpanReadable<TPacket>
     {
         // Read Header
         await _serialPort.BaseStream.ReadExactlyAsync(buffer[..TPacket.HeaderLength], _cancelToken).ConfigureAwait(false);
@@ -77,7 +78,7 @@ public sealed class H4TransportLayer : ITransportLayer
         // Read Payload
         Memory<byte> payloadBuffer = buffer[TPacket.HeaderLength..(TPacket.HeaderLength + payloadLength)];
         await _serialPort.BaseStream.ReadExactlyAsync(payloadBuffer, _cancelToken).ConfigureAwait(false);
-        if (!TPacket.TryDecode(buffer[..(TPacket.HeaderLength + payloadLength)], out TPacket? packet, out _))
+        if (!TPacket.TryReadLittleEndian(buffer[..(TPacket.HeaderLength + payloadLength)].Span, out TPacket? packet, out _))
         {
             _logger?.LogPacketReceivingDecodingFailed((byte)TPacket.Type, buffer[..(TPacket.HeaderLength + payloadLength)].ToArray(), typeof(TPacket).Name);
             return;

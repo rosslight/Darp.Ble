@@ -1,11 +1,13 @@
 using System.Buffers.Binary;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci.Payload.Att;
 
 /// <summary> The ATT_FIND_INFORMATION_RSP PDU is sent in reply to a received ATT_FIND_INFORMATION_REQ PDU and contains information about this server </summary>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/attribute-protocol--att-.html#UUID-06819664-297a-8234-c748-a326bbfab199"/>
-public readonly record struct AttFindInformationRsp : IAttPdu, IDecodable<AttFindInformationRsp>
+[BinaryObject]
+public readonly partial record struct AttFindInformationRsp : IAttPdu
 {
     /// <inheritdoc />
     public static AttOpCode ExpectedOpCode => AttOpCode.ATT_FIND_INFORMATION_RSP;

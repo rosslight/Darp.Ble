@@ -1,12 +1,13 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+using Darp.BinaryObjects;
 
 namespace Darp.Ble.Hci.Payload.Att;
 
 /// <summary> The ATT_WRITE_CMD PDU is used to request the server to write the value of an attribute, typically into a control-point attribute </summary>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/attribute-protocol--att-.html#UUID-1c620bba-1248-f7dd-9a8d-df41506670e7"/>
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct AttWriteCmd : IAttPdu, IEncodable
+[BinaryObject]
+public readonly partial record struct AttWriteCmd : IAttPdu, IEncodable
 {
     /// <inheritdoc />
     public static AttOpCode ExpectedOpCode => AttOpCode.ATT_WRITE_CMD;

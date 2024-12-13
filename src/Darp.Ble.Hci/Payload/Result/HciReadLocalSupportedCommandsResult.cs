@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Event;
@@ -25,8 +26,8 @@ namespace Darp.Ble.Hci.Payload.Result;
 /// ...
 /// Response to <see cref="HciReadLocalSupportedCommandsCommand"/>
 /// </summary>
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct HciReadLocalSupportedCommandsResult : IDefaultDecodable<HciReadLocalSupportedCommandsResult>
+[BinaryObject]
+public readonly partial record struct HciReadLocalSupportedCommandsResult
 {
     /// <summary> The <see cref="HciCommandStatus"/> </summary>
     public required HciCommandStatus Status { get; init; }

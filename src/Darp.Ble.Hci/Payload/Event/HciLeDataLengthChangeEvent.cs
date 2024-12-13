@@ -1,12 +1,13 @@
 using System.Runtime.InteropServices;
+using Darp.BinaryObjects;
 
 namespace Darp.Ble.Hci.Payload.Event;
 
 /// <summary> The HCI_LE_Data_Length_Change event notifies the Host of a change to either the maximum LL Data PDU Payload length or the maximum transmission time of packets containing LL Data PDUs in either direction </summary>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-f97f9e50-69db-5e1d-25c2-9d569b5532eb"/>
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct HciLeDataLengthChangeEvent
-    : IHciLeMetaEvent<HciLeDataLengthChangeEvent>, IDefaultDecodable<HciLeDataLengthChangeEvent>
+[BinaryObject]
+public readonly partial record struct HciLeDataLengthChangeEvent
+    : IHciLeMetaEvent<HciLeDataLengthChangeEvent>
 {
     /// <inheritdoc />
     public static HciLeMetaSubEventType SubEventType => HciLeMetaSubEventType.HCI_LE_Data_Length_Change;

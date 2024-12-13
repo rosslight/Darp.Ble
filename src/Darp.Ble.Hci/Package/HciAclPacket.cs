@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Event;
 
@@ -12,12 +13,13 @@ namespace Darp.Ble.Hci.Package;
 /// <param name="dataTotalLength"> The Data_Total_Length </param>
 /// <param name="dataBytes"> The actual data </param>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-bc4ffa33-44ef-e93c-16c8-14aa99597cfc"/>
-public class HciAclPacket(
+[BinaryObject]
+public partial class HciAclPacket(
     ushort connectionHandle,
     PacketBoundaryFlag packetBoundaryFlag,
     BroadcastFlag broadcastFlag,
     ushort dataTotalLength,
-    byte[] dataBytes) : IHciPacket<HciAclPacket>, IDecodable<HciAclPacket>
+    byte[] dataBytes) : IHciPacket<HciAclPacket>
 {
     /// <inheritdoc />
     public static HciPacketType Type => HciPacketType.HciAclData;

@@ -7,7 +7,7 @@ namespace Darp.Ble.Hci.Payload.Att;
 /// <summary> The ATT_ERROR_RSP PDU is used to state that a given request cannot be performed, and to provide the reason </summary>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/attribute-protocol--att-.html#UUID-9f07d82d-da59-ca27-4ee2-b404bbba3f54"/>
 [StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct AttErrorRsp : IAttPdu, IDecodable<AttErrorRsp>
+public readonly record struct AttErrorRsp : IAttPdu
 {
     /// <inheritdoc />
     public static AttOpCode ExpectedOpCode => AttOpCode.ATT_ERROR_RSP;

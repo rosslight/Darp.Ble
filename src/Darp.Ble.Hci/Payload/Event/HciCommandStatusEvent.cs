@@ -1,12 +1,13 @@
 using System.Runtime.InteropServices;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
 
 namespace Darp.Ble.Hci.Payload.Event;
 
 /// <summary> The HCI_Command_Status event is used to indicate that the command described by the Command_Opcode parameter has been received, and that the Controller is currently performing the task for this command </summary>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-3966af71-7053-31c7-3e0a-0d786e802744"/>
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct HciCommandStatusEvent : IHciEvent<HciCommandStatusEvent>, IDefaultDecodable<HciCommandStatusEvent>
+[BinaryObject]
+public readonly partial record struct HciCommandStatusEvent : IHciEvent<HciCommandStatusEvent>
 {
     /// <inheritdoc />
     public static HciEventCode EventCode => HciEventCode.HCI_Command_Status;

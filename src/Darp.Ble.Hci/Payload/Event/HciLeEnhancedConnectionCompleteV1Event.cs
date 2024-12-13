@@ -1,13 +1,14 @@
 using System.Runtime.InteropServices;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Payload.Command;
 
 namespace Darp.Ble.Hci.Payload.Event;
 
 /// <summary> The HCI_LE_Enhanced_Connection_Complete event indicates to both of the Hosts forming the connection that a new connection has been created </summary>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-418db27a-3baa-9e9f-0be8-45be92f57fcb"/>
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct HciLeEnhancedConnectionCompleteV1Event
-    : IHciLeMetaEvent<HciLeEnhancedConnectionCompleteV1Event>, IDefaultDecodable<HciLeEnhancedConnectionCompleteV1Event>
+[BinaryObject]
+public readonly partial record struct HciLeEnhancedConnectionCompleteV1Event
+    : IHciLeMetaEvent<HciLeEnhancedConnectionCompleteV1Event>
 {
     /// <inheritdoc />
     public static HciLeMetaSubEventType SubEventType => HciLeMetaSubEventType.HCI_LE_Enhanced_Connection_Complete_V1;

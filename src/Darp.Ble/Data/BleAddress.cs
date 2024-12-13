@@ -121,4 +121,18 @@ public sealed record BleAddress : ISpanParsable<BleAddress>
 
     /// <inheritdoc />
     public override string ToString() => $"{Value:X12}";
+
+    /// <inheritdoc />
+    public bool Equals(BleAddress? other)
+    {
+        if (other is null)
+            return false;
+        return Type == other.Type && Value == other.Value;
+    }
+
+    /// <inheritdoc />
+    public override int GetHashCode()
+    {
+        return HashCode.Combine((int)Type, Value);
+    }
 }

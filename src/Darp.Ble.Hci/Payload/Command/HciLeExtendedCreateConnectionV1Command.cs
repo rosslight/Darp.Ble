@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Event;
 
@@ -10,8 +11,8 @@ namespace Darp.Ble.Hci.Payload.Command;
 /// Produces a <see cref="HciCommandStatusEvent"/> and HCI_LE_Enhanced_Connection_Complete event
 /// </summary>
 /// <remarks> https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-5b224d07-6721-e019-2b95-3d7b8f2e43c5 </remarks>
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly record struct HciLeExtendedCreateConnectionV1Command : IHciCommand<HciLeExtendedCreateConnectionV1Command>
+[BinaryObject]
+public readonly partial record struct HciLeExtendedCreateConnectionV1Command : IHciCommand
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_LE_Extended_Create_ConnectionV1;

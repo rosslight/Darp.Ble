@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reactive.Threading.Tasks;
+using Darp.BinaryObjects;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Server;
@@ -227,7 +228,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
     }
 
     public IObservable<AttReadResult> QueryAttPduRequest<TAttRequest, TAttResponse>(TAttRequest request)
-        where TAttRequest : IAttPdu, IEncodable
+        where TAttRequest : IAttPdu, IWritable
         where TAttResponse : IAttPdu
     {
         const ushort cId = 0x04;
@@ -237,7 +238,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
                 .Where(x => x.OpCode == TAttResponse.ExpectedOpCode || x.OpCode is AttOpCode.ATT_ERROR_RSP)
                 .Select(x => new AttReadResult(x.OpCode, x.Pdu))
                 .Subscribe(observer);
-            EnqueueL2CapBasic(cId, request.ToByteArray());
+            EnqueueL2CapBasic(cId, request.ToArrayLittleEndian());
             return disposable;
         });
     }
@@ -345,7 +346,7 @@ internal static class Extensions2
 
     public static async Task<AttReadResult> QueryAttPduAsync<TAttRequest, TResponse>(this HciHostGattServerPeer client,
         TAttRequest request, TimeSpan timeout = default, CancellationToken cancellationToken = default)
-        where TAttRequest : IAttPdu, IEncodable
+        where TAttRequest : IAttPdu, IWritable
         where TResponse : IAttPdu
     {
         IObservable<AttReadResult> observable = client.QueryAttPduRequest<TAttRequest, TResponse>(request);

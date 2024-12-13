@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Event;
 
@@ -8,8 +9,9 @@ namespace Darp.Ble.Hci.Package;
 /// <param name="eventCode"> The code of the event </param>
 /// <param name="parameterTotalLength"> The Parameter_Total_Length </param>
 /// <param name="dataBytes"> All bytes for the event parameters </param>
-public class HciEventPacket(HciEventCode eventCode, byte parameterTotalLength, byte[] dataBytes)
-    : IHciEventPacket<HciEventPacket>, IDecodable<HciEventPacket>
+[BinaryObject]
+public partial class HciEventPacket(HciEventCode eventCode, byte parameterTotalLength, byte[] dataBytes)
+    : IHciEventPacket<HciEventPacket>
 {
     /// <inheritdoc />
     public HciEventCode EventCode { get; } = eventCode;

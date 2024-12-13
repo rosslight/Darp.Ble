@@ -1,11 +1,13 @@
 using System.Buffers.Binary;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci.Payload.Att;
 
 /// <summary> The ATT_READ_BY_TYPE_RSP PDU is sent in reply to a received ATT_READ_BY_TYPE_REQ PDU and contains the handles and values of the attributes that have been read </summary>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/attribute-protocol--att-.html#UUID-2c2cdcd4-6173-9654-82fc-c4c7bd74fe3a"/>
-public readonly record struct AttReadByTypeRsp : IAttPdu, IDecodable<AttReadByTypeRsp>
+[BinaryObject]
+public readonly partial record struct AttReadByTypeRsp : IAttPdu
 {
     /// <inheritdoc />
     public static AttOpCode ExpectedOpCode => AttOpCode.ATT_READ_BY_TYPE_RSP;
@@ -15,6 +17,7 @@ public readonly record struct AttReadByTypeRsp : IAttPdu, IDecodable<AttReadByTy
     /// <summary> The size of each attribute handle-value pair </summary>
     public required byte Length { get; init; }
     /// <summary> A list of Attribute Data </summary>
+    [BinaryElementCount(nameof(Length))]
     public required AttReadByTypeData[] AttributeDataList { get; init; }
 
     /// <inheritdoc />
