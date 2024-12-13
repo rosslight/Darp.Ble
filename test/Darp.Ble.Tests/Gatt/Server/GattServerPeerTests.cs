@@ -2,6 +2,7 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Server;
+using Darp.Ble.Implementation;
 using FluentAssertions;
 using NSubstitute;
 
@@ -28,7 +29,7 @@ public sealed class GattServerPeerTests
             observer.OnCompleted();
             return Disposable.Empty;
         });
-        var serverPeer = Substitute.For<GattServerPeer>(BleAddress.NotAvailable, null);
+        var serverPeer = Substitute.For<GattServerPeer>(null!, BleAddress.NotAvailable, null);
         serverPeer.DiscoverServicesCore().Returns(observable);
 
         await serverPeer.DiscoverServicesAsync();
@@ -40,7 +41,8 @@ public sealed class GattServerPeerTests
     [Fact]
     public async Task DisposeAsync_ShouldCallCoreImplementation()
     {
-        var device = Substitute.For<GattServerPeer>(BleAddress.NotAvailable, null);
+        var central = Substitute.For<BleCentral>(null!, null);
+        var device = Substitute.For<GattServerPeer>(central, BleAddress.NotAvailable, null);
 
         await device.DisposeAsync();
 
