@@ -13,18 +13,19 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost;
 
-public sealed class HciHostBleCentral(HciHostBleDevice device, ILogger? logger) : BleCentral(device, logger)
+internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger? logger) : BleCentral(device, logger)
 {
     private readonly Hci.HciHost _host = device.Host;
 
-    protected override IObservable<IGattServerPeer> ConnectToPeripheralCore(BleAddress address, BleConnectionParameters connectionParameters,
+    /// <inheritdoc />
+    protected override IObservable<GattServerPeer> ConnectToPeripheralCore(BleAddress address, BleConnectionParameters connectionParameters,
         BleScanParameters scanParameters)
     {
         var scanInterval = (ushort)scanParameters.ScanInterval;
         var scanWindow = (ushort)scanParameters.ScanWindow;
         var interval = (ushort)connectionParameters.ConnectionInterval;
         TimeSpan timeout = TimeSpan.FromSeconds(10);
-        return Observable.Create<IGattServerPeer>(observer =>
+        return Observable.Create<GattServerPeer>(observer =>
         {
             var packet = new HciLeExtendedCreateConnectionV1Command
             {
@@ -53,11 +54,12 @@ public sealed class HciHostBleCentral(HciHostBleDevice device, ILogger? logger) 
                 })
                 .Timeout(timeout)
                 .SelectWhereLeMetaEvent<HciLeEnhancedConnectionCompleteV1Event>()
-                .Select(x => new HciHostGattServerPeer(_host, x.Data, address, Logger))
+                .Select(x => new HciHostGattServerPeer(this, _host, x.Data, address, Logger))
                 .Subscribe(observer.OnNext, observer.OnError, observer.OnCompleted);
         });
     }
 
+    /// <inheritdoc />
     protected override IObservable<IGattServerPeer> DoAfterConnection(IObservable<IGattServerPeer> source) => source
         .Select(x => ((HciHostGattServerPeer)x).RequestExchangeMtu(65))
         .Concat()

@@ -9,6 +9,8 @@ public interface IGattServerPeer : IAsyncDisposable
     BleAddress Address { get; }
     /// <summary> All discovered services </summary>
     IReadOnlyDictionary<BleUuid, IGattServerService> Services { get; }
+    /// <summary> True, if the peer is connected </summary>
+    bool IsConnected { get; }
     /// <summary> Observe changes in the connection status </summary>
     IObservable<ConnectionStatus> WhenConnectionStatusChanged { get; }
     /// <summary> Discover all services of the peer peripheral </summary>

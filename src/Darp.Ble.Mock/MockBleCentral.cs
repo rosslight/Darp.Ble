@@ -14,15 +14,15 @@ internal sealed class MockBleCentral(BleDevice device, MockBlePeripheral periphe
     private readonly MockBlePeripheral _peripheralMock = peripheralMock;
 
     /// <inheritdoc />
-    protected override IObservable<IGattServerPeer> ConnectToPeripheralCore(BleAddress address,
+    protected override IObservable<GattServerPeer> ConnectToPeripheralCore(BleAddress address,
         BleConnectionParameters connectionParameters,
         BleScanParameters scanParameters)
     {
-        return Observable.Create<IGattServerPeer>(observer =>
+        return Observable.Create<GattServerPeer>(observer =>
         {
             MockGattClientPeer clientPeer = _peripheralMock.OnCentralConnection(address);
             _peripheralMock.StopAll();
-            var mockDevice = new MockGattServerPeer(address, clientPeer, Logger);
+            var mockDevice = new MockGattServerPeer(this, address, clientPeer, Logger);
             observer.OnNext(mockDevice);
             return Disposable.Empty;
         });

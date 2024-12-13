@@ -12,11 +12,11 @@ namespace Darp.Ble.WinRT;
 internal sealed class WinBleCentral(BleDevice device, ILogger? logger) : BleCentral(device, logger)
 {
     /// <inheritdoc />
-    protected override IObservable<IGattServerPeer> ConnectToPeripheralCore(BleAddress address,
+    protected override IObservable<GattServerPeer> ConnectToPeripheralCore(BleAddress address,
         BleConnectionParameters connectionParameters,
         BleScanParameters scanParameters)
     {
-        return Observable.Create<IGattServerPeer>(async (observer, cancellationToken) =>
+        return Observable.Create<GattServerPeer>(async (observer, cancellationToken) =>
         {
             BluetoothLEDevice? winDev = await BluetoothLEDevice.FromBluetoothAddressAsync(address.Value, address.Type switch
             {
@@ -29,7 +29,7 @@ internal sealed class WinBleCentral(BleDevice device, ILogger? logger) : BleCent
                 observer.OnError(new Exception("PeripheralConnection: Failed!"));
                 return;
             }
-            observer.OnNext(new WinGattServerPeer(winDev, Logger));
+            observer.OnNext(new WinGattServerPeer(this, winDev, Logger));
         });
     }
 }

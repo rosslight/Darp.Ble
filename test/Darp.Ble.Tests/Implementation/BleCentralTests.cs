@@ -113,7 +113,8 @@ public sealed class BleCentralTests
         var writeChar = await service.DiscoverCharacteristicAsync<Properties.Write>(0x1234);
         var notifyChar = await service.DiscoverCharacteristicAsync<Properties.Notify>(0x5678);
 
-        Task<byte[]> notifyTask = notifyChar.OnNotify().RefCount().FirstAsync().ToTask();
+        await using IDisposableObservable<byte[]> notifyObservable = await notifyChar.OnNotifyAsync();
+        Task<byte[]> notifyTask = notifyObservable.FirstAsync().ToTask();
         await writeChar.WriteAsync(dataToWrite);
         byte[] result = await notifyTask;
 

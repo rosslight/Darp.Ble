@@ -1,6 +1,8 @@
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
+using Darp.Ble.Implementation;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Gatt.Server;
@@ -8,13 +10,20 @@ namespace Darp.Ble.Gatt.Server;
 /// <summary> The gatt server peer </summary>
 public abstract class GattServerPeer : IGattServerPeer
 {
+    private readonly BleCentral _central;
     private readonly Dictionary<BleUuid, IGattServerService> _services = new();
+    private bool _isDisposing;
+
+    /// <summary> The behavior subject where the implementation can write to </summary>
+    protected BehaviorSubject<ConnectionStatus> ConnectionSubject { get; } = new(ConnectionStatus.Connected);
 
     /// <summary> The gatt server peer </summary>
+    /// <param name="central"> The central that initiated the connection </param>
     /// <param name="address"> The address of the service </param>
     /// <param name="logger"> An optional logger </param>
-    protected GattServerPeer(BleAddress address, ILogger? logger)
+    protected GattServerPeer(BleCentral central, BleAddress address, ILogger? logger)
     {
+        _central = central;
         Logger = logger;
         Address = address;
         Logger?.LogBleServerPeerConnected(address);
@@ -27,11 +36,14 @@ public abstract class GattServerPeer : IGattServerPeer
     /// <inheritdoc />
     public IReadOnlyDictionary<BleUuid, IGattServerService> Services => _services;
     /// <inheritdoc />
-    public abstract IObservable<ConnectionStatus> WhenConnectionStatusChanged { get; }
+    public bool IsConnected => ConnectionSubject.Value is ConnectionStatus.Connected;
+    /// <inheritdoc />
+    public IObservable<ConnectionStatus> WhenConnectionStatusChanged => ConnectionSubject.AsObservable();
 
     /// <inheritdoc />
     public async Task DiscoverServicesAsync(CancellationToken cancellationToken = default)
     {
+        ObjectDisposedException.ThrowIf(_isDisposing, this);
         await foreach (IGattServerService service in DiscoverServicesCore()
                            .ToAsyncEnumerable()
                            .WithCancellation(cancellationToken))
@@ -43,6 +55,7 @@ public abstract class GattServerPeer : IGattServerPeer
     /// <inheritdoc />
     public async Task<IGattServerService> DiscoverServiceAsync(BleUuid uuid, CancellationToken cancellationToken = default)
     {
+        ObjectDisposedException.ThrowIf(_isDisposing, this);
         IGattServerService service = await DiscoverServiceCore(uuid)
             .FirstAsync()
             .ToTask(cancellationToken)
@@ -58,14 +71,21 @@ public abstract class GattServerPeer : IGattServerPeer
     /// <summary> Core implementation to discover a specific service </summary>
     /// <param name="uuid"> The uuid of the service </param>
     /// <returns> An observable with the discovered service </returns>
-    protected internal abstract IObservable<IGattServerService> DiscoverServiceCore(BleUuid uuid);
+    protected abstract IObservable<IGattServerService> DiscoverServiceCore(BleUuid uuid);
 
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
+        if (_isDisposing)
+        {
+            return;
+        }
+        _isDisposing = true;
         DisposeCore();
         await DisposeAsyncCore();
         Logger?.LogBleServerPeerDisposed(Address);
+        _central.RemovePeer(this);
+        ConnectionSubject.OnCompleted();
         GC.SuppressFinalize(this);
     }
 

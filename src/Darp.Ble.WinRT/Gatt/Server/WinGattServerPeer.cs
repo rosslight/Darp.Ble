@@ -16,21 +16,19 @@ internal sealed class WinGattServerPeer : GattServerPeer
 {
     private readonly BluetoothLEDevice _winDev;
 
-    internal WinGattServerPeer(BluetoothLEDevice winDev, ILogger? logger)
-        : base(BleHelper.GetBleAddress(winDev.BluetoothAddress, winDev.BluetoothAddressType), logger)
+    internal WinGattServerPeer(WinBleCentral central, BluetoothLEDevice winDev, ILogger? logger)
+        : base(central, BleHelper.GetBleAddress(winDev.BluetoothAddress, winDev.BluetoothAddressType), logger)
     {
         _winDev = winDev;
-        WhenConnectionStatusChanged = Observable.FromEventPattern<TypedEventHandler<BluetoothLEDevice, object>, BluetoothLEDevice, object>(
+        Observable.FromEventPattern<TypedEventHandler<BluetoothLEDevice, object>, BluetoothLEDevice, object>(
                 addHandler => winDev.ConnectionStatusChanged += addHandler,
                 removeHandler => winDev.ConnectionStatusChanged -= removeHandler)
             .Where(x => x.Sender is not null)
             .Select(x => x.Sender!.ConnectionStatus is BluetoothConnectionStatus.Connected
                 ? ConnectionStatus.Connected
-                : ConnectionStatus.Disconnected);
+                : ConnectionStatus.Disconnected)
+            .Subscribe(ConnectionSubject);
     }
-
-    /// <inheritdoc />
-    public override IObservable<ConnectionStatus> WhenConnectionStatusChanged { get; }
 
     private IObservable<IGattServerService> DiscoverService(Func<IAsyncOperation<GattDeviceServicesResult>> getServices)
     {
@@ -73,9 +71,9 @@ internal sealed class WinGattServerPeer : GattServerPeer
         return DiscoverService(() => _winDev.GetGattServicesForUuidAsync(uuid.Value, BluetoothCacheMode.Uncached));
     }
 
-    /// <inheritdoc />
     protected override void DisposeCore()
     {
         _winDev.Dispose();
+        ConnectionSubject.OnNext(ConnectionStatus.Disconnected);
     }
 }

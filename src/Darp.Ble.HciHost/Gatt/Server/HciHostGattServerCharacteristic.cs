@@ -1,8 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using Darp.Ble.Data;
+using Darp.Ble.Exceptions;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Hci;
 using Darp.Ble.Hci.Package;
@@ -15,7 +14,7 @@ internal sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer serv
     BleUuid uuid,
     ushort attHandle,
     GattProperty property,
-    ILogger? logger) : GattServerCharacteristic(uuid)
+    ILogger? logger) : GattServerCharacteristic(uuid, logger)
 {
     private readonly HciHostGattServerPeer _serverPeer = serverPeer;
     private readonly ILogger? _logger = logger;
@@ -43,18 +42,18 @@ internal sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer serv
                     .TryDecode(response.Pdu, out AttErrorRsp errorRsp, out _))
             {
                 if (errorRsp.ErrorCode is AttErrorCode.AttributeNotFoundError) break;
-                throw new Exception($"Could not discover descriptors due to error {errorRsp.ErrorCode}");
+                throw new GattCharacteristicException(this, $"Could not discover descriptors due to error {errorRsp.ErrorCode}");
             }
             if (!(response.OpCode is AttOpCode.ATT_FIND_INFORMATION_RSP && AttFindInformationRsp
                     .TryDecode(response.Pdu, out AttFindInformationRsp rsp, out _)))
             {
-                throw new Exception($"Received unexpected att response {response.OpCode}");
+                throw new GattCharacteristicException(this, $"Received unexpected att response {response.OpCode}");
             }
             if (rsp.AttributeDataList.Length == 0) break;
             foreach ((ushort handle, ushort uuid) in rsp.AttributeDataList)
             {
                 if (handle < startingHandle)
-                    throw new Exception("Handle of discovered characteristic is smaller than starting handle of service");
+                    throw new GattCharacteristicException(this, "Handle of discovered characteristic is smaller than starting handle of service");
                 var bleUuid = new BleUuid(uuid);
                 _descriptorDictionary[bleUuid] = new HciHostGattServerDescriptor(_serverPeer, bleUuid, handle, _logger);
             }
@@ -70,54 +69,54 @@ internal sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer serv
     protected override async Task WriteAsyncCore(byte[] bytes, CancellationToken cancellationToken)
     {
         if (!_descriptorDictionary.TryGetValue(Uuid, out HciHostGattServerDescriptor? descriptor))
-            return;
-        await descriptor.WriteWithResponseAsync(bytes, cancellationToken).ConfigureAwait(false);
+            throw new GattCharacteristicException(this, "No descriptor defining self available");
+        await descriptor.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
     }
 
-    protected override IConnectableObservable<byte[]> OnNotifyCore()
+    protected override void WriteWithoutResponseCore(byte[] bytes)
+    {
+        if (!_descriptorDictionary.TryGetValue(Uuid, out HciHostGattServerDescriptor? descriptor))
+            throw new GattCharacteristicException(this, "No descriptor defining self available");
+        descriptor.WriteWithoutResponse(bytes);
+    }
+
+    protected override async Task<IDisposable> EnableNotificationsAsync<TState>(TState state,
+        Action<TState, byte[]> onNotify,
+        CancellationToken cancellationToken)
     {
         if (!_descriptorDictionary.TryGetValue(new BleUuid(0x2902), out HciHostGattServerDescriptor? cccd))
         {
-            return Observable.Throw<byte[]>(new Exception("No cccd available")).Publish();
+            throw new GattCharacteristicException(this, "No cccd available");
         }
         if (!Property.HasFlag(GattProperty.Notify))
         {
-            return Observable.Throw<byte[]>(new Exception("Characteristic does not support notification")).Publish();
+            throw new GattCharacteristicException(this, "Characteristic does not support notification");
         }
-        return Observable.Create<byte[]>(async (observer, cancellationToken) =>
+        if (!await cccd.WriteAsync([0x01, 0x00], cancellationToken).ConfigureAwait(false))
         {
-            IDisposable disposable = _serverPeer.WhenAttPduReceived
-                .Where(x => x.OpCode is AttOpCode.ATT_HANDLE_VALUE_NTF)
-                .SelectWhere(((AttOpCode OpCode, byte[] Pdu) t, [NotNullWhen(true)] out byte[]? s) =>
+            throw new GattCharacteristicException(this, "Could not write notification status to cccd");
+        }
+        return _serverPeer.WhenAttPduReceived
+            .Where(x => x.OpCode is AttOpCode.ATT_HANDLE_VALUE_NTF)
+            .SelectWhere(((AttOpCode OpCode, byte[] Pdu) t, [NotNullWhen(true)] out byte[]? result) =>
+            {
+                if (!AttHandleValueNtf.TryDecode(t.Pdu, out AttHandleValueNtf notification, out int _))
                 {
-                    if (!AttHandleValueNtf.TryDecode(t.Pdu, out AttHandleValueNtf res, out int _))
-                    {
-                        s = null;
-                        return false;
-                    }
-                    s = res.Value;
-                    return true;
-                })
-                .Subscribe(observer);
-            if (!await cccd.WriteWithResponseAsync([0x01, 0x00], cancellationToken).ConfigureAwait(false))
-            {
-                observer.OnError(new Exception("Could not write notification status to cccd"));
-                disposable.Dispose();
-                return Disposable.Empty;
-            }
-            _logger?.LogTrace("Enabled notifications on {@Characteristic}", this);
-            return disposable;
-            /*return Disposable.Create(() =>
-            {
-                // TODO Handle correct unsubscription from notifications
-                Logger.Verbose("Starting to disable notifications on {@Characteristic}", this);
-                cccd.WriteWithResponseAsync([0x00, 0x00], cancellationToken)
-                    .ContinueWith(_ =>
-                    {
-                        disposable.Dispose();
-                        Logger.Verbose("Disabled notifications on {@Characteristic}", this);
-                    }, cancellationToken);
-            });*/
-        }).Publish();
+                    result = null;
+                    return false;
+                }
+                result = notification.Value;
+                return true;
+            })
+            .Subscribe(bytes => onNotify(state, bytes));
+    }
+
+    protected override async Task DisableNotificationsAsync()
+    {
+        if (!_descriptorDictionary.TryGetValue(new BleUuid(0x2902), out HciHostGattServerDescriptor? cccd))
+        {
+            return;
+        }
+        await cccd.WriteAsync([0x00, 0x00], default).ConfigureAwait(false);
     }
 }
