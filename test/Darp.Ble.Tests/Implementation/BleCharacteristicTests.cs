@@ -101,4 +101,26 @@ public sealed class BleCharacteristicTests
         var result2 = await clientCharacteristic.NotifyAsync(clientPeer, bytes, default);
         result2.Should().BeFalse();
     }
+
+    [Fact]
+    public async Task ReSubscription_ShouldWaitOnUnsubscription()
+    {
+        byte[] bytes = Convert.FromHexString("1234");
+
+        GattServerCharacteristic<Properties.Notify> newChar = CreateCharacteristic<Properties.Notify>(
+            out IGattClientCharacteristic clientCharacteristic,
+            out IGattClientPeer clientPeer);
+        IDisposableObservable<byte[]> notifyObservable = await newChar.OnNotifyAsync();
+        Task<byte[]> resultTask = notifyObservable.FirstAsync().ToTask();
+        bool result = await clientCharacteristic.NotifyAsync(clientPeer, bytes, default);
+        result.Should().BeTrue();
+        resultTask.Status.Should().Be(TaskStatus.RanToCompletion);
+        await notifyObservable.DisposeAsync();
+        IDisposableObservable<byte[]> notifyObservable2 = await newChar.OnNotifyAsync();
+        Task<byte[]> resultTask2 = notifyObservable2.FirstAsync().ToTask();
+        bool result2 = await clientCharacteristic.NotifyAsync(clientPeer, bytes, default);
+        result2.Should().BeTrue();
+        resultTask2.Status.Should().Be(TaskStatus.RanToCompletion);
+        await notifyObservable2.DisposeAsync();
+    }
 }

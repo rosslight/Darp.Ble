@@ -66,7 +66,7 @@ public static class GattServerCharacteristicExtensions
             .ConfigureAwait(false);
         IAsyncDisposable combinedDisposable = AsyncDisposable.Create(async () =>
         {
-            await disposable.DisposeAsync();
+            await disposable.DisposeAsync().ConfigureAwait(false);
             subject.OnCompleted();
             subject.Dispose();
         });
