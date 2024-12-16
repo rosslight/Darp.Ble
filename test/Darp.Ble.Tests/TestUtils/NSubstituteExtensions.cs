@@ -10,4 +10,12 @@ public static class NSubstituteExtensions
 
     private static MethodInfo GetNonPublicMethod<T>(this T _, string method) => typeof(T)
         .GetMethod(method, BindingFlags.NonPublic | BindingFlags.Instance) ?? throw new ArgumentNullException(nameof(method));
+
+    public static TProp GetNonPublicProperty<TProp>(this object obj, string propertyName)
+    {
+        PropertyInfo info = obj.GetType()
+                                .GetProperty(propertyName, BindingFlags.NonPublic | BindingFlags.Instance) ??
+                            throw new ArgumentNullException(nameof(propertyName));
+        return (TProp)(info.GetValue(obj) ?? throw new ArgumentNullException(propertyName));
+    }
 }

@@ -1,4 +1,5 @@
 using Darp.Ble.Data;
+using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Server;
 using Microsoft.Extensions.Logging;
 
@@ -14,4 +15,10 @@ internal sealed class MockGattServerPeer(MockBleCentral central, BleAddress addr
 
     /// <inheritdoc />
     protected override IObservable<IGattServerService> DiscoverServiceCore(BleUuid uuid) => _clientPeer.GetService(uuid);
+
+    protected override void DisposeCore()
+    {
+        ConnectionSubject.OnNext(ConnectionStatus.Disconnected);
+        base.DisposeCore();
+    }
 }

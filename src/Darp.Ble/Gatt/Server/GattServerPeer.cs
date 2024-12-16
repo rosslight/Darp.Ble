@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Reactive.Threading.Tasks;
@@ -46,7 +47,8 @@ public abstract class GattServerPeer : IGattServerPeer
         ObjectDisposedException.ThrowIf(_isDisposing, this);
         await foreach (IGattServerService service in DiscoverServicesCore()
                            .ToAsyncEnumerable()
-                           .WithCancellation(cancellationToken))
+                           .WithCancellation(cancellationToken)
+                           .ConfigureAwait(false))
         {
             _services[service.Uuid] = service;
         }
@@ -82,9 +84,10 @@ public abstract class GattServerPeer : IGattServerPeer
         }
         _isDisposing = true;
         DisposeCore();
-        await DisposeAsyncCore();
+        await DisposeAsyncCore().ConfigureAwait(false);
         Logger?.LogBleServerPeerDisposed(Address);
         _central.RemovePeer(this);
+        Debug.Assert(ConnectionSubject.Value is ConnectionStatus.Disconnected, "Disposing of connection subject even though it is not in completed state");
         ConnectionSubject.OnCompleted();
         GC.SuppressFinalize(this);
     }

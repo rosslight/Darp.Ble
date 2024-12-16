@@ -3,6 +3,8 @@ using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
+using Darp.Ble.Gap;
+using Darp.Ble.Gatt.Server;
 using Darp.Ble.Implementation;
 using Darp.Ble.Mock;
 using Darp.Ble.Tests.TestUtils;
@@ -116,4 +118,62 @@ public sealed class BleDeviceTests
         device.ReceivedWithAnyArgs(1).InvokeNonPublicMethod("DisposeAsyncCore");
         device.ReceivedWithAnyArgs(1).InvokeNonPublicMethod("DisposeCore");
     }
+
+    [Fact]
+    public async Task ConnectingAndDisposing_ShouldNotThrow()
+    {
+        var device = (MockBleDevice)new BleMockFactory
+        {
+            OnInitialize = (broadcaster, _) =>
+            {
+                broadcaster.Advertise(Observable.Interval(TimeSpan.FromMilliseconds(1000))
+                    .Select(_ => AdvertisingData.Empty), new AdvertisingParameters {Type = BleEventType.Connectable});
+                return Task.CompletedTask;
+            },
+        }.EnumerateDevices(logger: null).First();
+        await device.InitializeAsync();
+        IGattServerPeer peer = await device.Observer.RefCount().ConnectToPeripheral().FirstAsync();
+        await peer.DisposeAsync();
+    }
+
+    /*
+[Fact]
+    public async Task Asdsadasd()
+    {
+        byte[] bytes = Convert.FromHexString("1234");
+
+        var device = (MockBleDevice)new BleMockFactory
+        {
+            OnInitialize = async (broadcaster, peripheral) =>
+            {
+                IGattClientService service = await peripheral.AddServiceAsync(0x1234);
+                IGattClientCharacteristic<Properties.Write> characteristic =
+                    await service.AddCharacteristicAsync<Properties.Write>(0x1235);
+                IGattClientCharacteristic<Properties.Notify> notify =
+                    await service.AddCharacteristicAsync<Properties.Notify>(0x1236);
+                characteristic.OnWrite(async (peer, received, token) =>
+                {
+                    await notify.NotifyAsync(peer, received, token);
+                    return GattProtocolStatus.Success;
+                });
+                broadcaster.Advertise(Observable.Interval(TimeSpan.FromMilliseconds(1000))
+                    .Select(_ => AdvertisingData.From([
+                        (AdTypes.Flags,
+                        [
+                            (byte)(AdvertisingDataFlags.ClassicNotSupported | AdvertisingDataFlags.GeneralDiscoverableMode),
+                        ]),
+                        (AdTypes.IncompleteListOf16BitServiceClassUuids, [0x4c, 0xfd]),
+                    ])), new AdvertisingParameters {Type = BleEventType.Connectable});
+            },
+        }.EnumerateDevices(logger: null).First();
+        await device.InitializeAsync();
+        var peer = await device.Observer.RefCount().ConnectToPeripheral().FirstAsync();
+        var service = await peer.DiscoverServiceAsync(new BleUuid(0x1234));
+        var writeChar = await service.DiscoverCharacteristicAsync<Properties.Write>(new BleUuid(0x1235));
+        var notifyChar = await service.DiscoverCharacteristicAsync<Properties.Notify>(new BleUuid(0x1236));
+        //var disposable = await notifyChar.OnNotifyAsync();
+        await peer.DisposeAsync();
+        //await disposable.DisposeAsync();
+    }
+     */
 }

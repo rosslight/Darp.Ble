@@ -214,6 +214,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
         {
             disposable.Dispose();
         }
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 
     private void ProcessAclPackagesIfPossible()
