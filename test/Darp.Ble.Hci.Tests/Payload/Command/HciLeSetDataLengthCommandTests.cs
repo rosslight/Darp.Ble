@@ -1,4 +1,3 @@
-using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Command;
 using FluentAssertions;
 
@@ -14,7 +13,7 @@ public sealed class HciLeSetDataLengthCommandTests
 
     [Theory]
     [InlineData(0, 65, 328, "000041004801")]
-    public void TryEncode_ShouldBeValid(ushort handle, ushort txOctets, ushort txTime, string expectedHexBytes)
+    public void TryWriteLittleEndian_ShouldBeValid(ushort handle, ushort txOctets, ushort txTime, string expectedHexBytes)
     {
         var buffer = new byte[6];
         var value = new HciLeSetDataLengthCommand
@@ -24,9 +23,9 @@ public sealed class HciLeSetDataLengthCommandTests
             TxTime = txTime,
         };
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeTrue();
-        value.GetLength().Should().Be(6);
+        value.GetByteCount().Should().Be(6);
         value.ConnectionHandle.Should().Be(handle);
         value.TxOctets.Should().Be(txOctets);
         value.TxTime.Should().Be(txTime);
@@ -34,12 +33,12 @@ public sealed class HciLeSetDataLengthCommandTests
     }
 
     [Fact]
-    public void TryEncode_ShouldBeInvalid()
+    public void TryWriteLittleEndian_ShouldBeInvalid()
     {
         var buffer = new byte[5];
         HciLeSetDataLengthCommand value = default;
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeFalse();
     }
 }

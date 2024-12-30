@@ -12,13 +12,13 @@ public sealed class HciLeReadLocalSupportedFeaturesCommandTests
     }
 
     [Fact]
-    public void TryEncode_ShouldBeValid()
+    public void TryWriteLittleEndian_ShouldBeValid()
     {
         byte[] buffer = [];
         var value = new HciLeReadLocalSupportedFeaturesCommand();
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeTrue();
-        value.GetLength().Should().Be(0);
+        value.GetByteCount().Should().Be(0);
     }
 }

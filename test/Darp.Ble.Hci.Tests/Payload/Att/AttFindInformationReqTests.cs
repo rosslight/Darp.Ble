@@ -14,7 +14,7 @@ public sealed class AttFindInformationReqTests
     [Theory]
     [InlineData(1, 0xFFFF, "040100FFFF")]
     [InlineData(31, 0xFFFF, "041F00FFFF")]
-    public void TryEncode_ShouldBeValid(ushort startingHandle,
+    public void TryWriteLittleEndian_ShouldBeValid(ushort startingHandle,
         ushort endingHandle,
         string expectedHexBytes)
     {
@@ -25,16 +25,16 @@ public sealed class AttFindInformationReqTests
             EndingHandle = endingHandle,
         };
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
 
         value.OpCode.Should().Be(AttOpCode.ATT_FIND_INFORMATION_REQ);
-        value.Length.Should().Be(5);
+        value.GetByteCount().Should().Be(5);
         success.Should().BeTrue();
         Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
     }
 
     [Fact]
-    public void TryEncode_ShouldBeInvalid()
+    public void TryWriteLittleEndian_ShouldBeInvalid()
     {
         var buffer = new byte[4];
         var value = new AttFindInformationReq
@@ -43,7 +43,7 @@ public sealed class AttFindInformationReqTests
             EndingHandle = 0xFFFF,
         };
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeFalse();
     }
 }

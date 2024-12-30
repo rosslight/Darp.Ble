@@ -13,7 +13,7 @@ public sealed class HciLeSetExtendedScanParametersCommandTests
 
     [Theory]
     [InlineData(1, 0, 1, 0, 160, 160, "01000100A000A000")]
-    public void TryEncode_ShouldBeValid(byte ownAddressType,
+    public void TryWriteLittleEndian_ShouldBeValid(byte ownAddressType,
         byte scanningFilterPolicy,
         byte scanPhys,
         byte scanType,
@@ -32,9 +32,9 @@ public sealed class HciLeSetExtendedScanParametersCommandTests
             ScanWindow = scanWindow,
         };
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeTrue();
-        value.GetLength().Should().Be(8);
+        value.GetByteCount().Should().Be(8);
         value.OwnAddressType.Should().Be(ownAddressType);
         value.ScanningFilterPolicy.Should().Be(scanningFilterPolicy);
         value.ScanPhys.Should().Be(scanPhys);
@@ -45,12 +45,12 @@ public sealed class HciLeSetExtendedScanParametersCommandTests
     }
 
     [Fact]
-    public void TryEncode_ShouldBeInvalid()
+    public void TryWriteLittleEndian_ShouldBeInvalid()
     {
         var buffer = new byte[7];
         HciLeSetExtendedScanParametersCommand value = default;
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeFalse();
     }
 }

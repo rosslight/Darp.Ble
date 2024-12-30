@@ -12,13 +12,13 @@ public sealed class HciReadLocalVersionInformationCommandTests
     }
 
     [Fact]
-    public void TryEncode_ShouldBeValid()
+    public void TryWriteLittleEndian_ShouldBeValid()
     {
         byte[] buffer = [];
         var value = new HciReadLocalVersionInformationCommand();
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeTrue();
-        value.GetLength().Should().Be(0);
+        value.GetByteCount().Should().Be(0);
     }
 }

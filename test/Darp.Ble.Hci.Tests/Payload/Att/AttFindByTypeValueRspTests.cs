@@ -12,8 +12,10 @@ public sealed class AttFindByTypeValueRspTests
     }
 
     [Theory]
-    [InlineData("071700FFFF", 0x0017, 0xFFFF)]
-    public void TryDecode_ShouldBeValid(string hexBytes,
+    [InlineData("071700FFFF", 5, 0x0017, 0xFFFF)]
+    [InlineData("071700FFFF00", 5, 0x0017, 0xFFFF)]
+    public void TryReadLittleEndian_ShouldBeValid(string hexBytes,
+        int expectedBytesRead,
         ushort foundAttributeHandle,
         ushort groupEndHandle)
     {
@@ -27,10 +29,10 @@ public sealed class AttFindByTypeValueRspTests
             },
         ];
 
-        bool success = AttFindByTypeValueRsp.TryDecode(bytes, out AttFindByTypeValueRsp value, out int decoded);
+        bool success = AttFindByTypeValueRsp.TryReadLittleEndian(bytes, out AttFindByTypeValueRsp value, out int decoded);
 
         success.Should().BeTrue();
-        decoded.Should().Be(1 + 4 *handlesInformation.Length);
+        decoded.Should().Be(expectedBytesRead);
         value.OpCode.Should().Be(AttOpCode.ATT_FIND_BY_TYPE_VALUE_RSP);
         value.HandlesInformationList.Should().BeEquivalentTo(handlesInformation);
     }
@@ -38,12 +40,11 @@ public sealed class AttFindByTypeValueRspTests
     [Theory]
     [InlineData("", 0)]
     [InlineData("061700FFFF", 0)]
-    [InlineData("071700FF", 0)]
-    [InlineData("071700FFFF00", 0)]
-    public void TryDecode_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
+    [InlineData("071700FF", 1)]
+    public void TryReadLittleEndian_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
-        bool success = AttFindByTypeValueRsp.TryDecode(bytes, out _, out int decoded);
+        bool success = AttFindByTypeValueRsp.TryReadLittleEndian(bytes, out _, out int decoded);
 
         success.Should().BeFalse();
         decoded.Should().Be(expectedBytesDecoded);

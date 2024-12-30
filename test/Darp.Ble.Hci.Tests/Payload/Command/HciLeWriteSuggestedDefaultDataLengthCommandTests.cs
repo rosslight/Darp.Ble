@@ -13,7 +13,7 @@ public sealed class HciLeWriteSuggestedDefaultDataLengthCommandTests
 
     [Theory]
     [InlineData(65, 328, "41004801")]
-    public void TryEncode_ShouldBeValid(ushort suggestedMaxTxOctets,
+    public void TryWriteLittleEndian_ShouldBeValid(ushort suggestedMaxTxOctets,
         ushort suggestedMaxTxTime,
         string expectedHexBytes)
     {
@@ -24,21 +24,21 @@ public sealed class HciLeWriteSuggestedDefaultDataLengthCommandTests
             SuggestedMaxTxTime = suggestedMaxTxTime,
         };
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeTrue();
-        value.GetLength().Should().Be(4);
+        value.GetByteCount().Should().Be(4);
         value.SuggestedMaxTxOctets.Should().Be(suggestedMaxTxOctets);
         value.SuggestedMaxTxTime.Should().Be(suggestedMaxTxTime);
         Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
     }
 
     [Fact]
-    public void TryEncode_ShouldBeInvalid()
+    public void TryWriteLittleEndian_ShouldBeInvalid()
     {
         var buffer = new byte[3];
         HciLeWriteSuggestedDefaultDataLengthCommand value = default;
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeFalse();
     }
 }

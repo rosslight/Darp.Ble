@@ -14,7 +14,7 @@ public sealed class HciLeExtendedCreateConnectionV1CommandTests
     [Theory]
     [InlineData(0, 1, 1, 0xB335EFF8406A, 1, 160, 160, 24, 24, 0, 72, 0, 0,
         "0001016A40F8EF35B301A000A000180018000000480000000000")]
-    public void TryEncode_ShouldBeValid(byte initiatorFilterPolicy, byte ownAddressType,
+    public void TryWriteLittleEndian_ShouldBeValid(byte initiatorFilterPolicy, byte ownAddressType,
         byte peerAddressType, ulong peerAddress, byte initiatingPhys,
         ushort scanInterval, ushort scanWindow, ushort connectionIntervalMin, ushort connectionIntervalMax,
         ushort maxLatency, ushort supervisionTimeout, ushort minCeLength, ushort maxCeLength,
@@ -38,9 +38,9 @@ public sealed class HciLeExtendedCreateConnectionV1CommandTests
             MaxCeLength = maxLatency,
         };
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeTrue();
-        value.GetLength().Should().Be(26);
+        value.GetByteCount().Should().Be(26);
         value.InitiatorFilterPolicy.Should().Be(initiatorFilterPolicy);
         value.OwnAddressType.Should().Be(ownAddressType);
         value.PeerAddressType.Should().Be(peerAddressType);
@@ -58,12 +58,12 @@ public sealed class HciLeExtendedCreateConnectionV1CommandTests
     }
 
     [Fact]
-    public void TryEncode_ShouldBeInvalid()
+    public void TryWriteLittleEndian_ShouldBeInvalid()
     {
         var buffer = new byte[25];
         HciLeExtendedCreateConnectionV1Command value = default;
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeFalse();
     }
 }

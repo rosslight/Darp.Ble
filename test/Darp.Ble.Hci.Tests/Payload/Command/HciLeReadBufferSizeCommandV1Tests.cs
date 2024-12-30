@@ -12,13 +12,13 @@ public sealed class HciLeReadBufferSizeCommandV1Tests
     }
 
     [Fact]
-    public void TryEncode_ShouldBeValid()
+    public void TryWriteLittleEndian_ShouldBeValid()
     {
         byte[] buffer = [];
         var value = new HciLeReadBufferSizeCommandV1();
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeTrue();
-        value.GetLength().Should().Be(0);
+        value.GetByteCount().Should().Be(0);
     }
 }

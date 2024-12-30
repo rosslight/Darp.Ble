@@ -13,7 +13,7 @@ public sealed class AttWriteReqTests
 
     [Theory]
     [InlineData(25, "AABBCCDD", "121900AABBCCDD")]
-    public void TryEncode_ShouldBeValid(ushort handle, string valueHexBytes, string expectedHexBytes)
+    public void TryWriteLittleEndian_ShouldBeValid(ushort handle, string valueHexBytes, string expectedHexBytes)
     {
         var buffer = new byte[7];
         byte[] valueBytes = Convert.FromHexString(valueHexBytes);
@@ -23,21 +23,21 @@ public sealed class AttWriteReqTests
             Value = valueBytes,
         };
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
 
         value.OpCode.Should().Be(AttOpCode.ATT_WRITE_REQ);
-        value.Length.Should().Be(3 + valueBytes.Length);
+        value.GetByteCount().Should().Be(3 + valueBytes.Length);
         success.Should().BeTrue();
         Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
     }
 
     [Fact]
-    public void TryEncode_ShouldBeInvalid()
+    public void TryWriteLittleEndian_ShouldBeInvalid()
     {
         var buffer = new byte[2];
         AttWriteReq value = default;
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeFalse();
     }
 }

@@ -21,7 +21,7 @@ public sealed class AttFindInformationRspTests
         0x001C, 0xFF62,
         0x001D, 0x2902,
         0x001E, 0x2901)]
-    public void TryDecode_16BitData_ShouldBeValid(string hexBytes,
+    public void TryReadLittleEndian_16BitData_ShouldBeValid(string hexBytes,
         params int[] informationData)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
@@ -39,7 +39,7 @@ public sealed class AttFindInformationRspTests
             })
             .ToArray();
 
-        bool success = AttFindInformationRsp.TryDecode(bytes, out AttFindInformationRsp value, out int decoded);
+        bool success = AttFindInformationRsp.TryReadLittleEndian(bytes, out AttFindInformationRsp value, out int decoded);
 
         success.Should().BeTrue();
         decoded.Should().Be(2 + 4 * findInformationData.Length);
@@ -54,7 +54,7 @@ public sealed class AttFindInformationRspTests
 
     [Theory]
     [InlineData("050219000000FFE000001000800000805F9B34FB", 0x0019, "0000FFE000001000800000805F9B34FB")]
-    public void TryDecode_128BitData_ShouldBeValid(string hexBytes, ushort handle, string guidHexString)
+    public void TryReadLittleEndian_128BitData_ShouldBeValid(string hexBytes, ushort handle, string guidHexString)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
         byte[] uuidBytes = Convert.FromHexString(guidHexString);
@@ -63,7 +63,7 @@ public sealed class AttFindInformationRspTests
             new(handle, uuidBytes),
         ];
 
-        bool success = AttFindInformationRsp.TryDecode(bytes, out AttFindInformationRsp value, out int decoded);
+        bool success = AttFindInformationRsp.TryReadLittleEndian(bytes, out AttFindInformationRsp value, out int decoded);
 
         success.Should().BeTrue();
         decoded.Should().Be(2 + 18 * findInformationData.Length);
@@ -84,10 +84,10 @@ public sealed class AttFindInformationRspTests
     [InlineData("0501190061FF00", 0)]
     [InlineData("0501190061", 0)]
     [InlineData("0501", 0)]
-    public void TryDecode_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
+    public void TryReadLittleEndian_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
-        bool success = AttFindInformationRsp.TryDecode(bytes, out _, out int decoded);
+        bool success = AttFindInformationRsp.TryReadLittleEndian(bytes, out _, out int decoded);
 
         success.Should().BeFalse();
         decoded.Should().Be(expectedBytesDecoded);

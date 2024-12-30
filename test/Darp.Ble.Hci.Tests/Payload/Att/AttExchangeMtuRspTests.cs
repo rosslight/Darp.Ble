@@ -14,10 +14,10 @@ public sealed class AttExchangeMtuRspTests
     [Theory]
     [InlineData("034100", 65)]
     [InlineData("03410000", 65)]
-    public void TryDecode_ShouldBeValid(string hexBytes, ushort serverRxMtu)
+    public void TryReadLittleEndian_ShouldBeValid(string hexBytes, ushort serverRxMtu)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
-        bool success = AttExchangeMtuRsp.TryDecode(bytes, out AttExchangeMtuRsp value, out int decoded);
+        bool success = AttExchangeMtuRsp.TryReadLittleEndian(bytes, out AttExchangeMtuRsp value, out int decoded);
 
         success.Should().BeTrue();
         decoded.Should().Be(3);
@@ -29,10 +29,10 @@ public sealed class AttExchangeMtuRspTests
     [InlineData("", 0)]
     [InlineData("0341", 0)]
     [InlineData("024100", 0)]
-    public void TryDecode_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
+    public void TryReadLittleEndian_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
-        bool success = AttExchangeMtuRsp.TryDecode(bytes, out _, out int decoded);
+        bool success = AttExchangeMtuRsp.TryReadLittleEndian(bytes, out _, out int decoded);
 
         success.Should().BeFalse();
         decoded.Should().Be(expectedBytesDecoded);

@@ -16,13 +16,13 @@ public sealed class HciCommandCompleteEventTests
 
     [Theory]
     [InlineData("01010C00", 1, HciOpCode.HCI_Set_Event_Mask, HciCommandStatus.Success)]
-    public void TryDecode_HciSetEventMaskResult_ShouldBeValid(string hexBytes,
+    public void TryReadLittleEndian_HciSetEventMaskResult_ShouldBeValid(string hexBytes,
         byte expectedNumHciCommandPackets,
         HciOpCode expectedCommandOpCode,
         HciCommandStatus expectedStatus)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
-        bool success = HciCommandCompleteEvent<HciSetEventMaskResult>.TryDecode(bytes, out var value, out int decoded);
+        bool success = HciCommandCompleteEvent<HciSetEventMaskResult>.TryReadLittleEndian(bytes, out var value, out int decoded);
 
         success.Should().BeTrue();
         decoded.Should().Be(4);
@@ -34,10 +34,10 @@ public sealed class HciCommandCompleteEventTests
     [Theory]
     [InlineData("", 0)]
     [InlineData("01010C", 0)]
-    public void TryDecode_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
+    public void TryReadLittleEndian_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
-        bool success = HciCommandCompleteEvent<HciSetEventMaskResult>.TryDecode(bytes, out _, out int decoded);
+        bool success = HciCommandCompleteEvent<HciSetEventMaskResult>.TryReadLittleEndian(bytes, out _, out int decoded);
 
         success.Should().BeFalse();
         decoded.Should().Be(expectedBytesDecoded);

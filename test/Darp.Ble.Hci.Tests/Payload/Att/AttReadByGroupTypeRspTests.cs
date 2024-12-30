@@ -19,7 +19,7 @@ public sealed class AttReadByGroupTypeRspTests
         0x000C, 0x000F, 0x1801,
         0x0010, 0x0022, 0x180A,
         0x0023, 0xFFFF, 0xAA4C)]
-    public void TryDecode_16Bit_ShouldBeValid(string hexBytes,
+    public void TryReadLittleEndian_16Bit_ShouldBeValid(string hexBytes,
         params int[] informationData)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
@@ -34,7 +34,7 @@ public sealed class AttReadByGroupTypeRspTests
             })
             .ToArray();
 
-        bool success = AttReadByGroupTypeRsp<ushort>.TryDecode(bytes, out AttReadByGroupTypeRsp<ushort> value, out int decoded);
+        bool success = AttReadByGroupTypeRsp<ushort>.TryReadLittleEndian(bytes, out AttReadByGroupTypeRsp<ushort> value, out int decoded);
 
         success.Should().BeTrue();
         decoded.Should().Be(2 + 6 * attributeDataList.Length);
@@ -45,7 +45,7 @@ public sealed class AttReadByGroupTypeRspTests
 
     [Theory]
     [InlineData("111401000B000000FFE000001000800000805F9B34FB", 0x0001, 0x000B, "0000FFE000001000800000805F9B34FB")]
-    public void TryDecode_128Bit_ShouldBeValid(string hexBytes,
+    public void TryReadLittleEndian_128Bit_ShouldBeValid(string hexBytes,
         ushort startHandle, ushort endHandle, string valueHexBytes)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
@@ -54,7 +54,7 @@ public sealed class AttReadByGroupTypeRspTests
             new(startHandle, endHandle, new Guid(Convert.FromHexString(valueHexBytes))),
         ];
 
-        bool success = AttReadByGroupTypeRsp<Guid>.TryDecode(bytes, out AttReadByGroupTypeRsp<Guid> value, out int decoded);
+        bool success = AttReadByGroupTypeRsp<Guid>.TryReadLittleEndian(bytes, out AttReadByGroupTypeRsp<Guid> value, out int decoded);
 
         success.Should().BeTrue();
         decoded.Should().Be(2 + 20 * attributeDataList.Length);
@@ -70,10 +70,10 @@ public sealed class AttReadByGroupTypeRspTests
     [InlineData("110601000B00001800", 0)]
     [InlineData("1106", 0)]
     [InlineData("111401000B000000FFE000001000800000805F9B34FB", 0)]
-    public void TryDecode_16Bit_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
+    public void TryReadLittleEndian_16Bit_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
-        bool success = AttReadByGroupTypeRsp<ushort>.TryDecode(bytes, out _, out int decoded);
+        bool success = AttReadByGroupTypeRsp<ushort>.TryReadLittleEndian(bytes, out _, out int decoded);
 
         success.Should().BeFalse();
         decoded.Should().Be(expectedBytesDecoded);

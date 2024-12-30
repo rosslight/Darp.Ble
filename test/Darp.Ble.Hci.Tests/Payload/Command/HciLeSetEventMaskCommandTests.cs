@@ -13,7 +13,7 @@ public sealed class HciLeSetEventMaskCommandTests
 
     [Theory]
     [InlineData((LeEventMask)0xFFFFF00000000000, "0000000000F0FFFF")]
-    public void TryEncode_ShouldBeValid(LeEventMask mask, string expectedHexBytes)
+    public void TryWriteLittleEndian_ShouldBeValid(LeEventMask mask, string expectedHexBytes)
     {
         var buffer = new byte[8];
         var value = new HciLeSetEventMaskCommand
@@ -21,20 +21,20 @@ public sealed class HciLeSetEventMaskCommandTests
             Mask = mask,
         };
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeTrue();
-        value.GetLength().Should().Be(8);
+        value.GetByteCount().Should().Be(8);
         value.Mask.Should().Be(mask);
         Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
     }
 
     [Fact]
-    public void TryEncode_ShouldBeInvalid()
+    public void TryWriteLittleEndian_ShouldBeInvalid()
     {
         var buffer = new byte[7];
         HciLeSetEventMaskCommand value = default;
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeFalse();
     }
 }

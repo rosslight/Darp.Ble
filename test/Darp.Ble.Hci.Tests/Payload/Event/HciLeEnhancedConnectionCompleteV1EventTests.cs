@@ -17,7 +17,7 @@ public sealed class HciLeEnhancedConnectionCompleteV1EventTests
         HciCommandStatus.Success, 0x0001, 0,
         1, 0xFFEEDDCCBBAA, 0x000000000000, 0x000000000000,
         0x0006, 0x01F3, 0x000A, 0x04)]
-    public void TryDecode_HciSetEventMaskResult_ShouldBeValid(string hexBytes,
+    public void TryReadLittleEndian_HciSetEventMaskResult_ShouldBeValid(string hexBytes,
         HciCommandStatus expectedStatus,
         ushort expectedConnectionHandle,
         byte expectedRole,
@@ -47,7 +47,7 @@ public sealed class HciLeEnhancedConnectionCompleteV1EventTests
             CentralClockAccuracy = expectedCentralClockAccuracy,
         };
 
-        bool success = Extensions.TryDecode(bytes, out HciLeEnhancedConnectionCompleteV1Event value, out int decoded);
+        bool success = Extensions.TryReadLittleEndian(bytes, out HciLeEnhancedConnectionCompleteV1Event value, out int decoded);
 
         success.Should().BeTrue();
         decoded.Should().Be(31);
@@ -69,10 +69,10 @@ public sealed class HciLeEnhancedConnectionCompleteV1EventTests
     [Theory]
     [InlineData("", 0)]
     [InlineData("0A0001000001AABBCCDDEEFF0000000000000000000000000600F3010A00", 0)]
-    public void TryDecode_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
+    public void TryReadLittleEndian_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
-        bool success = Extensions.TryDecode(bytes, out HciLeEnhancedConnectionCompleteV1Event _, out int decoded);
+        bool success = Extensions.TryReadLittleEndian(bytes, out HciLeEnhancedConnectionCompleteV1Event _, out int decoded);
 
         success.Should().BeFalse();
         decoded.Should().Be(expectedBytesDecoded);

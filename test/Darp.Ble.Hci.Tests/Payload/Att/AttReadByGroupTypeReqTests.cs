@@ -14,7 +14,7 @@ public sealed class AttReadByGroupTypeReqTests
 
     [Theory]
     [InlineData(1, 0xFFFF, 0x2800, "100100FFFF0028")]
-    public void TryEncode_16Bit_ShouldBeValid(ushort startingHandle,
+    public void TryWriteLittleEndian_16Bit_ShouldBeValid(ushort startingHandle,
         ushort endingHandle,
         ushort attributeType,
         string expectedHexBytes)
@@ -27,17 +27,17 @@ public sealed class AttReadByGroupTypeReqTests
             AttributeType = attributeType,
         };
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
 
         value.OpCode.Should().Be(AttOpCode.ATT_READ_BY_GROUP_TYPE_REQ);
-        value.Length.Should().Be(7);
+        value.GetByteCount().Should().Be(7);
         success.Should().BeTrue();
         Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
     }
 
     [Theory]
     [InlineData(1, 0xFFFF, "0000FFE000001000800000805F9B34FB", "100100FFFF0000FFE000001000800000805F9B34FB")]
-    public void TryEncode_128Bit_ShouldBeValid(ushort startingHandle,
+    public void TryWriteLittleEndian_128Bit_ShouldBeValid(ushort startingHandle,
         ushort endingHandle,
         string attributeTypeHexBytes,
         string expectedHexBytes)
@@ -50,16 +50,16 @@ public sealed class AttReadByGroupTypeReqTests
             AttributeType = new Guid(Convert.FromHexString(attributeTypeHexBytes)),
         };
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
 
         value.OpCode.Should().Be(AttOpCode.ATT_READ_BY_GROUP_TYPE_REQ);
-        value.Length.Should().Be(21);
+        value.GetByteCount().Should().Be(21);
         success.Should().BeTrue();
         Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
     }
 
     [Fact]
-    public void TryDecode_16Bit_ShouldBeInvalid()
+    public void TryReadLittleEndian_16Bit_ShouldBeInvalid()
     {
         var buffer = new byte[6];
         var value = new AttReadByGroupTypeReq<ushort>
@@ -69,12 +69,12 @@ public sealed class AttReadByGroupTypeReqTests
             AttributeType = 0x2800,
         };
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeFalse();
     }
 
     [Fact]
-    public void TryDecode_128Bit_ShouldBeInvalid()
+    public void TryReadLittleEndian_128Bit_ShouldBeInvalid()
     {
         var buffer = new byte[20];
         var value = new AttReadByGroupTypeReq<Guid>
@@ -84,7 +84,7 @@ public sealed class AttReadByGroupTypeReqTests
             AttributeType = new Guid(Convert.FromHexString("0000FFE000001000800000805F9B34FB")),
         };
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeFalse();
     }
 }

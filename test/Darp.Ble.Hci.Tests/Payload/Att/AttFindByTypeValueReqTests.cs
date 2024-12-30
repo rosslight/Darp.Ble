@@ -13,7 +13,7 @@ public sealed class AttFindByTypeValueReqTests
 
     [Theory]
     [InlineData(1, 0xFFFF, 0x2800, "ABCD", "060100FFFF0028ABCD")]
-    public void TryEncode_ShouldBeValid(ushort startingHandle,
+    public void TryWriteLittleEndian_ShouldBeValid(ushort startingHandle,
         ushort endingHandle,
         ushort attributeType,
         string attributeValue,
@@ -28,10 +28,10 @@ public sealed class AttFindByTypeValueReqTests
             AttributeValue = Convert.FromHexString(attributeValue),
         };
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
 
         value.OpCode.Should().Be(AttOpCode.ATT_FIND_BY_TYPE_VALUE_REQ);
-        value.Length.Should().Be(9);
+        value.GetByteCount().Should().Be(9);
         success.Should().BeTrue();
         Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
     }
@@ -40,7 +40,7 @@ public sealed class AttFindByTypeValueReqTests
     [InlineData(6, "")]
     [InlineData(8, "ABCD")]
     [InlineData(22, "0000FFE000001000800000805F9B34FB")]
-    public void TryEncode_ShouldBeInvalid(int bufferLength, string valueHexBytes)
+    public void TryWriteLittleEndian_ShouldBeInvalid(int bufferLength, string valueHexBytes)
     {
         var buffer = new byte[bufferLength];
         var value = new AttFindByTypeValueReq
@@ -51,7 +51,7 @@ public sealed class AttFindByTypeValueReqTests
             AttributeValue = Convert.FromHexString(valueHexBytes),
         };
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeFalse();
     }
 }

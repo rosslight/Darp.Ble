@@ -13,7 +13,7 @@ public sealed class HciLeSetRandomAddressCommandTests
 
     [Theory]
     [InlineData(0xF5F4F3F2F1F0, "F0F1F2F3F4F5")]
-    public void TryEncode_ShouldBeValid(ulong address,
+    public void TryWriteLittleEndian_ShouldBeValid(ulong address,
         string expectedHexBytes)
     {
         var buffer = new byte[6];
@@ -22,20 +22,20 @@ public sealed class HciLeSetRandomAddressCommandTests
             RandomAddress = address,
         };
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeTrue();
-        value.GetLength().Should().Be(6);
+        value.GetByteCount().Should().Be(6);
         value.RandomAddress.Should().Be((DeviceAddress)address);
         Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
     }
 
     [Fact]
-    public void TryEncode_ShouldBeInvalid()
+    public void TryWriteLittleEndian_ShouldBeInvalid()
     {
         var buffer = new byte[5];
         HciLeSetExtendedScanParametersCommand value = default;
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeFalse();
     }
 }

@@ -13,26 +13,26 @@ public sealed class AttExchangeMtuReqTests
 
     [Theory]
     [InlineData(65, "024100")]
-    public void TryEncode_ShouldBeValid(ushort clientRxMtu, string expectedHexBytes)
+    public void TryWriteLittleEndian_ShouldBeValid(ushort clientRxMtu, string expectedHexBytes)
     {
         var buffer = new byte[3];
         var value = new AttExchangeMtuReq { ClientRxMtu = clientRxMtu };
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
 
         value.OpCode.Should().Be(AttOpCode.ATT_EXCHANGE_MTU_REQ);
-        value.Length.Should().Be(3);
+        value.GetByteCount().Should().Be(3);
         success.Should().BeTrue();
         Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
     }
 
     [Fact]
-    public void TryEncode_ShouldBeInvalid()
+    public void TryWriteLittleEndian_ShouldBeInvalid()
     {
         var buffer = new byte[2];
         AttExchangeMtuReq value = default;
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeFalse();
     }
 }

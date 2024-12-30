@@ -13,7 +13,7 @@ public sealed class HciLeSetExtendedScanEnableCommandTests
 
     [Theory]
     [InlineData(1, 0, 0, 0, "010000000000")]
-    public void TryEncode_ShouldBeValid(byte enable,
+    public void TryWriteLittleEndian_ShouldBeValid(byte enable,
         byte filterDuplicates,
         ushort duration,
         ushort period,
@@ -28,9 +28,9 @@ public sealed class HciLeSetExtendedScanEnableCommandTests
             Period = period,
         };
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeTrue();
-        value.GetLength().Should().Be(6);
+        value.GetByteCount().Should().Be(6);
         value.Enable.Should().Be(enable);
         value.FilterDuplicates.Should().Be(filterDuplicates);
         value.Duration.Should().Be(duration);
@@ -39,12 +39,12 @@ public sealed class HciLeSetExtendedScanEnableCommandTests
     }
 
     [Fact]
-    public void TryEncode_ShouldBeInvalid()
+    public void TryWriteLittleEndian_ShouldBeInvalid()
     {
         var buffer = new byte[5];
         HciLeSetExtendedScanEnableCommand value = default;
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeFalse();
     }
 }

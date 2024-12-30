@@ -16,7 +16,7 @@ public sealed class AttReadByTypeRspTests
     [InlineData("0907180008190061FF1B00101C0062FF",
         0x0018, "08190061FF",
         0x001B, "101C0062FF")]
-    public void TryDecode_ShouldBeValid(string hexBytes,
+    public void TryReadLittleEndian_ShouldBeValid(string hexBytes,
         params object[] typeData)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
@@ -29,7 +29,7 @@ public sealed class AttReadByTypeRspTests
             })
             .ToArray();
 
-        bool success = AttReadByTypeRsp.TryDecode(bytes, out AttReadByTypeRsp value, out int decoded);
+        bool success = AttReadByTypeRsp.TryReadLittleEndian(bytes, out AttReadByTypeRsp value, out int decoded);
 
         success.Should().BeTrue();
         decoded.Should().Be(2 + 7 * dataList.Length);
@@ -49,10 +49,10 @@ public sealed class AttReadByTypeRspTests
     [InlineData("0907180008190061FF00", 0)]
     [InlineData("0907", 0)]
     [InlineData("0901180008190061FF", 0)]
-    public void TryDecode_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
+    public void TryReadLittleEndian_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
-        bool success = AttReadByTypeRsp.TryDecode(bytes, out _, out int decoded);
+        bool success = AttReadByTypeRsp.TryReadLittleEndian(bytes, out _, out int decoded);
 
         success.Should().BeFalse();
         decoded.Should().Be(expectedBytesDecoded);

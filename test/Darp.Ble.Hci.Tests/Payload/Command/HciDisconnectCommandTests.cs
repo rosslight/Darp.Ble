@@ -14,7 +14,7 @@ public sealed class HciDisconnectCommandTests
 
     [Theory]
     [InlineData(0, HciCommandStatus.RemoteUserTerminatedConnection, "000013")]
-    public void TryEncode_ShouldBeValid(ushort handle, HciCommandStatus reason, string expectedHexBytes)
+    public void TryWriteLittleEndian_ShouldBeValid(ushort handle, HciCommandStatus reason, string expectedHexBytes)
     {
         var buffer = new byte[3];
         var value = new HciDisconnectCommand
@@ -23,21 +23,21 @@ public sealed class HciDisconnectCommandTests
             Reason = reason,
         };
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeTrue();
-        value.GetLength().Should().Be(3);
+        value.GetByteCount().Should().Be(3);
         value.ConnectionHandle.Should().Be(handle);
         value.Reason.Should().Be(reason);
         Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
     }
 
     [Fact]
-    public void TryEncode_ShouldBeInvalid()
+    public void TryWriteLittleEndian_ShouldBeInvalid()
     {
         var buffer = new byte[2];
         HciDisconnectCommand value = default;
 
-        bool success = value.TryEncode(buffer);
+        bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeFalse();
     }
 }

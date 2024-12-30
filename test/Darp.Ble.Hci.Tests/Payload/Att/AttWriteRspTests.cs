@@ -14,11 +14,11 @@ public sealed class AttWriteRspTests
     [Theory]
     [InlineData("13")]
     [InlineData("1300")]
-    public void TryDecode_ShouldBeValid(string hexBytes)
+    public void TryReadLittleEndian_ShouldBeValid(string hexBytes)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
 
-        bool success = AttWriteRsp.TryDecode(bytes, out AttWriteRsp value, out int decoded);
+        bool success = AttWriteRsp.TryReadLittleEndian(bytes, out AttWriteRsp value, out int decoded);
 
         success.Should().BeTrue();
         decoded.Should().Be(1);
@@ -28,10 +28,10 @@ public sealed class AttWriteRspTests
     [Theory]
     [InlineData("", 0)]
     [InlineData("12", 0)]
-    public void TryDecode_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
+    public void TryReadLittleEndian_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
-        bool success = AttWriteRsp.TryDecode(bytes, out _, out int decoded);
+        bool success = AttWriteRsp.TryReadLittleEndian(bytes, out _, out int decoded);
 
         success.Should().BeFalse();
         decoded.Should().Be(expectedBytesDecoded);

@@ -1,6 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
-using Darp.Ble.Hci.Payload;
-using Darp.Ble.Hci.Payload.Event;
+using Darp.BinaryObjects;
 
 namespace Darp.Ble.Hci.Tests;
 
@@ -48,14 +47,14 @@ public static class Extensions
         }
     }
 
-    public static bool TryEncode<T>(this T encodable, Span<byte> destination)
-        where T : IEncodable =>
-        encodable.TryEncode(destination);
-    public static int GetLength<T>(this T encodable)
-        where T : IEncodable =>
-        encodable.Length;
+    public static bool TryWriteLittleEndian<T>(this T encodable, Span<byte> destination)
+        where T : IBinaryWritable =>
+        encodable.TryWriteLittleEndian(destination);
+    public static int GetByteCount<T>(this T encodable)
+        where T : IBinaryWritable =>
+        encodable.GetByteCount();
 
-    public static bool TryDecode<T>(ReadOnlyMemory<byte> memory, [NotNullWhen(true)] out T? result, out int decoded)
-        where T : IDecodable<T> =>
-        T.TryDecode(memory, out result, out decoded);
+    public static bool TryReadLittleEndian<T>(ReadOnlySpan<byte> memory, [NotNullWhen(true)] out T? result, out int decoded)
+        where T : IBinaryReadable<T> =>
+        T.TryReadLittleEndian(memory, out result, out decoded);
 }
