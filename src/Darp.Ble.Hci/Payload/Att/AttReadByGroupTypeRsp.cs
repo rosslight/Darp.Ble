@@ -1,35 +1,63 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci.Payload.Att;
 
-/// <summary> BLUETOOTH CORE SPECIFICATION Version 5.4 | Vol 3, Part F 3.4.4.10 ATT_READ_BY_GROUP_TYPE_RSP </summary>
-/// <typeparam name="TAttributeValue">The type of the attribute</typeparam>
-public readonly struct AttReadByGroupTypeRsp<TAttributeValue> : IAttPdu, IDecodable<AttReadByGroupTypeRsp<TAttributeValue>>
+/// <summary> The ATT_READ_BY_TYPE_RSP PDU is sent in reply to a received ATT_READ_BY_TYPE_REQ PDU and contains the handles and values of the attributes that have been read </summary>
+/// <typeparam name="TAttributeValue"> The type of the attribute </typeparam>
+/// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/attribute-protocol--att-.html#UUID-2c2cdcd4-6173-9654-82fc-c4c7bd74fe3a"/>
+public readonly record struct AttReadByGroupTypeRsp<TAttributeValue> : IAttPdu, IBinaryReadable<AttReadByGroupTypeRsp<TAttributeValue>>
     where TAttributeValue : unmanaged
 {
+    /// <inheritdoc />
     public static AttOpCode ExpectedOpCode => AttOpCode.ATT_READ_BY_GROUP_TYPE_RSP;
+
+    /// <inheritdoc />
     public required AttOpCode OpCode { get; init; }
+    /// <summary> The size of each attribute handle-value pair </summary>
     public required byte Length { get; init; }
+    /// <summary> A list of Attribute Data </summary>
+    [BinaryElementCount(nameof(Length))]
     public required AttGroupTypeData<TAttributeValue>[] AttributeDataList { get; init; }
-    public static bool TryDecode(in ReadOnlyMemory<byte> source, out AttReadByGroupTypeRsp<TAttributeValue> result, out int bytesDecoded)
+
+    /// <inheritdoc />
+    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out AttReadByGroupTypeRsp<TAttributeValue> value)
     {
-        result = default;
-        bytesDecoded = source.Length;
+        return TryReadLittleEndian(source, out value, out _);
+    }
+
+    /// <inheritdoc />
+    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out AttReadByGroupTypeRsp<TAttributeValue> value, out int bytesRead)
+    {
+        value = default;
+        bytesRead = 0;
         if (source.Length < 6) return false;
-        ReadOnlySpan<byte> span = source.Span;
-        var opCode = (AttOpCode)span[0];
+        var opCode = (AttOpCode)source[0];
         if (opCode != ExpectedOpCode) return false;
-        byte length = span[1];
+        byte length = source[1];
         if (length != Unsafe.SizeOf<AttGroupTypeData<TAttributeValue>>()) return false;
         if ((source.Length - 2) % length != 0) return false;
-        result = new AttReadByGroupTypeRsp<TAttributeValue>
+        value = new AttReadByGroupTypeRsp<TAttributeValue>
         {
             OpCode = opCode,
             Length = length,
-            AttributeDataList = MemoryMarshal.Cast<byte, AttGroupTypeData<TAttributeValue>>(span[2..]).ToArray(),
+            AttributeDataList = MemoryMarshal.Cast<byte, AttGroupTypeData<TAttributeValue>>(source[2..]).ToArray(),
         };
+        bytesRead = source.Length;
         return true;
+    }
+
+    /// <inheritdoc />
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out AttReadByGroupTypeRsp<TAttributeValue> value)
+    {
+        throw new NotSupportedException();
+    }
+
+    /// <inheritdoc />
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out AttReadByGroupTypeRsp<TAttributeValue> value, out int bytesRead)
+    {
+        throw new NotSupportedException();
     }
 }

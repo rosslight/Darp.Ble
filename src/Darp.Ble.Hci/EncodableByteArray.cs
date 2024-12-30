@@ -1,13 +1,42 @@
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Payload;
 
 namespace Darp.Ble.Hci;
 
-public sealed class EncodableByteArray : IEncodable
+/// <summary>
+/// A byte array which can be encoded
+/// </summary>
+/// <param name="bytes"> The bytes of the byte array </param>
+public sealed class EncodableByteArray(byte[] bytes) : IBinaryWritable
 {
-    private readonly byte[] _bytes;
-    public EncodableByteArray(byte[] bytes) => _bytes = bytes;
+    private readonly byte[] _bytes = bytes;
 
-    public int Length => _bytes.Length;
-    public bool TryEncode(Span<byte> destination) => _bytes.AsSpan().TryCopyTo(destination);
-    public byte[] ToByteArray() => _bytes;
+    /// <inheritdoc />
+    public int GetByteCount() => _bytes.Length;
+
+    /// <inheritdoc />
+    public bool TryWriteLittleEndian(Span<byte> destination)
+    {
+        return TryWriteLittleEndian(destination, out _);
+    }
+
+    /// <inheritdoc />
+    public bool TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
+    {
+        bytesWritten = _bytes.Length;
+        return _bytes.AsSpan().TryCopyTo(destination);
+    }
+
+    /// <inheritdoc />
+    public bool TryWriteBigEndian(Span<byte> destination)
+    {
+        return TryWriteBigEndian(destination, out _);
+    }
+
+    /// <inheritdoc />
+    public bool TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
+    {
+        bytesWritten = _bytes.Length;
+        return _bytes.AsSpan().TryCopyTo(destination);
+    }
 }

@@ -19,7 +19,7 @@ public sealed class GapAdvertisementTests(ILogger<GapAdvertisementTests> logger)
     [InlineData(BleEventType.AdvInd, BleAddressType.Public, 0xAABBCCDDEEFF, Physical.Le1M, Physical.NotAvailable,
         AdvertisingSId.NoAdIProvided, TxPowerLevel.NotAvailable, -40, PeriodicAdvertisingInterval.NoPeriodicAdvertising,
         BleAddressType.NotAvailable, 0x000000000000,
-        AdTypes.Flags, "1A", AdTypes.CompleteListOf16BitServiceClassUuids, "AABB",
+        AdTypes.Flags, "1A", AdTypes.CompleteListOf16BitServiceOrServiceClassUuids, "AABB",
         "130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB")]
     public async Task Advertisement_FromExtendedAdvertisingReport(BleEventType eventType, BleAddressType addressType, ulong address,
         Physical primaryPhy,

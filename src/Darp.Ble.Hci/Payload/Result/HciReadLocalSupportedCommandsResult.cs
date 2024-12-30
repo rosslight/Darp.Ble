@@ -1,10 +1,10 @@
 using System.Runtime.InteropServices;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
+using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci.Payload.Result;
-
-//[System.Runtime.CompilerServices.InlineArray(64)]
 
 /// <summary>
 /// Example:
@@ -24,20 +24,30 @@ namespace Darp.Ble.Hci.Payload.Result;
 /// BitField0: 00000000_00000000_11000000_00000000_00000000_10000000_00000000_00100000
 /// BitField1: 00100010_00101000_00000000_00000000_00000000_11100100_00000000_00000000
 /// ...
+/// Response to <see cref="HciReadLocalSupportedCommandsCommand"/>
 /// </summary>
-[StructLayout(LayoutKind.Sequential, Pack = 1)]
-public readonly struct HciReadLocalSupportedCommandsResult : IDefaultDecodable<HciReadLocalSupportedCommandsResult>
+[BinaryObject]
+public readonly partial record struct HciReadLocalSupportedCommandsResult
 {
+    /// <summary> The <see cref="HciCommandStatus"/> </summary>
     public required HciCommandStatus Status { get; init; }
     private readonly InlineBitField64 _bits;
     //public byte[] SupportedCommandBytes => ((ReadOnlySpan<byte>)_bits).ToArray();
 
+    /// <summary> Get all supported commands </summary>
     public IEnumerable<HciOpCode> SupportedCommands => Enum
         .GetValues<HciOpCode>()
         .Where(IsSupported);
 
+    /// <summary> Check if a command in a given octet and bit is supported </summary>
+    /// <param name="octet"> The octet to look at </param>
+    /// <param name="bit"> The bit to look at </param>
+    /// <returns> True, if supported </returns>
     public bool IsSupported(byte octet, byte bit) => true;//(_bits[octet] & (1 << bit)) is not 0;
 
+    /// <summary> Check if specific command is supported </summary>
+    /// <param name="command"> The <see cref="HciOpCode"/> to check for </param>
+    /// <returns> True, if supported </returns>
     public bool IsSupported(HciOpCode command) => command switch
     {
         HciOpCode.HCI_Disconnect => IsSupported(0, 5),
@@ -60,4 +70,3 @@ public readonly struct HciReadLocalSupportedCommandsResult : IDefaultDecodable<H
         _ => false,
     };
 }
-

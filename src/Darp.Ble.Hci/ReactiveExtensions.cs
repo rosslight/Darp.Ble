@@ -6,9 +6,10 @@ using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci;
 
+/// <summary> Class holding different reactive extensions </summary>
 public static class ReactiveExtensions
 {
-    public static IObservable<T> TakeUntil<T>(this IObservable<T> source, CancellationToken cancellationToken)
+    private static IObservable<T> TakeUntil<T>(this IObservable<T> source, CancellationToken cancellationToken)
     {
         IObservable<T> cancelObservable = Observable.Create<T>(observer => cancellationToken.Register(() =>
         {
@@ -17,19 +18,17 @@ public static class ReactiveExtensions
         return source.TakeUntil(cancelObservable);
     }
 
-    /// <summary>
-    /// Try to send a command. See BLUETOOTH CORE SPECIFICATION Version 5.4 | Vol 4, Part E, 5.4.2
-    /// </summary>
-    /// <param name="hciHost">The host</param>
-    /// <param name="aclData">The acl data to be sent</param>
-    /// <typeparam name="TAcl">The type of the adl packet to be sent</typeparam>
-    /// <returns>True if command was queued successfully</returns>
-    public static void SendAcl<TAcl>(this HciHost hciHost, TAcl aclData) where TAcl : IEncodable
-    {
-    }
-
+    /// <summary> The selector </summary>
+    /// <typeparam name="T"> The type of the source </typeparam>
+    /// <typeparam name="TResult"> The type of the result </typeparam>
     public delegate bool TrySelector<in T, TResult>(T value, [NotNullWhen(true)] out TResult? result);
 
+    /// <summary> Select everything, where the <paramref name="trySelector"/> returned true </summary>
+    /// <param name="source"> The source to operate on </param>
+    /// <param name="trySelector"> The selector if return is true </param>
+    /// <typeparam name="T"> The type of the source </typeparam>
+    /// <typeparam name="TResult"> The type of the result </typeparam>
+    /// <returns> The resulting observable </returns>
     public static IObservable<TResult> SelectWhere<T, TResult>(this IObservable<T> source,
         TrySelector<T, TResult> trySelector)
     {
@@ -42,18 +41,28 @@ public static class ReactiveExtensions
                     if (trySelector(next, out TResult? result))
                         observer.OnNext(result);
                 }
+#pragma warning disable CA1031
                 catch (Exception e)
                 {
                     observer.OnError(e);
                 }
+#pragma warning restore CA1031
             }, observer.OnError, observer.OnCompleted);
         });
     }
 
+    /// <summary> Select all event packets which where the event data matches <typeparamref name="TEvent"/> </summary>
+    /// <param name="source"> The source to operate on </param>
+    /// <typeparam name="TEvent"> The type of the event data </typeparam>
+    /// <returns> An observable with the event data </returns>
     public static IObservable<HciEventPacket<TEvent>> SelectWhereEvent<TEvent>(this IObservable<HciEventPacket> source)
         where TEvent : IHciEvent<TEvent> =>
         source.SelectWhere<HciEventPacket, HciEventPacket<TEvent>>(HciEventPacket.TryWithData);
 
+    /// <summary> Select all event packets which where the le event data matches <typeparamref name="TLeMetaEvent"/> </summary>
+    /// <param name="source"> The source to operate on </param>
+    /// <typeparam name="TLeMetaEvent"> The type of the event data </typeparam>
+    /// <returns> An observable with the le event data </returns>
     public static IObservable<HciEventPacket<TLeMetaEvent>> SelectWhereLeMetaEvent<TLeMetaEvent>(this IObservable<HciEventPacket<HciLeMetaEvent>> source)
         where TLeMetaEvent : IHciLeMetaEvent<TLeMetaEvent>
     {

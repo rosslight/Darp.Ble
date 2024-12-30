@@ -1,9 +1,12 @@
+using System.Diagnostics.CodeAnalysis;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
 
 namespace Darp.Ble.Hci.Payload;
 
-public interface IHciCommand<out TSelf> : IDefaultEncodable<TSelf>
-    where TSelf : unmanaged, IHciCommand<TSelf>
+/// <summary> An HCI command </summary>
+public interface IHciCommand : IBinaryWritable
 {
+    /// <summary> The OpCode of the command </summary>
     static abstract HciOpCode OpCode { get; }
 }

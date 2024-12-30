@@ -1,24 +1,21 @@
 using System.Buffers.Binary;
+using System.Runtime.InteropServices;
+using Darp.BinaryObjects;
 
 namespace Darp.Ble.Hci.Payload.Att;
 
-/// <summary>
-/// BLUETOOTH CORE SPECIFICATION Version 5.4 | Vol 3, Part F, 3.4.4.1 ATT_READ_BY_TYPE_REQ
-/// </summary>
-public readonly struct AttFindInformationReq : IAttPdu, IEncodable
+/// <summary> The ATT_FIND_INFORMATION_REQ PDU is used to obtain the mapping of attribute handles with their associated types. This allows a client to discover the list of attributes and their types on a server </summary>
+/// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/attribute-protocol--att-.html#UUID-06819664-297a-8234-c748-a326bbfab199"/>
+[BinaryObject]
+public readonly partial record struct AttFindInformationReq() : IAttPdu
 {
+    /// <inheritdoc />
     public static AttOpCode ExpectedOpCode => AttOpCode.ATT_FIND_INFORMATION_REQ;
-    public AttOpCode OpCode => ExpectedOpCode;
-    public required ushort StartingHandle { get; init; }
-    public required ushort EndingHandle { get; init; }
 
-    public int Length => 5;
-    public bool TryEncode(Span<byte> destination)
-    {
-        if (destination.Length < Length) return false;
-        destination[0] = (byte)OpCode;
-        BinaryPrimitives.WriteUInt16LittleEndian(destination[1..], StartingHandle);
-        BinaryPrimitives.WriteUInt16LittleEndian(destination[3..], EndingHandle);
-        return true;
-    }
+    /// <inheritdoc />
+    public AttOpCode OpCode { get; init; } = ExpectedOpCode;
+    /// <summary> First requested handle number </summary>
+    public required ushort StartingHandle { get; init; }
+    /// <summary> Last requested handle number </summary>
+    public required ushort EndingHandle { get; init; }
 }
