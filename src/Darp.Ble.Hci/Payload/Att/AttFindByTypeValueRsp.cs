@@ -14,24 +14,5 @@ public readonly partial record struct AttFindByTypeValueRsp : IAttPdu
     /// <inheritdoc />
     public required AttOpCode OpCode { get; init; }
     /// <summary> A list of 1 or more Handle Information </summary>
-    public required AttFindByTypeHandlesInformation[] HandlesInformationList { get; init; }
-
-    /// <inheritdoc />
-    public static bool TryDecode(in ReadOnlyMemory<byte> source, out AttFindByTypeValueRsp result, out int bytesDecoded)
-    {
-        result = default;
-        bytesDecoded = 0;
-        if (source.Length < 5) return false;
-        ReadOnlySpan<byte> span = source.Span;
-        var opCode = (AttOpCode)span[0];
-        if (opCode != ExpectedOpCode) return false;
-        if ((source.Length - 1) % 2 != 0) return false;
-        result = new AttFindByTypeValueRsp
-        {
-            OpCode = opCode,
-            HandlesInformationList = MemoryMarshal.Cast<byte, AttFindByTypeHandlesInformation>(span[1..]).ToArray(),
-        };
-        bytesDecoded = source.Length;
-        return true;
-    }
+    [BinaryMinElementCount(1)] public required AttFindByTypeHandlesInformation[] HandlesInformationList { get; init; }
 }

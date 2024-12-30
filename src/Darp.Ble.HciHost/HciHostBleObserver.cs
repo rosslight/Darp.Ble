@@ -47,13 +47,13 @@ public sealed class HciHostBleObserver(HciHostBleDevice device, ILogger? logger)
         {
             HciSetExtendedScanParametersResult paramSetResult = await _device.Host
                 .QueryCommandCompletionAsync<HciLeSetExtendedScanParametersCommand, HciSetExtendedScanParametersResult>(
-                    commands.Parameters, cancellationToken: token);
+                    commands.Parameters, cancellationToken: token).ConfigureAwait(false);
             if (paramSetResult.Status is not HciCommandStatus.Success)
             {
                 observer.OnError(new BleObservationStartException(this, $"Could not set scan parameters: {paramSetResult.Status}"));
                 return Disposable.Empty;
             }
-            HciSetExtendedScanEnableResult enableResult = await _device.Host.QueryCommandCompletionAsync<HciLeSetExtendedScanEnableCommand, HciSetExtendedScanEnableResult>(commands.Enable, cancellationToken: token);
+            HciSetExtendedScanEnableResult enableResult = await _device.Host.QueryCommandCompletionAsync<HciLeSetExtendedScanEnableCommand, HciSetExtendedScanEnableResult>(commands.Enable, cancellationToken: token).ConfigureAwait(false);
             if (enableResult.Status is not HciCommandStatus.Success)
             {
                 observer.OnError(new BleObservationStartException(this, $"Could not enable scan: {enableResult.Status}"));
@@ -88,14 +88,14 @@ public sealed class HciHostBleObserver(HciHostBleDevice device, ILogger? logger)
         GapAdvertisement advertisement = GapAdvertisement.FromExtendedAdvertisingReport(bleObserver,
             DateTimeOffset.UtcNow,
             (BleEventType)report.EventType,
-            new BleAddress((BleAddressType)report.AddressType, (UInt48)report.Address.Address),
+            new BleAddress((BleAddressType)report.AddressType, (UInt48)report.Address.ToUInt64()),
             (Physical)report.PrimaryPhy,
             (Physical)report.SecondaryPhy,
             (AdvertisingSId)report.AdvertisingSId,
             (TxPowerLevel)report.TxPower,
             (Rssi)report.Rssi,
             (PeriodicAdvertisingInterval)report.PeriodicAdvertisingInterval,
-            new BleAddress((BleAddressType)report.DirectAddressType, (UInt48)report.DirectAddress.Address),
+            new BleAddress((BleAddressType)report.DirectAddressType, (UInt48)report.DirectAddress.ToUInt64()),
             AdvertisingData.From(report.Data));
 
         return advertisement;

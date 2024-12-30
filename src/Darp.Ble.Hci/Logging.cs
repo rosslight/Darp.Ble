@@ -1,3 +1,4 @@
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload;
 using Microsoft.Extensions.Logging;
@@ -25,9 +26,9 @@ internal static partial class Logging
     [LoggerMessage(Level = LogLevel.Warning, Message = "H4Transport: Received unknown hci packet of type 0x{Type:X2}. Reading remaining buffer ...")]
     public static partial void LogPacketReceivingUnknownPacket(this ILogger logger, byte type);
     [LoggerMessage(Level = LogLevel.Trace, Message = "HciHost: Query {@Command} from client completed successfully: Received {EventCode} {@Packet}")]
-    public static partial void LogQueryCompleted(this ILogger logger, IEncodable command, HciEventCode eventCode, HciEventPacket packet);
+    public static partial void LogQueryCompleted(this ILogger logger, IBinaryWritable command, HciEventCode eventCode, HciEventPacket packet);
     [LoggerMessage(Level = LogLevel.Error, Message = "HciHost: Query {@Command} from client failed because of {Reason}")]
-    public static partial void LogQueryWithException(this ILogger logger, Exception ex, IEncodable command, string reason);
+    public static partial void LogQueryWithException(this ILogger logger, Exception ex, IBinaryWritable command, string reason);
     [LoggerMessage(Level = LogLevel.Trace, Message = "HciHost: Query {@Command} from client started with status {Status}: Received {EventCode} {@Packet}")]
-    public static partial void LogQueryStarted(this ILogger logger, IEncodable command, HciCommandStatus status, HciEventCode eventCode, HciEventPacket packet);
+    public static partial void LogQueryStarted(this ILogger logger, IBinaryWritable command, HciCommandStatus status, HciEventCode eventCode, HciEventPacket packet);
 }

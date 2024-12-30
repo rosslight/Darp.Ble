@@ -6,8 +6,7 @@ namespace Darp.Ble.Hci.Payload.Att;
 
 /// <summary> The ATT_READ_BY_TYPE_RSP PDU is sent in reply to a received ATT_READ_BY_TYPE_REQ PDU and contains the handles and values of the attributes that have been read </summary>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/attribute-protocol--att-.html#UUID-2c2cdcd4-6173-9654-82fc-c4c7bd74fe3a"/>
-[BinaryObject]
-public readonly partial record struct AttReadByTypeRsp : IAttPdu
+public readonly partial record struct AttReadByTypeRsp : IAttPdu, IBinaryReadable<AttReadByTypeRsp>
 {
     /// <inheritdoc />
     public static AttOpCode ExpectedOpCode => AttOpCode.ATT_READ_BY_TYPE_RSP;
@@ -21,21 +20,26 @@ public readonly partial record struct AttReadByTypeRsp : IAttPdu
     public required AttReadByTypeData[] AttributeDataList { get; init; }
 
     /// <inheritdoc />
-    public static bool TryDecode(in ReadOnlyMemory<byte> source, out AttReadByTypeRsp result, out int bytesDecoded)
+    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out AttReadByTypeRsp value)
     {
-        result = default;
-        bytesDecoded = 0;
+        return TryReadLittleEndian(source, out value, out _);
+    }
+
+    /// <inheritdoc />
+    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out AttReadByTypeRsp value, out int bytesRead)
+    {
+        value = default;
+        bytesRead = 0;
         if (source.Length < 6)
         {
             return false;
         }
-        ReadOnlySpan<byte> span = source.Span;
-        var opCode = (AttOpCode)span[0];
+        var opCode = (AttOpCode)source[0];
         if (opCode != ExpectedOpCode)
         {
             return false;
         }
-        byte length = span[1];
+        byte length = source[1];
         if (length < 2)
         {
             return false;
@@ -51,16 +55,28 @@ public readonly partial record struct AttReadByTypeRsp : IAttPdu
         {
             int attStart = 2 + i * length;
             attributeDataList[i] = new AttReadByTypeData(
-                BinaryPrimitives.ReadUInt16LittleEndian(span[attStart..]),
-                source.Slice(attStart + 2, length - 2));
+                BinaryPrimitives.ReadUInt16LittleEndian(source[attStart..]),
+                source.Slice(attStart + 2, length - 2).ToArray());
         }
-        result = new AttReadByTypeRsp
+        value = new AttReadByTypeRsp
         {
             OpCode = opCode,
             Length = length,
             AttributeDataList = attributeDataList,
         };
-        bytesDecoded = source.Length;
+        bytesRead = source.Length;
         return true;
+    }
+
+    /// <inheritdoc />
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out AttReadByTypeRsp value)
+    {
+        throw new NotSupportedException();
+    }
+
+    /// <inheritdoc />
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out AttReadByTypeRsp value, out int bytesRead)
+    {
+        throw new NotSupportedException();
     }
 }

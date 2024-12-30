@@ -44,9 +44,9 @@ public sealed class H4TransportLayer : ITransportLayer
                     await Task.Delay(1, _cancelToken).ConfigureAwait(false);
                     continue;
                 }
-                var bytes = new byte[1 + packet.Length];
+                var bytes = new byte[1 + packet.GetByteCount()];
                 bytes[0] = (byte)packet.PacketType;
-                if (!packet.TryEncode(bytes.AsSpan()[1..]))
+                if (!packet.TryWriteLittleEndian(bytes.AsSpan()[1..]))
                 {
                     _logger?.LogPacketSendingErrorEncoding(packet);
                     continue;
@@ -70,7 +70,7 @@ public sealed class H4TransportLayer : ITransportLayer
     }
 
     private async ValueTask RunRxPacket<TPacket>(Memory<byte> buffer, byte payloadLengthIndex)
-        where TPacket : IHciPacket<TPacket>, ISpanReadable<TPacket>
+        where TPacket : IHciPacket<TPacket>, IBinaryReadable<TPacket>
     {
         // Read Header
         await _serialPort.BaseStream.ReadExactlyAsync(buffer[..TPacket.HeaderLength], _cancelToken).ConfigureAwait(false);

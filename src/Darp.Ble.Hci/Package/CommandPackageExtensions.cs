@@ -60,7 +60,7 @@ public static class CommandPackageExtensions
         TCommand command = default, TimeSpan? timeout = null,
         CancellationToken cancellationToken = default)
         where TCommand : unmanaged, IHciCommand
-        where TParameters : unmanaged, ISpanReadable<TParameters>
+        where TParameters : unmanaged, IBinaryReadable<TParameters>
     {
         timeout ??= TimeSpan.FromSeconds(10);
         HciEventPacket<HciCommandCompleteEvent<TParameters>> packet = await Observable

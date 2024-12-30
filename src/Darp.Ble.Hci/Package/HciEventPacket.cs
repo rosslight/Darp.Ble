@@ -37,7 +37,7 @@ public partial class HciEventPacket(HciEventCode eventCode, byte parameterTotalL
         ArgumentNullException.ThrowIfNull(hciEventPacket);
         result = null;
         if (hciEventPacket.EventCode != TParameters.EventCode) return false;
-        if (!TParameters.TryDecode(hciEventPacket.DataBytes, out TParameters? parameters, out _)) return false;
+        if (!TParameters.TryReadLittleEndian(hciEventPacket.DataBytes, out TParameters? parameters, out _)) return false;
 
         result = new HciEventPacket<TParameters>(hciEventPacket.EventCode,
             hciEventPacket.ParameterTotalLength,

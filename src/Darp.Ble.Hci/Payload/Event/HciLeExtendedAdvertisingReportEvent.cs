@@ -1,12 +1,10 @@
-using System.Runtime.InteropServices;
 using Darp.BinaryObjects;
 
 namespace Darp.Ble.Hci.Payload.Event;
 
 /// <summary> The HCI_LE_Extended_Advertising_Report event indicates that one or more Bluetooth devices have responded to an active scan or have broadcast advertisements that were received during a passive scan </summary>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-e88970dc-edc8-ca27-58d8-153b97751686"/>
-[BinaryObject]
-public readonly partial record struct HciLeExtendedAdvertisingReportEvent : IHciLeMetaEvent<HciLeExtendedAdvertisingReportEvent>
+public readonly record struct HciLeExtendedAdvertisingReportEvent : IHciLeMetaEvent<HciLeExtendedAdvertisingReportEvent>
 {
     /// <inheritdoc />
     public static HciLeMetaSubEventType SubEventType => HciLeMetaSubEventType.HCI_LE_Extended_Advertising_Report;
@@ -21,34 +19,49 @@ public readonly partial record struct HciLeExtendedAdvertisingReportEvent : IHci
     public required IReadOnlyList<HciLeExtendedAdvertisingReport> Reports { get; init; }
 
     /// <inheritdoc />
-    public static bool TryDecode(in ReadOnlyMemory<byte> source,
-        out HciLeExtendedAdvertisingReportEvent hciEvent,
-        out int bytesDecoded)
+    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out HciLeExtendedAdvertisingReportEvent value)
     {
-        bytesDecoded = default;
-        hciEvent = default;
-        ReadOnlySpan<byte> span = source.Span;
-        byte subEventCode = span[0];
-        byte numReports = span[1];
+        return TryReadLittleEndian(source, out value, out _);
+    }
+
+    /// <inheritdoc />
+    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out HciLeExtendedAdvertisingReportEvent value, out int bytesRead)
+    {
+        bytesRead = 0;
+        value = default;
+        byte subEventCode = source[0];
+        byte numReports = source[1];
         var reports = new HciLeExtendedAdvertisingReport[numReports];
-        bytesDecoded = 2;
+        bytesRead = 2;
         for (var i = 0; i < numReports; i++)
         {
-            if (!HciLeExtendedAdvertisingReport.TryDecode(source[bytesDecoded..],
+            if (!HciLeExtendedAdvertisingReport.TryReadLittleEndian(source[bytesRead..],
                     out HciLeExtendedAdvertisingReport data,
                     out int dataBytesRead))
             {
                 return false;
             }
-            bytesDecoded += dataBytesRead;
+            bytesRead += dataBytesRead;
             reports[i] = data;
         }
-        hciEvent = new HciLeExtendedAdvertisingReportEvent
+        value = new HciLeExtendedAdvertisingReportEvent
         {
             SubEventCode = (HciLeMetaSubEventType)subEventCode,
             NumReports = numReports,
             Reports = reports,
         };
         return true;
+    }
+
+    /// <inheritdoc />
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out HciLeExtendedAdvertisingReportEvent value)
+    {
+        throw new NotSupportedException();
+    }
+
+    /// <inheritdoc />
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out HciLeExtendedAdvertisingReportEvent value, out int bytesRead)
+    {
+        throw new NotSupportedException();
     }
 }

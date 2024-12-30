@@ -16,19 +16,39 @@ public sealed class HciCommandPacket<TParameters>(TParameters commandParameters)
     /// <inheritdoc />
     public HciPacketType PacketType => HciPacketType.HciCommand;
     /// <inheritdoc />
-    public int Length => HeaderLength + Data.GetByteCount();
+    public int GetByteCount() => HeaderLength + Data.GetByteCount();
 
     /// <inheritdoc />
     public TParameters Data { get; } = commandParameters;
 
     /// <inheritdoc />
-    public bool TryEncode(Span<byte> destination)
+    public bool TryWriteLittleEndian(Span<byte> destination)
     {
-        if (destination.Length < Length) return false;
+        return TryWriteLittleEndian(destination, out _);
+    }
+
+    /// <inheritdoc />
+    public bool TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
+    {
+        bytesWritten = 0;
+        if (destination.Length < HeaderLength) return false;
         var opCode = (ushort)TParameters.OpCode;
         destination[0] = (byte)(opCode & 0xFF);
         destination[1] = (byte)((opCode >> 8) & 0xFF);
-        destination[2] = (byte)Data.Length;
-        return Data.TryEncode(destination[3..]);
+        destination[2] = (byte)Data.GetByteCount();
+        bytesWritten = 3 + Data.GetByteCount();
+        return Data.TryWriteLittleEndian(destination[3..]);
+    }
+
+    /// <inheritdoc />
+    public bool TryWriteBigEndian(Span<byte> destination)
+    {
+        throw new NotSupportedException();
+    }
+
+    /// <inheritdoc />
+    public bool TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
+    {
+        throw new NotSupportedException();
     }
 }

@@ -1,9 +1,9 @@
-using Darp.Ble.Hci.Payload;
+using Darp.BinaryObjects;
 
 namespace Darp.Ble.Hci.Package;
 
 /// <summary> An abstract hci packet </summary>
-public interface IHciPacket : IEncodable
+public interface IHciPacket : IBinaryWritable
 {
     /// <summary> The type of the packet </summary>
     HciPacketType PacketType { get; }

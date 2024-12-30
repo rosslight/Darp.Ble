@@ -13,7 +13,7 @@ namespace Darp.Ble.Hci.Payload.Command;
 /// <param name="byte4"> The firth byte </param>
 /// <param name="byte5"> The sixth byte </param>
 [BinaryObject]
-public readonly struct DeviceAddress(byte byte0, byte byte1, byte byte2, byte byte3, byte byte4, byte byte5)
+public readonly partial struct DeviceAddress(byte byte0, byte byte1, byte byte2, byte byte3, byte byte4, byte byte5)
 {
     private readonly byte _byte0 = byte0;
     private readonly byte _byte1 = byte1;
@@ -23,7 +23,7 @@ public readonly struct DeviceAddress(byte byte0, byte byte1, byte byte2, byte by
     private readonly byte _byte5 = byte5;
 
     /// <summary> The address as a ulong </summary>
-    public ulong Address => _byte0 | (ulong)_byte1 << 8 | (ulong)_byte2 << 16
+    public ulong ToUInt64() => _byte0 | (ulong)_byte1 << 8 | (ulong)_byte2 << 16
                             | (ulong)_byte3 << 24 | (ulong)_byte4 << 32 | (ulong)_byte5 << 40;
 
     /// <summary> Get te device address from a ulong </summary>
@@ -41,7 +41,7 @@ public readonly struct DeviceAddress(byte byte0, byte byte1, byte byte2, byte by
     /// <summary> Get the address as ulong </summary>
     /// <param name="address"> The address </param>
     /// <returns> The ulong </returns>
-    public static implicit operator ulong(DeviceAddress address) => address.Address;
+    public static implicit operator ulong(DeviceAddress address) => address.ToUInt64();
 
     /// <inheritdoc />
     public static bool TryDecode(in ReadOnlyMemory<byte> source, out DeviceAddress result, out int bytesDecoded)

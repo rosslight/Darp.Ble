@@ -1,5 +1,4 @@
 using System.Buffers.Binary;
-using System.Runtime.InteropServices;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
 
@@ -7,9 +6,8 @@ namespace Darp.Ble.Hci.Payload.Event;
 
 /// <summary> The HCI_Command_Complete event is used by the Controller for most commands to transmit return status of a command and the other event parameters that are specified for the issued HCI command </summary>
 /// <typeparam name="TParameters"></typeparam>
-[BinaryObject]
-public readonly partial record struct HciCommandCompleteEvent<TParameters> : IHciEvent<HciCommandCompleteEvent<TParameters>>
-    where TParameters : ISpanReadable<TParameters>
+public readonly record struct HciCommandCompleteEvent<TParameters> : IHciEvent<HciCommandCompleteEvent<TParameters>>
+    where TParameters : IBinaryReadable<TParameters>
 {
     /// <inheritdoc />
     public static HciEventCode EventCode => HciEventCode.HCI_Command_Complete;
@@ -22,26 +20,41 @@ public readonly partial record struct HciCommandCompleteEvent<TParameters> : IHc
     public required TParameters ReturnParameters { get; init; }
 
     /// <inheritdoc />
-    public static bool TryDecode(in ReadOnlyMemory<byte> source,
-        out HciCommandCompleteEvent<TParameters> hciEvent,
-        out int bytesDecoded)
+    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out HciCommandCompleteEvent<TParameters> value)
     {
-        bytesDecoded = default;
-        hciEvent = default;
+        return TryReadLittleEndian(source, out value, out _);
+    }
+
+    /// <inheritdoc />
+    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out HciCommandCompleteEvent<TParameters> value, out int bytesRead)
+    {
+        bytesRead = 0;
+        value = default;
         if (source.Length < 3)
             return false;
-        ReadOnlySpan<byte> span = source.Span;
-        byte numHciCommandPackets = span[0];
-        ushort commandOpCode = BinaryPrimitives.ReadUInt16LittleEndian(span[1..]);
-        if (!TParameters.TryDecode(source[3..], out TParameters? returnParameters, out int parameterBytesRead))
+        byte numHciCommandPackets = source[0];
+        ushort commandOpCode = BinaryPrimitives.ReadUInt16LittleEndian(source[1..]);
+        if (!TParameters.TryReadLittleEndian(source[3..], out TParameters? returnParameters, out int parameterBytesRead))
             return false;
-        bytesDecoded = 3 + parameterBytesRead;
-        hciEvent = new HciCommandCompleteEvent<TParameters>
+        bytesRead = 3 + parameterBytesRead;
+        value = new HciCommandCompleteEvent<TParameters>
         {
             NumHciCommandPackets = numHciCommandPackets,
             CommandOpCode = (HciOpCode)commandOpCode,
             ReturnParameters = returnParameters,
         };
         return true;
+    }
+
+    /// <inheritdoc />
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out HciCommandCompleteEvent<TParameters> value)
+    {
+        throw new NotSupportedException();
+    }
+
+    /// <inheritdoc />
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out HciCommandCompleteEvent<TParameters> value, out int bytesRead)
+    {
+        throw new NotSupportedException();
     }
 }

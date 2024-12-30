@@ -17,22 +17,4 @@ public readonly partial record struct AttExchangeMtuRsp : IAttPdu
     public required AttOpCode OpCode { get; init; }
     /// <summary> ATT Server receive MTU size </summary>
     public required ushort ServerRxMtu { get; init; }
-
-    /// <inheritdoc />
-    public static bool TryDecode(in ReadOnlyMemory<byte> source, out AttExchangeMtuRsp result, out int bytesDecoded)
-    {
-        result = default;
-        bytesDecoded = 0;
-        if (source.Length < 3) return false;
-        ReadOnlySpan<byte> span = source.Span;
-        var opCode = (AttOpCode)span[0];
-        if (opCode != ExpectedOpCode) return false;
-        result = new AttExchangeMtuRsp
-        {
-            OpCode = opCode,
-            ServerRxMtu = BinaryPrimitives.ReadUInt16LittleEndian(span[1..]),
-        };
-        bytesDecoded = 3;
-        return true;
-    }
 }

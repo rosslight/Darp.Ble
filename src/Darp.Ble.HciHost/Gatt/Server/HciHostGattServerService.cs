@@ -32,13 +32,13 @@ internal sealed class HciHostGattServerService(BleUuid uuid, ushort attHandle, u
                     AttributeType = 0x2803,
                 }, cancellationToken: token).ConfigureAwait(false);
                 if (response.OpCode is AttOpCode.ATT_ERROR_RSP
-                    && AttErrorRsp.TryDecode(response.Pdu, out AttErrorRsp errorRsp, out _))
+                    && AttErrorRsp.TryReadLittleEndian(response.Pdu, out AttErrorRsp errorRsp, out _))
                 {
                     if (errorRsp.ErrorCode is AttErrorCode.AttributeNotFoundError) break;
                     throw new Exception($"Could not discover characteristics due to error {errorRsp.ErrorCode}");
                 }
                 if (!(response.OpCode is AttOpCode.ATT_READ_BY_TYPE_RSP
-                     && AttReadByTypeRsp.TryDecode(response.Pdu, out AttReadByTypeRsp rsp, out _)))
+                     && AttReadByTypeRsp.TryReadLittleEndian(response.Pdu, out AttReadByTypeRsp rsp, out _)))
                 {
                     throw new Exception($"Received unexpected att response {response.OpCode}");
                 }

@@ -6,8 +6,7 @@ namespace Darp.Ble.Hci.Payload.Att;
 
 /// <summary> The ATT_FIND_INFORMATION_RSP PDU is sent in reply to a received ATT_FIND_INFORMATION_REQ PDU and contains information about this server </summary>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/attribute-protocol--att-.html#UUID-06819664-297a-8234-c748-a326bbfab199"/>
-[BinaryObject]
-public readonly partial record struct AttFindInformationRsp : IAttPdu
+public readonly record struct AttFindInformationRsp : IAttPdu, IBinaryReadable<AttFindInformationRsp>
 {
     /// <inheritdoc />
     public static AttOpCode ExpectedOpCode => AttOpCode.ATT_FIND_INFORMATION_RSP;
@@ -20,15 +19,20 @@ public readonly partial record struct AttFindInformationRsp : IAttPdu
     public required AttFindInformationData[] InformationData { get; init; }
 
     /// <inheritdoc />
-    public static bool TryDecode(in ReadOnlyMemory<byte> source, out AttFindInformationRsp result, out int bytesDecoded)
+    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out AttFindInformationRsp value)
     {
-        result = default;
-        bytesDecoded = 0;
+        return TryReadLittleEndian(source, out value, out _);
+    }
+
+    /// <inheritdoc />
+    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out AttFindInformationRsp value, out int bytesRead)
+    {
+        value = default;
+        bytesRead = 0;
         if (source.Length < 6) return false;
-        ReadOnlySpan<byte> span = source.Span;
-        var opCode = (AttOpCode)span[0];
+        var opCode = (AttOpCode)source[0];
         if (opCode != ExpectedOpCode) return false;
-        var format = (AttFindInformationFormat)span[1];
+        var format = (AttFindInformationFormat)source[1];
         int informationDataLength = 2 + format switch
         {
             AttFindInformationFormat.HandleAnd16BitUuid => 2,
@@ -44,16 +48,28 @@ public readonly partial record struct AttFindInformationRsp : IAttPdu
         {
             int attStart = 2 + i * informationDataLength;
             attributeDataList[i] = new AttFindInformationData(
-                BinaryPrimitives.ReadUInt16LittleEndian(span[attStart..]),
-                source.Slice(attStart + 2, informationDataLength - 2));
+                BinaryPrimitives.ReadUInt16LittleEndian(source[attStart..]),
+                source.Slice(attStart + 2, informationDataLength - 2).ToArray());
         }
-        result = new AttFindInformationRsp
+        value = new AttFindInformationRsp
         {
             OpCode = opCode,
             Format = format,
             InformationData = attributeDataList,
         };
-        bytesDecoded = source.Length;
+        bytesRead = source.Length;
         return true;
+    }
+
+    /// <inheritdoc />
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out AttFindInformationRsp value)
+    {
+        throw new NotSupportedException();
+    }
+
+    /// <inheritdoc />
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out AttFindInformationRsp value, out int bytesRead)
+    {
+        throw new NotSupportedException();
     }
 }

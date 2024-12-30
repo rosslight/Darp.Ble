@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Payload;
 
 namespace Darp.Ble.Hci.Package;
@@ -23,10 +24,10 @@ public interface IHciEventPacket<TSelf> : IHciPacket<TSelf> where TSelf : IHciPa
     /// <summary> All bytes for the event parameters </summary>
     byte[] DataBytes { get; }
 
-    int IEncodable.Length => EventPacketHeaderLength + ParameterTotalLength;
-    bool IEncodable.TryEncode(Span<byte> destination)
+    int IBinaryWritable.GetByteCount() => EventPacketHeaderLength + ParameterTotalLength;
+    bool IBinaryWritable.TryWriteLittleEndian(Span<byte> destination)
     {
-        if (destination.Length < Length) return false;
+        if (destination.Length < GetByteCount()) return false;
         destination[0] = (byte)EventCode;
         destination[1] = ParameterTotalLength;
         return DataBytes.AsSpan().TryCopyTo(destination[2..]);

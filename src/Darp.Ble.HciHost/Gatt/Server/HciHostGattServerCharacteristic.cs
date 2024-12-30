@@ -39,13 +39,13 @@ internal sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer serv
                 }, cancellationToken: token)
                 .ConfigureAwait(false);
             if (response.OpCode is AttOpCode.ATT_ERROR_RSP && AttErrorRsp
-                    .TryDecode(response.Pdu, out AttErrorRsp errorRsp, out _))
+                    .TryReadLittleEndian(response.Pdu, out AttErrorRsp errorRsp, out _))
             {
                 if (errorRsp.ErrorCode is AttErrorCode.AttributeNotFoundError) break;
                 throw new GattCharacteristicException(this, $"Could not discover descriptors due to error {errorRsp.ErrorCode}");
             }
             if (!(response.OpCode is AttOpCode.ATT_FIND_INFORMATION_RSP && AttFindInformationRsp
-                    .TryDecode(response.Pdu, out AttFindInformationRsp rsp, out _)))
+                    .TryReadLittleEndian(response.Pdu, out AttFindInformationRsp rsp, out _)))
             {
                 throw new GattCharacteristicException(this, $"Received unexpected att response {response.OpCode}");
             }
