@@ -81,7 +81,11 @@ public abstract class BleCentral(BleDevice device, ILogger? logger) : IBleCentra
     /// <summary> Remove a specific peer from the central </summary>
     /// <param name="peer"> The peer to be removed </param>
     /// <returns> True if the element is successfully found and removed; otherwise, false </returns>
-    public bool RemovePeer(IGattServerPeer peer) => _peerDevices.TryRemove(peer.Address, out _);
+    public bool RemovePeer(IGattServerPeer peer)
+    {
+        ArgumentNullException.ThrowIfNull(peer);
+        return _peerDevices.TryRemove(peer.Address, out _);
+    }
 
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
@@ -90,7 +94,7 @@ public abstract class BleCentral(BleDevice device, ILogger? logger) : IBleCentra
         {
             if (_peerDevices.TryGetValue(address, out IGattServerPeer? peer))
             {
-                await peer.DisposeAsync();
+                await peer.DisposeAsync().ConfigureAwait(false);
             }
         }
         DisposeCore();

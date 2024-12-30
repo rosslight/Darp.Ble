@@ -82,7 +82,7 @@ public abstract class GattServerPeer : IGattServerPeer
         }
         _isDisposing = true;
         DisposeCore();
-        await DisposeAsyncCore();
+        await DisposeAsyncCore().ConfigureAwait(false);
         Logger?.LogBleServerPeerDisposed(Address);
         _central.RemovePeer(this);
         ConnectionSubject.OnCompleted();

@@ -46,7 +46,7 @@ public abstract class GattServerCharacteristic(BleUuid uuid, ILogger? logger) : 
         CancellationToken cancellationToken)
     {
         Action<byte[]> action = bytes => onNotify(state, bytes);
-        await _notifySemaphore.WaitAsync(default(CancellationToken)).ConfigureAwait(false);
+        await _notifySemaphore.WaitAsync(CancellationToken.None).ConfigureAwait(false);
         try
         {
             if (_notifyDisposable is null)
@@ -61,7 +61,7 @@ public abstract class GattServerCharacteristic(BleUuid uuid, ILogger? logger) : 
                         Action<byte[]> item1Action = characteristic._actions[index];
                         item1Action(bytes);
                     }
-                }, cancellationToken);
+                }, cancellationToken).ConfigureAwait(false);
                 Logger?.LogTrace("Enabled notifications on {@Characteristic}", this);
             }
             _actions.Add(action);
@@ -72,7 +72,7 @@ public abstract class GattServerCharacteristic(BleUuid uuid, ILogger? logger) : 
         }
         return AsyncDisposable.Create(async () =>
         {
-            await _notifySemaphore.WaitAsync(default(CancellationToken)).ConfigureAwait(false);
+            await _notifySemaphore.WaitAsync(CancellationToken.None).ConfigureAwait(false);
             try
             {
                 _actions.Remove(action);
@@ -82,7 +82,7 @@ public abstract class GattServerCharacteristic(BleUuid uuid, ILogger? logger) : 
                 }
                 _notifyDisposable.Dispose();
                 Logger?.LogTrace("Starting to disable notifications on {@Characteristic}", this);
-                await DisableNotificationsAsync();
+                await DisableNotificationsAsync().ConfigureAwait(false);
                 Logger?.LogTrace("Disabled notifications on {@Characteristic}", this);
             }
             finally
