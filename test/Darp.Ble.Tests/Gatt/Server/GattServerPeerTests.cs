@@ -5,6 +5,7 @@ using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Implementation;
+using Darp.Ble.Tests.TestUtils;
 using FluentAssertions;
 using NSubstitute;
 
