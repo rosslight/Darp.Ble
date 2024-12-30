@@ -87,7 +87,9 @@ var peerDevice = await central
 var service = await peerDevice.DiscoverServiceAsync(new BleUuid(0x1234));
 var writeChar = await service.DiscoverCharacteristicAsync<Properties.Write>(new BleUuid(0x5678));
 var notifyChar = await service.DiscoverCharacteristicAsync<Properties.Notify>(new BleUuid(0xABCD));
-var notifyTask = notifyChar.OnNotify().RefCount().FirstAsync().ToTask();
+
+await using var disposableObs = await notifyChar.OnNotifyAsync();
+var notifyTask = disposableObs.FirstAsync().ToTask();
 await writeChar.WriteAsync([0x00, 0x02, 0x03, 0x04]);
 var resultBytes = await notifyTask;
 ```

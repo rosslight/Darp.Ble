@@ -24,7 +24,7 @@ internal sealed class MockBleDevice(
         var peripheral = new MockBlePeripheral(this, broadcaster, Logger);
         Observer = new MockBleObserver(this, broadcaster, Logger);
         Central = new MockBleCentral(this, peripheral, Logger);
-        await _onInitialize.Invoke(broadcaster, peripheral);
+        await _onInitialize.Invoke(broadcaster, peripheral).ConfigureAwait(false);
         return InitializeResult.Success;
     }
 }

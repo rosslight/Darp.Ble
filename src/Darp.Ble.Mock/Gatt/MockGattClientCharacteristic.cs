@@ -31,11 +31,11 @@ internal sealed class MockGattClientCharacteristic(BleUuid uuid,
         return Task.CompletedTask;
     }
 
-    public Task DisableNotificationsAsync(IGattClientPeer clientPeer)
+    public async Task DisableNotificationsAsync(IGattClientPeer clientPeer)
     {
+        await Task.Delay(200).ConfigureAwait(false);
         bool removedSuccessfully = _notifyActions.TryRemove(clientPeer, out _);
         Debug.Assert(removedSuccessfully, "This method should not be called if there is no callback to remove for this peer");
-        return Task.CompletedTask;
     }
 
     /// <inheritdoc />

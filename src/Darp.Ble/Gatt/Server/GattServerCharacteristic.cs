@@ -81,6 +81,7 @@ public abstract class GattServerCharacteristic(BleUuid uuid, ILogger? logger) : 
                     return;
                 }
                 _notifyDisposable.Dispose();
+                _notifyDisposable = null;
                 Logger?.LogTrace("Starting to disable notifications on {@Characteristic}", this);
                 await DisableNotificationsAsync().ConfigureAwait(false);
                 Logger?.LogTrace("Disabled notifications on {@Characteristic}", this);
