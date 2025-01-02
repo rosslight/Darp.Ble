@@ -16,8 +16,8 @@ public static partial class GattCharacteristicExtensions
         return buffer;
     }
 
-    private static Func<IGattClientPeer, CancellationToken, ValueTask<byte[]>>? UsingBytes<T>(
-        this Func<IGattClientPeer, CancellationToken, ValueTask<T>>? onRead)
+    private static IGattClientService.OnReadCallback? UsingBytes<T>(
+        this IGattClientService.OnReadCallback<T>? onRead)
         where T : unmanaged
     {
         return onRead is null
@@ -29,8 +29,8 @@ public static partial class GattCharacteristicExtensions
             };
     }
 
-    private static Func<IGattClientPeer, byte[], CancellationToken, ValueTask<GattProtocolStatus>>? UsingBytes<T>(
-        this Func<IGattClientPeer, T, CancellationToken, ValueTask<GattProtocolStatus>>? onWrite)
+    private static IGattClientService.OnWriteCallback? UsingBytes<T>(
+        this IGattClientService.OnWriteCallback<T>? onWrite)
         where T : unmanaged
     {
         return onWrite is null

@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
 
@@ -51,10 +50,10 @@ public static partial class GattCharacteristicExtensions
     /// <param name="characteristic"> The characteristic to be used for the notification </param>
     /// <param name="peer"> The peer to notify </param>
     /// <param name="value"> The value to update </param>
-    public static void Notify(this IGattClientCharacteristic<Properties.Notify> characteristic, IGattClientPeer peer, byte[] value)
+    public static void Notify(this IGattClientCharacteristic<Properties.Notify> characteristic, IGattClientPeer? peer, byte[] value)
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        characteristic.Characteristic.StartUpdateValue(clientPeer: peer, value);
+        characteristic.Characteristic.NotifyValue(clientPeer: peer, value);
     }
 
     /// <summary> Notify a connected peer of a new value </summary>
@@ -66,9 +65,7 @@ public static partial class GattCharacteristicExtensions
         where T : unmanaged
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        var buffer = new byte[Marshal.SizeOf<T>()];
-        MemoryMarshal.Write(buffer, value);
-        characteristic.Characteristic.StartUpdateValue(clientPeer: peer, buffer);
+        characteristic.Characteristic.NotifyValue(clientPeer: peer, value.ToByteArray());
     }
 
     /// <summary> Notify all connected peers of a new value </summary>
@@ -77,7 +74,7 @@ public static partial class GattCharacteristicExtensions
     public static void NotifyAll(this IGattClientCharacteristic<Properties.Notify> characteristic, byte[] value)
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        characteristic.Characteristic.StartUpdateValue(clientPeer: null, value);
+        characteristic.Characteristic.NotifyValue(clientPeer: null, value);
     }
 
     /// <summary> Notify all connected peers of a new value </summary>
@@ -88,8 +85,6 @@ public static partial class GattCharacteristicExtensions
         where T : unmanaged
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        var buffer = new byte[Marshal.SizeOf<T>()];
-        MemoryMarshal.Write(buffer, value);
-        characteristic.Characteristic.StartUpdateValue(clientPeer: null, buffer);
+        characteristic.Characteristic.NotifyValue(clientPeer: null, value.ToByteArray());
     }
 }

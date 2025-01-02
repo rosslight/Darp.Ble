@@ -8,19 +8,31 @@ public interface IGattClientCharacteristic
     /// <summary> The UUID of the characteristic </summary>
     BleUuid Uuid { get; }
     /// <summary> The property of the characteristic </summary>
+#pragma warning disable CA1716 // Using a reserved keyword as the name of a virtual/ interface member makes it harder for consumers in other languages to override/ implement the member.
     GattProperty Property { get; }
+#pragma warning restore CA1716
 
+    /// <summary> Get the current value of the characteristic </summary>
+    /// <param name="clientPeer"> The client peer to get the value for. If null, all subscribed clients will be taken into account </param>
+    /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
+    /// <returns> The current value </returns>
+    ValueTask<byte[]> GetValueAsync(IGattClientPeer? clientPeer, CancellationToken cancellationToken);
     /// <summary> Update the characteristic value </summary>
     /// <param name="clientPeer"> The client peer to update the value for. If null, all subscribed clients will be taken into account </param>
     /// <param name="value"> The value to update with </param>
     /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
     /// <returns> The status of the update operation </returns>
     ValueTask<GattProtocolStatus> UpdateValueAsync(IGattClientPeer? clientPeer, byte[] value, CancellationToken cancellationToken);
-    /// <summary> Get the current value of the characteristic </summary>
-    /// <param name="clientPeer"> The client peer to get the value for. If null, all subscribed clients will be taken into account </param>
+    /// <summary> Notify subscribers about a new value </summary>
+    /// <param name="clientPeer"> The client peer to notify. If null, all subscribed clients will be taken into account </param>
+    /// <param name="value"> The value to update with </param>
+    void NotifyValue(IGattClientPeer? clientPeer, byte[] value);
+    /// <summary> Update the characteristic value </summary>
+    /// <param name="clientPeer"> The client peer to update the value for. If null, all subscribed clients will be taken into account </param>
+    /// <param name="value"> The value to update with </param>
     /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
-    /// <returns> The current value </returns>
-    ValueTask<byte[]> GetValueAsync(IGattClientPeer? clientPeer, CancellationToken cancellationToken);
+    /// <returns> A task completing when indication was acknowledged </returns>
+    Task IndicateAsync(IGattClientPeer? clientPeer, byte[] value, CancellationToken cancellationToken);
 }
 
 /// <summary> A gatt client characteristic with a single property </summary>
@@ -31,7 +43,9 @@ public interface IGattClientCharacteristic<TProperty1>
     /// <inheritdoc cref="IGattClientCharacteristic.Uuid"/>
     BleUuid Uuid => Characteristic.Uuid;
     /// <inheritdoc cref="IGattClientCharacteristic.Property"/>
+#pragma warning disable CA1716 // Using a reserved keyword as the name of a virtual/ interface member makes it harder for consumers in other languages to override/ implement the member.
     GattProperty Property => Characteristic.Property;
+#pragma warning restore CA1716
     /// <summary> The gatt client characteristic </summary>
     IGattClientCharacteristic Characteristic { get; }
 }

@@ -34,21 +34,24 @@ public static class EchoServiceContract
         // Add the client service
         IGattClientService service = await peripheral.AddServiceAsync(serviceUuid, cancellationToken).ConfigureAwait(false);
 
-        // Add the mandatory notify characteristic
-        IGattClientCharacteristic<Properties.Notify> notifyCharacteristic = await service.AddCharacteristicAsync<Properties.Notify>(
-            notifyUuid,
-            cancellationToken: cancellationToken
-        ).ConfigureAwait(false);
-
         // Add the mandatory write characteristic
+        IGattClientCharacteristic<Properties.Notify> notifyCharacteristic = null!;
         IGattClientCharacteristic<Properties.Write> writeCharacteristic = await service.AddCharacteristicAsync<Properties.Write>(
             writeUuid,
             onWrite: (peer, bytes) =>
             {
                 IObservable<byte[]> responseObservable = handleRequest(bytes);
+                // ReSharper disable once AccessToModifiedClosure
+                // We expect onWrite to not execute before the notify characteristic was added
                 _ = responseObservable.Subscribe(responseBytes => notifyCharacteristic.Notify(peer, responseBytes));
                 return GattProtocolStatus.Success;
             },
+            cancellationToken: cancellationToken
+        ).ConfigureAwait(false);
+
+        // Add the mandatory notify characteristic
+        notifyCharacteristic = await service.AddCharacteristicAsync<Properties.Notify>(
+            notifyUuid,
             cancellationToken: cancellationToken
         ).ConfigureAwait(false);
 

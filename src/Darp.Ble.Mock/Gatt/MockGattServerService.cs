@@ -18,8 +18,8 @@ internal sealed class MockGattServerService(
     protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicsAsyncCore() => _service
         .Characteristics
         .ToObservable()
-        .Where(x => x.Value is MockGattClientCharacteristic)
-        .Select(x => new MockGattServerCharacteristic(x.Key, (MockGattClientCharacteristic)x.Value, GattClient));
+        .Where(x => x is MockGattClientCharacteristic)
+        .Select(x => new MockGattServerCharacteristic(x.Uuid, (MockGattClientCharacteristic)x, GattClient));
 
     /// <inheritdoc />
     protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicAsyncCore(BleUuid uuid)

@@ -4,31 +4,92 @@ namespace Darp.Ble.Gatt.Client;
 
 /// <summary> An abstract gatt client characteristic </summary>
 /// <param name="uuid"> The UUID of the characteristic </param>
-/// <param name="property"> The property of the characteristic </param>
-public abstract class GattClientCharacteristic(BleUuid uuid, GattProperty property) : IGattClientCharacteristic
+/// <param name="gattProperty"> The property of the characteristic </param>
+public abstract class GattClientCharacteristic(GattClientService clientService,
+    BleUuid uuid,
+    GattProperty gattProperty,
+    IGattClientService.OnReadCallback? onRead,
+    IGattClientService.OnWriteCallback? onWrite) : IGattClientCharacteristic
 {
+    private readonly GattClientService _clientService = clientService;
+    private readonly IGattClientService.OnReadCallback? _onRead = onRead;
+    private readonly IGattClientService.OnWriteCallback? _onWrite = onWrite;
+
     /// <inheritdoc />
     public BleUuid Uuid { get; } = uuid;
     /// <inheritdoc />
-    public GattProperty Property { get; } = property;
+    public GattProperty Property { get; } = gattProperty;
 
     /// <inheritdoc />
-    public IDisposable OnWrite(Func<IGattClientPeer, byte[], CancellationToken, Task<GattProtocolStatus>> callback)
+    public ValueTask<byte[]> GetValueAsync(IGattClientPeer? clientPeer, CancellationToken cancellationToken)
     {
-        return OnWriteCore(callback);
+        if (_onRead is null)
+            throw new NotSupportedException("Reading is not supported by this characteristic");
+        return _onRead(clientPeer, cancellationToken);
     }
-
-    /// <inheritdoc cref="OnWrite"/>
-    protected abstract IDisposable OnWriteCore(Func<IGattClientPeer, byte[], CancellationToken, Task<GattProtocolStatus>> callback);
 
     /// <inheritdoc />
-    public async Task<bool> NotifyAsync(IGattClientPeer clientPeer, byte[] source, CancellationToken cancellationToken)
+    public ValueTask<GattProtocolStatus> UpdateValueAsync(IGattClientPeer? clientPeer, byte[] value, CancellationToken cancellationToken)
     {
-        return await NotifyAsyncCore(clientPeer, source, cancellationToken).ConfigureAwait(false);
+        if (_onWrite is null)
+            throw new NotSupportedException("Writing is not supported by this characteristic");
+        return _onWrite(clientPeer, value, cancellationToken);
     }
 
-    /// <inheritdoc cref="NotifyAsync"/>
-    protected abstract Task<bool> NotifyAsyncCore(IGattClientPeer clientPeer, byte[] source, CancellationToken cancellationToken);
+    /// <inheritdoc />
+    public void NotifyValue(IGattClientPeer? clientPeer, byte[] value)
+    {
+        if (_onWrite is not null)
+        {
+            ValueTask<GattProtocolStatus> writeTask = _onWrite(clientPeer, value, CancellationToken.None);
+            if (!writeTask.IsCompleted)
+            {
+                writeTask.AsTask().RunSynchronously();
+            }
+        }
+        if (clientPeer is not null)
+        {
+            NotifyCore(clientPeer, value);
+        }
+        else
+        {
+            foreach (IGattClientPeer connectedPeer in _clientService.Peripheral.PeerDevices.Values)
+            {
+                NotifyCore(connectedPeer, value);
+            }
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task IndicateAsync(IGattClientPeer? clientPeer, byte[] value, CancellationToken cancellationToken)
+    {
+        if (_onWrite is not null)
+        {
+            await _onWrite(clientPeer, value, cancellationToken).ConfigureAwait(false);
+        }
+        if (clientPeer is not null)
+        {
+            await IndicateAsyncCore(clientPeer, value, cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            IEnumerable<Task> tasks = _clientService.Peripheral.PeerDevices.Values
+                .Select(connectedPeer => IndicateAsyncCore(connectedPeer, value, cancellationToken));
+            await Task.WhenAll(tasks).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary> Notify a connected clientPeer of a new value </summary>
+    /// <param name="clientPeer"> The client to notify </param>
+    /// <param name="value"> The value to be used </param>
+    protected abstract void NotifyCore(IGattClientPeer clientPeer, byte[] value);
+
+    /// <summary> Notify a connected clientPeer of a new value </summary>
+    /// <param name="clientPeer"> The client to notify </param>
+    /// <param name="value"> The value to be used </param>
+    /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
+    /// <returns> A task with the result of the indication </returns>
+    protected abstract Task IndicateAsyncCore(IGattClientPeer clientPeer, byte[] value, CancellationToken cancellationToken);
 }
 
 /// <summary> The implementation of a gatt client characteristic with a single property </summary>

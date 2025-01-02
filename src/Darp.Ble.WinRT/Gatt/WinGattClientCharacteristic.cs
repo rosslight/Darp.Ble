@@ -8,53 +8,62 @@ using Darp.Ble.Gatt.Client;
 
 namespace Darp.Ble.WinRT.Gatt;
 
-internal sealed class WinGattClientCharacteristic(
-    WinGattClientService winService,
-    GattLocalCharacteristic winCharacteristic)
-    : GattClientCharacteristic(new BleUuid(winCharacteristic.Uuid, inferType: true), (GattProperty)winCharacteristic.CharacteristicProperties)
+internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
 {
-    public WinGattClientService WinService { get; } = winService;
-    private readonly GattLocalCharacteristic _winCharacteristic = winCharacteristic;
+    public WinGattClientService WinService { get; }
+    private readonly GattLocalCharacteristic _winCharacteristic;
 
-    /// <inheritdoc />
-    protected override IDisposable OnWriteCore(Func<IGattClientPeer, byte[], CancellationToken, Task<GattProtocolStatus>> callback)
+    public WinGattClientCharacteristic(WinGattClientService winService,
+        GattLocalCharacteristic winCharacteristic,
+        IGattClientService.OnReadCallback? onRead,
+        IGattClientService.OnWriteCallback? onWrite)
+        : base(winService, new BleUuid(winCharacteristic.Uuid, inferType: true), (GattProperty)winCharacteristic.CharacteristicProperties, onRead, onWrite)
     {
-        _winCharacteristic.WriteRequested += (sender, args) =>
+        WinService = winService;
+        _winCharacteristic = winCharacteristic;
+        winCharacteristic.ReadRequested += async (_, args) =>
         {
-            int i = 0;
-        };
-        return Observable.FromEventPattern<TypedEventHandler<GattLocalCharacteristic, GattWriteRequestedEventArgs>,
-                GattLocalCharacteristic, GattWriteRequestedEventArgs>(
-                addHandler => _winCharacteristic.WriteRequested += addHandler,
-                removeHandler => _winCharacteristic.WriteRequested -= removeHandler)
-            .Subscribe(async pattern =>
+            using Deferral deferral = args.GetDeferral();
+            GattReadRequest? request = await args.GetRequestAsync().AsTask().ConfigureAwait(false);
+            try
             {
-                using Deferral deferral = pattern.EventArgs.GetDeferral();
-                GattWriteRequest request = await pattern.EventArgs.GetRequestAsync().AsTask();
-                try
+                IGattClientPeer peerClient = WinService.Peripheral.GetOrRegisterSession(args.Session);
+                byte[] value = await GetValueAsync(peerClient, CancellationToken.None).ConfigureAwait(false);
+                request.RespondWithValue(value.AsBuffer());
+            }
+            catch
+            {
+                request.RespondWithProtocolError(123);
+            }
+        };
+        winCharacteristic.WriteRequested += async (_, args) =>
+        {
+            using Deferral deferral = args.GetDeferral();
+            GattWriteRequest request = await args.GetRequestAsync().AsTask().ConfigureAwait(false);
+            try
+            {
+                IGattClientPeer peerClient =
+                    WinService.Peripheral.GetOrRegisterSession(args.Session);
+                DataReader reader = DataReader.FromBuffer(request.Value);
+                byte[] bytes = reader.DetachBuffer().ToArray();
+                GattProtocolStatus status =
+                    await UpdateValueAsync(peerClient, bytes, CancellationToken.None).ConfigureAwait(false);
+                if (request.Option == GattWriteOption.WriteWithResponse)
                 {
-                    IGattClientPeer peerClient =
-                        WinService.Peripheral.GetOrRegisterSession(pattern.EventArgs.Session);
-                    DataReader reader = DataReader.FromBuffer(request.Value);
-                    byte[] bytes = reader.DetachBuffer().ToArray();
-                    GattProtocolStatus status = await callback(peerClient, bytes, default);
-                    if (request.Option == GattWriteOption.WriteWithResponse)
-                    {
-                        if (status is GattProtocolStatus.Success)
-                            request.Respond();
-                        else
-                            request.RespondWithProtocolError((byte)status);
-                    }
+                    if (status is GattProtocolStatus.Success)
+                        request.Respond();
+                    else
+                        request.RespondWithProtocolError((byte)status);
                 }
-                catch
-                {
-                    // ignored
-                }
-            });
+            }
+            catch
+            {
+                // ignored
+            }
+        };
     }
 
-    /// <inheritdoc />
-    protected override async Task<bool> NotifyAsyncCore(IGattClientPeer clientPeer, byte[] source, CancellationToken cancellationToken)
+    protected override void NotifyCore(IGattClientPeer clientPeer, byte[] value)
     {
         GattSubscribedClient? subscribedClient = _winCharacteristic.SubscribedClients
             .FirstOrDefault(x =>
@@ -62,9 +71,23 @@ internal sealed class WinGattClientCharacteristic(
                 BleAddress address = BleAddress.Parse(x.Session.DeviceId.Id[^17..], provider: null);
                 return address == clientPeer.Address;
             });
-        if (subscribedClient is null) return false;
+        if (subscribedClient is null) return;
 
-        GattClientNotificationResult result = await _winCharacteristic.NotifyValueAsync(source.AsBuffer(), subscribedClient).AsTask(cancellationToken);
-        return result.Status is GattCommunicationStatus.Success;
+        _ = _winCharacteristic.NotifyValueAsync(value.AsBuffer(), subscribedClient).AsTask(CancellationToken.None);
+    }
+
+    protected override async Task IndicateAsyncCore(IGattClientPeer clientPeer, byte[] value, CancellationToken cancellationToken)
+    {
+        GattSubscribedClient? subscribedClient = _winCharacteristic.SubscribedClients
+            .FirstOrDefault(x =>
+            {
+                BleAddress address = BleAddress.Parse(x.Session.DeviceId.Id[^17..], provider: null);
+                return address == clientPeer.Address;
+            });
+        if (subscribedClient is null) return;
+
+        GattClientNotificationResult result = await _winCharacteristic.NotifyValueAsync(value.AsBuffer(), subscribedClient).AsTask(cancellationToken).ConfigureAwait(false);
+        if (result.Status is not GattCommunicationStatus.Success)
+            throw new Exception("Hey thats not good :(");
     }
 }

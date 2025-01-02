@@ -13,12 +13,12 @@ public sealed class BleCharacteristicTests
 {
     private static GattServerCharacteristic<TProperty> CreateCharacteristic<TProperty>(
         out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
-        out IGattClientPeer clientPeer)
+        out IGattClientPeer? clientPeer)
         where TProperty : IBleProperty
     {
         var characteristicUuid = new BleUuid(0x1234);
         var mockClientPeer = MockGattClientPeer.TestClientPeer;
-        var mockClientChar = new MockGattClientCharacteristic(new BleUuid(0x1234), TProperty.GattProperty);
+        var mockClientChar = new MockGattClientCharacteristic(null!, new BleUuid(0x1234), TProperty.GattProperty, null, null);
         var characteristic = new MockGattServerCharacteristic(characteristicUuid, mockClientChar, mockClientPeer);
         clientCharacteristic = new GattClientCharacteristic<Properties.Notify>(mockClientChar);
         clientPeer = mockClientPeer;
@@ -32,7 +32,7 @@ public sealed class BleCharacteristicTests
 
         GattServerCharacteristic<Properties.Notify> newChar = CreateCharacteristic<Properties.Notify>(
             out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
-            out IGattClientPeer clientPeer);
+            out IGattClientPeer? clientPeer);
         await using IDisposableObservable<byte[]> observable = await newChar.OnNotifyAsync();
         Task<byte[]> resultTask = observable.FirstAsync().ToTask();
         clientCharacteristic.Notify(clientPeer, bytes);
@@ -49,7 +49,7 @@ public sealed class BleCharacteristicTests
 
         GattServerCharacteristic<Properties.Notify> newChar = CreateCharacteristic<Properties.Notify>(
             out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
-            out IGattClientPeer clientPeer);
+            out IGattClientPeer? clientPeer);
         IDisposableObservable<byte[]> observable = await newChar.OnNotifyAsync();
         Task<byte[]> resultTask = observable.FirstAsync().ToTask();
         await observable.DisposeAsync();
@@ -64,7 +64,7 @@ public sealed class BleCharacteristicTests
 
         GattServerCharacteristic<Properties.Notify> newChar = CreateCharacteristic<Properties.Notify>(
             out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
-            out IGattClientPeer clientPeer);
+            out IGattClientPeer? clientPeer);
         IDisposableObservable<byte[]> observable1 = await newChar.OnNotifyAsync();
         IDisposableObservable<byte[]> observable2 = await newChar.OnNotifyAsync();
         Task<byte[]> resultTask1 = observable1.FirstAsync().ToTask();
@@ -83,7 +83,7 @@ public sealed class BleCharacteristicTests
 
         GattServerCharacteristic<Properties.Notify> newChar = CreateCharacteristic<Properties.Notify>(
             out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
-            out IGattClientPeer clientPeer);
+            out IGattClientPeer? clientPeer);
         IDisposableObservable<byte[]> observable1 = await newChar.OnNotifyAsync();
         IDisposableObservable<byte[]> observable2 = await newChar.OnNotifyAsync();
         Task<byte[]> resultTask1 = observable1.FirstAsync().ToTask();
@@ -105,7 +105,7 @@ public sealed class BleCharacteristicTests
 
         GattServerCharacteristic<Properties.Notify> newChar = CreateCharacteristic<Properties.Notify>(
             out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
-            out IGattClientPeer clientPeer);
+            out IGattClientPeer? clientPeer);
         IDisposableObservable<byte[]> notifyObservable = await newChar.OnNotifyAsync();
         Task<byte[]> resultTask = notifyObservable.FirstAsync().ToTask();
         clientCharacteristic.Notify(clientPeer, bytes);

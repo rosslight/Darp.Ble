@@ -6,13 +6,18 @@ using Darp.Ble.Gatt.Client;
 
 namespace Darp.Ble.WinRT.Gatt;
 
-internal sealed class WinGattClientService(WinBlePeripheral peripheral, GattServiceProvider provider) : GattClientService(new BleUuid(provider.Service.Uuid, true))
+internal sealed class WinGattClientService(WinBlePeripheral peripheral, GattServiceProvider provider)
+    : GattClientService(peripheral, new BleUuid(provider.Service.Uuid, inferType: true))
 {
     private readonly GattServiceProvider _serviceProvider = provider;
     private readonly GattLocalService _winService = provider.Service;
-    public WinBlePeripheral Peripheral { get; } = peripheral;
+    public new WinBlePeripheral Peripheral { get; } = peripheral;
 
-    protected override async Task<IGattClientCharacteristic> CreateCharacteristicAsyncCore(BleUuid uuid, GattProperty gattProperty, CancellationToken cancellationToken)
+    protected override async Task<IGattClientCharacteristic> CreateCharacteristicAsyncCore(BleUuid uuid,
+        GattProperty gattProperty,
+        IGattClientService.OnReadCallback? onRead,
+        IGattClientService.OnWriteCallback? onWrite,
+        CancellationToken cancellationToken)
     {
         GattLocalCharacteristicResult result = await _winService.CreateCharacteristicAsync(uuid.Value,
             new GattLocalCharacteristicParameters
@@ -29,7 +34,7 @@ internal sealed class WinGattClientService(WinBlePeripheral peripheral, GattServ
                 Peripheral.GetOrRegisterSession(senderSubscribedClient.Session);
             }
         };
-        return new WinGattClientCharacteristic(this, result.Characteristic);
+        return new WinGattClientCharacteristic(this, result.Characteristic, onRead, onWrite);
     }
 
     public IDisposable Advertise(AdvertisingParameters? parameters)

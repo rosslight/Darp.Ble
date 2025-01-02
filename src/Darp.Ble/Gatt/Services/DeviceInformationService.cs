@@ -33,7 +33,6 @@ public static class DeviceInformationServiceContract
         ArgumentNullException.ThrowIfNull(peripheral);
         IGattClientService service = await peripheral.AddServiceAsync(
             Uuid,
-            includedServices: [],
             cancellationToken
             ).ConfigureAwait(false);
 
@@ -59,7 +58,7 @@ public static class DeviceInformationServiceContract
                 .ConfigureAwait(false);
         }
 
-        return new GattClientDeviceInformationService()
+        return new GattClientDeviceInformationService
         {
             ManufacturerName = manufacturerNameCharacteristic,
             ModelNumber = modelNumberCharacteristic,
