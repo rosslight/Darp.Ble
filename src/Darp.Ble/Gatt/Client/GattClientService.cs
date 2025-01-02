@@ -16,6 +16,7 @@ public abstract class GattClientService(BleUuid uuid) : IGattClientService
 
     /// <inheritdoc />
     public async Task<IGattClientCharacteristic> AddCharacteristicAsync(BleUuid uuid,
+        IGattAttributeValue value,
         GattProperty property,
         CancellationToken cancellationToken)
     {

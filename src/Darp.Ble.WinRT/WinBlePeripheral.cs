@@ -16,7 +16,8 @@ internal sealed class WinBlePeripheral(WinBleDevice device, ILogger? logger) : B
     {
         GattServiceProviderResult result = await GattServiceProvider
             .CreateAsync(uuid.Value)
-            .AsTask(cancellationToken);
+            .AsTask(cancellationToken)
+            .ConfigureAwait(false);
         if (result.Error is not BluetoothError.Success) throw new Exception("Nope");
         GattServiceProvider provider = result.ServiceProvider;
         return new WinGattClientService(this, provider);

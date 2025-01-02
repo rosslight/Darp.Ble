@@ -99,11 +99,10 @@ public sealed class BleCentralTests
         IBleDevice device = await GetMockDeviceAsync(async (_, peripheral) =>
         {
             IGattClientService service = await peripheral.AddServiceAsync(0xABCD);
-            var writeChar = await service.AddCharacteristicAsync<Properties.Write>(0x1234);
-            var notifyChar = await service.AddCharacteristicAsync<Properties.Notify>(0x5678);
-            writeChar.OnWrite(async (peer, bytes, token) =>
+            var notifyChar = await service.AddCharacteristicAsync<Properties.Notify>(new BleUuid(0x1234));
+            var writeChar = await service.AddCharacteristicAsync<Properties.Write>(new BleUuid(0x5678), onWrite: (peer, bytes) =>
             {
-                await notifyChar.NotifyAsync(peer, bytes, token);
+                notifyChar.Notify(peer, bytes);
                 return GattProtocolStatus.Success;
             });
         });

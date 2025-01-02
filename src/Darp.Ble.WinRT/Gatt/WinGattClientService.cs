@@ -18,9 +18,11 @@ internal sealed class WinGattClientService(WinBlePeripheral peripheral, GattServ
             new GattLocalCharacteristicParameters
             {
                 CharacteristicProperties = (GattCharacteristicProperties)gattProperty,
-            }).AsTask(cancellationToken);
+            })
+            .AsTask(cancellationToken)
+            .ConfigureAwait(false);
         if (result.Error is not BluetoothError.Success) throw new Exception("Nopiii");
-        result.Characteristic.SubscribedClientsChanged += (sender, args) =>
+        result.Characteristic.SubscribedClientsChanged += (sender, _) =>
         {
             foreach (GattSubscribedClient senderSubscribedClient in sender.SubscribedClients)
             {

@@ -13,7 +13,14 @@ public interface IGattClientService
     /// <summary> Add a characteristic to the service </summary>
     /// <param name="uuid"> The UUID of the service to add </param>
     /// <param name="property"> The property of the service to add </param>
+    /// <param name="onRead"> Callback when a read request was received </param>
+    /// <param name="onWrite"> Callback when a write request was received </param>
     /// <param name="cancellationToken"> The CancellationToken to cancel the operation </param>
     /// <returns> An <see cref="IGattClientCharacteristic"/> </returns>
-    Task<IGattClientCharacteristic> AddCharacteristicAsync(BleUuid uuid, GattProperty property, CancellationToken cancellationToken);
+    Task<IGattClientCharacteristic> AddCharacteristicAsync(BleUuid uuid,
+        GattProperty property,
+        Func<IGattClientPeer, CancellationToken, ValueTask<byte[]>>? onRead,
+        Func<IGattClientPeer, byte[], CancellationToken, ValueTask<GattProtocolStatus>>? onWrite,
+        CancellationToken cancellationToken
+    );
 }
