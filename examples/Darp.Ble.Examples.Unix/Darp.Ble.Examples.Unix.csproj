@@ -8,8 +8,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\src\Darp.Ble.HciHost\Darp.Ble.HciHost.csproj" />
-      <ProjectReference Include="..\..\src\Darp.Ble.WinRT\Darp.Ble.WinRT.csproj" />
+      <ProjectReference Include="..\..\src\Darp.Ble\Darp.Ble.csproj" />
+      <ProjectReference Include="..\..\src\Darp.Ble.Mock\Darp.Ble.Mock.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,5 +1,6 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
+# 
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Darp.Ble", "src\Darp.Ble\Darp.Ble.csproj", "{1E48FB53-33FF-4AFF-9DA3-95F6F8C35ACA}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{4A27900B-41D2-41FF-95C9-28D27D5A7F86}"
@@ -31,6 +32,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Darp.Ble.Mock.Tests", "test\Darp.Ble.Mock.Tests\Darp.Ble.Mock.Tests.csproj", "{B6FAF980-D0B3-4931-96AA-495721F2B3D9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Darp.Ble.Examples", "examples\Darp.Ble.Examples\Darp.Ble.Examples.csproj", "{66A9629A-23AE-4234-9CEC-5E75CEF59914}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Darp.Ble.Examples.Unix", "examples\Darp.Ble.Examples.Unix\Darp.Ble.Examples.Unix.csproj", "{8E54A5FE-7048-4236-B608-38DCDFF048FA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -86,6 +89,10 @@ Global
 		{66A9629A-23AE-4234-9CEC-5E75CEF59914}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{66A9629A-23AE-4234-9CEC-5E75CEF59914}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{66A9629A-23AE-4234-9CEC-5E75CEF59914}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8E54A5FE-7048-4236-B608-38DCDFF048FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8E54A5FE-7048-4236-B608-38DCDFF048FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8E54A5FE-7048-4236-B608-38DCDFF048FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8E54A5FE-7048-4236-B608-38DCDFF048FA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{1E48FB53-33FF-4AFF-9DA3-95F6F8C35ACA} = {4A27900B-41D2-41FF-95C9-28D27D5A7F86}
@@ -100,5 +107,6 @@ Global
 		{1C1D8C99-0A0B-4108-856A-0B18AF099FCE} = {4A27900B-41D2-41FF-95C9-28D27D5A7F86}
 		{B6FAF980-D0B3-4931-96AA-495721F2B3D9} = {F33B062A-678F-4598-A3AC-D30BCDBE9A6B}
 		{66A9629A-23AE-4234-9CEC-5E75CEF59914} = {A1AF8844-DA64-4C01-BCAB-EFB2B8D36DA6}
+		{8E54A5FE-7048-4236-B608-38DCDFF048FA} = {A1AF8844-DA64-4C01-BCAB-EFB2B8D36DA6}
 	EndGlobalSection
 EndGlobal
