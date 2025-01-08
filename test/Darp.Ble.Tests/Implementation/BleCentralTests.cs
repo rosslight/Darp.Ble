@@ -35,7 +35,15 @@ public sealed class BleCentralTests
             IObservable<AdvertisingData> source = Observable.Interval(TimeSpan.FromMilliseconds(1000), scheduler)
                 .Select(_ => AdvertisingData.Empty);
             await peripheral.AddServiceAsync(0x1234);
-            broadcaster.Advertise(source);
+            IAdvertisingSet set = await broadcaster.CreateAdvertisingSetAsync();
+            source.Subscribe(data =>
+            {
+                _ = Task.Run(async () =>
+                {
+                    await set.SetAdvertisingDataAsync(data);
+                    broadcaster.StartAdvertising([(set, TimeSpan.Zero, 1)]);
+                });
+            });
         }
     }
 

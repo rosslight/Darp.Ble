@@ -26,8 +26,14 @@ public static class AdvertisingDataExtensions
         return adTypeFound;
     }
 
-    private static bool TryGetFirstType(this AdvertisingData data, AdTypes type, out ReadOnlyMemory<byte> buffer)
+    /// <summary> Get the first entry of a given advertising data type </summary>
+    /// <param name="data"> The advertising data </param>
+    /// <param name="type"> The advertising data type </param>
+    /// <param name="buffer"> The bytes representing the section </param>
+    /// <returns> True, if the type was found </returns>
+    public static bool TryGetFirstType(this AdvertisingData data, AdTypes type, out ReadOnlyMemory<byte> buffer)
     {
+        ArgumentNullException.ThrowIfNull(data);
         foreach ((AdTypes adTypes, ReadOnlyMemory<byte> bytes) in data)
         {
             if (adTypes != type) continue;

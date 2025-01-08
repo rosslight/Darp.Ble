@@ -1,4 +1,3 @@
-using System.Reactive.Disposables;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.Advertisement;
@@ -6,87 +5,124 @@ using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
+using Darp.Ble.WinRT.Gatt;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.WinRT;
+
 
 internal sealed class WinBleBroadcaster(WinBleDevice winBleDevice, ILogger? logger) : BleBroadcaster(logger)
 {
     private readonly WinBleDevice _winBleDevice = winBleDevice;
 
-    protected override IDisposable AdvertiseCore(IObservable<AdvertisingData> source, AdvertisingParameters? parameters)
+    protected override Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(AdvertisingParameters? parameters = null,
+        AdvertisingData? data = null,
+        AdvertisingData? scanResponseData = null,
+        CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        return Task.FromResult<IAdvertisingSet>(new WinAdvertisingSet(this,
+            BleAddress.NotAvailable,
+            parameters ?? AdvertisingParameters.Default,
+            data ?? AdvertisingData.Empty,
+            scanResponseData ?? AdvertisingData.Empty,
+            TxPowerLevel.NotAvailable));
     }
 
-    protected override IDisposable AdvertiseCore(AdvertisingData data, TimeSpan interval, AdvertisingParameters? parameters)
+    protected override IAsyncDisposable StartAdvertisingCore(IEnumerable<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, int NumberOfEvents)> advertisingStartInfo)
     {
-        if (_winBleDevice.Capabilities.HasFlag(Capabilities.Peripheral))
+        List<IAsyncDisposable> disposables = [];
+        foreach ((IAdvertisingSet advertisingSet, TimeSpan duration, int numberOfEvents) in advertisingStartInfo)
         {
-            var peripheral = (WinBlePeripheral)_winBleDevice.Peripheral;
-            if (peripheral.Services.Count > 0)
+            if (_winBleDevice.Capabilities.HasFlag(Capabilities.Peripheral))
             {
-                return peripheral.AdvertiseServices(parameters);
+                var peripheral = (WinBlePeripheral)_winBleDevice.Peripheral;
+                if (peripheral.Services.Count > 0)
+                {
+                    IAsyncDisposable d =  peripheral.AdvertiseServices(advertisingSet);
+                    if (duration > TimeSpan.Zero)
+                    {
+                        var source = new CancellationTokenSource(duration);
+                        source.Token.Register(async () => await d.DisposeAsync());
+                    }
+                    if (numberOfEvents > 0)
+                    {
+                        ArgumentOutOfRangeException.ThrowIfGreaterThan(numberOfEvents, 0);
+                    }
+                    disposables.Add(d);
+                    continue;
+                }
             }
-        }
-        var publisher = new BluetoothLEAdvertisementPublisher();
+            var publisher = new BluetoothLEAdvertisementPublisher();
 
-        foreach ((AdTypes type, ReadOnlyMemory<byte> bytes) in data)
-        {
-            // Reserved types: https://learn.microsoft.com/en-us/uwp/api/windows.devices.bluetooth.advertisement.bluetoothleadvertisementpublisher?view=winrt-22621
-            if (type is AdTypes.Flags
-                or AdTypes.IncompleteListOf16BitServiceOrServiceClassUuids
-                or AdTypes.CompleteListOf16BitServiceOrServiceClassUuids
-                or AdTypes.IncompleteListOf32BitServiceOrServiceClassUuids
-                or AdTypes.CompleteListOf32BitServiceOrServiceClassUuids
-                or AdTypes.IncompleteListOf128BitServiceOrServiceClassUuids
-                or AdTypes.CompleteListOf128BitServiceOrServiceClassUuids
-                or AdTypes.ShortenedLocalName
-                or AdTypes.CompleteLocalName
-                or AdTypes.TxPowerLevel
-                or AdTypes.ClassOfDevice
-                or AdTypes.SimplePairingHashC192
-                or AdTypes.SimplePairingRandomizerR192
-                or AdTypes.SecurityManagerTkValue
-                or AdTypes.SecurityManagerOutOfBandFlags
-                or AdTypes.PeripheralConnectionIntervalRange
-                or AdTypes.ListOf16BitServiceSolicitationUuids
-                or AdTypes.ListOf32BitServiceSolicitationUuids
-                or AdTypes.ListOf128BitServiceSolicitationUuids
-                or AdTypes.ServiceData16BitUuid
-                or AdTypes.ServiceData32BitUuid
-                or AdTypes.ServiceData128BitUuid
-                or AdTypes.PublicTargetAddress
-                or AdTypes.RandomTargetAddress
-                or AdTypes.Appearance
-                or AdTypes.AdvertisingInterval
-                or AdTypes.LeBluetoothDeviceAddress
-                or AdTypes.LeRole
-                or AdTypes.SimplePairingHashC256
-                or AdTypes.SimplePairingRandomizerR256
-                or AdTypes.ThreeDInformationData)
+            foreach ((AdTypes type, ReadOnlyMemory<byte> bytes) in advertisingSet.Data)
             {
-                Logger?.LogIgnoreDataSectionReservedType(type);
-                continue;
+                // Reserved types: https://learn.microsoft.com/en-us/uwp/api/windows.devices.bluetooth.advertisement.bluetoothleadvertisementpublisher?view=winrt-22621
+                if (type is AdTypes.Flags
+                    or AdTypes.IncompleteListOf16BitServiceOrServiceClassUuids
+                    or AdTypes.CompleteListOf16BitServiceOrServiceClassUuids
+                    or AdTypes.IncompleteListOf32BitServiceOrServiceClassUuids
+                    or AdTypes.CompleteListOf32BitServiceOrServiceClassUuids
+                    or AdTypes.IncompleteListOf128BitServiceOrServiceClassUuids
+                    or AdTypes.CompleteListOf128BitServiceOrServiceClassUuids
+                    or AdTypes.ShortenedLocalName
+                    or AdTypes.CompleteLocalName
+                    or AdTypes.TxPowerLevel
+                    or AdTypes.ClassOfDevice
+                    or AdTypes.SimplePairingHashC192
+                    or AdTypes.SimplePairingRandomizerR192
+                    or AdTypes.SecurityManagerTkValue
+                    or AdTypes.SecurityManagerOutOfBandFlags
+                    or AdTypes.PeripheralConnectionIntervalRange
+                    or AdTypes.ListOf16BitServiceSolicitationUuids
+                    or AdTypes.ListOf32BitServiceSolicitationUuids
+                    or AdTypes.ListOf128BitServiceSolicitationUuids
+                    or AdTypes.ServiceData16BitUuid
+                    or AdTypes.ServiceData32BitUuid
+                    or AdTypes.ServiceData128BitUuid
+                    or AdTypes.PublicTargetAddress
+                    or AdTypes.RandomTargetAddress
+                    or AdTypes.Appearance
+                    or AdTypes.AdvertisingInterval
+                    or AdTypes.LeBluetoothDeviceAddress
+                    or AdTypes.LeRole
+                    or AdTypes.SimplePairingHashC256
+                    or AdTypes.SimplePairingRandomizerR256
+                    or AdTypes.ThreeDInformationData)
+                {
+                    Logger?.LogIgnoreDataSectionReservedType(type);
+                    continue;
+                }
+                publisher.Advertisement.DataSections.Add(new BluetoothLEAdvertisementDataSection((byte)type, bytes.ToArray().AsBuffer()));
             }
-            publisher.Advertisement.DataSections.Add(new BluetoothLEAdvertisementDataSection((byte)type, bytes.ToArray().AsBuffer()));
+
+            if (!advertisingSet.Parameters.Type.HasFlag(BleEventType.Legacy))
+            {
+                publisher.UseExtendedAdvertisement = true;
+            }
+            if (advertisingSet.Parameters.AdvertisingTxPower is not TxPowerLevel.NotAvailable)
+            {
+                publisher.IncludeTransmitPowerLevel = true;
+                publisher.PreferredTransmitPowerLevelInDBm = (short)advertisingSet.Parameters.AdvertisingTxPower;
+            }
+
+            IAsyncDisposable disposable = AsyncDisposable.Create(publisher, state => state.Stop());
+            // //publisher.UseExtendedAdvertisement = true;
+            // //publisher.IncludeTransmitPowerLevel = true;
+            publisher.StatusChanged += async (_, args) =>
+            {
+                if (args.Error is BluetoothError.Success) return;
+                Logger?.LogPublisherChangedToError(args.Status, args.Error);
+                await disposable.DisposeAsync().ConfigureAwait(false);
+            };
+            publisher.Start();
+            disposables.Add(disposable);
         }
-
-        IDisposable disposable = Disposable.Create(publisher, state => state.Stop());
-        // //publisher.UseExtendedAdvertisement = true;
-        // //publisher.IncludeTransmitPowerLevel = true;
-        publisher.StatusChanged += (_, args) =>
+        return AsyncDisposable.Create(disposables, async x =>
         {
-            if (args.Error is BluetoothError.Success) return;
-            Logger?.LogPublisherChangedToError(args.Status, args.Error);
-            disposable.Dispose();
-        };
-        publisher.Start();
-        return disposable;
-    }
-
-    protected override void StopAllCore()
-    {
-        
+            foreach (IAsyncDisposable asyncDisposable in x)
+            {
+                await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+            }
+        });
     }
 }

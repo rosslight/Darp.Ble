@@ -1,27 +1,49 @@
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
 
+using AdvertisingStartInfo = (Darp.Ble.IAdvertisingSet AdvertisingSet, System.TimeSpan Duration, int NumberOfEvents);
+
 namespace Darp.Ble;
+
+public interface IAdvertisingSet
+{
+    public IBleBroadcaster Broadcaster { get; }
+
+    public BleAddress RandomAddress { get; }
+    public AdvertisingParameters Parameters { get; }
+    public AdvertisingData Data { get; }
+    public AdvertisingData ScanResponseData { get; }
+    public TxPowerLevel SelectedTxPower { get; }
+
+    bool IsAdvertising { get; }
+
+    public Task SetRandomAddressAsync(BleAddress randomAddress, CancellationToken cancellationToken = default);
+    public Task SetAdvertisingParametersAsync(AdvertisingParameters parameters, CancellationToken cancellationToken = default);
+    public Task SetAdvertisingDataAsync(AdvertisingData data, CancellationToken cancellationToken = default);
+    public Task SetScanResponseDataAsync(AdvertisingData scanResponseData, CancellationToken cancellationToken = default);
+}
+
+public interface IPeriodicAdvertisingSet : IAdvertisingSet
+{
+    
+}
 
 /// <summary> The ble broadcaster </summary>
 public interface IBleBroadcaster : IAsyncDisposable
 {
-    /// <summary> Advertise a specific advertising set. Stop advertising using the disposable </summary>
-    /// <param name="advertisingSet"> The <see cref="AdvertisingSet"/> to be advertised </param>
-    /// <returns> A disposable which allows for stopping </returns>
-    IDisposable Advertise(AdvertisingSet advertisingSet);
-    /// <summary> Advertise an observable </summary>
-    /// <param name="source"> The source which triggers an advertisement </param>
-    /// <param name="parameters"> The parameters to be used </param>
-    /// <returns> A disposable which allows for stopping </returns>
-    IDisposable Advertise(IObservable<AdvertisingData> source, AdvertisingParameters? parameters = null);
+    /// <summary> Creates a new advertising set </summary>
+    /// <param name="parameters"> The parameters for advertising </param>
+    /// <param name="data"> Optional data to advertise </param>
+    /// <param name="scanResponseData"> Optional scan response data </param>
+    /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
+    /// <returns> The created advertising set </returns>
+    public Task<IAdvertisingSet> CreateAdvertisingSetAsync(AdvertisingParameters? parameters = null,
+        AdvertisingData? data = null,
+        AdvertisingData? scanResponseData = null,
+        CancellationToken cancellationToken = default);
 
-    /// <summary> Advertise an observable </summary>
-    /// <param name="data"> The advertising data </param>
-    /// <param name="interval"> The interval at which the advertisements will be published </param>
-    /// <param name="parameters"> The parameters to be used </param>
-    /// <returns> A disposable which allows for stopping </returns>
-    IDisposable Advertise(AdvertisingData data, TimeSpan interval, AdvertisingParameters? parameters);
-    /// <summary> Stop all running advertisements </summary>
-    void StopAll();
+    /// <summary> Start advertising multiple advertising sets. The duration and numberOfEvents cannot both be > 0. </summary>
+    /// <param name="advertisingSet"> A collection of advertising sets together with information on how to start them </param>
+    /// <returns> An async disposable to stop advertising </returns>
+    public IAsyncDisposable StartAdvertising(IReadOnlyCollection<AdvertisingStartInfo> advertisingSet);
 }

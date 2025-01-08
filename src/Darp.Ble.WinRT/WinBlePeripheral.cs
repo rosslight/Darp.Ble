@@ -35,17 +35,20 @@ internal sealed class WinBlePeripheral(WinBleDevice device, ILogger? logger) : B
         return clientPeer;
     }
 
-    public IDisposable AdvertiseServices(AdvertisingParameters? parameters)
+    public IAsyncDisposable AdvertiseServices(IAdvertisingSet advertisingSet)
     {
-        List<IDisposable> disposables = [];
+        List<IAsyncDisposable> disposables = [];
         foreach ((BleUuid _, IGattClientService value) in Services)
         {
             if (value is WinGattClientService service)
-                disposables.Add(service.Advertise(parameters));
+                disposables.Add(service.Advertise(advertisingSet));
         }
-        return Disposable.Create(disposables, list =>
+        return AsyncDisposable.Create(disposables, async list =>
         {
-            foreach (IDisposable disposable in list) disposable.Dispose();
+            foreach (IAsyncDisposable disposable in list)
+            {
+                await disposable.DisposeAsync().ConfigureAwait(false);
+            }
         });
     }
 }

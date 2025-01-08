@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.Implementation;
 
 /// <summary> The central view of a ble device </summary>
-public abstract class BlePeripheral(BleDevice device, ILogger? logger) : IBlePeripheral, IBleBroadcaster
+public abstract class BlePeripheral(BleDevice device, ILogger? logger) : IBlePeripheral
 {
     /// <summary> The logger </summary>
     protected ILogger? Logger { get; } = logger;
@@ -62,16 +62,4 @@ public abstract class BlePeripheral(BleDevice device, ILogger? logger) : IBlePer
     protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
     /// <inheritdoc cref="IDisposable.Dispose"/>
     protected virtual void DisposeCore() { }
-
-    IDisposable IBleBroadcaster.Advertise(AdvertisingSet advertisingSet) => Device.Broadcaster.Advertise(advertisingSet);
-    IDisposable IBleBroadcaster.Advertise(IObservable<AdvertisingData> source, AdvertisingParameters? parameters)
-    {
-        return Device.Broadcaster.Advertise(source, parameters);
-    }
-    IDisposable IBleBroadcaster.Advertise(AdvertisingData data, TimeSpan interval, AdvertisingParameters? parameters)
-    {
-        return Device.Broadcaster.Advertise(data, interval, parameters);
-    }
-
-    void IBleBroadcaster.StopAll() => Device.Broadcaster.StopAll();
 }

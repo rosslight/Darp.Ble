@@ -11,37 +11,41 @@ public abstract class BleBroadcaster(ILogger? logger) : IBleBroadcaster
     protected ILogger? Logger { get; } = logger;
 
     /// <inheritdoc />
-    public IDisposable Advertise(AdvertisingSet advertisingSet) => throw new NotImplementedException();
-
-    /// <inheritdoc />
-    public IDisposable Advertise(IObservable<AdvertisingData> source, AdvertisingParameters? parameters = null)
+    public Task<IAdvertisingSet> CreateAdvertisingSetAsync(AdvertisingParameters? parameters = null,
+        AdvertisingData? data = null,
+        AdvertisingData? scanResponseData = null,
+        CancellationToken cancellationToken = default)
     {
-        return AdvertiseCore(source, parameters);
+        return CreateAdvertisingSetAsyncCore(parameters, data, scanResponseData, cancellationToken);
     }
 
-    /// <summary> Core implementation of starting an advertisement broadcast </summary>
-    /// <param name="source"> The source which triggers an advertisement </param>
-    /// <param name="parameters"> The parameters to be used </param>
-    /// <returns> A disposable which allows for stopping </returns>
-    protected abstract IDisposable AdvertiseCore(IObservable<AdvertisingData> source, AdvertisingParameters? parameters);
+    /// <inheritdoc cref="CreateAdvertisingSetAsync" />
+    protected abstract Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(AdvertisingParameters? parameters = null,
+        AdvertisingData? data = null,
+        AdvertisingData? scanResponseData = null,
+        CancellationToken cancellationToken = default);
 
     /// <inheritdoc />
-    public IDisposable Advertise(AdvertisingData data, TimeSpan interval, AdvertisingParameters? parameters)
+    public IAsyncDisposable StartAdvertising(IReadOnlyCollection<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, int NumberOfEvents)> advertisingSet)
     {
-        return AdvertiseCore(data, interval, parameters);
+        ArgumentNullException.ThrowIfNull(advertisingSet);
+
+        foreach ((_, TimeSpan duration, int numberOfEvents) in advertisingSet)
+        {
+            if (duration > TimeSpan.Zero && numberOfEvents > 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(advertisingSet), "Cannot have both duration and numberOfEvents > 0");
+            }
+        }
+
+        return StartAdvertisingCore(advertisingSet);
     }
 
-    /// <inheritdoc cref="Advertise(AdvertisingData, TimeSpan, AdvertisingParameters)"/>
-    protected abstract IDisposable AdvertiseCore(AdvertisingData data, TimeSpan interval, AdvertisingParameters? parameters);
-
-    /// <inheritdoc />
-    public void StopAll()
-    {
-        StopAllCore();
-    }
-
-    /// <summary> Core implementation of stopping all advertisements </summary>
-    protected abstract void StopAllCore();
+    /// <summary> Start advertising multiple advertising sets </summary>
+    /// <param name="advertisingSet"> A collection of advertising sets together with information on how to start them </param>
+    /// <returns> An async disposable to stop advertising </returns>
+    protected abstract IAsyncDisposable StartAdvertisingCore(
+        IEnumerable<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, int NumberOfEvents)> advertisingSet);
 
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
@@ -53,8 +57,5 @@ public abstract class BleBroadcaster(ILogger? logger) : IBleBroadcaster
     /// <inheritdoc cref="DisposeAsync"/>
     protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
     /// <inheritdoc cref="IDisposable.Dispose"/>
-    protected virtual void DisposeCore()
-    {
-        StopAll();
-    }
+    protected virtual void DisposeCore() { }
 }
