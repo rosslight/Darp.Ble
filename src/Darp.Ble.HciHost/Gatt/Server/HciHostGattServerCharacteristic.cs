@@ -100,7 +100,7 @@ internal sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer serv
             .Where(x => x.OpCode is AttOpCode.ATT_HANDLE_VALUE_NTF)
             .SelectWhere(((AttOpCode OpCode, byte[] Pdu) t, [NotNullWhen(true)] out byte[]? result) =>
             {
-                if (!AttHandleValueNtf.TryDecode(t.Pdu, out AttHandleValueNtf notification, out int _))
+                if (!AttHandleValueNtf.TryReadLittleEndian(t.Pdu, out AttHandleValueNtf notification, out int _))
                 {
                     result = null;
                     return false;

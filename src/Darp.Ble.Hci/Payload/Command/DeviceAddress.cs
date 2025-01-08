@@ -1,7 +1,5 @@
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Darp.BinaryObjects;
-using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci.Payload.Command;
 
@@ -42,15 +40,4 @@ public readonly partial struct DeviceAddress(byte byte0, byte byte1, byte byte2,
     /// <param name="address"> The address </param>
     /// <returns> The ulong </returns>
     public static implicit operator ulong(DeviceAddress address) => address.ToUInt64();
-
-    /// <inheritdoc />
-    public static bool TryDecode(in ReadOnlyMemory<byte> source, out DeviceAddress result, out int bytesDecoded)
-    {
-        bytesDecoded = 6;
-        result = default;
-        if (source.Length < 6) return false;
-        ReadOnlySpan<byte> span = source.Span;
-        result = new DeviceAddress(span[0], span[1], span[2], span[3], span[4], span[5]);
-        return true;
-    }
 }

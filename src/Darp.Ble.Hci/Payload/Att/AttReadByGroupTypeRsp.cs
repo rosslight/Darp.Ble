@@ -1,7 +1,6 @@
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using Darp.BinaryObjects;
-using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci.Payload.Att;
 

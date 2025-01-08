@@ -44,7 +44,9 @@ public enum HciOpCode : ushort
     /// <summary> The <see cref="HciLeReadSuggestedDefaultDataLengthCommand"/> </summary>
     HCI_LE_Read_Suggested_Default_Data_Length = 0x0023 | (HciOpCodeGroupField.LeController << 10),
     /// <summary> The <see cref="HciLeWriteSuggestedDefaultDataLengthCommand"/> </summary>
-    HCI_LE_Write_Suggested_Default_Data_Length = 0x0024| (HciOpCodeGroupField.LeController << 10),
+    HCI_LE_Write_Suggested_Default_Data_Length = 0x0024 | (HciOpCodeGroupField.LeController << 10),
+    /// <summary> The <see cref="HciLeReadNumberOfSupportedAdvertisingSetsCommand"/> </summary>
+    HCI_LE_Read_Number_Of_Supported_Advertising_Sets_Command = 0x003B | (HciOpCodeGroupField.LeController << 10),
     /// <summary> The <see cref="HciLeSetExtendedScanParametersCommand"/> </summary>
     HCI_LE_Set_Extended_Scan_Parameters = 0x0041 | (HciOpCodeGroupField.LeController << 10),
     /// <summary> The <see cref="HciLeSetExtendedScanEnableCommand"/> </summary>
