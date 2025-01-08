@@ -129,5 +129,4 @@ internal sealed class BMAdvGenerator : IObservable<(BleAddress Address, Advertis
         m_timer.Stop();
         m_timer.Dispose();
     }
-
 }

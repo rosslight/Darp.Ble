@@ -28,7 +28,7 @@ internal sealed class BMBroadcaster(ILogger? logger) : BleBroadcaster(logger)
 
     protected override IDisposable AdvertiseCore(AdvertisingData data, TimeSpan interval, AdvertisingParameters? parameters)
     {
-        throw new NotSupportedException();
+        throw new NotImplementedException();
     }
 
     protected override void StopAllCore()
@@ -41,6 +41,7 @@ internal sealed class BMBroadcaster(ILogger? logger) : BleBroadcaster(logger)
         m_generator = null;
     }
 
+    // Vgl. MockBleBroadcaster.GetAdvertisements
     public IObservable<IGapAdvertisement> GetAdvertisements(BleObserver observer)
     {
         IObservable<(BleAddress Address, AdvertisingData Data)> source = m_generator ?? Observable.Empty<(BleAddress Address, AdvertisingData Data)>();
@@ -61,4 +62,3 @@ internal sealed class BMBroadcaster(ILogger? logger) : BleBroadcaster(logger)
                 x.Data));
     }
 }
-

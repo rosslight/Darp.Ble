@@ -29,13 +29,15 @@ internal sealed class Program
 
         var ble = new Ble();
         _ = ble.StartScanAsync(adapter, OnAdvertisement);
-        Task.Delay(10000).Wait();
+        Task.Delay(5000).Wait();
         ble.StopScan();
     }
 
     private static void OnAdvertisement(IGapAdvertisement advertisement)
     {
-        Log.Information(advertisement.Address.ToString());
+        Log.Information(string.Format(CultureInfo.InvariantCulture, "Addr={0}, Data=0x{1}",
+            advertisement.Address, 
+            Convert.ToHexString(advertisement.Data.ToByteArray())));
     }
 
     private sealed class Ble
