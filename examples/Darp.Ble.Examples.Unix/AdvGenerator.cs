@@ -4,14 +4,16 @@ using System.Reactive.Disposables;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
 
-namespace Darp.Ble.Examples.Unix.Mockup;
+namespace Darp.Ble.Examples.Unix;
 
-internal sealed class BMAdvGenerator : IObservable<(BleAddress Address, AdvertisingData Data)>, IDisposable
+internal sealed class AdvGenerator : IObservable<AdvGenerator.DataExt>, IDisposable
 {
-    private readonly ObservableCollection<IObserver<(BleAddress Address, AdvertisingData Data)>> m_observers = new();
+    internal sealed record DataExt(BleAddress Address, AdvertisingData Data);
+
+    private readonly ObservableCollection<IObserver<DataExt>> m_observers = new();
     private readonly System.Timers.Timer m_timer = new(200);
 
-    public BMAdvGenerator()
+    public AdvGenerator()
     {
         m_observers.CollectionChanged += (sender, e) =>
         {
@@ -39,11 +41,7 @@ internal sealed class BMAdvGenerator : IObservable<(BleAddress Address, Advertis
         {
             int nRandom = random.Next(10, 21);
 
-            (BleAddress Address, AdvertisingData Data) tuple = new()
-            {
-                Address = new BleAddress((UInt48)(ulong)nRandom),
-                Data = CreateAdvertisementData(nRandom),
-            };
+            DataExt tuple = new(new BleAddress((UInt48)(ulong)nRandom), CreateAdvertisementData(nRandom));
 
             foreach (var observer in m_observers)
             {
@@ -105,7 +103,7 @@ internal sealed class BMAdvGenerator : IObservable<(BleAddress Address, Advertis
     }
 
 
-    public IDisposable Subscribe(IObserver<(BleAddress Address, AdvertisingData Data)> observer)
+    public IDisposable Subscribe(IObserver<DataExt> observer)
     {
         if (!m_observers.Contains(observer))
             m_observers.Add(observer);

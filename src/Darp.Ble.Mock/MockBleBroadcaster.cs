@@ -7,14 +7,18 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock;
 
-internal sealed class MockBleBroadcaster(ILogger? logger) : BleBroadcaster(logger)
+internal sealed class MockBleBroadcaster(ILogger? logger) : BleBroadcaster(logger), IMockBleBroadcaster
 {
     private IObservable<AdvertisingData>? _source;
     private AdvertisingParameters? _parameters;
     private CancellationTokenSource? _cancellationTokenSource;
+    public IMockBleBroadcaster.Delegate_OnGetAdvertisements? OnGetAdvertisements { get; set;}
 
     public IObservable<IGapAdvertisement> GetAdvertisements(BleObserver observer)
     {
+        if (OnGetAdvertisements != null)
+            return OnGetAdvertisements(observer, _parameters, _cancellationTokenSource);
+
         BleAddress ownAddress = new(BleAddressType.Public, (UInt48)0xAABBCCDDEEFF);
 
         IObservable<AdvertisingData> dataSource = _source ?? Observable.Empty<AdvertisingData>();
