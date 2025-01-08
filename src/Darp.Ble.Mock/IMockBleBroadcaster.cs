@@ -4,8 +4,8 @@ using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Mock;
 
-public interface IMockBleBroadcaster
+public interface IMockBleBroadcaster : IBleBroadcaster
 {
-    public delegate IObservable<IGapAdvertisement> Delegate_OnGetAdvertisements(BleObserver observer, AdvertisingParameters? parameters, CancellationTokenSource? cancellationTokenSource);
-    public Delegate_OnGetAdvertisements? OnGetAdvertisements { get; set; }
+    public delegate IObservable<IGapAdvertisement> OnGetAdvertisementsDelegate(BleObserver observer, AdvertisingParameters? parameters, CancellationTokenSource? cancellationTokenSource);
+    public OnGetAdvertisementsDelegate? OnGetAdvertisements { get; set; }
 }

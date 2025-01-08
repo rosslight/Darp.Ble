@@ -9,7 +9,7 @@ namespace Darp.Ble.Examples.Unix;
 internal sealed class Ble : IDisposable
 {
     private IBleObserver? m_observer;
-    private IDisposable? m_unsubscriber;
+    private IDisposable? m_subscriptionForObserver;
     private AdvGenerator? m_generator;
 
     public async Task StartScanAsync(IBleDevice adapter, Action<IGapAdvertisement> onNextAdvertisement)
@@ -20,23 +20,21 @@ internal sealed class Ble : IDisposable
 
         await adapter.InitializeAsync();
         m_observer = adapter.Observer;
-
         m_observer.Configure(new BleScanParameters()
         {
             ScanType = ScanType.Active,
             ScanWindow = ScanTiming.Ms100,
             ScanInterval = ScanTiming.Ms100,
         });
-
-        m_unsubscriber = m_observer.Subscribe(onNextAdvertisement);
+        m_subscriptionForObserver = m_observer.Subscribe(onNextAdvertisement);
 
         m_observer.Connect();
     }
 
     public void StopScan()
     {
-        m_unsubscriber?.Dispose();
-        m_unsubscriber = null;
+        m_subscriptionForObserver?.Dispose();
+        m_subscriptionForObserver = null;
 
         m_observer?.StopScan();
         m_observer = null;
@@ -46,13 +44,14 @@ internal sealed class Ble : IDisposable
         m_generator = null;
     }
 
-    public Task Initialize(IBleBroadcaster broadcaster, IBlePeripheral peripheral)
+    public void Dispose()
     {
-        if (broadcaster is IMockBleBroadcaster mockBroadcaster)
-        {
-            mockBroadcaster.OnGetAdvertisements = GetAdvertisements;
-        }
+        StopScan();
+    }
 
+    public Task Initialize(IMockBleBroadcaster broadcaster, IBlePeripheral peripheral)
+    {
+        broadcaster.OnGetAdvertisements = GetAdvertisements;
         return Task.CompletedTask;
     }
 
@@ -74,10 +73,5 @@ internal sealed class Ble : IDisposable
                 PeriodicAdvertisingInterval.NoPeriodicAdvertising,
                 new BleAddress(UInt48.Zero),
                 x.Data));
-    }
-
-    public void Dispose()
-    {
-        m_generator?.Dispose();
     }
 }
