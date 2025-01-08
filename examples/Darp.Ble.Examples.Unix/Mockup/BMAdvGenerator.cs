@@ -6,7 +6,7 @@ using Darp.Ble.Gap;
 
 namespace Darp.Ble.Examples.Unix.Mockup;
 
-internal class BMAdvGenerator : IObservable<(BleAddress Address, AdvertisingData Data)>, IDisposable
+internal sealed class BMAdvGenerator : IObservable<(BleAddress Address, AdvertisingData Data)>, IDisposable
 {
     private readonly ObservableCollection<IObserver<(BleAddress Address, AdvertisingData Data)>> m_observers = new();
     private readonly System.Timers.Timer m_timer = new(200);
@@ -69,8 +69,20 @@ internal class BMAdvGenerator : IObservable<(BleAddress Address, AdvertisingData
                 return AdvertisingData.From(Convert.FromHexString("02011A020A0C0BFF4C001006091AD0C23F46"));
 
             case 13:
-                // Apple Inc - ???
-                return AdvertisingData.From(Convert.FromHexString("07FF4C0012020003"));
+                // Würth - AdvertisementMode "M-Cube"
+                return AdvertisingData.From(Convert.FromHexString("02010603024CFD17FF3D09F2A25C100E43543FD53262635A263C7FEAA90600"));
+
+            case 14:
+                // Würth - AdvertisementMode "M-Cube"
+                return AdvertisingData.From(Convert.FromHexString("02010603024CFD17FF3D09F2A25C100E43543F952454CD80646C77EAA9B405"));
+
+            case 15:
+                // Würth - AdvertisementMode "Tracker"
+                return AdvertisingData.From(Convert.FromHexString("02010617FF3D09718A5FADAE270111194A0000000000000000000003024CFD"));
+
+            case 16:
+                // Würth - AdvertisementMode "Tracker"
+                return AdvertisingData.From(Convert.FromHexString("02010603024CFD13FF3D09812E4DD14C02CE3E1500000000A4800000000000"));
 
             case 17:
                 // Microsoft

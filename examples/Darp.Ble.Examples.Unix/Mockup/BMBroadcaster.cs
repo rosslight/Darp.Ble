@@ -3,10 +3,11 @@ using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Examples.Unix.Mockup;
 
-internal class BMBroadcaster : BleBroadcaster
+internal sealed class BMBroadcaster(ILogger? logger) : BleBroadcaster(logger)
 {
     private BMAdvGenerator? m_generator;
     private AdvertisingParameters? m_parameters;
@@ -25,12 +26,18 @@ internal class BMBroadcaster : BleBroadcaster
         });
     }
 
+    protected override IDisposable AdvertiseCore(AdvertisingData data, TimeSpan interval, AdvertisingParameters? parameters)
+    {
+        throw new NotSupportedException();
+    }
+
     protected override void StopAllCore()
     {
         m_cancellationTokenSource?.Cancel();
         m_cancellationTokenSource = null;
 
         m_generator?.Stop();
+        m_generator?.Dispose();
         m_generator = null;
     }
 

@@ -2,11 +2,11 @@ using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
-using Serilog.Events;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Examples.Unix.Mockup;
 
-internal class BMDevice(string name, IObserver<(BleDevice, LogEvent)>? logger) : BleDevice(logger)
+internal sealed class BMDevice(string name, ILogger? logger) : BleDevice(logger)
 {
     public override string Identifier => "Darp.Ble.Mock";
 
@@ -14,7 +14,7 @@ internal class BMDevice(string name, IObserver<(BleDevice, LogEvent)>? logger) :
 
     protected override Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
     {
-        var broadcaster = new BMBroadcaster();
+        var broadcaster = new BMBroadcaster(Logger);
         Observer = new BMObserver(this, broadcaster, Logger);
 
         broadcaster.Advertise(Observable.Empty<AdvertisingData>(), new AdvertisingParameters

@@ -1,12 +1,12 @@
-using Darp.Ble.Implementation;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Examples.Unix.Mockup;
 
-public class BMFactory : IBleFactory
+public sealed class BMFactory : IBleFactory
 {
     public string Name { get; set; } = "Mock";
 
-    public IEnumerable<IBleDevice> EnumerateDevices(IObserver<(BleDevice, LogEvent)>? logger)
+    public IEnumerable<IBleDevice> EnumerateDevices(ILogger? logger)
     {
         yield return new BMDevice(Name, logger);
     }

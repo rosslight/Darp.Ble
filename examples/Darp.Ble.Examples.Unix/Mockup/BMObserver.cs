@@ -1,9 +1,10 @@
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Examples.Unix.Mockup;
 
-internal class BMObserver(BleDevice device, BMBroadcaster broadcaster, IObserver<LogEvent>? logger) : BleObserver(device, logger)
+internal sealed class BMObserver(BleDevice device, BMBroadcaster broadcaster, ILogger? logger) : BleObserver(device, logger)
 {
     private readonly BMBroadcaster m_broadcaster = broadcaster;
 
