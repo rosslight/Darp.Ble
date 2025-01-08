@@ -8,7 +8,7 @@ namespace Darp.Ble.Examples.Unix;
 
 internal sealed class AdvGenerator : IObservable<AdvGenerator.DataExt>, IDisposable
 {
-    internal sealed record DataExt(BleAddress Address, AdvertisingData Data);
+    internal sealed record DataExt(BleAddress Address, TxPowerLevel TxPower, Rssi Rssi, AdvertisingData Data);
 
     private readonly ObservableCollection<IObserver<DataExt>> m_observers = new();
     private readonly System.Timers.Timer m_timer = new(200);
@@ -41,11 +41,15 @@ internal sealed class AdvGenerator : IObservable<AdvGenerator.DataExt>, IDisposa
         {
             int nRandom = random.Next(10, 21);
 
-            DataExt tuple = new(new BleAddress((UInt48)(ulong)nRandom), CreateAdvertisementData(nRandom));
+            var data = new DataExt(
+                new BleAddress((UInt48)(ulong)nRandom), 
+                (TxPowerLevel) (nRandom * 3),
+                (Rssi) (nRandom * -2),
+                CreateAdvertisementData(nRandom));
 
             foreach (var observer in m_observers)
             {
-                observer.OnNext(tuple);
+                observer.OnNext(data);
             }
         };
     }

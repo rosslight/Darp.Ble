@@ -12,7 +12,7 @@ internal sealed class MockBleBroadcaster(ILogger? logger) : BleBroadcaster(logge
     private IObservable<AdvertisingData>? _source;
     private AdvertisingParameters? _parameters;
     private CancellationTokenSource? _cancellationTokenSource;
-    public IMockBleBroadcaster.OnGetAdvertisementsDelegate? OnGetAdvertisements { get; set;}
+    public IMockBleBroadcaster.GetAdvertisements? OnGetAdvertisements { get; set;}
 
     public IObservable<IGapAdvertisement> GetAdvertisements(BleObserver observer)
     {

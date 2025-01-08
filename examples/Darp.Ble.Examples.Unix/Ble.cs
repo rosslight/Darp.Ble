@@ -68,8 +68,8 @@ internal sealed class Ble : IDisposable
                 Physical.Le1M,
                 Physical.NotAvailable,
                 AdvertisingSId.NoAdIProvided,
-                (TxPowerLevel)20,
-                (Rssi)(-40),
+                x.TxPower,
+                x.Rssi,
                 PeriodicAdvertisingInterval.NoPeriodicAdvertising,
                 new BleAddress(UInt48.Zero),
                 x.Data));

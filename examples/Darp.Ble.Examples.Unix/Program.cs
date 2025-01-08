@@ -35,8 +35,10 @@ internal sealed class Program
 
     private static void OnNextAdvertisement(IGapAdvertisement advertisement)
     {
-        Log.Information(string.Format(CultureInfo.InvariantCulture, "Addr={0}, Data=0x{1}",
+        Log.Information(string.Format(CultureInfo.InvariantCulture, "Addr={0}, PowerLevel={1}, Rssi={2}, Data=0x{3}",
             advertisement.Address,
+            advertisement.TxPower,
+            advertisement.Rssi,
             Convert.ToHexString(advertisement.Data.ToByteArray())));
     }
 }
