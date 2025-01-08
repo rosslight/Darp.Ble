@@ -1,5 +1,3 @@
-using System.Buffers.Binary;
-using System.Runtime.InteropServices;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.Payload.Command;
 

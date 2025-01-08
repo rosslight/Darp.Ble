@@ -1,4 +1,3 @@
-using System.Buffers.Binary;
 using Darp.BinaryObjects;
 
 namespace Darp.Ble.Hci.Payload.Att;

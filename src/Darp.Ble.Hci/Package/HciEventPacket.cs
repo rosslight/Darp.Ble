@@ -1,7 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.Payload;
-using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci.Package;
 
@@ -43,24 +42,6 @@ public partial class HciEventPacket(HciEventCode eventCode, byte parameterTotalL
             hciEventPacket.ParameterTotalLength,
             hciEventPacket.DataBytes,
             parameters);
-        return true;
-    }
-
-    /// <inheritdoc />
-    public static bool TryDecode(in ReadOnlyMemory<byte> source, [NotNullWhen(true)] out HciEventPacket? result, out int bytesDecoded)
-    {
-        const int headerLength = IHciEventPacket<HciEventPacket>.EventPacketHeaderLength;
-        result = null;
-        bytesDecoded = default;
-        if (source.Length < headerLength) return false;
-
-        ReadOnlySpan<byte> span = source.Span;
-        var eventCode = (HciEventCode)span[0];
-        byte parameterTotalLength = span[1];
-        int totalLength = headerLength + parameterTotalLength;
-        if (source.Length < totalLength) return false;
-        result = new HciEventPacket(eventCode, parameterTotalLength, source[2..totalLength].ToArray());
-        bytesDecoded = totalLength;
         return true;
     }
 }

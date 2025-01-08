@@ -1,7 +1,4 @@
-using System.Buffers.Binary;
-using System.Runtime.InteropServices;
 using Darp.BinaryObjects;
-using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci.Payload.Att;
 
@@ -18,24 +15,4 @@ public readonly partial record struct AttHandleValueNtf : IAttPdu
     public required ushort Handle { get; init; }
     /// <summary> The current value of the attribute </summary>
     public required ReadOnlyMemory<byte> Value { get; init; }
-
-    /// <inheritdoc />
-    public static bool TryDecode(in ReadOnlyMemory<byte> source, out AttHandleValueNtf result, out int bytesDecoded)
-    {
-        result = default;
-        bytesDecoded = 0;
-        if (source.Length < 3) return false;
-        ReadOnlySpan<byte> span = source.Span;
-        var opCode = (AttOpCode)span[0];
-        if (opCode != ExpectedOpCode) return false;
-        ushort handle = BinaryPrimitives.ReadUInt16LittleEndian(span[1..]);
-        result = new AttHandleValueNtf
-        {
-            OpCode = opCode,
-            Handle = handle,
-            Value = span[3..].ToArray(),
-        };
-        bytesDecoded = source.Length;
-        return true;
-    }
 }

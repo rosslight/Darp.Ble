@@ -4,7 +4,6 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
-using Darp.Ble.Hci.Payload.Event;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci.Transport;
