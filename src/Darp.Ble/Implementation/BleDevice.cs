@@ -79,8 +79,26 @@ public abstract class BleDevice(ILogger? logger) : IBleDevice
         }
     }
 
+    /// <inheritdoc />
+    public Task SetRandomAddressAsync(BleAddress randomAddress, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(randomAddress);
+        if (randomAddress.Type is not (
+            BleAddressType.RandomStatic
+            or BleAddressType.RandomPrivateResolvable
+            or BleAddressType.RandomPrivateNonResolvable
+            ))
+        {
+            throw new ArgumentOutOfRangeException(nameof(randomAddress), "The address provided has to be random");
+        }
+        return SetRandomAddressAsyncCore(randomAddress, cancellationToken);
+    }
+
+    /// <inheritdoc cref="SetRandomAddressAsync" />
+    protected abstract Task SetRandomAddressAsyncCore(BleAddress randomAddress, CancellationToken cancellationToken);
+
     /// <summary> Initializes the ble device. </summary>
-    /// <param name="cancellationToken"></param>
+    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> The status of the initialization. Success or a custom error code. </returns>
     protected abstract Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken);
 

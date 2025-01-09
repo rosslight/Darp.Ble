@@ -39,22 +39,41 @@ public enum HciOpCode : ushort
     HCI_LE_Read_Local_Supported_Features = 0x0003 | (HciOpCodeGroupField.LeController << 10),
     /// <summary> The <see cref="HciLeSetRandomAddressCommand"/> </summary>
     HCI_LE_Set_Random_Address = 0x0005 | (HciOpCodeGroupField.LeController << 10),
+
     /// <summary> The <see cref="HciLeSetDataLengthCommand"/> </summary>
     HCI_LE_Set_Data_Length = 0x0022 | (HciOpCodeGroupField.LeController << 10),
     /// <summary> The <see cref="HciLeReadSuggestedDefaultDataLengthCommand"/> </summary>
     HCI_LE_Read_Suggested_Default_Data_Length = 0x0023 | (HciOpCodeGroupField.LeController << 10),
     /// <summary> The <see cref="HciLeWriteSuggestedDefaultDataLengthCommand"/> </summary>
     HCI_LE_Write_Suggested_Default_Data_Length = 0x0024 | (HciOpCodeGroupField.LeController << 10),
+
+    /// <summary> The <see cref="HciLeSetAdvertisingSetRandomAddressCommand"/> </summary>
+    HCI_LE_SET_ADVERTISING_SET_RANDOM_ADDRESS = 0x0035 | (HciOpCodeGroupField.LeController << 10),
+    /// <summary> The <see cref="HciLeSetExtendedAdvertisingParametersV1Command"/> </summary>
+    HCI_LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1 = 0x0036 | (HciOpCodeGroupField.LeController << 10),
+    /// <summary> The <see cref="HciLeSetExtendedAdvertisingDataCommand"/> </summary>
+    HCI_LE_SET_EXTENDED_ADVERTISING_DATA = 0x0037 | (HciOpCodeGroupField.LeController << 10),
+    /// <summary> The <see cref="HciLeSetExtendedScanResponseDataCommand"/> </summary>
+    HCI_LE_Set_Extended_Scan_Response_Data = 0x0038 | (HciOpCodeGroupField.LeController << 10),
+    /// <summary> The <see cref="HciLeSetExtendedAdvertisingEnableCommand"/> </summary>
+    HCI_LE_SET_EXTENDED_ADVERTISING_ENABLE = 0x0039 | (HciOpCodeGroupField.LeController << 10),
+    /// <summary> The <see cref="HciLeReadMaximumAdvertisingDataLengthCommand"/> </summary>
+    HCI_LE_READ_MAXIMUM_ADVERTISING_DATA_LENGTH = 0x003A | (HciOpCodeGroupField.LeController << 10),
     /// <summary> The <see cref="HciLeReadNumberOfSupportedAdvertisingSetsCommand"/> </summary>
-    HCI_LE_Read_Number_Of_Supported_Advertising_Sets_Command = 0x003B | (HciOpCodeGroupField.LeController << 10),
+    HCI_LE_Read_Number_Of_Supported_Advertising_Sets = 0x003B | (HciOpCodeGroupField.LeController << 10),
+    /// <summary> The <see cref="HciLeRemoveAdvertisingSetCommand"/> </summary>
+    HCI_LE_Remove_Advertising_Set = 0x003C | (HciOpCodeGroupField.LeController << 10),
+
     /// <summary> The <see cref="HciLeSetExtendedScanParametersCommand"/> </summary>
     HCI_LE_Set_Extended_Scan_Parameters = 0x0041 | (HciOpCodeGroupField.LeController << 10),
     /// <summary> The <see cref="HciLeSetExtendedScanEnableCommand"/> </summary>
     HCI_LE_Set_Extended_Scan_Enable = 0x0042 | (HciOpCodeGroupField.LeController << 10),
     /// <summary> The <see cref="HciLeExtendedCreateConnectionV1Command"/> </summary>
-    HCI_LE_Extended_Create_ConnectionV1 = 0x0043 | (HciOpCodeGroupField.LeController << 10),
+    HCI_LE_Extended_Create_Connection_V1 = 0x0043 | (HciOpCodeGroupField.LeController << 10),
+
     /// <summary> The read buffer size v2 command </summary>
     HCI_LE_Read_Buffer_Size_V2 = 0x0060 | (HciOpCodeGroupField.LeController << 10),
+
     /// <summary> The extended create connection v2 command </summary>
     HCI_LE_Extended_Create_ConnectionV2 = 0x0085 | (HciOpCodeGroupField.LeController << 10),
 }

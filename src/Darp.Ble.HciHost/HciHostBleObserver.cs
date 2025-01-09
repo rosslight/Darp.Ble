@@ -11,11 +11,12 @@ using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.Hci.Payload.Result;
 using Darp.Ble.Implementation;
 using Microsoft.Extensions.Logging;
+using UInt48 = Darp.Ble.Data.UInt48;
 
 namespace Darp.Ble.HciHost;
 
 /// <inheritdoc />
-public sealed class HciHostBleObserver(HciHostBleDevice device, ILogger? logger) : BleObserver(device, logger)
+internal sealed class HciHostBleObserver(HciHostBleDevice device, ILogger? logger) : BleObserver(device, logger)
 {
     private readonly HciHostBleDevice _device = device;
     private static (HciLeSetExtendedScanParametersCommand, HciLeSetExtendedScanEnableCommand) CreateConfiguration(BleScanParameters parameters)

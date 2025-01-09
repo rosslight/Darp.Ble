@@ -25,11 +25,11 @@ public readonly partial record struct HciLeEnhancedConnectionCompleteV1Event
     /// <summary> The Peer_Address_Type </summary>
     public required byte PeerAddressType { get; init; }
     /// <summary> The Peer_Address </summary>
-    public required DeviceAddress PeerAddress { get; init; }
+    public required UInt48 PeerAddress { get; init; }
     /// <summary> The Local_Resolvable_Private_Address </summary>
-    public required DeviceAddress LocalResolvablePrivateAddress { get; init; }
+    public required UInt48 LocalResolvablePrivateAddress { get; init; }
     /// <summary> The Peer_Resolvable_Private_Address </summary>
-    public required DeviceAddress PeerResolvablePrivateAddress { get; init; }
+    public required UInt48 PeerResolvablePrivateAddress { get; init; }
     /// <summary> The Connection_Interval </summary>
     public required ushort ConnectionInterval { get; init; }
     /// <summary> The Peripheral_Latency </summary>

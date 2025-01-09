@@ -19,6 +19,11 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, ILogger?
 
     public override string? Name => BluetoothAdapter?.Name;
 
+    protected override Task SetRandomAddressAsyncCore(BleAddress randomAddress, CancellationToken cancellationToken)
+    {
+        throw new NotSupportedException();
+    }
+
     protected override Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
     {
         if (BluetoothAdapter is null) return Task.FromResult(InitializeResult.DeviceNotAvailable);

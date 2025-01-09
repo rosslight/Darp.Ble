@@ -77,23 +77,42 @@ public readonly partial record struct HciReadLocalSupportedCommandsResult(HciCom
     {
         HciOpCode.None => false,
         HciOpCode.HCI_Disconnect => IsSupported(0, 5),
+
         HciOpCode.HCI_Read_Local_Supported_Commands => true,
+
         HciOpCode.HCI_Set_Event_Mask => IsSupported(5, 6),
         HciOpCode.HCI_Reset => IsSupported(5, 7),
+
         HciOpCode.HCI_Read_Local_Version_Information => IsSupported(14, 3),
         HciOpCode.HCI_Read_BD_ADDR => IsSupported(15, 1),
+
         HciOpCode.HCI_LE_Set_Event_Mask => IsSupported(25, 0),
         HciOpCode.HCI_LE_Read_Buffer_Size_V1 => IsSupported(25, 1),
         HciOpCode.HCI_LE_Read_Local_Supported_Features => IsSupported(25, 2),
         HciOpCode.HCI_LE_Set_Random_Address => IsSupported(25, 4),
+
         HciOpCode.HCI_LE_Set_Data_Length => IsSupported(33, 6),
         HciOpCode.HCI_LE_Read_Suggested_Default_Data_Length => IsSupported(33, 7),
+
         HciOpCode.HCI_LE_Write_Suggested_Default_Data_Length => IsSupported(34, 0),
+
+        HciOpCode.HCI_LE_SET_ADVERTISING_SET_RANDOM_ADDRESS => IsSupported(36, 1),
+        HciOpCode.HCI_LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1 => IsSupported(36, 2),
+        HciOpCode.HCI_LE_SET_EXTENDED_ADVERTISING_DATA => IsSupported(36, 3),
+        HciOpCode.HCI_LE_Set_Extended_Scan_Response_Data => IsSupported(36, 4),
+        HciOpCode.HCI_LE_SET_EXTENDED_ADVERTISING_ENABLE => IsSupported(36, 5),
+        HciOpCode.HCI_LE_READ_MAXIMUM_ADVERTISING_DATA_LENGTH => IsSupported(36, 6),
+        HciOpCode.HCI_LE_Read_Number_Of_Supported_Advertising_Sets => IsSupported(36, 7),
+
+        HciOpCode.HCI_LE_Remove_Advertising_Set => IsSupported(37, 0),
         HciOpCode.HCI_LE_Set_Extended_Scan_Parameters => IsSupported(37, 5),
         HciOpCode.HCI_LE_Set_Extended_Scan_Enable => IsSupported(37, 6),
-        HciOpCode.HCI_LE_Extended_Create_ConnectionV1 => IsSupported(37, 7),
+        HciOpCode.HCI_LE_Extended_Create_Connection_V1 => IsSupported(37, 7),
+
         HciOpCode.HCI_LE_Read_Buffer_Size_V2 => IsSupported(41, 5),
+
         HciOpCode.HCI_LE_Extended_Create_ConnectionV2 => IsSupported(47, 0),
+
         _ => false,
     };
 }

@@ -13,7 +13,7 @@ public readonly partial record struct HciLeExtendedAdvertisingReport
     /// <summary> The Address_Type </summary>
     public required byte AddressType { get; init; }
     /// <summary> The Address </summary>
-    public required DeviceAddress Address { get; init; }
+    public required UInt48 Address { get; init; }
     /// <summary> The Primary_PHY </summary>
     public required byte PrimaryPhy { get; init; }
     /// <summary> The Secondary_PHY </summary>
@@ -29,7 +29,7 @@ public readonly partial record struct HciLeExtendedAdvertisingReport
     /// <summary> The Direct_Address_Type </summary>
     public required byte DirectAddressType { get; init; }
     /// <summary> The Direct_Address </summary>
-    public required DeviceAddress DirectAddress { get; init; }
+    public required UInt48 DirectAddress { get; init; }
     /// <summary> The Data_Length </summary>
     public required byte DataLength { get; init; }
     /// <summary> The Data </summary>

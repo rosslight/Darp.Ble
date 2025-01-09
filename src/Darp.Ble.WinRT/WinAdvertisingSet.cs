@@ -10,7 +10,7 @@ public sealed class WinAdvertisingSet(IBleBroadcaster broadcaster,
     BleAddress randomAddress,
     AdvertisingParameters parameters,
     AdvertisingData data,
-    AdvertisingData scanResponseData,
+    AdvertisingData? scanResponseData,
     TxPowerLevel selectedTxPower)
     : AdvertisingSet(broadcaster, randomAddress, parameters, data, scanResponseData, selectedTxPower)
 {

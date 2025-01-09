@@ -8,6 +8,11 @@ namespace Darp.Ble.WinRT;
 /// <summary> Provides windows specific implementation of a ble device </summary>
 internal sealed class WinBleDevice(ILogger? logger) : BleDevice(logger)
 {
+    protected override Task SetRandomAddressAsyncCore(BleAddress randomAddress, CancellationToken cancellationToken)
+    {
+        throw new NotSupportedException();
+    }
+
     /// <inheritdoc />
     protected override async Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
     {

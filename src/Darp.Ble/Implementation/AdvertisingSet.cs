@@ -14,7 +14,7 @@ public abstract class AdvertisingSet(IBleBroadcaster broadcaster,
     BleAddress randomAddress,
     AdvertisingParameters parameters,
     AdvertisingData data,
-    AdvertisingData scanResponseData,
+    AdvertisingData? scanResponseData,
     TxPowerLevel selectedTxPower
 ) : IAdvertisingSet
 {
@@ -27,9 +27,9 @@ public abstract class AdvertisingSet(IBleBroadcaster broadcaster,
     /// <inheritdoc />
     public AdvertisingData Data { get; protected set; } = data;
     /// <inheritdoc />
-    public AdvertisingData ScanResponseData { get; protected set; } = scanResponseData;
+    public AdvertisingData? ScanResponseData { get; protected set; } = scanResponseData;
     /// <inheritdoc />
-    public TxPowerLevel SelectedTxPower { get; } = selectedTxPower;
+    public TxPowerLevel SelectedTxPower { get; protected set; } = selectedTxPower;
 
     /// <inheritdoc />
     public bool IsAdvertising { get; }
@@ -61,4 +61,15 @@ public abstract class AdvertisingSet(IBleBroadcaster broadcaster,
         ScanResponseData = scanResponseData;
         return Task.CompletedTask;
     }
+
+    /// <inheritdoc />
+    public async ValueTask DisposeAsync()
+    {
+        await DisposeAsyncCore().ConfigureAwait(false);
+        GC.SuppressFinalize(this);
+    }
+
+    /// <summary> Remove the advertising set </summary>
+    /// <returns> The value task </returns>
+    protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
 }

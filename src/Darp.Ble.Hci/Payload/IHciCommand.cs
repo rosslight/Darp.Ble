@@ -9,3 +9,4 @@ public interface IHciCommand : IBinaryWritable
     /// <summary> The OpCode of the command </summary>
     static abstract HciOpCode OpCode { get; }
 }
+

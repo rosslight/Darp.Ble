@@ -77,9 +77,8 @@ public sealed class HciHost : IDisposable
     }
 
     /// <summary> Initialize the host </summary>
-    /// <param name="deviceAddress"> The address of the local ble device </param>
     /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
-    public async Task InitializeAsync(DeviceAddress deviceAddress, CancellationToken cancellationToken)
+    public async Task InitializeAsync(CancellationToken cancellationToken)
     {
         _transportLayer.Initialize();
         // Reset the controller
@@ -92,7 +91,6 @@ public sealed class HciHost : IDisposable
         }
         await this.QueryCommandCompletionAsync<HciSetEventMaskCommand, HciSetEventMaskResult>(new HciSetEventMaskCommand((EventMask)0x3fffffffffffffff), cancellationToken: cancellationToken).ConfigureAwait(false);
         await this.QueryCommandCompletionAsync<HciLeSetEventMaskCommand, HciLeSetEventMaskResult>(new HciLeSetEventMaskCommand((LeEventMask)0xf0ffff), cancellationToken: cancellationToken).ConfigureAwait(false);
-        await this.QueryCommandCompletionAsync<HciLeSetRandomAddressCommand, HciLeSetRandomAddressResult>(new HciLeSetRandomAddressCommand(deviceAddress), cancellationToken: cancellationToken).ConfigureAwait(false);
         HciLeReadBufferSizeResultV1 data = await this.QueryCommandCompletionAsync<HciLeReadBufferSizeCommandV1, HciLeReadBufferSizeResultV1>(cancellationToken: cancellationToken).ConfigureAwait(false);
         _aclPacketQueue = new AclPacketQueue(_transportLayer, data.LeAclDataPacketLength, data.TotalNumLeAclDataPackets);
     }

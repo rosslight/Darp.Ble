@@ -16,17 +16,28 @@ public abstract class BleBroadcaster(ILogger? logger) : IBleBroadcaster
         AdvertisingData? scanResponseData = null,
         CancellationToken cancellationToken = default)
     {
+        parameters ??= AdvertisingParameters.Default;
+        data ??= AdvertisingData.Empty;
+        if (!parameters.Type.HasFlag(BleEventType.Legacy)
+            && parameters.Type.HasFlag(BleEventType.Connectable) &&
+            parameters.Type.HasFlag(BleEventType.Scannable))
+        {
+            throw new ArgumentOutOfRangeException(nameof(parameters),
+                "Non-legacy extended advertising event properties may not be both connectable and scannable");
+        }
         return CreateAdvertisingSetAsyncCore(parameters, data, scanResponseData, cancellationToken);
     }
 
     /// <inheritdoc cref="CreateAdvertisingSetAsync" />
-    protected abstract Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(AdvertisingParameters? parameters = null,
-        AdvertisingData? data = null,
-        AdvertisingData? scanResponseData = null,
-        CancellationToken cancellationToken = default);
+    protected abstract Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(AdvertisingParameters parameters,
+        AdvertisingData data,
+        AdvertisingData? scanResponseData,
+        CancellationToken cancellationToken);
 
     /// <inheritdoc />
-    public IAsyncDisposable StartAdvertising(IReadOnlyCollection<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, int NumberOfEvents)> advertisingSet)
+    public Task<IAsyncDisposable> StartAdvertisingAsync(
+        IReadOnlyCollection<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, byte NumberOfEvents)> advertisingSet,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(advertisingSet);
 
@@ -38,14 +49,16 @@ public abstract class BleBroadcaster(ILogger? logger) : IBleBroadcaster
             }
         }
 
-        return StartAdvertisingCore(advertisingSet);
+        return StartAdvertisingCoreAsync(advertisingSet, cancellationToken);
     }
 
     /// <summary> Start advertising multiple advertising sets </summary>
-    /// <param name="advertisingSet"> A collection of advertising sets together with information on how to start them </param>
+    /// <param name="advertisingSets"> A collection of advertising sets together with information on how to start them </param>
+    /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
     /// <returns> An async disposable to stop advertising </returns>
-    protected abstract IAsyncDisposable StartAdvertisingCore(
-        IEnumerable<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, int NumberOfEvents)> advertisingSet);
+    protected abstract Task<IAsyncDisposable> StartAdvertisingCoreAsync(
+        IReadOnlyCollection<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, byte NumberOfEvents)> advertisingSets,
+        CancellationToken cancellationToken);
 
     /// <inheritdoc />
     public async ValueTask DisposeAsync()

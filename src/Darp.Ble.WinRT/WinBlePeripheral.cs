@@ -4,6 +4,7 @@ using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Implementation;
+using Darp.Ble.Utils;
 using Darp.Ble.WinRT.Gatt;
 using Microsoft.Extensions.Logging;
 

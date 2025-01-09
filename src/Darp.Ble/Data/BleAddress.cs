@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 
 namespace Darp.Ble.Data;
 
@@ -56,12 +57,12 @@ public sealed record BleAddress : ISpanParsable<BleAddress>
     {
         if (s.Length < 17)
         {
-            result = default;
+            result = null;
             return false;
         }
         if (s[2] != ':' || s[5] != ':' || s[8] != ':' || s[11] != ':' || s[14] != ':')
         {
-            result = default;
+            result = null;
             return false;
         }
         if (!TryGetHexVal(s, out byte b0)
@@ -71,7 +72,7 @@ public sealed record BleAddress : ISpanParsable<BleAddress>
             || !TryGetHexVal(s[12..], out byte b4)
             || !TryGetHexVal(s[15..], out byte b5))
         {
-            result = default;
+            result = null;
             return false;
         }
         var value = new UInt48(b5, b4, b3, b2, b1, b0);
@@ -134,5 +135,15 @@ public sealed record BleAddress : ISpanParsable<BleAddress>
     public override int GetHashCode()
     {
         return HashCode.Combine((int)Type, Value);
+    }
+
+    /// <summary> Creates a new random address with a <see cref="BleAddressType.RandomStatic"/> type </summary>
+    /// <returns> The new address </returns>
+    public static BleAddress NewRandomStaticAddress()
+    {
+        Span<byte> buffer = stackalloc byte[6];
+        buffer[5] = (byte)(buffer[5] | 0b11000000);
+        var value = new UInt48(buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5]);
+        return new BleAddress(BleAddressType.RandomStatic, value);
     }
 }

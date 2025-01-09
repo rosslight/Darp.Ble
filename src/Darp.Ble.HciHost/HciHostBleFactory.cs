@@ -1,3 +1,4 @@
+using Darp.Ble.Data;
 using Darp.Ble.HciHost.Usb;
 using Microsoft.Extensions.Logging;
 
@@ -7,6 +8,7 @@ namespace Darp.Ble.HciHost;
 public sealed class HciHostBleFactory : IBleFactory
 {
     private readonly string? _port;
+    private readonly BleAddress? _randomAddress;
 
     /// <summary> A simple mapping of vendorId and productId to the name of the device </summary>
     public IDictionary<(ushort VendorId, ushort ProductId), string> DeviceNameMapping { get; } =
@@ -22,9 +24,11 @@ public sealed class HciHostBleFactory : IBleFactory
 
     /// <summary> Initialize a new BleFactory with a set port </summary>
     /// <param name="port"> The port to be enumerated </param>
-    public HciHostBleFactory(string port)
+    /// <param name="randomAddress"> The random address the device should use </param>
+    public HciHostBleFactory(string port, BleAddress? randomAddress)
     {
         _port = port;
+        _randomAddress = randomAddress;
     }
 
     /// <inheritdoc />
@@ -32,7 +36,7 @@ public sealed class HciHostBleFactory : IBleFactory
     {
         if (_port is not null)
         {
-            yield return new HciHostBleDevice(_port, _port, logger);
+            yield return new HciHostBleDevice(_port, _port, randomAddress: null, logger);
             yield break;
         }
 
@@ -42,7 +46,7 @@ public sealed class HciHostBleFactory : IBleFactory
             if (portInfo.Port is null) continue;
             if (!DeviceNameMapping.TryGetValue((portInfo.VendorId, portInfo.ProductId), out string? deviceName))
                 continue;
-            yield return new HciHostBleDevice(portInfo.Port, $"{deviceName} ({portInfo.Port})", logger);
+            yield return new HciHostBleDevice(portInfo.Port, $"{deviceName} ({portInfo.Port})", randomAddress: null, logger);
         }
     }
 }

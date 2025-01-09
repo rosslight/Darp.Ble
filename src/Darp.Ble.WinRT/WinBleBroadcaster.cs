@@ -5,6 +5,7 @@ using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
+using Darp.Ble.Utils;
 using Darp.Ble.WinRT.Gatt;
 using Microsoft.Extensions.Logging;
 
@@ -15,23 +16,25 @@ internal sealed class WinBleBroadcaster(WinBleDevice winBleDevice, ILogger? logg
 {
     private readonly WinBleDevice _winBleDevice = winBleDevice;
 
-    protected override Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(AdvertisingParameters? parameters = null,
-        AdvertisingData? data = null,
-        AdvertisingData? scanResponseData = null,
-        CancellationToken cancellationToken = default)
+    protected override Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(AdvertisingParameters parameters,
+        AdvertisingData data,
+        AdvertisingData? scanResponseData,
+        CancellationToken cancellationToken)
     {
         return Task.FromResult<IAdvertisingSet>(new WinAdvertisingSet(this,
             BleAddress.NotAvailable,
-            parameters ?? AdvertisingParameters.Default,
-            data ?? AdvertisingData.Empty,
-            scanResponseData ?? AdvertisingData.Empty,
+            parameters,
+            data,
+            scanResponseData,
             TxPowerLevel.NotAvailable));
     }
 
-    protected override IAsyncDisposable StartAdvertisingCore(IEnumerable<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, int NumberOfEvents)> advertisingStartInfo)
+    protected override Task<IAsyncDisposable> StartAdvertisingCoreAsync(
+        IReadOnlyCollection<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, byte NumberOfEvents)> advertisingSets,
+        CancellationToken cancellationToken)
     {
         List<IAsyncDisposable> disposables = [];
-        foreach ((IAdvertisingSet advertisingSet, TimeSpan duration, int numberOfEvents) in advertisingStartInfo)
+        foreach ((IAdvertisingSet advertisingSet, TimeSpan duration, int numberOfEvents) in advertisingSets)
         {
             if (_winBleDevice.Capabilities.HasFlag(Capabilities.Peripheral))
             {
@@ -117,12 +120,13 @@ internal sealed class WinBleBroadcaster(WinBleDevice winBleDevice, ILogger? logg
             publisher.Start();
             disposables.Add(disposable);
         }
-        return AsyncDisposable.Create(disposables, async x =>
+        IAsyncDisposable combinedDisposable = AsyncDisposable.Create(disposables, async x =>
         {
             foreach (IAsyncDisposable asyncDisposable in x)
             {
                 await asyncDisposable.DisposeAsync().ConfigureAwait(false);
             }
         });
+        return Task.FromResult(combinedDisposable);
     }
 }

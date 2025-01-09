@@ -41,4 +41,10 @@ public interface IBleDevice : IAsyncDisposable
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> Success or a custom error code </returns>
     Task<InitializeResult> InitializeAsync(CancellationToken cancellationToken = default);
+
+    /// <summary> Sets the random address of the device </summary>
+    /// <param name="randomAddress"> The new, random address </param>
+    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
+    /// <returns> A task that completes when the address was updated </returns>
+    Task SetRandomAddressAsync(BleAddress randomAddress, CancellationToken cancellationToken = default);
 }

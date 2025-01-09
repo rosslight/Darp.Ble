@@ -9,20 +9,41 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.HciHost;
 
 /// <summary> Provides windows specific implementation of a ble device </summary>
-public sealed class HciHostBleDevice(string port, string name, ILogger? logger) : BleDevice(logger)
+internal sealed class HciHostBleDevice(string port,
+    string name,
+    BleAddress? randomAddress,
+    ILogger? logger) : BleDevice(logger)
 {
     public Hci.HciHost Host { get; } = new(new H4TransportLayer(port, logger: logger), logger: logger);
 
     public override string Name { get; } = name;
 
-    /// <param name="cancellationToken"></param>
+    public BleAddress RandomAddress { get; private set; } = randomAddress ?? BleAddress.NewRandomStaticAddress();
+
     /// <inheritdoc />
     protected override async Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
     {
-        await Host.InitializeAsync(0xF0F1F2F3F4F5, cancellationToken).ConfigureAwait(false);
+        await Host.InitializeAsync(cancellationToken).ConfigureAwait(false);
+        await SetRandomAddressAsync(RandomAddress, cancellationToken).ConfigureAwait(false);
+
         Observer = new HciHostBleObserver(this, Logger);
         Central = new HciHostBleCentral(this, Logger);
+
+        HciLeReadMaximumAdvertisingDataLengthResult result = await Host
+            .QueryCommandCompletionAsync<HciLeReadMaximumAdvertisingDataLengthCommand, HciLeReadMaximumAdvertisingDataLengthResult>(cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        Broadcaster = new HciHostBleBroadcaster(this, result.MaxAdvertisingDataLength, Logger);
         return InitializeResult.Success;
+    }
+
+    protected override async Task SetRandomAddressAsyncCore(BleAddress randomAddress, CancellationToken cancellationToken)
+    {
+        var addressValue = randomAddress.Value.ToUInt64();
+        await Host.QueryCommandCompletionAsync<HciLeSetRandomAddressCommand, HciLeSetRandomAddressResult>(
+            new HciLeSetRandomAddressCommand(addressValue),
+            cancellationToken: cancellationToken
+        ).ConfigureAwait(false);
+        RandomAddress = randomAddress;
     }
 
     /// <inheritdoc />

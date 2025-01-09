@@ -14,6 +14,18 @@ public enum AdvertisingFilterPolicy
     AcceptKnownConnectionsAndScanRequests = 0x03,
 }
 
+/// <summary> Advertising channels </summary>
+[Flags]
+public enum AdvertisingChannelMap: byte
+{
+    /// <summary> The advertising channel 37 </summary>
+    Channel37 = 1 << 0,
+    /// <summary> The advertising channel 38 </summary>
+    Channel38 = 1 << 1,
+    /// <summary> The advertising channel 39 </summary>
+    Channel39 = 1 << 2,
+}
+
 /// <summary> Advertisement parameters to configure advertisement </summary>
 public sealed class AdvertisingParameters
 {
@@ -29,6 +41,10 @@ public sealed class AdvertisingParameters
     public ScanTiming MinPrimaryAdvertisingInterval { get; init; } = ScanTiming.Ms1000;
     public ScanTiming MaxPrimaryAdvertisingInterval { get; init; } = ScanTiming.Ms1000;
 
+    public AdvertisingChannelMap PrimaryAdvertisingChannelMap { get; init; } = AdvertisingChannelMap.Channel37 |
+                                                             AdvertisingChannelMap.Channel38 |
+                                                             AdvertisingChannelMap.Channel39;
+
     /// <summary> The address of the peer device, if <see cref="BleEventType.Directed"/> advertising is selected in the <see cref="Type"/> </summary>
     public BleAddress? PeerAddress { get; init; }
 
@@ -40,4 +56,11 @@ public sealed class AdvertisingParameters
 
     /// <summary> The filter policy </summary>
     public AdvertisingFilterPolicy FilterPolicy { get; init; } = AdvertisingFilterPolicy.AcceptAllConnectionsAndScanRequests;
+
+    /// <summary> The primary physical </summary>
+    /// <value> Only <see cref="Physical.Le1M"/> and <see cref="Physical.LeCoded"/> are allowed </value>
+    public Physical PrimaryPhy { get; init; } = Physical.Le1M;
+
+    /// <summary> The advertising SId </summary>
+    public byte AdvertisingSId { get; init; }
 }

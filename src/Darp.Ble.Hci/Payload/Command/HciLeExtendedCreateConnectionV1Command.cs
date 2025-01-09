@@ -14,7 +14,7 @@ namespace Darp.Ble.Hci.Payload.Command;
 public readonly partial record struct HciLeExtendedCreateConnectionV1Command : IHciCommand
 {
     /// <inheritdoc />
-    public static HciOpCode OpCode => HciOpCode.HCI_LE_Extended_Create_ConnectionV1;
+    public static HciOpCode OpCode => HciOpCode.HCI_LE_Extended_Create_Connection_V1;
 
     /// <summary> The Initiator_Filter_Policy parameter is used to determine whether the Filter Accept List is used and whether to process decision PDUs and other advertising PDUs </summary>
     public required byte InitiatorFilterPolicy { get; init; }
@@ -23,7 +23,7 @@ public readonly partial record struct HciLeExtendedCreateConnectionV1Command : I
     /// <summary> The Peer_Address_Type parameter indicates the type of address used in the connectable advertisement sent by the peer. </summary>
     public required byte PeerAddressType { get; init; }
     /// <summary> The Peer_Address parameter </summary>
-    public required DeviceAddress PeerAddress { get; init; }
+    public required UInt48 PeerAddress { get; init; }
     /// <summary> The Initiating_PHYs parameter indicates the PHY(s) on which the advertising packets should be received on the primary advertising physical channel and the PHYs for which connection parameters have been specified </summary>
     public required byte InitiatingPhys { get; init; }
     /// <summary> The Scan_Interval[i] and Scan_Window[i] parameters are recommendations from the Host on how long (Scan_Window[i]) and how frequently (Scan_Interval[i]) the Controller should scan </summary>
