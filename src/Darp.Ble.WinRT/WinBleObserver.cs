@@ -95,10 +95,10 @@ internal sealed class WinBleObserver(BleDevice device, ILogger? logger) : BleObs
             _ => (BleEventType)eventArgs.AdvertisementType
         };
 
-        (AdTypes, byte[])[] pduData = eventArgs
+        (AdTypes, ReadOnlyMemory<byte>)[] pduData = eventArgs
             .Advertisement
             .DataSections
-            .Select(section => ((AdTypes)section.DataType, section.Data.ToArray()))
+            .Select(section => ((AdTypes)section.DataType, (ReadOnlyMemory<byte>)section.Data.ToArray()))
             .ToArray();
 
         GapAdvertisement advertisement = GapAdvertisement.FromExtendedAdvertisingReport(bleObserver,
@@ -112,7 +112,7 @@ internal sealed class WinBleObserver(BleDevice device, ILogger? logger) : BleObs
             (Rssi)eventArgs.RawSignalStrengthInDBm,
             PeriodicAdvertisingInterval.NoPeriodicAdvertising,
             new BleAddress(BleAddressType.NotAvailable, (UInt48)0x000000000000),
-            pduData);
+            AdvertisingData.From(pduData));
 
         return advertisement;
     }

@@ -1,5 +1,6 @@
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
+using Darp.Ble.Gatt.Server;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Implementation;
@@ -36,20 +37,24 @@ public abstract class BleBroadcaster(ILogger? logger) : IBleBroadcaster
 
     /// <inheritdoc />
     public Task<IAsyncDisposable> StartAdvertisingAsync(
-        IReadOnlyCollection<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, byte NumberOfEvents)> advertisingSet,
+        IReadOnlyCollection<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, byte NumberOfEvents)> advertisingSetStartInfo,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(advertisingSet);
+        ArgumentNullException.ThrowIfNull(advertisingSetStartInfo);
 
-        foreach ((_, TimeSpan duration, int numberOfEvents) in advertisingSet)
+        foreach ((IAdvertisingSet set, TimeSpan duration, int numberOfEvents) in advertisingSetStartInfo)
         {
+            if (set.Broadcaster != this)
+            {
+                throw new ArgumentOutOfRangeException(nameof(advertisingSetStartInfo), "Cannot start an advertising set for this broadcaster if the set has a different broadcaster configured");
+            }
             if (duration > TimeSpan.Zero && numberOfEvents > 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(advertisingSet), "Cannot have both duration and numberOfEvents > 0");
+                throw new ArgumentOutOfRangeException(nameof(advertisingSetStartInfo), "Cannot have both duration and numberOfEvents > 0");
             }
         }
 
-        return StartAdvertisingCoreAsync(advertisingSet, cancellationToken);
+        return StartAdvertisingCoreAsync(advertisingSetStartInfo, cancellationToken);
     }
 
     /// <summary> Start advertising multiple advertising sets </summary>

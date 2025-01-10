@@ -94,38 +94,6 @@ public sealed class GapAdvertisement : IGapAdvertisement
     /// <param name="rssi"> The Rssi of the advertising device </param>
     /// <param name="periodicAdvertisingInterval"> The interval of periodic advertisements </param>
     /// <param name="directAddress"> The address of the device the advertisement is directed to </param>
-    /// <param name="advertisingDataSections"> The data sections </param>
-    /// <returns> The GapAdvertisement </returns>
-    public static GapAdvertisement FromExtendedAdvertisingReport(IBleObserver bleObserver,
-        DateTimeOffset timestamp,
-        BleEventType eventType,
-        BleAddress address,
-        Physical primaryPhy,
-        Physical secondaryPhy,
-        AdvertisingSId advertisingSId,
-        TxPowerLevel txPower,
-        Rssi rssi,
-        PeriodicAdvertisingInterval periodicAdvertisingInterval,
-        BleAddress directAddress,
-        IReadOnlyList<(AdTypes Section, byte[] Bytes)> advertisingDataSections)
-    {
-        AdvertisingData advertisingData = AdvertisingData.From(advertisingDataSections);
-        return FromExtendedAdvertisingReport(bleObserver, timestamp, eventType, address, primaryPhy, secondaryPhy,
-            advertisingSId, txPower, rssi, periodicAdvertisingInterval, directAddress, advertisingData);
-    }
-
-    /// <summary> Create from property values </summary>
-    /// <param name="bleObserver"> The observer which produced this advertisement report </param>
-    /// <param name="timestamp"> The Timestamp when the report was received </param>
-    /// <param name="eventType"> The type of the advertising event </param>
-    /// <param name="address"> Settings of the primary physical the advertising device used </param>
-    /// <param name="primaryPhy"> Settings of the secondary physical the advertising device used </param>
-    /// <param name="secondaryPhy"> Value of the Advertising SID subfield in the ADI field of the PDU or, for scan responses, in the ADI field of the original scannable advertisement </param>
-    /// <param name="advertisingSId"> The Tx power of the advertising device </param>
-    /// <param name="txPower"> The Tx power of the advertising device </param>
-    /// <param name="rssi"> The Rssi of the advertising device </param>
-    /// <param name="periodicAdvertisingInterval"> The interval of periodic advertisements </param>
-    /// <param name="directAddress"> The address of the device the advertisement is directed to </param>
     /// <param name="advertisingData"> The data sections </param>
     /// <returns> The GapAdvertisement </returns>
     public static GapAdvertisement FromExtendedAdvertisingReport(IBleObserver bleObserver,

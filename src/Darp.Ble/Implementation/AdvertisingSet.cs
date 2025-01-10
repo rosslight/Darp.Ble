@@ -1,5 +1,6 @@
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
+using Darp.Ble.Gatt.Server;
 
 namespace Darp.Ble.Implementation;
 

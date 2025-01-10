@@ -29,14 +29,11 @@ public enum AdvertisingChannelMap: byte
 /// <summary> Advertisement parameters to configure advertisement </summary>
 public sealed class AdvertisingParameters
 {
-    /// <summary> The default advertising parameters with type <see cref="BleEventType.AdvNonConnInd"/> </summary>
-    public static AdvertisingParameters Default { get; } = new()
-    {
-        Type = BleEventType.AdvNonConnInd,
-    };
+    /// <summary> The default advertising parameters </summary>
+    public static AdvertisingParameters Default { get; } = new();
 
     /// <summary> The <see cref="BleEventType"/> to be used when sending the advertisement </summary>
-    public required BleEventType Type { get; init; }
+    public BleEventType Type { get; init; } = BleEventType.AdvNonConnInd;
 
     public ScanTiming MinPrimaryAdvertisingInterval { get; init; } = ScanTiming.Ms1000;
     public ScanTiming MaxPrimaryAdvertisingInterval { get; init; } = ScanTiming.Ms1000;

@@ -151,4 +151,30 @@ public sealed record BleUuid : ISpanParsable<BleUuid>, ISpanFormattable, IUtf8Sp
     {
         return TryFormat(utf8Destination, out bytesWritten, format);
     }
+
+    /// <summary> Write the ble uuid to a span </summary>
+    /// <param name="destination"> The span to be written to </param>
+    /// <returns> True if the uuid is successfully written to the specified span; False otherwise </returns>
+    public bool TryWriteBytes(Span<byte> destination)
+    {
+        switch (Type)
+        {
+            case BleUuidType.Uuid16:
+            {
+                Span<byte> bytes = stackalloc byte[16];
+                Value.TryWriteBytes(bytes);
+                return destination.TryCopyTo(bytes[2..4]);
+            }
+            case BleUuidType.Uuid32:
+            {
+                Span<byte> bytes = stackalloc byte[16];
+                Value.TryWriteBytes(bytes);
+                return destination.TryCopyTo(bytes[..4]);
+            }
+            case BleUuidType.Uuid128:
+                return Value.TryWriteBytes(destination);
+            default:
+                return false;
+        }
+    }
 }

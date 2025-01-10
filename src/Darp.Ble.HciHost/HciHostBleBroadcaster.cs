@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
-using System.Reflection.Metadata;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
+using Darp.Ble.Gatt.Server;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Result;

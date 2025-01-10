@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Darp.Ble.Data;
@@ -6,7 +7,7 @@ using Darp.Ble.Data.AssignedNumbers;
 namespace Darp.Ble.Gap;
 
 /// <summary> Extensions for advertising data </summary>
-public static class AdvertisingDataExtensions
+public static partial class AdvertisingDataExtensions
 {
     /// <summary> Get the AD Flags if it's contained in the given data. </summary>
     /// <param name="data"> The data to be looked at </param>
@@ -100,7 +101,7 @@ public static class AdvertisingDataExtensions
     /// <summary> Accumulate any services </summary>
     /// <param name="data"> The data to be looked at </param>
     /// <returns> An array with services </returns>
-    public static IEnumerable<BleUuid> GetServices(this AdvertisingData data)
+    public static IEnumerable<BleUuid> GetServiceUuids(this AdvertisingData data)
     {
         ArgumentNullException.ThrowIfNull(data);
         return GetServicesInt(data);
@@ -130,20 +131,52 @@ public static class AdvertisingDataExtensions
     /// Will return only first data found
     /// </summary>
     /// <param name="data"> The data to be looked at </param>
+    /// <param name="companyUuid"> The company uuid to look for </param>
     /// <param name="manufacturerData"> The resulting manufacturer specific data if the return is true </param>
     /// <returns> True, if the data type was present and AD data at least 2 bytes long </returns>
     public static bool TryGetManufacturerSpecificData(this AdvertisingData data,
-        out (CompanyIdentifiers Company, byte[] Bytes) manufacturerData)
+        CompanyIdentifiers companyUuid,
+        out byte[] manufacturerData)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        foreach ((AdTypes adTypes, ReadOnlyMemory<byte> bytes) in data)
+        {
+            if (adTypes != AdTypes.ManufacturerSpecificData) continue;
+            if (bytes.Length < 2) continue;
+            if (!BinaryPrimitives.TryReadUInt16LittleEndian(bytes.Span, out ushort uuid) || uuid != (ushort)companyUuid)
+            {
+                continue;
+            }
+
+            manufacturerData = bytes.Span[2..].ToArray();
+            return true;
+        }
+        manufacturerData = [];
+        return false;
+    }
+
+    /// <summary>
+    /// Get the AD Manufacturer Specific Data if its contained in the given advertising data.
+    /// Will return only first data found
+    /// </summary>
+    /// <param name="data"> The data to be looked at </param>
+    /// <param name="companyUuid"> The company uuid of the first manufacturer specific data found </param>
+    /// <param name="manufacturerData"> The resulting manufacturer specific data if the return is true </param>
+    /// <returns> True, if the data type was present and AD data at least 2 bytes long </returns>
+    public static bool TryGetManufacturerSpecificData(this AdvertisingData data,
+        out CompanyIdentifiers companyUuid,
+        out byte[] manufacturerData)
     {
         ArgumentNullException.ThrowIfNull(data);
         if (!data.TryGetFirstType(AdTypes.ManufacturerSpecificData, out ReadOnlyMemory<byte> bytes)
             || bytes.Length < 2)
         {
-            manufacturerData = default;
+            companyUuid = default;
+            manufacturerData = [];
             return false;
         }
-        var companyUuid = (CompanyIdentifiers)BitConverter.ToUInt16(bytes.Span);
-        manufacturerData = (companyUuid, bytes.Span[2..].ToArray());
+        companyUuid = (CompanyIdentifiers)BinaryPrimitives.ReadUInt16LittleEndian(bytes.Span);
+        manufacturerData = bytes.Span[2..].ToArray();
         return true;
     }
 }

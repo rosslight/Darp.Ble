@@ -4,9 +4,9 @@ using Windows.Devices.Bluetooth.Advertisement;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
+using Darp.Ble.Gatt.Server;
 using Darp.Ble.Implementation;
 using Darp.Ble.Utils;
-using Darp.Ble.WinRT.Gatt;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.WinRT;

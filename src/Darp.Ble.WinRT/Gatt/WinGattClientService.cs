@@ -6,6 +6,7 @@ using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
 using Darp.Ble.Gatt.Client;
+using Darp.Ble.Gatt.Server;
 using Darp.Ble.Utils;
 
 namespace Darp.Ble.WinRT.Gatt;
