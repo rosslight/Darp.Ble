@@ -16,17 +16,12 @@ internal sealed class WinBleBroadcaster(WinBleDevice winBleDevice, ILogger? logg
 {
     private readonly WinBleDevice _winBleDevice = winBleDevice;
 
-    protected override Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(AdvertisingParameters parameters,
-        AdvertisingData data,
+    protected override Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(AdvertisingParameters? parameters,
+        AdvertisingData? data,
         AdvertisingData? scanResponseData,
         CancellationToken cancellationToken)
     {
-        return Task.FromResult<IAdvertisingSet>(new WinAdvertisingSet(this,
-            BleAddress.NotAvailable,
-            parameters,
-            data,
-            scanResponseData,
-            TxPowerLevel.NotAvailable));
+        return Task.FromResult<IAdvertisingSet>(new WinAdvertisingSet(this));
     }
 
     protected override Task<IAsyncDisposable> StartAdvertisingCoreAsync(

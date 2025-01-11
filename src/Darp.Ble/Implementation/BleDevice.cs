@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Microsoft.Extensions.Logging;
@@ -19,6 +20,8 @@ public abstract class BleDevice(ILogger? logger) : IBleDevice
 
     /// <inheritdoc />
     public bool IsInitialized { get; private set; }
+
+    public bool IsDisposed { get; private set; }
 
     /// <inheritdoc />
     public abstract string Identifier { get; }
@@ -106,11 +109,11 @@ public abstract class BleDevice(ILogger? logger) : IBleDevice
     /// <exception cref="NotInitializedException"> Thrown when the device has not been initialized </exception>
     /// <exception cref="NotSupportedException"> Thrown when the role is not supported </exception>
     [return: NotNullIfNotNull(nameof(param))]
-    private T ThrowIfNull<T>(T? param)
+    private T ThrowIfNull<T>(T? param, [CallerMemberName] string? roleName = null)
     {
         if(!IsInitialized) throw new NotInitializedException(this);
         if (param is not null) return param;
-        throw new NotSupportedException();
+        throw new NotSupportedException($"The device does not support role {roleName}");
     }
 
     /// <inheritdoc />
@@ -118,6 +121,7 @@ public abstract class BleDevice(ILogger? logger) : IBleDevice
     {
         DisposeCore();
         await DisposeAsyncCore().ConfigureAwait(false);
+        IsDisposed = true;
         Logger?.LogBleDeviceDisposed(Name);
         GC.SuppressFinalize(this);
     }

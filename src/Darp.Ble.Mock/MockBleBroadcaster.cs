@@ -1,57 +1,85 @@
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
+using System.Security.Cryptography;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
+using Darp.Ble.Gatt.Server;
 using Darp.Ble.Implementation;
+using Darp.Ble.Utils;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock;
 
-internal sealed class MockBleBroadcaster(ILogger? logger) : BleBroadcaster(logger)
+internal sealed class MockBleBroadcaster(MockedBlePeripheralDevice _bleDevice, ILogger? logger) : BleBroadcaster(logger)
 {
-    private IObservable<AdvertisingData>? _source;
-    private AdvertisingParameters? _parameters;
-    private CancellationTokenSource? _cancellationTokenSource;
+    private readonly MockedBlePeripheralDevice _device = _bleDevice;
+    private readonly Subject<IAdvertisingSet> _advertisingSetPublishedSubject = new();
 
     public IObservable<IGapAdvertisement> GetAdvertisements(BleObserver observer)
     {
-        BleAddress ownAddress = new(BleAddressType.Public, (UInt48)0xAABBCCDDEEFF);
-
-        IObservable<AdvertisingData> dataSource = _source ?? Observable.Empty<AdvertisingData>();
-        return dataSource
-            .TakeWhile(_ => _cancellationTokenSource?.IsCancellationRequested != true)
-            .Select(data => GapAdvertisement.FromExtendedAdvertisingReport(observer,
+        return _advertisingSetPublishedSubject
+            .Select(set => GapAdvertisement.FromExtendedAdvertisingReport(observer,
                 DateTimeOffset.UtcNow,
-                _parameters?.Type ?? BleEventType.None,
-                ownAddress,
-                Physical.Le1M,
+                set.Parameters.Type,
+                set.RandomAddress,
+                set.Parameters.PrimaryPhy,
                 Physical.NotAvailable,
-                AdvertisingSId.NoAdIProvided,
-                (TxPowerLevel)20,
-                (Rssi)(-40),
+                set.Parameters.AdvertisingSId,
+                set.SelectedTxPower,
+                (Rssi)RandomNumberGenerator.GetInt32(-127, -20),
                 PeriodicAdvertisingInterval.NoPeriodicAdvertising,
                 BleAddress.NotAvailable,
-                data));
+                set.Data));
     }
 
-    /// <inheritdoc />
-    protected override IDisposable AdvertiseCore(IObservable<AdvertisingData> source, AdvertisingParameters? parameters)
+    protected override async Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(
+        AdvertisingParameters? parameters,
+        AdvertisingData? data,
+        AdvertisingData? scanResponseData,
+        CancellationToken cancellationToken
+    )
     {
-        _cancellationTokenSource = new CancellationTokenSource();
-        _source = source;
-        _parameters = parameters;
-        return Disposable.Create(this, self => self._source = null);
+        var advertisingSet = new MockAdvertisingSet(this);
+        await advertisingSet.SetRandomAddressAsync(_device.RandomAddress, cancellationToken).ConfigureAwait(false);
+        if (parameters is not null)
+        {
+            await advertisingSet.SetAdvertisingParametersAsync(parameters, cancellationToken).ConfigureAwait(false);
+        }
+        if (data is not null)
+        {
+            await advertisingSet.SetAdvertisingDataAsync(data, cancellationToken).ConfigureAwait(false);
+        }
+        if (scanResponseData is not null)
+        {
+            await advertisingSet.SetAdvertisingDataAsync(scanResponseData, cancellationToken).ConfigureAwait(false);
+        }
+        return advertisingSet;
     }
 
-    protected override IDisposable AdvertiseCore(AdvertisingData data, TimeSpan interval, AdvertisingParameters? parameters)
+    protected override Task<IAsyncDisposable> StartAdvertisingCoreAsync(
+        IReadOnlyCollection<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, byte NumberOfEvents)> advertisingSets,
+        CancellationToken cancellationToken
+    )
     {
-        throw new NotImplementedException();
+        List<IDisposable> disposables = [];
+        foreach ((IAdvertisingSet advertisingSet, _, _) in advertisingSets)
+        {
+            TimeSpan minInterval = TimeSpan.FromMilliseconds((ushort)advertisingSet.Parameters.MinPrimaryAdvertisingInterval / 1.6);
+            TimeSpan maxInterval = TimeSpan.FromMilliseconds((ushort)advertisingSet.Parameters.MaxPrimaryAdvertisingInterval / 1.6);
+            IObservable<IAdvertisingSet> observable = Observable
+                .Interval((minInterval + maxInterval) / 2, _device.Scheduler)
+                .Select(_ => advertisingSet);
+            disposables.Add(observable.Subscribe(_advertisingSetPublishedSubject));
+        }
+#pragma warning disable CA2000 // Will be disposed when async disposable is disposed
+        IAsyncDisposable asyncDisposable = AsyncDisposable.Create(new CompositeDisposable(disposables));
+#pragma warning restore CA2000
+        return Task.FromResult(asyncDisposable);
     }
+}
 
-    /// <inheritdoc />
-    protected override void StopAllCore()
-    {
-        _cancellationTokenSource?.Cancel();
-        _cancellationTokenSource = null;
-    }
+internal sealed class MockAdvertisingSet(MockBleBroadcaster broadcaster) : AdvertisingSet(broadcaster)
+{
+    
 }

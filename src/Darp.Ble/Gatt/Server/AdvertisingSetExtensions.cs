@@ -15,7 +15,7 @@ public static class AdvertisingSetExtensions
     /// <param name="interval"> The interval to advertise in </param>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> An async disposable to stop the broadcast </returns>
-    public static async Task<IAsyncDisposable> AdvertiseAsync(this IBleBroadcaster broadcaster,
+    public static async Task<IAsyncDisposable> StartAdvertisingAsync(this IBleBroadcaster broadcaster,
         BleEventType type = BleEventType.AdvInd,
         BleAddress? peerAddress = null,
         AdvertisingData? data = null,

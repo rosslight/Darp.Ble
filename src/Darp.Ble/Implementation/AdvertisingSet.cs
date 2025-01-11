@@ -5,32 +5,22 @@ using Darp.Ble.Gatt.Server;
 namespace Darp.Ble.Implementation;
 
 /// <summary> The default implementation for an advertising set </summary>
-/// <param name="broadcaster"> The broadcaster of this advertisment </param>
-/// <param name="randomAddress"> The initial random address </param>
-/// <param name="parameters"> The initial advertising parameters </param>
-/// <param name="data"> The initial advertising data </param>
-/// <param name="scanResponseData"> The initial scan response data </param>
-/// <param name="selectedTxPower"> The initial tx power </param>
-public abstract class AdvertisingSet(IBleBroadcaster broadcaster,
-    BleAddress randomAddress,
-    AdvertisingParameters parameters,
-    AdvertisingData data,
-    AdvertisingData? scanResponseData,
-    TxPowerLevel selectedTxPower
-) : IAdvertisingSet
+/// <param name="broadcaster"> The broadcaster of this advertisement </param>
+public abstract class AdvertisingSet(BleBroadcaster broadcaster) : IAdvertisingSet
 {
+    private readonly BleBroadcaster _broadcaster = broadcaster;
     /// <inheritdoc />
-    public IBleBroadcaster Broadcaster { get; } = broadcaster;
+    public IBleBroadcaster Broadcaster => _broadcaster;
     /// <inheritdoc />
-    public BleAddress RandomAddress { get; protected set; } = randomAddress;
+    public BleAddress RandomAddress { get; protected set; } = BleAddress.NotAvailable;
     /// <inheritdoc />
-    public AdvertisingParameters Parameters { get; protected set; } = parameters;
+    public AdvertisingParameters Parameters { get; protected set; } = AdvertisingParameters.Default;
     /// <inheritdoc />
-    public AdvertisingData Data { get; protected set; } = data;
+    public AdvertisingData Data { get; protected set; } = AdvertisingData.Empty;
     /// <inheritdoc />
-    public AdvertisingData? ScanResponseData { get; protected set; } = scanResponseData;
+    public AdvertisingData? ScanResponseData { get; protected set; }
     /// <inheritdoc />
-    public TxPowerLevel SelectedTxPower { get; protected set; } = selectedTxPower;
+    public TxPowerLevel SelectedTxPower { get; protected set; } = TxPowerLevel.NotAvailable;
 
     /// <inheritdoc />
     public bool IsAdvertising { get; }
@@ -67,6 +57,7 @@ public abstract class AdvertisingSet(IBleBroadcaster broadcaster,
     public async ValueTask DisposeAsync()
     {
         await DisposeAsyncCore().ConfigureAwait(false);
+        _broadcaster.RemoveAdvertisingSet(this);
         GC.SuppressFinalize(this);
     }
 

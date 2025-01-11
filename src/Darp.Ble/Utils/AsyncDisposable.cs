@@ -6,6 +6,14 @@ public static class AsyncDisposable
     /// <summary> An empty async disposable </summary>
     public static IAsyncDisposable Empty { get; } = new AnonymousAsyncDisposable(() => ValueTask.CompletedTask);
 
+    /// <summary> Create an async disposable from a disposable </summary>
+    /// <param name="disposable"> The disposable to wrap </param>
+    /// <returns> The async disposable </returns>
+    public static IAsyncDisposable Create(IDisposable disposable)
+    {
+        return Create(disposable, d => d.Dispose());
+    }
+
     /// <summary> Create an async disposable </summary>
     /// <param name="onDispose"> The dispose action expecting a ValueTask </param>
     /// <returns> The async disposable </returns>

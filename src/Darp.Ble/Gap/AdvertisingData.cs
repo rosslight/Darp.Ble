@@ -5,7 +5,7 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
-
+using Darp.Ble.Implementation;
 using AdvertisingTypeWithData = (Darp.Ble.Data.AssignedNumbers.AdTypes Type, System.ReadOnlyMemory<byte> Bytes);
 
 namespace Darp.Ble.Gap;
@@ -81,6 +81,8 @@ public sealed class AdvertisingData : IReadOnlyList<AdvertisingTypeWithData>
 
     private static AdvertisingData FromUnsafe(ReadOnlyMemory<byte> advertisingData)
     {
+        if (advertisingData.Length is 0)
+            return Empty;
         // Create a new byte array to hold the byte representation of the advertising data
         ReadOnlySpan<byte> advertisingDataSpan = advertisingData.Span;
         var advertisementReports = new List<(AdTypes, ReadOnlyMemory<byte>)>();
@@ -331,7 +333,23 @@ public static partial class AdvertisingDataExtensions
     /// <param name="advertisingData"> The advertising data to base on </param>
     /// <param name="companyIdentifier"> The company identifier of the manufacturer specific data </param>
     /// <param name="manufacturerSpecificData"> The manufacturer specific data </param>
+    /// <remarks> This method only exists for cases when there a byte[] is needed which cannot be converted to a ReadOnlyMemory </remarks>
     /// <returns> The new advertising data </returns>
+    public static AdvertisingData WithManufacturerSpecificData(
+        this AdvertisingData advertisingData,
+        CompanyIdentifiers companyIdentifier,
+        byte[] manufacturerSpecificData)
+    {
+        return advertisingData.WithManufacturerSpecificData(companyIdentifier, manufacturerSpecificData);
+    }
+
+    /// <summary>
+    /// Create a new <see cref="AdvertisingData"/> object with the <see cref="AdTypes.ManufacturerSpecificData"/> section created or updated </summary>
+    /// <param name="advertisingData"> The advertising data to base on </param>
+    /// <param name="companyIdentifier"> The company identifier of the manufacturer specific data </param>
+    /// <param name="manufacturerSpecificData"> The manufacturer specific data </param>
+    /// <returns> The new advertising data </returns>
+    [OverloadResolutionPriority(1)]
     public static AdvertisingData WithManufacturerSpecificData(
         this AdvertisingData advertisingData,
         CompanyIdentifiers companyIdentifier,

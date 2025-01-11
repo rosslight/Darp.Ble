@@ -8,30 +8,42 @@ namespace Darp.Ble.Implementation;
 /// <summary> The broadcaster view of a ble device </summary>
 public abstract class BleBroadcaster(ILogger? logger) : IBleBroadcaster
 {
+    private readonly List<IAdvertisingSet> _advertisingSets = [];
+
     /// <summary> The logger </summary>
     protected ILogger? Logger { get; } = logger;
 
+    public IReadOnlyCollection<IAdvertisingSet> AdvertisingSets => _advertisingSets.AsReadOnly();
+
     /// <inheritdoc />
-    public Task<IAdvertisingSet> CreateAdvertisingSetAsync(AdvertisingParameters? parameters = null,
+    public async Task<IAdvertisingSet> CreateAdvertisingSetAsync(AdvertisingParameters? parameters = null,
         AdvertisingData? data = null,
         AdvertisingData? scanResponseData = null,
         CancellationToken cancellationToken = default)
     {
-        parameters ??= AdvertisingParameters.Default;
-        data ??= AdvertisingData.Empty;
-        if (!parameters.Type.HasFlag(BleEventType.Legacy)
+        if (parameters is not null && !parameters.Type.HasFlag(BleEventType.Legacy)
             && parameters.Type.HasFlag(BleEventType.Connectable) &&
             parameters.Type.HasFlag(BleEventType.Scannable))
         {
             throw new ArgumentOutOfRangeException(nameof(parameters),
                 "Non-legacy extended advertising event properties may not be both connectable and scannable");
         }
-        return CreateAdvertisingSetAsyncCore(parameters, data, scanResponseData, cancellationToken);
+        IAdvertisingSet advertisingSet = await CreateAdvertisingSetAsyncCore(parameters, data, scanResponseData, cancellationToken).ConfigureAwait(false);
+        _advertisingSets.Add(advertisingSet);
+        return advertisingSet;
+    }
+
+    /// <summary> Removes an advertising set from the current broadcaster. Only is intended to be called by the advertising set on disposal </summary>
+    /// <param name="advertisingSet"> The advertising set to be removed </param>
+    /// <returns> True if item is successfully removed; otherwise, False </returns>
+    internal bool RemoveAdvertisingSet(IAdvertisingSet advertisingSet)
+    {
+        return _advertisingSets.Remove(advertisingSet);
     }
 
     /// <inheritdoc cref="CreateAdvertisingSetAsync" />
-    protected abstract Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(AdvertisingParameters parameters,
-        AdvertisingData data,
+    protected abstract Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(AdvertisingParameters? parameters,
+        AdvertisingData? data,
         AdvertisingData? scanResponseData,
         CancellationToken cancellationToken);
 

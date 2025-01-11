@@ -59,5 +59,5 @@ public sealed class AdvertisingParameters
     public Physical PrimaryPhy { get; init; } = Physical.Le1M;
 
     /// <summary> The advertising SId </summary>
-    public byte AdvertisingSId { get; init; }
+    public AdvertisingSId AdvertisingSId { get; init; }
 }

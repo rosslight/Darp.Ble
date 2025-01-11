@@ -46,23 +46,23 @@ internal sealed class HciHostBleBroadcaster(
     }
 
     /// <inheritdoc />
-    protected override async Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(AdvertisingParameters parameters,
-        AdvertisingData data,
+    protected override async Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(AdvertisingParameters? parameters,
+        AdvertisingData? data,
         AdvertisingData? scanResponseData,
         CancellationToken cancellationToken)
     {
-        var set = new HciAdvertisingSet(this, _device.RandomAddress, parameters, data, scanResponseData,
-            TxPowerLevel.NotAvailable);
+        parameters ??= AdvertisingParameters.Default;
+
+        var set = new HciAdvertisingSet(this);
         await RegisterAdvertisingSetAsync(set, cancellationToken).ConfigureAwait(false);
         try
         {
             await set.SetAdvertisingParametersAsync(parameters, cancellationToken).ConfigureAwait(false);
             await set.SetRandomAddressAsync(_device.RandomAddress, cancellationToken).ConfigureAwait(false);
-            if (data.Count > 0)
+            if (data?.Count > 0)
             {
                 await set.SetAdvertisingDataAsync(data, cancellationToken).ConfigureAwait(false);
             }
-
             if (scanResponseData is not null)
             {
                 await set.SetAdvertisingParametersAsync(parameters, cancellationToken).ConfigureAwait(false);
@@ -125,13 +125,7 @@ internal sealed class HciHostBleBroadcaster(
     }
 }
 
-internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster,
-    BleAddress randomAddress,
-    AdvertisingParameters parameters,
-    AdvertisingData data,
-    AdvertisingData? scanResponseData,
-    TxPowerLevel selectedTxPower)
-    : AdvertisingSet(broadcaster, randomAddress, parameters, data, scanResponseData, selectedTxPower)
+internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster) : AdvertisingSet(broadcaster)
 {
     private readonly Hci.HciHost _host = broadcaster.Host;
 
@@ -179,7 +173,7 @@ internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster,
                     PrimaryAdvertisingPhy = (byte)parameters.PrimaryPhy,
                     SecondaryAdvertisingMaxSkip = 0,
                     SecondaryAdvertisingPhy = (byte)Physical.Le1M,
-                    AdvertisingSid = parameters.AdvertisingSId,
+                    AdvertisingSid = (byte)parameters.AdvertisingSId,
                     ScanRequestNotificationEnable = 0,
                 },
                 cancellationToken: cancellationToken)

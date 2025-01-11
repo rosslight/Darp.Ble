@@ -6,13 +6,7 @@ namespace Darp.Ble.WinRT;
 
 /// <summary> The windows implementation of the advertising set </summary>
 /// <inheritdoc />
-public sealed class WinAdvertisingSet(IBleBroadcaster broadcaster,
-    BleAddress randomAddress,
-    AdvertisingParameters parameters,
-    AdvertisingData data,
-    AdvertisingData? scanResponseData,
-    TxPowerLevel selectedTxPower)
-    : AdvertisingSet(broadcaster, randomAddress, parameters, data, scanResponseData, selectedTxPower)
+public sealed class WinAdvertisingSet(BleBroadcaster broadcaster) : AdvertisingSet(broadcaster)
 {
     /// <inheritdoc />
     public override Task SetRandomAddressAsync(BleAddress randomAddress, CancellationToken cancellationToken = default)

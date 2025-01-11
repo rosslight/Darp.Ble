@@ -1,5 +1,4 @@
 using Darp.Ble.Data;
-using Darp.Ble.Gap;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Implementation;
 using Darp.Ble.Mock.Gatt;
@@ -25,16 +24,4 @@ internal sealed class MockBlePeripheral(MockBleDevice device, MockBleBroadcaster
         var service = new MockGattClientService(uuid, this);
         return Task.FromResult<IGattClientService>(service);
     }
-
-    /// <inheritdoc />
-    public IDisposable Advertise(AdvertisingSet advertisingSet) => _broadcaster.Advertise(advertisingSet);
-
-    /// <inheritdoc />
-    public IDisposable Advertise(IObservable<AdvertisingData> source, AdvertisingParameters? parameters = null)
-    {
-        return _broadcaster.Advertise(source, parameters);
-    }
-
-    /// <inheritdoc />
-    public void StopAll() => _broadcaster.StopAll();
 }

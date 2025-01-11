@@ -9,6 +9,9 @@ public interface IBleDevice : IAsyncDisposable
     /// <summary> True if the device was successfully initialized </summary>
     public bool IsInitialized { get; }
 
+    /// <summary> True, if the device was disposed; False otherwise </summary>
+    public bool IsDisposed { get; }
+
     /// <summary> Get an implementation specific identification string </summary>
     public string Identifier { get; }
 
