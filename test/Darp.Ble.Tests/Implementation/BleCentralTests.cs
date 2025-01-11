@@ -15,10 +15,11 @@ namespace Darp.Ble.Tests.Implementation;
 
 public sealed class BleCentralTests
 {
-    private static async Task<IBleDevice> GetMockDeviceAsync(BleMockFactory.InitializeAsync configure)
+    private static async Task<IBleDevice> GetMockDeviceAsync(BleMockFactory.InitializeAsync? configure = null)
     {
+        configure ??= _ => Task.CompletedTask;
         BleManager bleManager = new BleManagerBuilder()
-            .Add(new BleMockFactory { OnInitialize = configure } )
+            .Add<BleMockFactory>(factory => factory.AddPeripheral(configure))
             .CreateManager();
         IBleDevice device = bleManager.EnumerateDevices().First();
         InitializeResult result = await device.InitializeAsync();
@@ -30,18 +31,18 @@ public sealed class BleCentralTests
     {
         return await GetMockDeviceAsync(Configure);
 
-        async Task Configure(IBleBroadcaster broadcaster, IBlePeripheral peripheral)
+        async Task Configure(IBleDevice device)
         {
             IObservable<AdvertisingData> source = Observable.Interval(TimeSpan.FromMilliseconds(1000), scheduler)
                 .Select(_ => AdvertisingData.Empty);
-            await peripheral.AddServiceAsync(0x1234);
-            IAdvertisingSet set = await broadcaster.CreateAdvertisingSetAsync();
+            await device.Peripheral.AddServiceAsync(0x1234);
+            IAdvertisingSet set = await device.Broadcaster.CreateAdvertisingSetAsync();
             source.Subscribe(data =>
             {
                 _ = Task.Run(async () =>
                 {
                     await set.SetAdvertisingDataAsync(data);
-                    broadcaster.StartAdvertising([(set, TimeSpan.Zero, 1)]);
+                    await device.Broadcaster.StartAdvertisingAsync([(set, TimeSpan.Zero, 1)], default);
                 });
             });
         }
@@ -55,7 +56,7 @@ public sealed class BleCentralTests
     public async Task ConnectToPeripheral_BleConnectionParameters_WithDifferentParameters(ConnectionTiming connectionInterval, bool expectedResult)
     {
         var address = new BleAddress((UInt48)0xAABBCCDDEEFF);
-        IBleDevice device = await GetMockDeviceAsync((_, _) => Task.CompletedTask);
+        IBleDevice device = await GetMockDeviceAsync();
         IObservable<IGattServerPeer> observable = device.Central.ConnectToPeripheral(address, new BleConnectionParameters
         {
             ConnectionInterval = connectionInterval,
@@ -80,7 +81,7 @@ public sealed class BleCentralTests
     public async Task ConnectToPeripheral_BleScanParameters_WithDifferentParameters(ScanTiming scanInterval, ScanTiming scanWindow, bool expectedResult)
     {
         var address = new BleAddress((UInt48)0xAABBCCDDEEFF);
-        IBleDevice device = await GetMockDeviceAsync((_, _) => Task.CompletedTask);
+        IBleDevice device = await GetMockDeviceAsync();
         IObservable<IGattServerPeer> observable = device.Central.ConnectToPeripheral(address, scanParameters: new BleScanParameters()
         {
             ScanInterval = scanInterval,
@@ -104,9 +105,9 @@ public sealed class BleCentralTests
     {
         byte[] dataToWrite = [0x01, 0x02, 0x03, 0x04];
         var address = new BleAddress((UInt48)0xAABBCCDDEEFF);
-        IBleDevice device = await GetMockDeviceAsync(async (_, peripheral) =>
+        IBleDevice device = await GetMockDeviceAsync(async d =>
         {
-            IGattClientService service = await peripheral.AddServiceAsync(0xABCD);
+            IGattClientService service = await d.Peripheral.AddServiceAsync(0xABCD);
             var notifyChar = await service.AddCharacteristicAsync<Properties.Notify>(new BleUuid(0x1234));
             var writeChar = await service.AddCharacteristicAsync<Properties.Write>(new BleUuid(0x5678), onWrite: (peer, bytes) =>
             {

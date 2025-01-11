@@ -122,15 +122,9 @@ public sealed class BleDeviceTests
     [Fact]
     public async Task ConnectingAndDisposing_ShouldNotThrow()
     {
-        var device = (MockBleDevice)new BleMockFactory
-        {
-            OnInitialize = (broadcaster, _) =>
-            {
-                broadcaster.Advertise(Observable.Interval(TimeSpan.FromMilliseconds(1000))
-                    .Select(_ => AdvertisingData.Empty), new AdvertisingParameters {Type = BleEventType.Connectable});
-                return Task.CompletedTask;
-            },
-        }.EnumerateDevices(logger: null).First();
+        var device = (MockBleDevice)new BleMockFactory()
+            .AddPeripheral(async d => await d.Broadcaster.StartAdvertisingAsync(interval: ScanTiming.Ms1000))
+            .EnumerateDevices(logger: null).First();
         await device.InitializeAsync();
         IGattServerPeer peer = await device.Observer.RefCount().ConnectToPeripheral().FirstAsync();
         await peer.DisposeAsync();

@@ -27,8 +27,8 @@ public sealed class AdvertisingDataExtensionsTests
     private const string AdDataManufacturerSpecificApple = "07FF4C0012020002";
 
     [Theory]
-    [InlineData(AdDataEmpty, false, AdvertisingDataFlags.NotAvailable)]
-    [InlineData(AdDataFlagEmpty, false, AdvertisingDataFlags.NotAvailable)]
+    [InlineData(AdDataEmpty, false, AdvertisingDataFlags.None)]
+    [InlineData(AdDataFlagEmpty, false, AdvertisingDataFlags.None)]
     [InlineData(AdDataFlagLimitedDiscoverable, true, AdvertisingDataFlags.LimitedDiscoverableMode)]
     [InlineData(AdDataFlagsLimitedDiscoverableGeneralDiscoverable, true, AdvertisingDataFlags.LimitedDiscoverableMode | AdvertisingDataFlags.GeneralDiscoverableMode)]
     public void TryGetFlags_WithFlagsPresent_ReturnsTrueAndFlags(string sections,
@@ -130,30 +130,30 @@ public sealed class AdvertisingDataExtensionsTests
         AdvertisingData data = AdvertisingData.From(sections.ToByteArray());
 
         // Act
-        IEnumerable<BleUuid> result = data.GetServices();
+        IEnumerable<BleUuid> result = data.GetServiceUuids();
 
         // Assert
         result.Should().BeEquivalentTo(expectedUuids);
     }
 
     [Theory]
-    [InlineData(AdDataEmpty, false, (CompanyIdentifiers)0, null)]
-    [InlineData(AdDataFlagLimitedDiscoverable, false, (CompanyIdentifiers)0, null)]
+    [InlineData(AdDataEmpty, false, (CompanyIdentifiers)0, "")]
+    [InlineData(AdDataFlagLimitedDiscoverable, false, (CompanyIdentifiers)0, "")]
     [InlineData(AdDataManufacturerSpecificApple, true, CompanyIdentifiers.AppleInc, "12020002")]
     public void TryGetManufacturerSpecificData_WithNamePresent_ReturnsTrueAndName(string sections,
         bool expectedSuccess,
         CompanyIdentifiers? expectedCompanyIdentifiers,
-        string? expectedDataString)
+        string expectedDataString)
     {
         // Arrange
-        AdvertisingData data = AdvertisingData.From(sections.ToByteArray());
+        AdvertisingData data = AdvertisingData.From(Convert.FromHexString(sections));
 
         // Act
-        bool result = data.TryGetManufacturerSpecificData(out (CompanyIdentifiers Company, byte[] Bytes) manufacturerData);
+        bool result = data.TryGetManufacturerSpecificData(out CompanyIdentifiers companyUuid, out byte[] manufacturerData);
 
         // Assert
         result.Should().Be(expectedSuccess);
-        manufacturerData.Company.Should().Be(expectedCompanyIdentifiers);
-        manufacturerData.Bytes.Should().BeEquivalentTo(expectedDataString?.ToByteArray());
+        companyUuid.Should().Be(expectedCompanyIdentifiers);
+        manufacturerData.Should().BeEquivalentTo(expectedDataString?.ToByteArray());
     }
 }

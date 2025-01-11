@@ -36,18 +36,22 @@ public sealed class GapAdvertisementTests(ILogger<GapAdvertisementTests> logger)
         string sectionDataHex2,
         string expectedReportHex)
     {
-        byte[] sectionData1 = sectionDataHex1.ToByteArray();
-        byte[] sectionData2 = sectionDataHex2.ToByteArray();
-        var device = _manager.EnumerateDevices().First();
+        byte[] sectionData1 = Convert.FromHexString(sectionDataHex1);
+        byte[] sectionData2 = Convert.FromHexString(sectionDataHex2);
+        IBleDevice device = _manager.EnumerateDevices().First();
         await device.InitializeAsync();
 
-        GapAdvertisement adv = GapAdvertisement.FromExtendedAdvertisingReport(device.Observer, DateTimeOffset.UtcNow, eventType,
-            new BleAddress(addressType, (UInt48)address), primaryPhy, secondaryPhy,
-            advertisingSId, txPower, (Rssi)rssi, periodicAdvertisingInterval, new BleAddress(directAddressType, (UInt48)directAddress), new[]
-            {
+        GapAdvertisement adv = GapAdvertisement.FromExtendedAdvertisingReport(device.Observer,
+            DateTimeOffset.UtcNow,
+            eventType,
+            new BleAddress(addressType, (UInt48)address),
+            primaryPhy, secondaryPhy,
+            advertisingSId, txPower, (Rssi)rssi, periodicAdvertisingInterval, new BleAddress(directAddressType, (UInt48)directAddress),
+            AdvertisingData.From(
+            [
                 (advertisingDataType1, sectionData1),
-                (advertisingDataType2, sectionData2)
-            });
+                (advertisingDataType2, sectionData2),
+            ]));
         string byteString = Convert.ToHexString(adv.AsByteArray());
 
         byteString.Should().Be(expectedReportHex);
@@ -63,8 +67,12 @@ public sealed class GapAdvertisementTests(ILogger<GapAdvertisementTests> logger)
         adv.DirectAddress.Type.Should().Be(directAddressType);
         adv.DirectAddress.Value.Should().Be((UInt48)directAddress);
         adv.Data.Should().HaveCount(2);
-        adv.Data.Should().HaveElementAt(0, (advertisingDataType1, sectionData1));
-        adv.Data.Should().HaveElementAt(1, (advertisingDataType2, sectionData2));
+        (AdTypes Type, ReadOnlyMemory<byte> Bytes) dataSection1 = adv.Data[0];
+        dataSection1.Type.Should().Be(advertisingDataType1);
+        dataSection1.Bytes.ToArray().Should().BeEquivalentTo(sectionData1);
+        (AdTypes Type, ReadOnlyMemory<byte> Bytes) dataSection2 = adv.Data[1];
+        dataSection2.Type.Should().Be(advertisingDataType2);
+        dataSection2.Bytes.ToArray().Should().BeEquivalentTo(sectionData2);
     }
 
     [Theory]

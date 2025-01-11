@@ -44,7 +44,7 @@ public sealed class HciLeExtendedCreateConnectionV1CommandTests
         value.InitiatorFilterPolicy.Should().Be(initiatorFilterPolicy);
         value.OwnAddressType.Should().Be(ownAddressType);
         value.PeerAddressType.Should().Be(peerAddressType);
-        value.PeerAddress.Should().Be((DeviceAddress)peerAddress);
+        value.PeerAddress.Should().Be((UInt48)peerAddress);
         value.InitiatingPhys.Should().Be(initiatingPhys);
         value.ScanInterval.Should().Be(scanInterval);
         value.ScanWindow.Should().Be(scanWindow);
