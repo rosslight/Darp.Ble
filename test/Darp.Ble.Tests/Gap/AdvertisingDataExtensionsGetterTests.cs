@@ -5,7 +5,7 @@ using FluentAssertions;
 
 namespace Darp.Ble.Tests.Gap;
 
-public sealed class AdvertisingDataExtensionsTests
+public sealed class AdvertisingDataExtensionsGetterTests
 {
     private const string AdDataEmpty = "";
     private const string AdDataFlagEmpty = "0101";
@@ -22,8 +22,9 @@ public sealed class AdvertisingDataExtensionsTests
     private const string AdDataComplete16Uuids0XAabb = "0303BBAA";
     private const string AdDataComplete16Uuids0XAabbAacc = "0503BBAACCAA";
     private const string AdDataComplete32Uuids0XAabbccdd = "0505DDCCBBAA";
-    private const string AdDataComplete32Uuids0XAabbccddAabbccee = "0905DDCCBBAAEECCBBAA";  
+    private const string AdDataComplete32Uuids0XAabbccddAabbccee = "0905DDCCBBAAEECCBBAA";
     private const string AdDataComplete128Uuids = "1106FFEEDDCCBBAA99887766554433221100";
+    private const string AdDataManufacturerSpecificInvalid = "02FF4C";
     private const string AdDataManufacturerSpecificApple = "07FF4C0012020002";
 
     [Theory]
@@ -36,7 +37,7 @@ public sealed class AdvertisingDataExtensionsTests
         AdvertisingDataFlags expectedFlags)
     {
         // Arrange
-        AdvertisingData data = AdvertisingData.From(sections.ToByteArray());
+        AdvertisingData data = AdvertisingData.From(Convert.FromHexString(sections));
 
         // Act
         bool result = data.TryGetFlags(out AdvertisingDataFlags flags);
@@ -44,28 +45,6 @@ public sealed class AdvertisingDataExtensionsTests
         // Assert
         result.Should().Be(expectedSuccess);
         flags.Should().Be(expectedFlags);
-    }
-
-    [Theory]
-    [InlineData(AdDataEmpty, false, null)]
-    [InlineData(AdDataFlagLimitedDiscoverable, false, null)]
-    [InlineData(AdDataShortenedLocalNameTestName, false, null)]
-    [InlineData(AdDataCompleteLocalNameEmpty, true, "")]
-    [InlineData(AdDataCompleteLocalNameTestName, true, "TestName")]
-    [InlineData(AdDataFlagsLimitedDiscoverableCompleteLocalNameTestName, true, "TestName")]
-    public void TryGetCompleteLocalName_WithNamePresent_ReturnsTrueAndName(string sections,
-        bool expectedSuccess,
-        string? expectedName)
-    {
-        // Arrange
-        AdvertisingData data = AdvertisingData.From(sections.ToByteArray());
-
-        // Act
-        bool result = data.TryGetCompleteLocalName(out string? name);
-
-        // Assert
-        result.Should().Be(expectedSuccess);
-        name.Should().Be(expectedName);
     }
 
     [Theory]
@@ -80,7 +59,7 @@ public sealed class AdvertisingDataExtensionsTests
         string? expectedName)
     {
         // Arrange
-        AdvertisingData data = AdvertisingData.From(sections.ToByteArray());
+        AdvertisingData data = AdvertisingData.From(Convert.FromHexString(sections));
 
         // Act
         bool result = data.TryGetShortenedLocalName(out string? name);
@@ -104,7 +83,7 @@ public sealed class AdvertisingDataExtensionsTests
         string? expectedName)
     {
         // Arrange
-        AdvertisingData data = AdvertisingData.From(sections.ToByteArray());
+        AdvertisingData data = AdvertisingData.From(Convert.FromHexString(sections));
 
         // Act
         bool result = data.TryGetLocalName(out string? name);
@@ -127,7 +106,7 @@ public sealed class AdvertisingDataExtensionsTests
     {
         // Arrange
         BleUuid[] expectedUuids = guids.Select(x => new BleUuid(Guid.Parse(x)) {Type = type}).ToArray();
-        AdvertisingData data = AdvertisingData.From(sections.ToByteArray());
+        AdvertisingData data = AdvertisingData.From(Convert.FromHexString(sections));
 
         // Act
         IEnumerable<BleUuid> result = data.GetServiceUuids();
@@ -140,7 +119,7 @@ public sealed class AdvertisingDataExtensionsTests
     [InlineData(AdDataEmpty, false, (CompanyIdentifiers)0, "")]
     [InlineData(AdDataFlagLimitedDiscoverable, false, (CompanyIdentifiers)0, "")]
     [InlineData(AdDataManufacturerSpecificApple, true, CompanyIdentifiers.AppleInc, "12020002")]
-    public void TryGetManufacturerSpecificData_WithNamePresent_ReturnsTrueAndName(string sections,
+    public void TryGetManufacturerSpecificData(string sections,
         bool expectedSuccess,
         CompanyIdentifiers? expectedCompanyIdentifiers,
         string expectedDataString)
@@ -149,11 +128,36 @@ public sealed class AdvertisingDataExtensionsTests
         AdvertisingData data = AdvertisingData.From(Convert.FromHexString(sections));
 
         // Act
-        bool result = data.TryGetManufacturerSpecificData(out CompanyIdentifiers companyUuid, out byte[] manufacturerData);
+        bool result = data.TryGetManufacturerSpecificData(out CompanyIdentifiers companyUuid, out ReadOnlyMemory<byte> manufacturerData);
 
         // Assert
         result.Should().Be(expectedSuccess);
         companyUuid.Should().Be(expectedCompanyIdentifiers);
-        manufacturerData.Should().BeEquivalentTo(expectedDataString?.ToByteArray());
+        manufacturerData.ToArray().Should().BeEquivalentTo(Convert.FromHexString(expectedDataString));
+    }
+
+    [Theory]
+    [InlineData(AdDataEmpty, CompanyIdentifiers.AppleInc, false, "")]
+    [InlineData(AdDataManufacturerSpecificInvalid, CompanyIdentifiers.AppleInc, false, "")]
+    [InlineData(AdDataFlagLimitedDiscoverable, CompanyIdentifiers.AppleInc, false, "")]
+    [InlineData(AdDataManufacturerSpecificApple, CompanyIdentifiers.Microsoft, false, "")]
+    [InlineData(AdDataManufacturerSpecificApple, CompanyIdentifiers.AppleInc, true, "12020002")]
+    public void TryGetManufacturerSpecificData_WithRequestedCompany(string sections,
+        CompanyIdentifiers companyUuid,
+        bool expectedSuccess,
+        string expectedDataString)
+    {
+        // Arrange
+        AdvertisingData data = AdvertisingData.From(Convert.FromHexString(sections));
+
+        // Act
+        bool result = data.TryGetManufacturerSpecificData(companyUuid, out ReadOnlyMemory<byte> manufacturerData);
+
+        // Assert
+        result.Should().Be(expectedSuccess);
+        if (expectedSuccess)
+        {
+            manufacturerData.ToArray().Should().BeEquivalentTo(expectedDataString.ToByteArray());
+        }
     }
 }

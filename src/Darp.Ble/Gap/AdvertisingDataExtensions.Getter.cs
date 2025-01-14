@@ -84,7 +84,7 @@ public static partial class AdvertisingDataExtensions
     }
 
     /// <summary>
-    /// Gets the AD Complete Local Name if possible. Looks for Shortened Local Name afterwards.
+    /// Gets the AD Complete Local Name if possible. Looks for Shortened Local Name afterward.
     /// Will only return first name is specified multiple times
     /// </summary>
     /// <param name="data"> The data to be looked at </param>
@@ -136,22 +136,23 @@ public static partial class AdvertisingDataExtensions
     /// <returns> True, if the data type was present and AD data at least 2 bytes long </returns>
     public static bool TryGetManufacturerSpecificData(this AdvertisingData data,
         CompanyIdentifiers companyUuid,
-        out byte[] manufacturerData)
+        out ReadOnlyMemory<byte> manufacturerData)
     {
         ArgumentNullException.ThrowIfNull(data);
         foreach ((AdTypes adTypes, ReadOnlyMemory<byte> bytes) in data)
         {
             if (adTypes != AdTypes.ManufacturerSpecificData) continue;
             if (bytes.Length < 2) continue;
-            if (!BinaryPrimitives.TryReadUInt16LittleEndian(bytes.Span, out ushort uuid) || uuid != (ushort)companyUuid)
+            ushort uuid = BinaryPrimitives.ReadUInt16LittleEndian(bytes.Span);
+            if (uuid != (ushort)companyUuid)
             {
                 continue;
             }
 
-            manufacturerData = bytes.Span[2..].ToArray();
+            manufacturerData = bytes[2..];
             return true;
         }
-        manufacturerData = [];
+        manufacturerData = default;
         return false;
     }
 
@@ -165,18 +166,18 @@ public static partial class AdvertisingDataExtensions
     /// <returns> True, if the data type was present and AD data at least 2 bytes long </returns>
     public static bool TryGetManufacturerSpecificData(this AdvertisingData data,
         out CompanyIdentifiers companyUuid,
-        out byte[] manufacturerData)
+        out ReadOnlyMemory<byte> manufacturerData)
     {
         ArgumentNullException.ThrowIfNull(data);
         if (!data.TryGetFirstType(AdTypes.ManufacturerSpecificData, out ReadOnlyMemory<byte> bytes)
             || bytes.Length < 2)
         {
             companyUuid = default;
-            manufacturerData = [];
+            manufacturerData = default;
             return false;
         }
         companyUuid = (CompanyIdentifiers)BinaryPrimitives.ReadUInt16LittleEndian(bytes.Span);
-        manufacturerData = bytes.Span[2..].ToArray();
+        manufacturerData = bytes[2..];
         return true;
     }
 }

@@ -163,13 +163,13 @@ public sealed record BleUuid : ISpanParsable<BleUuid>, ISpanFormattable, IUtf8Sp
             {
                 Span<byte> bytes = stackalloc byte[16];
                 Value.TryWriteBytes(bytes);
-                return destination.TryCopyTo(bytes[2..4]);
+                return bytes[..2].TryCopyTo(destination);
             }
             case BleUuidType.Uuid32:
             {
                 Span<byte> bytes = stackalloc byte[16];
                 Value.TryWriteBytes(bytes);
-                return destination.TryCopyTo(bytes[..4]);
+                return bytes[..4].TryCopyTo(destination);
             }
             case BleUuidType.Uuid128:
                 return Value.TryWriteBytes(destination);

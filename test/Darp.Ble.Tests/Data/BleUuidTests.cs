@@ -252,4 +252,117 @@ public sealed class BleUuidTests
         success.Should().BeFalse();
         bytesWritten.Should().Be(0);
     }
+
+    [Fact]
+    public void TryWriteBytes_WithUuid16AndSufficientDestination_ReturnsTrueAndCopiesExpectedBytes()
+    {
+        var bleUuid = new BleUuid(0xAABB);
+
+        Span<byte> destination = new byte[2];
+
+        // Act
+        bool result = bleUuid.TryWriteBytes(destination);
+
+        // Assert
+        result.Should().BeTrue();
+        destination.ToArray().Should().BeEquivalentTo([0xBB, 0xAA]);
+    }
+
+    [Fact]
+    public void TryWriteBytes_WithUuid16AndInsufficientDestination_ReturnsFalseAndDestinationRemainsUnchanged()
+    {
+        var bleUuid = new BleUuid(0xAABB);
+
+        Span<byte> destination = [ 0xFF ];
+
+        // Act
+        bool result = bleUuid.TryWriteBytes(destination);
+
+        // Assert
+        result.Should().BeFalse();
+        // It hasn't been overwritten
+        destination[0].Should().Be(0xFF);
+    }
+
+    [Fact]
+    public void TryWriteBytes_WithUuid32AndSufficientDestination_ReturnsTrueAndCopiesExpectedBytes()
+    {
+        var bleUuid = new BleUuid(0xAABBCCDD);
+
+        Span<byte> destination = new byte[4];
+
+        // Act
+        bool result = bleUuid.TryWriteBytes(destination);
+
+        // Assert
+        result.Should().BeTrue();
+        destination.ToArray().Should().BeEquivalentTo([0xDD, 0xCC, 0xBB, 0xAA]);
+    }
+
+    [Fact]
+    public void TryWriteBytes_WithUuid32AndInsufficientDestination_ReturnsFalseAndDestinationRemainsUnchanged()
+    {
+        var bleUuid = new BleUuid(0xAABBCCDD);
+
+        Span<byte> destination = [ 0xFF, 0xFF, 0xFF ];
+
+        // Act
+        bool result = bleUuid.TryWriteBytes(destination);
+
+        // Assert
+        result.Should().BeFalse();
+        destination.ToArray().Should().BeEquivalentTo([ 0xFF, 0xFF, 0xFF ]);
+    }
+
+    [Fact]
+        public void TryWriteBytes_WithUuid128AndSufficientDestination_ReturnsTrueAndCopiesAll16Bytes()
+        {
+            // Arrange
+            var testGuid = new Guid("01020304-0506-0708-090a-0b0c0d0e0f10");
+            // [ 04, 03, 02, 01, 06, 05, 08, 07, 09, 0A, 0B, 0C, 0D, 0E, 0F, 10 ]
+            var bleUuid = new BleUuid(testGuid);
+
+            Span<byte> destination = new byte[16];
+
+            // Act
+            bool result = bleUuid.TryWriteBytes(destination);
+
+            // Assert
+            result.Should().BeTrue();
+            destination.Length.Should().Be(16);
+            destination.ToArray().Should().BeEquivalentTo(
+                [0x04, 0x03, 0x02, 0x01, 0x06, 0x05, 0x08, 0x07, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10]
+            );
+        }
+
+        [Fact]
+        public void TryWriteBytes_WithUuid128AndInsufficientDestination_ReturnsFalse()
+        {
+            // Arrange
+            var testGuid = new Guid("01020304-0506-0708-090a-0b0c0d0e0f10");
+            var bleUuid = new BleUuid(testGuid);
+
+            Span<byte> destination = new byte[15];
+
+            // Act
+            bool result = bleUuid.TryWriteBytes(destination);
+
+            // Assert
+            result.Should().BeFalse();
+        }
+
+        [Fact]
+        public void TryWriteBytes_WithUnknownType_ReturnsFalse()
+        {
+            // Arrange
+            var bleUuid = new BleUuid((BleUuidType)9999, Guid.NewGuid());
+
+            Span<byte> destination = new byte[16];
+
+            // Act
+            bool result = bleUuid.TryWriteBytes(destination);
+
+            // Assert
+            result.Should().BeFalse();
+        }
 }
