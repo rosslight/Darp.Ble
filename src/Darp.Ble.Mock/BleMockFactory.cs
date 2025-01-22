@@ -6,7 +6,7 @@ namespace Darp.Ble.Mock;
 public sealed class BleMockFactory : IBleFactory
 {
     /// <summary> Delegate which describes configuration using a broadcaster and a peripheral </summary>
-    public delegate Task InitializeAsync(IBleBroadcaster broadcaster, IBlePeripheral peripheral);
+    public delegate Task InitializeAsync(IMockBleBroadcaster broadcaster, IBlePeripheral peripheral);
 
     /// <summary> Configuration callback when the mock device is initialized </summary>
     public InitializeAsync? OnInitialize { get; init; }
