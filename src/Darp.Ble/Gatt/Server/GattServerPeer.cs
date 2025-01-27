@@ -30,6 +30,8 @@ public abstract class GattServerPeer : IGattServerPeer
         Logger?.LogBleServerPeerConnected(address);
     }
 
+    /// <inheritdoc />
+    public IBleCentral Central => _central;
     /// <summary> The logger </summary>
     protected ILogger? Logger { get; }
     /// <inheritdoc />
