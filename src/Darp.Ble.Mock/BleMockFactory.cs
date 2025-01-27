@@ -38,8 +38,8 @@ public sealed class BleMockFactory : IBleFactory
     public IScheduler? Scheduler { get; set; }
 
     /// <inheritdoc />
-    public IEnumerable<IBleDevice> EnumerateDevices(ILogger? logger)
+    public IEnumerable<IBleDevice> EnumerateDevices(ILoggerFactory loggerFactory)
     {
-        yield return new MockBleDevice(_configuredPeripherals, Name, Scheduler ?? System.Reactive.Concurrency.Scheduler.Default, logger);
+        yield return new MockBleDevice(_configuredPeripherals, Name, Scheduler ?? System.Reactive.Concurrency.Scheduler.Default, loggerFactory);
     }
 }

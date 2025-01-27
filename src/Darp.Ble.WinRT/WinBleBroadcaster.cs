@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.WinRT;
 
 
-internal sealed class WinBleBroadcaster(WinBleDevice winBleDevice, ILogger? logger) : BleBroadcaster(logger)
+internal sealed class WinBleBroadcaster(WinBleDevice winBleDevice, ILogger<WinBleBroadcaster> logger) : BleBroadcaster(winBleDevice, logger)
 {
     private readonly WinBleDevice _winBleDevice = winBleDevice;
 

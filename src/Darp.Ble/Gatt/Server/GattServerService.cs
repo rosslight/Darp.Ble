@@ -6,19 +6,28 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.Gatt.Server;
 
 /// <summary> The abstract gatt server service implementation </summary>
+/// <param name="peer"> The peer this service was discovered from </param>
 /// <param name="uuid"> The uuid of the gatt service </param>
 /// <param name="logger"> An optional logger </param>
-public abstract class GattServerService(BleUuid uuid, ILogger? logger) : IGattServerService
+public abstract class GattServerService(IGattServerPeer peer,
+    BleUuid uuid,
+    ILogger<GattServerService> logger) : IGattServerService
 {
     private readonly Dictionary<BleUuid, IGattServerCharacteristic> _characteristics = new();
 
     /// <inheritdoc />
     public IReadOnlyDictionary<BleUuid, IGattServerCharacteristic> Characteristics => _characteristics;
+
+    /// <inheritdoc />
+    public IGattServerPeer Peer { get; } = peer;
+
     /// <inheritdoc />
     public BleUuid Uuid { get; } = uuid;
 
     /// <summary> The logger </summary>
-    public ILogger? Logger { get; } = logger;
+    public ILogger<GattServerService> Logger { get; } = logger;
+    /// <summary> The logger factory </summary>
+    protected ILoggerFactory LoggerFactory => Peer.Central.Device.LoggerFactory;
 
     /// <inheritdoc />
     public async Task<IGattServerCharacteristic> DiscoverCharacteristicAsync(BleUuid uuid, CancellationToken cancellationToken = default)

@@ -5,6 +5,9 @@ namespace Darp.Ble.Gatt.Server;
 /// <summary> The interface defining a gatt server characteristic </summary>
 public interface IGattServerCharacteristic
 {
+    /// <summary> The service that contains this characteristic </summary>
+    IGattServerService Service { get; }
+
     /// <summary> The <see cref="BleUuid"/> of the characteristic </summary>
     BleUuid Uuid { get; }
 

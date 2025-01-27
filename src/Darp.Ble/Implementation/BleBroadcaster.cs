@@ -6,14 +6,19 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.Implementation;
 
 /// <summary> The broadcaster view of a ble device </summary>
-public abstract class BleBroadcaster(ILogger? logger) : IBleBroadcaster
+public abstract class BleBroadcaster(IBleDevice device, ILogger<BleBroadcaster> logger) : IBleBroadcaster
 {
     private readonly List<IAdvertisingSet> _advertisingSets = [];
 
     /// <summary> The logger </summary>
-    protected ILogger? Logger { get; } = logger;
+    protected ILogger<BleBroadcaster> Logger { get; } = logger;
+    /// <summary> The logger factory </summary>
+    protected ILoggerFactory LoggerFactory => Device.LoggerFactory;
 
     public IReadOnlyCollection<IAdvertisingSet> AdvertisingSets => _advertisingSets.AsReadOnly();
+
+    /// <inheritdoc />
+    public IBleDevice Device { get; } = device;
 
     /// <inheritdoc />
     public async Task<IAdvertisingSet> CreateAdvertisingSetAsync(AdvertisingParameters? parameters = null,

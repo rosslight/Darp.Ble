@@ -16,7 +16,7 @@ internal sealed class WinGattServerPeer : GattServerPeer
 {
     private readonly BluetoothLEDevice _winDev;
 
-    internal WinGattServerPeer(WinBleCentral central, BluetoothLEDevice winDev, ILogger? logger)
+    internal WinGattServerPeer(WinBleCentral central, BluetoothLEDevice winDev, ILogger<WinGattServerPeer> logger)
         : base(central, BleHelper.GetBleAddress(winDev.BluetoothAddress, winDev.BluetoothAddressType), logger)
     {
         _winDev = winDev;
@@ -53,7 +53,7 @@ internal sealed class WinGattServerPeer : GattServerPeer
 
                     foreach (GattDeviceService gattDeviceService in result.Services)
                     {
-                        observer.OnNext(new WinGattServerService(gattDeviceService, Logger));
+                        observer.OnNext(new WinGattServerService(this, gattDeviceService, LoggerFactory.CreateLogger<WinGattServerService>()));
                     }
                 }, observer.OnError, observer.OnCompleted);
         });

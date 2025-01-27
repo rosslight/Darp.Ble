@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock.Gatt;
 
-internal sealed class MockGattServerPeer(MockBleCentral central, BleAddress address, MockGattClientPeer clientPeer, ILogger? logger)
+internal sealed class MockGattServerPeer(MockBleCentral central, BleAddress address, MockGattClientPeer clientPeer, ILogger<MockGattServerPeer> logger)
     : GattServerPeer(central, address, logger)
 {
     private readonly MockGattClientPeer _clientPeer = clientPeer;

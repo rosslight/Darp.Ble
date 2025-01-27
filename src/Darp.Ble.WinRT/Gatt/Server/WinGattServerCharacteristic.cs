@@ -9,8 +9,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.WinRT.Gatt.Server;
 
-internal sealed class WinGattServerCharacteristic(GattCharacteristic gattCharacteristic, ILogger? logger)
-    : GattServerCharacteristic(new BleUuid(gattCharacteristic.Uuid, inferType: true), logger)
+internal sealed class WinGattServerCharacteristic(GattServerService service, GattCharacteristic gattCharacteristic, ILogger<WinGattServerCharacteristic> logger)
+    : GattServerCharacteristic(service, new BleUuid(gattCharacteristic.Uuid, inferType: true), logger)
 {
     private readonly GattCharacteristic _gattCharacteristic = gattCharacteristic;
 

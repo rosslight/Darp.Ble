@@ -5,12 +5,15 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost.Gatt.Server;
 
-internal sealed class HciHostGattServerDescriptor(HciHostGattServerPeer serverPeer, BleUuid uuid, ushort attHandle, ILogger? logger)
+internal sealed class HciHostGattServerDescriptor(HciHostGattServerPeer serverPeer,
+    BleUuid uuid,
+    ushort attHandle,
+    ILogger<HciHostGattServerDescriptor> logger)
 {
     private readonly HciHostGattServerPeer _serverPeer = serverPeer;
     private readonly BleUuid _uuid = uuid;
     private ushort AttHandle { get; } = attHandle;
-    private readonly ILogger? _logger = logger;
+    private readonly ILogger<HciHostGattServerDescriptor> _logger = logger;
 
     public void WriteWithoutResponse(byte[] bytes)
     {

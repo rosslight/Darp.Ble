@@ -8,8 +8,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Android;
 
-public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, ILogger? logger)
-    : BleDevice(logger)
+public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, ILoggerFactory loggerFactory)
+    : BleDevice(loggerFactory, loggerFactory.CreateLogger<AndroidBleDevice>())
 {
     private readonly BluetoothManager _bluetoothManager = bluetoothManager;
     private BluetoothAdapter? BluetoothAdapter => _bluetoothManager.Adapter;
@@ -32,7 +32,7 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, ILogger?
 
         if (HasScanPermissions() && BluetoothAdapter.BluetoothLeScanner is not null)
         {
-            Observer = new AndroidBleObserver(this, BluetoothAdapter.BluetoothLeScanner, Logger);
+            Observer = new AndroidBleObserver(this, BluetoothAdapter.BluetoothLeScanner, LoggerFactory.CreateLogger<AndroidBleObserver>());
         }
         return Task.FromResult(InitializeResult.Success);
     }

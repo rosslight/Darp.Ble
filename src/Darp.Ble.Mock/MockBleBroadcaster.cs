@@ -11,9 +11,10 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock;
 
-internal sealed class MockBleBroadcaster(MockedBlePeripheralDevice _bleDevice, ILogger? logger) : BleBroadcaster(logger)
+internal sealed class MockBleBroadcaster(MockedBlePeripheralDevice bleDevice, ILogger<MockBleBroadcaster> logger)
+    : BleBroadcaster(bleDevice, logger)
 {
-    private readonly MockedBlePeripheralDevice _device = _bleDevice;
+    private readonly MockedBlePeripheralDevice _device = bleDevice;
     private readonly Subject<IAdvertisingSet> _advertisingSetPublishedSubject = new();
 
     public IObservable<IGapAdvertisement> GetAdvertisements(BleObserver observer)

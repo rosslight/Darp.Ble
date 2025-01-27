@@ -10,16 +10,19 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.Implementation;
 
 /// <summary> The central view of a ble device </summary>
-public abstract class BleCentral(BleDevice device, ILogger? logger) : IBleCentral
+public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) : IBleCentral
 {
     private readonly ConcurrentDictionary<BleAddress, IGattServerPeer> _peerDevices = new();
     private readonly BleDevice _device = device;
 
     /// <summary> The logger </summary>
-    protected ILogger? Logger { get; } = logger;
+    protected ILogger<BleCentral> Logger { get; } = logger;
+    /// <summary> The logger factory </summary>
+    protected ILoggerFactory LoggerFactory => Device.LoggerFactory;
 
     /// <inheritdoc />
     public IBleDevice Device { get; } = device;
+
     /// <inheritdoc />
     public IReadOnlyCollection<IGattServerPeer> PeerDevices => _peerDevices.Values.ToArray();
 
@@ -53,7 +56,7 @@ public abstract class BleCentral(BleDevice device, ILogger? logger) : IBleCentra
                     {
                         peer.WhenConnectionStatusChanged
                             .Where(x => x is ConnectionStatus.Disconnected)
-                            .Do(_ => Logger?.LogTrace("Received disconnection event for Peer {@Peer}", peer))
+                            .Do(_ => Logger.LogTrace("Received disconnection event for Peer {@Peer}", peer))
                             .FirstAsync()
                             .Subscribe(__ => _ = peer.DisposeAsync().AsTask());
                         _peerDevices[peer.Address] = peer;

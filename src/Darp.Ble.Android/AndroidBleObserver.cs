@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Android;
 
-public sealed class AndroidBleObserver(BleDevice device, BluetoothLeScanner bluetoothLeScanner, ILogger? logger)
+public sealed class AndroidBleObserver(BleDevice device, BluetoothLeScanner bluetoothLeScanner, ILogger<AndroidBleObserver> logger)
     : BleObserver(device, logger)
 {
     private readonly BluetoothLeScanner _bluetoothLeScanner = bluetoothLeScanner;

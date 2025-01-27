@@ -6,6 +6,8 @@ using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Mock.Gatt;
 using FluentAssertions;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Darp.Ble.Tests.Implementation;
 
@@ -19,7 +21,7 @@ public sealed class BleCharacteristicTests
         var characteristicUuid = new BleUuid(0x1234);
         var mockClientPeer = MockGattClientPeer.TestClientPeer;
         var mockClientChar = new MockGattClientCharacteristic(null!, new BleUuid(0x1234), TProperty.GattProperty, null, null);
-        var characteristic = new MockGattServerCharacteristic(characteristicUuid, mockClientChar, mockClientPeer);
+        var characteristic = new MockGattServerCharacteristic(null!, characteristicUuid, mockClientChar, mockClientPeer, NullLogger<MockGattServerCharacteristic>.Instance);
         clientCharacteristic = new GattClientCharacteristic<Properties.Notify>(mockClientChar);
         clientPeer = mockClientPeer;
         return new GattServerCharacteristic<TProperty>(characteristic);

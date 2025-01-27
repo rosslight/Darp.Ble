@@ -8,10 +8,13 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.Implementation;
 
 /// <summary> The central view of a ble device </summary>
-public abstract class BlePeripheral(BleDevice device, ILogger? logger) : IBlePeripheral
+public abstract class BlePeripheral(BleDevice device, ILogger<BlePeripheral> logger) : IBlePeripheral
 {
     /// <summary> The logger </summary>
-    protected ILogger? Logger { get; } = logger;
+    protected ILogger<BlePeripheral> Logger { get; } = logger;
+    /// <summary> The logger factory </summary>
+    protected ILoggerFactory LoggerFactory => Device.LoggerFactory;
+
     private readonly Dictionary<BleUuid, IGattClientService> _services = new();
     private readonly Dictionary<BleAddress, IGattClientPeer> _peerDevices = new();
     private readonly Subject<IGattClientPeer> _whenConnected = new();

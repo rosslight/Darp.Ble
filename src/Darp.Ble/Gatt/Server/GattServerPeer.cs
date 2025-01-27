@@ -22,16 +22,21 @@ public abstract class GattServerPeer : IGattServerPeer
     /// <param name="central"> The central that initiated the connection </param>
     /// <param name="address"> The address of the service </param>
     /// <param name="logger"> An optional logger </param>
-    protected GattServerPeer(BleCentral central, BleAddress address, ILogger? logger)
+    protected GattServerPeer(BleCentral central, BleAddress address, ILogger<GattServerPeer> logger)
     {
         _central = central;
         Logger = logger;
         Address = address;
-        Logger?.LogBleServerPeerConnected(address);
+        Logger.LogBleServerPeerConnected(address);
     }
 
     /// <summary> The logger </summary>
-    protected ILogger? Logger { get; }
+    protected ILogger<GattServerPeer> Logger { get; }
+    /// <summary> The logger factory </summary>
+    protected ILoggerFactory LoggerFactory => Central.Device.LoggerFactory;
+
+    /// <inheritdoc />
+    public IBleCentral Central => _central;
     /// <inheritdoc />
     public BleAddress Address { get; }
     /// <inheritdoc />
@@ -85,7 +90,7 @@ public abstract class GattServerPeer : IGattServerPeer
         _isDisposing = true;
         DisposeCore();
         await DisposeAsyncCore().ConfigureAwait(false);
-        Logger?.LogBleServerPeerDisposed(Address);
+        Logger.LogBleServerPeerDisposed(Address);
         _central.RemovePeer(this);
         Debug.Assert(ConnectionSubject.Value is ConnectionStatus.Disconnected, "Disposing of connection subject even though it is not in completed state");
         ConnectionSubject.OnCompleted();

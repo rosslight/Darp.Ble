@@ -17,8 +17,8 @@ namespace Darp.Ble.HciHost;
 internal sealed class HciHostBleBroadcaster(
     HciHostBleDevice device,
     ushort maxAdvertisingDataLength,
-    ILogger? logger)
-    : BleBroadcaster(logger)
+    ILogger<HciHostBleBroadcaster> logger)
+    : BleBroadcaster(device, logger)
 {
     private readonly HciHostBleDevice _device = device;
     private readonly ConcurrentDictionary<byte, IAdvertisingSet> _advertisingSets = [];

@@ -20,3 +20,23 @@ public sealed class TestLogger : ILogger
         _logEntries.Add((logLevel, message));
     }
 }
+
+public sealed class TestLoggerFactory : ILoggerFactory
+{
+    private readonly TestLogger _logger = new();
+
+    public ILogger CreateLogger(string categoryName)
+    {
+        return _logger;
+    }
+
+    public void AddProvider(ILoggerProvider provider)
+    {
+        // No-op: This factory doesn't use external providers.
+    }
+
+    public void Dispose()
+    {
+        // Nothing to dispose in this simple implementation.
+    }
+}

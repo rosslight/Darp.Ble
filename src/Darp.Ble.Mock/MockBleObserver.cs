@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock;
 
-internal sealed class MockBleObserver(MockBleDevice device, ILogger? logger) : BleObserver(device, logger)
+internal sealed class MockBleObserver(MockBleDevice device, ILogger<MockBleObserver> logger) : BleObserver(device, logger)
 {
     private readonly MockBleDevice _device = device;
 

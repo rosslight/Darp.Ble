@@ -10,6 +10,7 @@ using Darp.Ble.Mock;
 using Darp.Ble.Tests.TestUtils;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Reactive.Testing;
 using NSubstitute;
 
@@ -22,7 +23,7 @@ public sealed class BleDeviceTests
     {
         var logger = new TestLogger();
         BleManager manager = new BleManagerBuilder()
-            .SetLogger(logger)
+            .SetLogger(new TestLoggerFactory())
             .Add<BleMockFactory>()
             .CreateManager();
         IBleDevice device = manager.EnumerateDevices().First();
@@ -124,7 +125,7 @@ public sealed class BleDeviceTests
     {
         var device = (MockBleDevice)new BleMockFactory()
             .AddPeripheral(async d => await d.Broadcaster.StartAdvertisingAsync(interval: ScanTiming.Ms1000))
-            .EnumerateDevices(logger: null).First();
+            .EnumerateDevices(NullLoggerFactory.Instance).First();
         await device.InitializeAsync();
         IGattServerPeer peer = await device.Observer.RefCount().ConnectToPeripheral().FirstAsync();
         await peer.DisposeAsync();

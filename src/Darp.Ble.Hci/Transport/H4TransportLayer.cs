@@ -11,7 +11,7 @@ namespace Darp.Ble.Hci.Transport;
 /// <summary> A transport layer which sends HCI packets via a <see cref="SerialPort"/> </summary>
 public sealed class H4TransportLayer : ITransportLayer
 {
-    private readonly ILogger? _logger;
+    private readonly ILogger _logger;
     private readonly SerialPort _serialPort;
     private readonly ConcurrentQueue<IHciPacket> _txQueue;
     private readonly CancellationTokenSource _cancelSource;
@@ -22,7 +22,7 @@ public sealed class H4TransportLayer : ITransportLayer
     /// <summary> Instantiate a new h4 transport layer </summary>
     /// <param name="portName"> The name of the serial port </param>
     /// <param name="logger"> An optional logger </param>
-    public H4TransportLayer(string portName, ILogger? logger)
+    public H4TransportLayer(string portName, ILogger<H4TransportLayer> logger)
     {
         _logger = logger;
         _serialPort = new SerialPort(portName);
@@ -79,7 +79,7 @@ public sealed class H4TransportLayer : ITransportLayer
         await _serialPort.BaseStream.ReadExactlyAsync(payloadBuffer, _cancelToken).ConfigureAwait(false);
         if (!TPacket.TryReadLittleEndian(buffer[..(TPacket.HeaderLength + payloadLength)].Span, out TPacket? packet, out _))
         {
-            _logger?.LogPacketReceivingDecodingFailed((byte)TPacket.Type, buffer[..(TPacket.HeaderLength + payloadLength)].ToArray(), typeof(TPacket).Name);
+            _logger.LogPacketReceivingDecodingFailed((byte)TPacket.Type, buffer[..(TPacket.HeaderLength + payloadLength)].ToArray(), typeof(TPacket).Name);
             return;
         }
         _rxSubject.OnNext(packet);

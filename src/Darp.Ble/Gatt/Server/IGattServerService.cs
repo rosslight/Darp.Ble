@@ -5,6 +5,8 @@ namespace Darp.Ble.Gatt.Server;
 /// <summary> The gatt server service interface </summary>
 public interface IGattServerService
 {
+    /// <summary> The peer device this service was discovered from </summary>
+    IGattServerPeer Peer { get; }
     /// <summary> The service uuid </summary>
     BleUuid Uuid { get; }
     /// <summary> All discovered characteristics </summary>

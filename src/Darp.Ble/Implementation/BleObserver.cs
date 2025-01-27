@@ -10,10 +10,13 @@ namespace Darp.Ble.Implementation;
 /// <summary> The ble observer </summary>
 /// <param name="device"> The ble device </param>
 /// <param name="logger"> The logger </param>
-public abstract class BleObserver(BleDevice device, ILogger? logger) : IBleObserver
+public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger) : IBleObserver
 {
     /// <summary> The logger </summary>
-    protected ILogger? Logger { get; } = logger;
+    protected ILogger<BleObserver> Logger { get; } = logger;
+    /// <summary> The logger factory </summary>
+    protected ILoggerFactory LoggerFactory => Device.LoggerFactory;
+
     private readonly object _lockObject = new();
     private readonly List<IObserver<IGapAdvertisement>> _observers = [];
     private bool _isDisposed;

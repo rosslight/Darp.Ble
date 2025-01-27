@@ -10,14 +10,15 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost.Gatt.Server;
 
-internal sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer serverPeer,
+internal sealed class HciHostGattServerCharacteristic(
+    GattServerService service,
+    HciHostGattServerPeer serverPeer,
     BleUuid uuid,
     ushort attHandle,
     GattProperty property,
-    ILogger? logger) : GattServerCharacteristic(uuid, logger)
+    ILogger<HciHostGattServerCharacteristic> logger) : GattServerCharacteristic(service, uuid, logger)
 {
     private readonly HciHostGattServerPeer _serverPeer = serverPeer;
-    private readonly ILogger? _logger = logger;
     private readonly Dictionary<BleUuid, HciHostGattServerDescriptor> _descriptorDictionary = new();
     public ushort AttHandle { get; } = attHandle;
     internal ushort EndHandle { get; set; }
@@ -55,7 +56,7 @@ internal sealed class HciHostGattServerCharacteristic(HciHostGattServerPeer serv
                 if (handle < startingHandle)
                     throw new GattCharacteristicException(this, "Handle of discovered characteristic is smaller than starting handle of service");
                 var bleUuid = new BleUuid(uuid.Span);
-                _descriptorDictionary[bleUuid] = new HciHostGattServerDescriptor(_serverPeer, bleUuid, handle, _logger);
+                _descriptorDictionary[bleUuid] = new HciHostGattServerDescriptor(_serverPeer, bleUuid, handle, LoggerFactory.CreateLogger<HciHostGattServerDescriptor>());
             }
             ushort lastHandle = rsp.InformationData[^1].Handle;
             if (lastHandle == EndHandle) break;

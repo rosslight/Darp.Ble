@@ -18,7 +18,7 @@ public sealed class HciHostBleFactory : IBleFactory
         };
 
     /// <inheritdoc />
-    public IEnumerable<IBleDevice> EnumerateDevices(ILogger? logger)
+    public IEnumerable<IBleDevice> EnumerateDevices(ILoggerFactory loggerFactory)
     {
         // Using vendorId of NordicSemiconductor and productId self defined
         foreach (UsbPortInfo portInfo in UsbPort.GetPortInfos())
@@ -26,7 +26,7 @@ public sealed class HciHostBleFactory : IBleFactory
             if (portInfo.Port is null) continue;
             if (!DeviceNameMapping.TryGetValue((portInfo.VendorId, portInfo.ProductId), out string? deviceName))
                 continue;
-            yield return new HciHostBleDevice(portInfo.Port, $"{deviceName} ({portInfo.Port})", randomAddress: RandomAddress, logger);
+            yield return new HciHostBleDevice(portInfo.Port, $"{deviceName} ({portInfo.Port})", randomAddress: RandomAddress, loggerFactory);
         }
     }
 }

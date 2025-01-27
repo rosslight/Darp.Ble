@@ -8,10 +8,10 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Tests.Gap;
 
-public sealed class GapAdvertisementTests(ILogger<GapAdvertisementTests> logger)
+public sealed class GapAdvertisementTests(ILoggerFactory loggerFactory)
 {
     private readonly BleManager _manager = new BleManagerBuilder()
-        .SetLogger(logger)
+        .SetLogger(loggerFactory)
         .Add<BleMockFactory>()
         .CreateManager();
 

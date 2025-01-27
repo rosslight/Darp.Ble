@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.HciHost.Gatt.Server;
 
 internal sealed class HciHostGattServerService(BleUuid uuid, ushort attHandle, ushort endGroupHandle,
-    HciHostGattServerPeer serverPeer, ILogger? logger) : GattServerService(uuid, logger)
+    HciHostGattServerPeer serverPeer, ILogger<HciHostGattServerService> logger) : GattServerService(serverPeer, uuid, logger)
 {
     private readonly ushort _attHandle = attHandle;
     private readonly ushort _endGroupHandle = endGroupHandle;
@@ -50,7 +50,12 @@ internal sealed class HciHostGattServerService(BleUuid uuid, ushort attHandle, u
                     var properties = (GattProperty)memory.Span[0];
                     ushort characteristicHandle = BinaryPrimitives.ReadUInt16LittleEndian(memory.Span[1..]);
                     var characteristicUuid = new BleUuid(memory.Span[3..]);
-                    var characteristic = new HciHostGattServerCharacteristic(_serverPeer, characteristicUuid, characteristicHandle, properties, Logger);
+                    var characteristic = new HciHostGattServerCharacteristic(this,
+                        _serverPeer,
+                        characteristicUuid,
+                        characteristicHandle,
+                        properties,
+                        LoggerFactory.CreateLogger<HciHostGattServerCharacteristic>());
                     discoveredCharacteristics.Add(characteristic);
                     if (lastCharacteristic is not null) lastCharacteristic.EndHandle = handle;
                     lastCharacteristic = characteristic;

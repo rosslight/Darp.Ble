@@ -38,7 +38,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
         Hci.HciHost host,
         HciLeEnhancedConnectionCompleteV1Event connectionCompleteEvent,
         BleAddress address,
-        ILogger? logger) : base(central, address, logger)
+        ILogger<HciHostGattServerPeer> logger) : base(central, address, logger)
     {
         _host = host;
         ConnectionHandle = connectionCompleteEvent.ConnectionHandle;
@@ -107,7 +107,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
                 foreach ((ushort handle, ushort endGroup, ushort value) in rsp.AttributeDataList)
                 {
                     var uuid = new BleUuid(value);
-                    observer.OnNext(new HciHostGattServerService(uuid, handle, endGroup, this, Logger));
+                    observer.OnNext(new HciHostGattServerService(uuid, handle, endGroup, this, LoggerFactory.CreateLogger<HciHostGattServerService>()));
                 }
                 startingHandle = rsp.AttributeDataList[^1].EndGroup;
             }
@@ -144,7 +144,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
                 if (rsp.HandlesInformationList.Length == 0) break;
                 foreach ((ushort handle, ushort endGroup) in rsp.HandlesInformationList)
                 {
-                    return new HciHostGattServerService(uuid, handle, endGroup, this, Logger);
+                    return new HciHostGattServerService(uuid, handle, endGroup, this, LoggerFactory.CreateLogger<HciHostGattServerService>());
                 }
                 startingHandle = rsp.HandlesInformationList[^1].GroupEndHandle;
             }

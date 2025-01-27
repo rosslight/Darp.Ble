@@ -8,6 +8,9 @@ namespace Darp.Ble;
 /// <summary> The ble broadcaster </summary>
 public interface IBleBroadcaster : IAsyncDisposable
 {
+    /// <summary> The ble device </summary>
+    IBleDevice Device { get; }
+
     /// <summary> Creates a new advertising set </summary>
     /// <param name="parameters"> The parameters for advertising </param>
     /// <param name="data"> Optional data to advertise </param>

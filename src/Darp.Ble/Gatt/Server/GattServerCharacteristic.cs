@@ -4,14 +4,19 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.Gatt.Server;
 
 /// <inheritdoc />
-public abstract class GattServerCharacteristic(BleUuid uuid, ILogger? logger) : IGattServerCharacteristic
+public abstract class GattServerCharacteristic(GattServerService service, BleUuid uuid, ILogger<GattServerCharacteristic> logger) : IGattServerCharacteristic
 {
     private readonly SemaphoreSlim _notifySemaphore = new(1, 1);
     private IDisposable? _notifyDisposable;
     private readonly List<Action<byte[]>> _actions = [];
 
     /// <summary> The optional logger </summary>
-    protected ILogger? Logger { get; } = logger;
+    protected ILogger<GattServerCharacteristic> Logger { get; } = logger;
+    /// <summary> The logger factory </summary>
+    protected ILoggerFactory LoggerFactory => Service.Peer.Central.Device.LoggerFactory;
+
+    /// <inheritdoc />
+    public IGattServerService Service { get; } = service;
 
     /// <inheritdoc />
     public BleUuid Uuid { get; } = uuid;

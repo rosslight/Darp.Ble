@@ -10,8 +10,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.WinRT.Gatt.Server;
 
-internal sealed class WinGattServerService(GattDeviceService winService, ILogger? logger)
-    : GattServerService(new BleUuid(winService.Uuid, inferType: true), logger)
+internal sealed class WinGattServerService(GattServerPeer peer, GattDeviceService winService, ILogger<WinGattServerService> logger)
+    : GattServerService(peer, new BleUuid(winService.Uuid, inferType: true), logger)
 {
     private readonly GattDeviceService _winService = winService;
 
@@ -38,7 +38,7 @@ internal sealed class WinGattServerService(GattDeviceService winService, ILogger
 
                     foreach (GattCharacteristic gattCharacteristic in result.Characteristics)
                     {
-                        observer.OnNext(new WinGattServerCharacteristic(gattCharacteristic, Logger));
+                        observer.OnNext(new WinGattServerCharacteristic(this, gattCharacteristic, LoggerFactory.CreateLogger<WinGattServerCharacteristic>()));
                     }
                 }, observer.OnError, observer.OnCompleted);
         });

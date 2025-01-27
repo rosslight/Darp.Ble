@@ -12,9 +12,15 @@ namespace Darp.Ble.HciHost;
 internal sealed class HciHostBleDevice(string port,
     string name,
     BleAddress? randomAddress,
-    ILogger? logger) : BleDevice(logger)
+    ILoggerFactory loggerFactory) : BleDevice(loggerFactory, loggerFactory.CreateLogger<HciHostBleDevice>())
 {
-    public Hci.HciHost Host { get; } = new(new H4TransportLayer(port, logger: logger), logger: logger);
+    public Hci.HciHost Host { get; } = new(
+        new H4TransportLayer(
+            port,
+            logger: loggerFactory.CreateLogger<H4TransportLayer>()
+        ),
+        logger: loggerFactory.CreateLogger<Hci.HciHost>()
+    );
 
     public override string Name { get; } = name;
 
@@ -26,13 +32,13 @@ internal sealed class HciHostBleDevice(string port,
         await Host.InitializeAsync(cancellationToken).ConfigureAwait(false);
         await SetRandomAddressAsync(RandomAddress, cancellationToken).ConfigureAwait(false);
 
-        Observer = new HciHostBleObserver(this, Logger);
-        Central = new HciHostBleCentral(this, Logger);
+        Observer = new HciHostBleObserver(this, LoggerFactory.CreateLogger<HciHostBleObserver>());
+        Central = new HciHostBleCentral(this, LoggerFactory.CreateLogger<HciHostBleCentral>());
 
         HciLeReadMaximumAdvertisingDataLengthResult result = await Host
             .QueryCommandCompletionAsync<HciLeReadMaximumAdvertisingDataLengthCommand, HciLeReadMaximumAdvertisingDataLengthResult>(cancellationToken: cancellationToken)
             .ConfigureAwait(false);
-        Broadcaster = new HciHostBleBroadcaster(this, result.MaxAdvertisingDataLength, Logger);
+        Broadcaster = new HciHostBleBroadcaster(this, result.MaxAdvertisingDataLength, LoggerFactory.CreateLogger<HciHostBleBroadcaster>());
         return InitializeResult.Success;
     }
 

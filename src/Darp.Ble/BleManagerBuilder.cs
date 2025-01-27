@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Darp.Ble;
 
@@ -6,7 +7,7 @@ namespace Darp.Ble;
 public sealed class BleManagerBuilder
 {
     private readonly List<IBleFactory> _factories = [];
-    private ILogger? _logger;
+    private ILoggerFactory? _loggerFactory;
 
     /// <summary> Add a new factory </summary>
     /// <param name="config"> An optional callback to modify the implementation config </param>
@@ -30,11 +31,11 @@ public sealed class BleManagerBuilder
     }
 
     /// <summary> Register a handler for log events </summary>
-    /// <param name="logger"> Called when any part of the ble library logs something </param>
+    /// <param name="loggerFactory"> The logger factory to be used to redirect logs of the ble library to </param>
     /// <returns> The current builder </returns>
-    public BleManagerBuilder SetLogger(ILogger logger)
+    public BleManagerBuilder SetLogger(ILoggerFactory? loggerFactory)
     {
-        _logger = logger;
+        _loggerFactory = loggerFactory;
         return this;
     }
 
@@ -42,6 +43,6 @@ public sealed class BleManagerBuilder
     /// <returns> The new ble manager </returns>
     public BleManager CreateManager()
     {
-        return new BleManager(_factories, _logger);
+        return new BleManager(_factories, _loggerFactory ?? NullLoggerFactory.Instance);
     }
 }

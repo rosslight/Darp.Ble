@@ -45,13 +45,13 @@ public sealed class AclPacketQueue(ITransportLayer transportLayer,
 public sealed class HciHost : IDisposable
 {
     private readonly ITransportLayer _transportLayer;
-    internal ILogger? Logger { get; }
+    internal ILogger Logger { get; }
     private AclPacketQueue? _aclPacketQueue;
 
     /// <summary> Initializes a new host with a given transport layer and an optional logger </summary>
     /// <param name="transportLayer"> The transport layer </param>
     /// <param name="logger"> An optional logger </param>
-    public HciHost(ITransportLayer transportLayer, ILogger? logger)
+    public HciHost(ITransportLayer transportLayer, ILogger<HciHost> logger)
     {
         _transportLayer = transportLayer;
         Logger = logger;
@@ -72,7 +72,7 @@ public sealed class HciHost : IDisposable
     /// <param name="packet"> The packet to be enqueued </param>
     public void EnqueuePacket(IHciPacket packet)
     {
-        Logger?.LogEnqueuePacket(packet);
+        Logger.LogEnqueuePacket(packet);
         _transportLayer.Enqueue(packet);
     }
 
