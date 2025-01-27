@@ -47,7 +47,7 @@ internal sealed class HciHostBleDevice(string port,
     }
 
     /// <inheritdoc />
-    public override string Identifier => "Darp.Ble.HciHost";
+    public override string Identifier => BleDeviceIdentifiers.HciHost;
 
     /// <inheritdoc />
     protected override void DisposeCore()

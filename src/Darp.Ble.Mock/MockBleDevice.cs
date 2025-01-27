@@ -24,7 +24,7 @@ internal sealed class MockBleDevice(
     public IScheduler Scheduler { get; } = scheduler;
 
     /// <inheritdoc />
-    public override string Identifier => "Darp.Ble.Mock";
+    public override string Identifier => BleDeviceIdentifiers.Mock;
 
     protected override Task SetRandomAddressAsyncCore(BleAddress randomAddress, CancellationToken cancellationToken)
     {

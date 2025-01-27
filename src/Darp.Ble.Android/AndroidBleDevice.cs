@@ -42,7 +42,7 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, ILogger?
         : Application.Context.CheckSelfPermission(Manifest.Permission.AccessCoarseLocation) is Permission.Granted
           && Application.Context.CheckSelfPermission(Manifest.Permission.AccessFineLocation) is Permission.Granted;
 
-    public override string Identifier => "Darp.Ble.Android";
+    public override string Identifier => BleDeviceIdentifiers.Android;
 
     protected override void DisposeCore()
     {

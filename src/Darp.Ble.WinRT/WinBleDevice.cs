@@ -32,5 +32,5 @@ internal sealed class WinBleDevice(ILogger? logger) : BleDevice(logger)
     public override string Name => "Windows";
 
     /// <inheritdoc />
-    public override string Identifier => "Darp.Ble.WinRT";
+    public override string Identifier => BleDeviceIdentifiers.WinRT;
 }
