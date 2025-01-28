@@ -1,10 +1,11 @@
 using System.Diagnostics.CodeAnalysis;
-using System.Security.Cryptography;
 
 namespace Darp.Ble.Data;
 
 /// <summary> The ble address </summary>
-public sealed record BleAddress : ISpanParsable<BleAddress>
+public sealed record BleAddress : ISpanParsable<BleAddress>,
+    IEquatable<UInt48>,
+    IEquatable<ulong>
 {
     /// <summary> Initializes a new ble address </summary>
     /// <param name="value"> The 48bit address </param>
@@ -130,6 +131,14 @@ public sealed record BleAddress : ISpanParsable<BleAddress>
             return false;
         return Type == other.Type && Value == other.Value;
     }
+
+    /// <inheritdoc />
+    /// <remarks> Ignores the type of the address </remarks>
+    public bool Equals(UInt48 other) => Value == other;
+
+    /// <inheritdoc />
+    /// <remarks> Ignores the type of the address </remarks>
+    public bool Equals(ulong other) => Value == other;
 
     /// <inheritdoc />
     public override int GetHashCode()

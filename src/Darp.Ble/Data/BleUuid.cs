@@ -4,7 +4,12 @@ using System.Diagnostics.CodeAnalysis;
 namespace Darp.Ble.Data;
 
 /// <summary> The Ble Uuid </summary>
-public sealed record BleUuid : ISpanParsable<BleUuid>, ISpanFormattable, IUtf8SpanFormattable
+public sealed record BleUuid : ISpanParsable<BleUuid>,
+    ISpanFormattable,
+    IUtf8SpanFormattable,
+    IEquatable<Guid>,
+    IEquatable<uint>,
+    IEquatable<ushort>
 {
     /// <summary> The type of the uuid </summary>
     public required BleUuidType Type { get; init; }
@@ -123,6 +128,24 @@ public sealed record BleUuid : ISpanParsable<BleUuid>, ISpanFormattable, IUtf8Sp
         result = null;
         return false;
     }
+
+    /// <inheritdoc />
+    /// <remarks> Infers type from the given Guid </remarks>
+    public bool Equals(Guid other)
+    {
+        return Value == other && Type == InferType(other);
+    }
+
+    /// <inheritdoc />
+    /// <remarks> Expects guid to be <see cref="BleUuidType.Uuid32"/> </remarks>
+    public bool Equals(uint other) => Type == BleUuidType.Uuid32 && Value == CreateGuid(other);
+
+    /// <inheritdoc />
+    /// <remarks> Expects guid to be <see cref="BleUuidType.Uuid16"/> </remarks>
+    public bool Equals(ushort other) => Type == BleUuidType.Uuid16 && Value == CreateGuid(other);
+
+    /// <inheritdoc />
+    public override int GetHashCode() => Type.GetHashCode() ^ Value.GetHashCode();
 
     /// <inheritdoc />
     public override string ToString() => Value.ToString();
