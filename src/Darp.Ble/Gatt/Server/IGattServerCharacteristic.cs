@@ -67,3 +67,13 @@ public interface IGattServerCharacteristic<TProp>
     /// <summary> The underlying characteristic </summary>
     IGattServerCharacteristic Characteristic { get; }
 }
+
+public interface IGattServerCharacteristic<T, TProp>
+{
+    /// <inheritdoc cref="IGattServerCharacteristic.Uuid"/>
+    BleUuid Uuid => Characteristic.Uuid;
+    /// <summary> The underlying characteristic </summary>
+    IGattServerCharacteristic Characteristic { get; }
+    public Func<byte[], T> OnRead { get; }
+    public Func<T, byte[]> OnWrite { get; }
+}

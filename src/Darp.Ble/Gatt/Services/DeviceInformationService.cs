@@ -44,9 +44,9 @@ public static class DeviceInformationServiceContract
         GattTypedClientCharacteristic<string, Properties.Read>? manufacturerNameCharacteristic = null;
         if (manufacturerName is not null)
         {
-            manufacturerNameCharacteristic = await service.AddTypedCharacteristicAsync<string, Properties.Read>(
-                    ManufacturerNameCharacteristic.Uuid,
-                    Encoding.UTF8.GetBytes(manufacturerName),
+            manufacturerNameCharacteristic = await service.AddCharacteristicAsync(
+                    ManufacturerNameCharacteristic,
+                    manufacturerName,
                     cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
         }
@@ -55,9 +55,9 @@ public static class DeviceInformationServiceContract
         GattTypedClientCharacteristic<string, Properties.Read>? modelNumberCharacteristic = null;
         if (modelNumber is not null)
         {
-            modelNumberCharacteristic = await service.AddCharacteristicAsync<string, Properties.Read>(
-                    ModelNumberCharacteristic.Uuid,
-                    _ => Encoding.UTF8.GetBytes(modelNumber),
+            modelNumberCharacteristic = await service.AddCharacteristicAsync(
+                    ModelNumberCharacteristic,
+                    modelNumber,
                     cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
         }
@@ -81,8 +81,8 @@ public static class DeviceInformationServiceContract
 
         // Discover the characteristics
         await service.DiscoverCharacteristicAsync(cancellationToken).ConfigureAwait(false);
-        service.TryGetCharacteristic(ManufacturerNameCharacteristic, out IGattServerCharacteristic<Properties.Read>? manufacturerNameCharacteristic);
-        service.TryGetCharacteristic(ModelNumberCharacteristic, out IGattServerCharacteristic<Properties.Read>? modelNumberCharacteristic);
+        service.TryGetCharacteristic(ManufacturerNameCharacteristic, out IGattServerCharacteristic<string, Properties.Read>? manufacturerNameCharacteristic);
+        service.TryGetCharacteristic(ModelNumberCharacteristic, out IGattServerCharacteristic<string, Properties.Read>? modelNumberCharacteristic);
 
         return new GattServerDeviceInformationService
         {
@@ -99,7 +99,7 @@ public static class DeviceInformationServiceContract
 
     public sealed class GattServerDeviceInformationService
     {
-        public required IGattServerCharacteristic<Properties.Read>? ManufacturerName { get; init; }
-        public required IGattServerCharacteristic<Properties.Read>? ModelNumber { get; init; }
+        public required IGattServerCharacteristic<string, Properties.Read>? ManufacturerName { get; init; }
+        public required IGattServerCharacteristic<string, Properties.Read>? ModelNumber { get; init; }
     }
 }

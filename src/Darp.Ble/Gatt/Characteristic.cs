@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Text;
 using Darp.Ble.Data;
 
@@ -54,10 +55,35 @@ public sealed class TypedCharacteristic<T, TProp1>(BleUuid uuid,
 
 public static class Characteristic
 {
+    public static T ToStruct<T>(this byte[] bytes) where T : unmanaged => MemoryMarshal.Read<T>(bytes);
+
+    public static byte[] ToByteArray<T>(this T value)
+        where T : unmanaged
+    {
+        var buffer = new byte[Marshal.SizeOf<T>()];
+        MemoryMarshal.Write(buffer, value);
+        return buffer;
+    }
+
+    public static TypedCharacteristic<T, TProp1> Create<T, TProp1>(ushort uuid,
+        Func<byte[], T> onRead,
+        Func<T, byte[]> onWrite)
+        where TProp1 : IBleProperty
+    {
+        return new TypedCharacteristic<T, TProp1>(uuid, onRead, onWrite);
+    }
+
+    public static TypedCharacteristic<T, TProp1> Create<T, TProp1>(ushort uuid)
+        where T : unmanaged
+        where TProp1 : IBleProperty
+    {
+        return new TypedCharacteristic<T, TProp1>(uuid, bytes => bytes.ToStruct<T>(), value => value.ToByteArray());
+    }
+
     public static TypedCharacteristic<string, TProp1> Create<TProp1>(ushort uuid, Encoding encoding)
         where TProp1 : IBleProperty
     {
         ArgumentNullException.ThrowIfNull(encoding);
-        return new TypedCharacteristic<string, TProp1>(uuid, encoding.GetString, encoding.GetBytes);
+        return Create<string, TProp1>(uuid, encoding.GetString, encoding.GetBytes);
     }
 }

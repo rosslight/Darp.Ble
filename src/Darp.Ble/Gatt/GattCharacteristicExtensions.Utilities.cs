@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
 
@@ -6,38 +5,6 @@ namespace Darp.Ble.Gatt;
 
 public static partial class GattCharacteristicExtensions
 {
-    private static T ToStruct<T>(this byte[] bytes) where T : unmanaged => MemoryMarshal.Read<T>(bytes);
-
-    private static byte[] ToByteArray<T>(this T value)
-        where T : unmanaged
-    {
-        var buffer = new byte[Marshal.SizeOf<T>()];
-        MemoryMarshal.Write(buffer, value);
-        return buffer;
-    }
-
-    private static IGattClientService.OnReadCallback? UsingBytes<T>(
-        this IGattClientService.OnReadCallback<T>? onRead)
-        where T : unmanaged
-    {
-        return onRead is null
-            ? null
-            : async (peer, token) =>
-            {
-                T value = await onRead(peer, token).ConfigureAwait(false);
-                return value.ToByteArray();
-            };
-    }
-
-    private static IGattClientService.OnWriteCallback? UsingBytes<T>(
-        this IGattClientService.OnWriteCallback<T>? onWrite)
-        where T : unmanaged
-    {
-        return onWrite is null
-            ? null
-            : (peer, bytes, token) => onWrite(peer, bytes.ToStruct<T>(), token);
-    }
-
     private static byte[] GetValue(this IGattClientCharacteristic characteristic, IGattClientPeer? clientPeer)
     {
         ValueTask<byte[]> getTask = characteristic.GetValueAsync(clientPeer, CancellationToken.None);
@@ -57,5 +24,4 @@ public static partial class GattCharacteristicExtensions
             return;
         _ = updateTask.AsTask();
     }
-
 }

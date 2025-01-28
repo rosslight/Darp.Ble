@@ -76,4 +76,26 @@ public static class GattServerServiceExtensions
         characteristic = null;
         return false;
     }
+
+    public static bool TryGetCharacteristic<T, TProp1>(this IGattServerService service,
+        TypedCharacteristic<T, TProp1> expectedCharacteristic,
+        [NotNullWhen(true)] out IGattServerCharacteristic<T, TProp1>? characteristic)
+        where TProp1 : IBleProperty
+    {
+        ArgumentNullException.ThrowIfNull(service);
+        ArgumentNullException.ThrowIfNull(expectedCharacteristic);
+        foreach (IGattServerCharacteristic serverCharacteristic in service.Characteristics)
+        {
+            if (serverCharacteristic.Uuid == expectedCharacteristic.Uuid
+                && serverCharacteristic.Property == expectedCharacteristic.Property)
+            {
+                characteristic = new TypedGattServerCharacteristic<T, TProp1>(serverCharacteristic,
+                    expectedCharacteristic.OnRead,
+                    expectedCharacteristic.OnWrite);
+                return true;
+            }
+        }
+        characteristic = null;
+        return false;
+    }
 }

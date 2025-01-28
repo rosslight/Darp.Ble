@@ -141,3 +141,16 @@ public sealed class GattServerCharacteristic<TProp1>(IGattServerCharacteristic s
     /// <inheritdoc />
     public IGattServerCharacteristic Characteristic { get; } = serverCharacteristic;
 }
+
+public sealed class TypedGattServerCharacteristic<T, TProp1>(IGattServerCharacteristic serverCharacteristic,
+    Func<byte[], T> onRead,
+    Func<T, byte[]> onWrite)
+    : IGattServerCharacteristic<T, TProp1>
+    where TProp1 : IBleProperty
+{
+    /// <inheritdoc />
+    public IGattServerCharacteristic Characteristic { get; } = serverCharacteristic;
+
+    public Func<byte[], T> OnRead { get; } = onRead;
+    public Func<T, byte[]> OnWrite { get; } = onWrite;
+}

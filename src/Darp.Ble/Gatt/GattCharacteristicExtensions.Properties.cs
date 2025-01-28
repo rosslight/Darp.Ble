@@ -22,7 +22,8 @@ public static partial class GattCharacteristicExtensions
         where T : unmanaged
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        return characteristic.Characteristic.GetValue(clientPeer: null).ToStruct<T>();
+        byte[] bytes = characteristic.Characteristic.GetValue(clientPeer: null);
+        return characteristic.OnRead(bytes);
     }
 
     /// <summary> Update a specific value of the characteristic with a <see cref="Properties.Read"/> property by manually writing to it </summary>
@@ -43,7 +44,7 @@ public static partial class GattCharacteristicExtensions
         where T : unmanaged
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        return characteristic.Characteristic.UpdateValue(clientPeer: null, value.ToByteArray());
+        return characteristic.Characteristic.UpdateValue(clientPeer: null, characteristic.OnWrite(value));
     }
 
     /// <summary> Notify a connected peer of a new value </summary>
@@ -62,10 +63,9 @@ public static partial class GattCharacteristicExtensions
     /// <param name="value"> The value to update </param>
     /// <typeparam name="T"> The type of the value </typeparam>
     public static void Notify<T>(this IGattTypedClientCharacteristic<T, Properties.Notify> characteristic, IGattClientPeer peer, T value)
-        where T : unmanaged
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        characteristic.Characteristic.NotifyValue(clientPeer: peer, value.ToByteArray());
+        characteristic.Characteristic.NotifyValue(clientPeer: peer, characteristic.OnWrite(value));
     }
 
     /// <summary> Notify all connected peers of a new value </summary>
@@ -82,9 +82,8 @@ public static partial class GattCharacteristicExtensions
     /// <param name="value"> The value to update </param>
     /// <typeparam name="T"> The type of the value </typeparam>
     public static void NotifyAll<T>(this IGattTypedClientCharacteristic<T, Properties.Notify> characteristic, T value)
-        where T : unmanaged
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        characteristic.Characteristic.NotifyValue(clientPeer: null, value.ToByteArray());
+        characteristic.Characteristic.NotifyValue(clientPeer: null, characteristic.OnWrite(value));
     }
 }

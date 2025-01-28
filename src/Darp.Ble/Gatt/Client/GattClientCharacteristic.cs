@@ -120,7 +120,7 @@ public sealed class GattClientCharacteristic<TProp1, TProp2>(IGattClientCharacte
 /// <param name="characteristic"> The actual characteristic </param>
 /// <typeparam name="T"> The type of the characteristic value </typeparam>
 /// <typeparam name="TProp1"> The property </typeparam>
-public class GattTypedClientCharacteristic<T, TProp1>(IGattClientCharacteristic characteristic)
+public class GattTypedClientCharacteristic<T, TProp1>(IGattClientCharacteristic characteristic, Func<byte[], T> onRead, Func<T, byte[]> onWrite)
     : IGattTypedClientCharacteristic<T, TProp1>
     where TProp1 : IBleProperty
 {
@@ -130,6 +130,9 @@ public class GattTypedClientCharacteristic<T, TProp1>(IGattClientCharacteristic 
     public BleUuid Uuid => Characteristic.Uuid;
     /// <inheritdoc />
     public IGattClientCharacteristic Characteristic { get; } = characteristic;
+
+    public Func<byte[], T> OnRead { get; } = onRead;
+    public Func<T, byte[]> OnWrite { get; } = onWrite;
 }
 
 /// <summary> The implementation of a gatt client characteristic with a single property </summary>
@@ -137,8 +140,7 @@ public class GattTypedClientCharacteristic<T, TProp1>(IGattClientCharacteristic 
 /// <typeparam name="T"> The type of the characteristic value </typeparam>
 /// <typeparam name="TProp1"> The first property </typeparam>
 /// <typeparam name="TProp2"> The second property </typeparam>
-public sealed class GattTypedClientCharacteristic<T, TProp1, TProp2>(IGattClientCharacteristic characteristic)
-    : GattTypedClientCharacteristic<T, TProp1>(characteristic), IGattTypedClientCharacteristic<T, TProp2>
-    where T : unmanaged
+public sealed class GattTypedClientCharacteristic<T, TProp1, TProp2>(IGattClientCharacteristic characteristic, Func<byte[], T> onRead, Func<T, byte[]> onWrite)
+    : GattTypedClientCharacteristic<T, TProp1>(characteristic, onRead, onWrite), IGattTypedClientCharacteristic<T, TProp2>
     where TProp1 : IBleProperty
     where TProp2 : IBleProperty;
