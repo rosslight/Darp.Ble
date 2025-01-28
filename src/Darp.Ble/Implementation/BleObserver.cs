@@ -144,17 +144,17 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
     /// <summary> Core implementation of stopping </summary>
     protected abstract void StopScanCore();
 
-    /// <inheritdoc />
+    /// <summary> A method that can be used to clean up all resources. </summary>
+    /// <remarks> This method is not glued to the <see cref="IAsyncDisposable"/> interface. All disposes should be done using the  </remarks>
     public async ValueTask DisposeAsync()
     {
         if(_isDisposed) return;
         _isDisposed = true;
         DisposeCore();
         await DisposeAsyncCore().ConfigureAwait(false);
-        GC.SuppressFinalize(this);
     }
-    /// <inheritdoc cref="DisposeAsync"/>
-    protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
     /// <inheritdoc cref="IDisposable.Dispose"/>
     protected virtual void DisposeCore() { }
+    /// <inheritdoc cref="DisposeAsync"/>
+    protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
 }

@@ -16,6 +16,7 @@ public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice>
     /// <summary> The logger factory </summary>
     public ILoggerFactory LoggerFactory { get; } = loggerFactory;
     private bool _isInitializing;
+    private bool _isDisposing;
     private IBleObserver? _bleObserver;
     private IBleCentral? _bleCentral;
     private IBleBroadcaster? _bleBroadcaster;
@@ -24,6 +25,7 @@ public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice>
     /// <inheritdoc />
     public bool IsInitialized { get; private set; }
 
+    /// <inheritdoc />
     public bool IsDisposed { get; private set; }
 
     /// <inheritdoc />
@@ -75,7 +77,7 @@ public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice>
             InitializeResult result = await InitializeAsyncCore(cancellationToken).ConfigureAwait(false);
             if (result is not InitializeResult.Success)
                 return result;
-            Logger?.LogBleDeviceInitialized(Name);
+            Logger.LogBleDeviceInitialized(Name);
             IsInitialized = true;
             return InitializeResult.Success;
         }
@@ -122,25 +124,26 @@ public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice>
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
+        if (_isDisposing)
+            return;
+        _isDisposing = true;
         DisposeCore();
+        if (Capabilities.HasFlag(Capabilities.Observer) && Observer is BleObserver observer)
+            await observer.DisposeAsync().ConfigureAwait(false);
+        if (Capabilities.HasFlag(Capabilities.Central) && Central is BleCentral central)
+            await central.DisposeAsync().ConfigureAwait(false);
+        if (Capabilities.HasFlag(Capabilities.Broadcaster) && Broadcaster is BleBroadcaster broadcaster)
+            await broadcaster.DisposeAsync().ConfigureAwait(false);
+        if (Capabilities.HasFlag(Capabilities.Peripheral) && Peripheral is BlePeripheral peripheral)
+            await peripheral.DisposeAsync().ConfigureAwait(false);
         await DisposeAsyncCore().ConfigureAwait(false);
         IsDisposed = true;
-        Logger?.LogBleDeviceDisposed(Name);
+        Logger.LogBleDeviceDisposed(Name);
         GC.SuppressFinalize(this);
     }
 
-    /// <inheritdoc cref="DisposeAsync"/>
-    protected virtual async ValueTask DisposeAsyncCore()
-    {
-        if (Capabilities.HasFlag(Capabilities.Observer))
-            await Observer.DisposeAsync().ConfigureAwait(false);
-        if (Capabilities.HasFlag(Capabilities.Central))
-            await Central.DisposeAsync().ConfigureAwait(false);
-        if (Capabilities.HasFlag(Capabilities.Broadcaster))
-            await Broadcaster.DisposeAsync().ConfigureAwait(false);
-        if (Capabilities.HasFlag(Capabilities.Peripheral))
-            await Peripheral.DisposeAsync().ConfigureAwait(false);
-    }
     /// <inheritdoc cref="IDisposable.Dispose"/>
     protected virtual void DisposeCore() { }
+    /// <inheritdoc cref="DisposeAsync"/>
+    protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
 }

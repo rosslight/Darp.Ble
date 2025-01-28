@@ -4,10 +4,11 @@ using Darp.Ble.Gatt.Server;
 namespace Darp.Ble;
 
 /// <summary> The ble central </summary>
-public interface IBleCentral : IAsyncDisposable
+public interface IBleCentral
 {
     /// <summary> The ble device </summary>
     IBleDevice Device { get; }
+
     /// <summary> A list of all peripherals this central is connected to </summary>
     IReadOnlyCollection<IGattServerPeer> PeerDevices { get; }
 

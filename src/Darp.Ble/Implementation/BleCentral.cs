@@ -90,7 +90,8 @@ public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) :
         return _peerDevices.TryRemove(peer.Address, out _);
     }
 
-    /// <inheritdoc />
+    /// <summary> A method that can be used to clean up all resources. </summary>
+    /// <remarks> This method is not glued to the <see cref="IAsyncDisposable"/> interface. All disposes should be done using the  </remarks>
     public async ValueTask DisposeAsync()
     {
         foreach (BleAddress address in _peerDevices.Keys)
@@ -102,10 +103,9 @@ public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) :
         }
         DisposeCore();
         await DisposeAsyncCore().ConfigureAwait(false);
-        GC.SuppressFinalize(this);
     }
-    /// <inheritdoc cref="DisposeAsync"/>
-    protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
     /// <inheritdoc cref="IDisposable.Dispose"/>
     protected virtual void DisposeCore() { }
+    /// <inheritdoc cref="DisposeAsync"/>
+    protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
 }

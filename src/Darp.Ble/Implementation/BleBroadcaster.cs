@@ -82,15 +82,15 @@ public abstract class BleBroadcaster(IBleDevice device, ILogger<BleBroadcaster> 
         IReadOnlyCollection<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, byte NumberOfEvents)> advertisingSets,
         CancellationToken cancellationToken);
 
-    /// <inheritdoc />
-    public async ValueTask DisposeAsync()
+    /// <summary> A method that can be used to clean up all resources. </summary>
+    /// <remarks> This method is not glued to the <see cref="IAsyncDisposable"/> interface. All disposes should be done using the  </remarks>
+    internal async ValueTask DisposeAsync()
     {
         DisposeCore();
         await DisposeAsyncCore().ConfigureAwait(false);
-        GC.SuppressFinalize(this);
     }
-    /// <inheritdoc cref="DisposeAsync"/>
-    protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
     /// <inheritdoc cref="IDisposable.Dispose"/>
     protected virtual void DisposeCore() { }
+    /// <inheritdoc cref="DisposeAsync"/>
+    protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
 }

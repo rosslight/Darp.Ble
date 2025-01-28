@@ -6,7 +6,7 @@ using AdvertisingStartInfo = (Darp.Ble.Gatt.Server.IAdvertisingSet AdvertisingSe
 namespace Darp.Ble;
 
 /// <summary> The ble broadcaster </summary>
-public interface IBleBroadcaster : IAsyncDisposable
+public interface IBleBroadcaster
 {
     /// <summary> The ble device </summary>
     IBleDevice Device { get; }

@@ -54,15 +54,15 @@ public abstract class BlePeripheral(BleDevice device, ILogger<BlePeripheral> log
         clientPeer.WhenDisconnected.Subscribe(_ => _peerDevices.Remove(clientPeer.Address));
     }
 
-    /// <inheritdoc />
+    /// <summary> A method that can be used to clean up all resources. </summary>
+    /// <remarks> This method is not glued to the <see cref="IAsyncDisposable"/> interface. All disposes should be done using the  </remarks>
     public async ValueTask DisposeAsync()
     {
         DisposeCore();
         await DisposeAsyncCore().ConfigureAwait(false);
-        GC.SuppressFinalize(this);
     }
-    /// <inheritdoc cref="DisposeAsync"/>
-    protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
     /// <inheritdoc cref="IDisposable.Dispose"/>
     protected virtual void DisposeCore() { }
+    /// <inheritdoc cref="DisposeAsync"/>
+    protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
 }
