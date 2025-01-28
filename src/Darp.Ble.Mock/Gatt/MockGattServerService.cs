@@ -6,24 +6,24 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.Mock.Gatt;
 
 internal sealed class MockGattServerService(
-    BleUuid uuid,
-    MockGattClientService service,
-    MockGattClientPeer gattClient,
-    ILogger? logger) : GattServerService(uuid, logger)
+    MockGattClientPeer clientPeer,
+    MockGattServerPeer serverPeer,
+    MockGattClientService clientService,
+    ILogger<MockGattServerService> logger) : GattServerService(serverPeer, clientService.Uuid, logger)
 {
-    public MockGattClientPeer GattClient { get; } = gattClient;
-    private readonly MockGattClientService _service = service;
+    private readonly MockGattClientService _clientService = clientService;
+    public MockGattClientPeer GattClient { get; } = clientPeer;
 
     /// <inheritdoc />
-    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicsAsyncCore() => _service
+    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicsCore() => _clientService
         .Characteristics
         .ToObservable()
         .Where(x => x is MockGattClientCharacteristic)
-        .Select(x => new MockGattServerCharacteristic(x.Uuid, (MockGattClientCharacteristic)x, GattClient));
+        .Select(x => new MockGattServerCharacteristic(this, x.Uuid, (MockGattClientCharacteristic)x, GattClient, LoggerFactory.CreateLogger<MockGattServerCharacteristic>()));
 
     /// <inheritdoc />
-    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicAsyncCore(BleUuid uuid)
+    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicsCore(BleUuid uuid)
     {
-        return DiscoverCharacteristicsAsyncCore().Where(x => x.Uuid == uuid);
+        return DiscoverCharacteristicsCore().Where(x => x.Uuid == uuid);
     }
 }

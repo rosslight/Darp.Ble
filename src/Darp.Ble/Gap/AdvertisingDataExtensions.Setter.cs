@@ -42,6 +42,7 @@ public static partial class AdvertisingDataExtensions
     public static AdvertisingData WithCompleteLocalName(this AdvertisingData advertisingData, string completeLocalName)
     {
         ArgumentNullException.ThrowIfNull(advertisingData);
+        ArgumentNullException.ThrowIfNull(completeLocalName);
         return advertisingData.With(AdTypes.CompleteLocalName, Encoding.UTF8.GetBytes(completeLocalName));
     }
 
@@ -54,6 +55,7 @@ public static partial class AdvertisingDataExtensions
         string shortenedLocalName)
     {
         ArgumentNullException.ThrowIfNull(advertisingData);
+        ArgumentNullException.ThrowIfNull(shortenedLocalName);
         return advertisingData.With(AdTypes.ShortenedLocalName, Encoding.UTF8.GetBytes(shortenedLocalName));
     }
 

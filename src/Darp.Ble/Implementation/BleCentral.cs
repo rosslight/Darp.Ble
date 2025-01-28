@@ -94,6 +94,12 @@ public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) :
     /// <remarks> This method is not glued to the <see cref="IAsyncDisposable"/> interface. All disposes should be done using the  </remarks>
     public async ValueTask DisposeAsync()
     {
+        await DisposeAsyncCore().ConfigureAwait(false);
+        Dispose(disposing: false);
+    }
+    /// <inheritdoc cref="DisposeAsync"/>
+    protected virtual async ValueTask DisposeAsyncCore()
+    {
         foreach (BleAddress address in _peerDevices.Keys)
         {
             if (_peerDevices.TryGetValue(address, out IGattServerPeer? peer))
@@ -101,11 +107,11 @@ public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) :
                 await peer.DisposeAsync().ConfigureAwait(false);
             }
         }
-        DisposeCore();
-        await DisposeAsyncCore().ConfigureAwait(false);
     }
     /// <inheritdoc cref="IDisposable.Dispose"/>
-    protected virtual void DisposeCore() { }
-    /// <inheritdoc cref="DisposeAsync"/>
-    protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
+    /// <param name="disposing">
+    /// True, when this method was called by the synchronous <see cref="IDisposable.Dispose"/> method;
+    /// False if called by the asynchronous <see cref="IAsyncDisposable.DisposeAsync"/> method
+    /// </param>
+    protected virtual void Dispose(bool disposing) { }
 }

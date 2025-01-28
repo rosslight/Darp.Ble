@@ -11,10 +11,10 @@ internal sealed class MockGattServerPeer(MockBleCentral central, BleAddress addr
     private readonly MockGattClientPeer _clientPeer = clientPeer;
 
     /// <inheritdoc />
-    protected override IObservable<IGattServerService> DiscoverServicesCore() => _clientPeer.GetServices();
+    protected override IObservable<IGattServerService> DiscoverServicesCore() => _clientPeer.GetServices(this);
 
     /// <inheritdoc />
-    protected override IObservable<IGattServerService> DiscoverServiceCore(BleUuid uuid) => _clientPeer.GetService(uuid);
+    protected override IObservable<IGattServerService> DiscoverServiceCore(BleUuid uuid) => _clientPeer.GetService(this, uuid);
 
     protected override void DisposeCore()
     {

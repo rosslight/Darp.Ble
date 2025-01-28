@@ -1,5 +1,3 @@
-using System.Reactive.Linq;
-using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
 using Microsoft.Extensions.Logging;
 
@@ -13,10 +11,10 @@ public abstract class GattServerService(IGattServerPeer peer,
     BleUuid uuid,
     ILogger<GattServerService> logger) : IGattServerService
 {
-    private readonly Dictionary<BleUuid, IGattServerCharacteristic> _characteristics = new();
+    private readonly SortedDictionary<ushort, IGattServerCharacteristic> _characteristics = [];
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<BleUuid, IGattServerCharacteristic> Characteristics => _characteristics;
+    public IReadOnlyCollection<IGattServerCharacteristic> Characteristics => _characteristics.Values;
 
     /// <inheritdoc />
     public IGattServerPeer Peer { get; } = peer;
@@ -30,21 +28,42 @@ public abstract class GattServerService(IGattServerPeer peer,
     protected ILoggerFactory LoggerFactory => Peer.Central.Device.LoggerFactory;
 
     /// <inheritdoc />
-    public async Task<IGattServerCharacteristic> DiscoverCharacteristicAsync(BleUuid uuid, CancellationToken cancellationToken = default)
+    public async Task DiscoverCharacteristicAsync(CancellationToken cancellationToken = default)
     {
-        IGattServerCharacteristic characteristic = await DiscoverCharacteristicAsyncCore(uuid)
-            .FirstAsync()
-            .ToTask(cancellationToken)
-            .ConfigureAwait(false);
-        _characteristics[uuid] = characteristic;
-        return characteristic;
+        await foreach (IGattServerCharacteristic characteristic in DiscoverCharacteristicsCore()
+                           .ToAsyncEnumerable()
+                           .WithCancellation(cancellationToken)
+                           .ConfigureAwait(false))
+        {
+            _characteristics[characteristic.AttributeHandle] = characteristic;
+        }
     }
 
     /// <summary> Core implementation to discover all characteristics </summary>
     /// <returns> An observable with all characteristics </returns>
-    protected abstract IObservable<IGattServerCharacteristic> DiscoverCharacteristicsAsyncCore();
+    protected abstract IObservable<IGattServerCharacteristic> DiscoverCharacteristicsCore();
+
+    /// <inheritdoc />
+    public async Task<IGattServerCharacteristic> DiscoverCharacteristicAsync(BleUuid uuid, CancellationToken cancellationToken = default)
+    {
+        foreach ((ushort _, IGattServerCharacteristic characteristic) in _characteristics)
+        {
+            if (characteristic.Uuid == uuid)
+                return characteristic;
+        }
+        IGattServerCharacteristic? characteristicToReturn = null;
+        await foreach (IGattServerCharacteristic characteristic in DiscoverCharacteristicsCore(uuid)
+                           .ToAsyncEnumerable()
+                           .WithCancellation(cancellationToken)
+                           .ConfigureAwait(false))
+        {
+            characteristicToReturn ??= characteristic;
+            _characteristics[characteristic.AttributeHandle] = characteristic;
+        }
+        return characteristicToReturn ?? throw new Exception($"No characteristic with Uuid {uuid} was discovered");
+    }
     /// <summary> Core implementation to discover a characteristic with a given <paramref name="uuid"/> </summary>
     /// <param name="uuid"> The characteristic uuid to be discovered </param>
     /// <returns> An observable with all characteristics </returns>
-    protected abstract IObservable<IGattServerCharacteristic> DiscoverCharacteristicAsyncCore(BleUuid uuid);
+    protected abstract IObservable<IGattServerCharacteristic> DiscoverCharacteristicsCore(BleUuid uuid);
 }

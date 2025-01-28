@@ -12,7 +12,7 @@ namespace Darp.Ble.Gatt.Server;
 public abstract class GattServerPeer : IGattServerPeer
 {
     private readonly BleCentral _central;
-    private readonly Dictionary<BleUuid, IGattServerService> _services = new();
+    private readonly List<IGattServerService> _services = [];
     private bool _isDisposing;
 
     /// <summary> The behavior subject where the implementation can write to </summary>
@@ -40,7 +40,7 @@ public abstract class GattServerPeer : IGattServerPeer
     /// <inheritdoc />
     public BleAddress Address { get; }
     /// <inheritdoc />
-    public IReadOnlyDictionary<BleUuid, IGattServerService> Services => _services;
+    public IReadOnlyCollection<IGattServerService> Services => _services;
     /// <inheritdoc />
     public bool IsConnected => ConnectionSubject.Value is ConnectionStatus.Connected;
     /// <inheritdoc />
@@ -55,7 +55,7 @@ public abstract class GattServerPeer : IGattServerPeer
                            .WithCancellation(cancellationToken)
                            .ConfigureAwait(false))
         {
-            _services[service.Uuid] = service;
+            _services.Add(service);
         }
     }
 
@@ -63,13 +63,16 @@ public abstract class GattServerPeer : IGattServerPeer
     public async Task<IGattServerService> DiscoverServiceAsync(BleUuid uuid, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_isDisposing, this);
-        IGattServerService service = await DiscoverServiceCore(uuid)
-            .FirstAsync()
-            .ToTask(cancellationToken)
-            .ConfigureAwait(false);
-
-        _services[service.Uuid] = service;
-        return service;
+        IGattServerService? serviceToReturn = null;
+        await foreach (IGattServerService service in DiscoverServiceCore(uuid)
+                           .ToAsyncEnumerable()
+                           .WithCancellation(cancellationToken)
+                           .ConfigureAwait(false))
+        {
+            serviceToReturn ??= service;
+            _services.Add(service);
+        }
+        return serviceToReturn ?? throw new Exception($"No service with Uuid {uuid} was discovered");
     }
 
     /// <summary> Core implementation to discover services </summary>

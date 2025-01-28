@@ -10,7 +10,7 @@ public abstract class GattClientService(BlePeripheral blePeripheral, BleUuid uui
     private readonly List<IGattClientCharacteristic> _characteristics = [];
 
     /// <summary> The peripheral of the service </summary>
-    public BlePeripheral Peripheral { get; } = blePeripheral;
+    public IBlePeripheral Peripheral { get; } = blePeripheral;
 
     /// <inheritdoc />
     public BleUuid Uuid { get; } = uuid;

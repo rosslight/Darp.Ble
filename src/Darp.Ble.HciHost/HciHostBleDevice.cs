@@ -56,9 +56,9 @@ internal sealed class HciHostBleDevice(string port,
     public override string Identifier => BleDeviceIdentifiers.HciHost;
 
     /// <inheritdoc />
-    protected override void DisposeCore()
+    protected override void Dispose(bool disposing)
     {
         Host.Dispose();
-        base.DisposeCore();
+        base.Dispose(disposing);
     }
 }

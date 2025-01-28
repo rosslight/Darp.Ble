@@ -6,14 +6,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock;
 
-internal sealed class MockBlePeripheral(MockBleDevice device, MockBleBroadcaster broadcaster, ILogger<MockBlePeripheral> logger)
+internal sealed class MockedBlePeripheral(MockedBleDevice device, ILogger<MockedBlePeripheral> logger)
     : BlePeripheral(device, logger)
 {
-    private readonly MockBleBroadcaster _broadcaster = broadcaster;
+    private readonly MockedBleDevice _device = device;
 
     public MockGattClientPeer OnCentralConnection(BleAddress address)
     {
-        var clientPeer = new MockGattClientPeer(address, this, LoggerFactory.CreateLogger<MockGattClientPeer>());
+        var clientPeer = new MockGattClientPeer(this, address, LoggerFactory.CreateLogger<MockGattClientPeer>());
         OnConnectedCentral(clientPeer);
         return clientPeer;
     }

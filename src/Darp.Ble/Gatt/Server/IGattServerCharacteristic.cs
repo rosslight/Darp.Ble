@@ -8,8 +8,12 @@ public interface IGattServerCharacteristic
     /// <summary> The service that contains this characteristic </summary>
     IGattServerService Service { get; }
 
+    /// <summary> The handle of the characteristic attribute </summary>
+    ushort AttributeHandle { get; }
     /// <summary> The <see cref="BleUuid"/> of the characteristic </summary>
     BleUuid Uuid { get; }
+    /// <summary> The Gatt Property </summary>
+    public GattProperty Property { get; }
 
     /// <summary> Write <paramref name="bytes"/> to the characteristic depending on the length, </summary>
     /// <param name="bytes"> The array of bytes to be written </param>
@@ -35,17 +39,12 @@ public interface IGattServerCharacteristic
     /// </returns>
     Task<IAsyncDisposable> OnNotifyAsync<TState>(TState state, Action<TState, byte[]> onNotify, CancellationToken cancellationToken);
 
-/*
-    /// <summary>
-    /// Read a specific value from the
-    /// </summary>
-    /// <param name="state"> The state to be accessible when <paramref name="onRead"/> is called </param>
-    /// <param name="onRead"> The callback to be called when the response was received </param>
+    /// <summary> Read a specific value from the characteristic </summary>
     /// <param name="cancellationToken"> The CancellationToken to cancel the operation </param>
-    /// <typeparam name="TState"> The type of the <paramref name="state"/> </typeparam>
     /// <returns> A task which completes when the value was read </returns>
-    Task ReadAsync<TState>(TState state, Action<TState, ReadOnlyMemory<byte>> onRead, CancellationToken cancellationToken);
+    Task<byte[]> ReadAsync(CancellationToken cancellationToken);
 
+/*
     /// <summary> Subscribe to indication events </summary>
     /// <param name="state"> The state to be accessible when <paramref name="onIndicate"/> is called </param>
     /// <param name="onIndicate"> The callback to be called when an indication event was received </param>

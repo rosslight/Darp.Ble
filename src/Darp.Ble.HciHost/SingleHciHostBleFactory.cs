@@ -16,8 +16,8 @@ public sealed class SingleHciHostBleFactory(string portName) : IBleFactory
     public BleAddress? RandomAddress { get; set; }
 
     /// <inheritdoc />
-    public IEnumerable<IBleDevice> EnumerateDevices(ILogger? logger)
+    public IEnumerable<IBleDevice> EnumerateDevices(ILoggerFactory loggerFactory)
     {
-        yield return new HciHostBleDevice(PortName, DeviceName ?? PortName, randomAddress: RandomAddress, logger);
+        yield return new HciHostBleDevice(PortName, DeviceName ?? PortName, randomAddress: RandomAddress, loggerFactory);
     }
 }

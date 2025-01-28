@@ -4,7 +4,11 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.Gatt.Server;
 
 /// <inheritdoc />
-public abstract class GattServerCharacteristic(GattServerService service, BleUuid uuid, ILogger<GattServerCharacteristic> logger) : IGattServerCharacteristic
+public abstract class GattServerCharacteristic(GattServerService service,
+    ushort attributeHandle,
+    BleUuid uuid,
+    GattProperty property,
+    ILogger<GattServerCharacteristic> logger) : IGattServerCharacteristic
 {
     private readonly SemaphoreSlim _notifySemaphore = new(1, 1);
     private IDisposable? _notifyDisposable;
@@ -19,7 +23,13 @@ public abstract class GattServerCharacteristic(GattServerService service, BleUui
     public IGattServerService Service { get; } = service;
 
     /// <inheritdoc />
+    public ushort AttributeHandle { get; } = attributeHandle;
+
+    /// <inheritdoc />
     public BleUuid Uuid { get; } = uuid;
+
+    /// <inheritdoc />
+    public GattProperty Property { get; } = property;
 
     /// <inheritdoc />
     public async Task WriteAsync(byte[] bytes, CancellationToken cancellationToken)
@@ -67,7 +77,7 @@ public abstract class GattServerCharacteristic(GattServerService service, BleUui
                         item1Action(bytes);
                     }
                 }, cancellationToken).ConfigureAwait(false);
-                Logger?.LogTrace("Enabled notifications on {@Characteristic}", this);
+                Logger.LogTrace("Enabled notifications on {@Characteristic}", this);
             }
             _actions.Add(action);
         }
@@ -87,7 +97,7 @@ public abstract class GattServerCharacteristic(GattServerService service, BleUui
                 }
                 _notifyDisposable.Dispose();
                 _notifyDisposable = null;
-                Logger?.LogTrace("Starting to disable notifications on {@Characteristic}", this);
+                Logger.LogTrace("Starting to disable notifications on {@Characteristic}", this);
                 await DisableNotificationsAsync().ConfigureAwait(false);
                 Logger?.LogTrace("Disabled notifications on {@Characteristic}", this);
             }
@@ -97,6 +107,15 @@ public abstract class GattServerCharacteristic(GattServerService service, BleUui
             }
         });
     }
+
+    /// <inheritdoc />
+    public Task<byte[]> ReadAsync(CancellationToken cancellationToken)
+    {
+        return ReadAsyncCore(cancellationToken);
+    }
+
+    /// <inheritdoc cref="ReadAsync" />
+    protected abstract Task<byte[]> ReadAsyncCore(CancellationToken cancellationToken);
 
     /// <summary> Core implementation to subscribe to notification events of the characteristic </summary>
     /// <param name="state"> The state to be accessible when <paramref name="onNotify"/> is called </param>

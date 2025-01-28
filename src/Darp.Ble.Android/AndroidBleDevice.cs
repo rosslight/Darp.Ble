@@ -44,9 +44,9 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, ILoggerF
 
     public override string Identifier => BleDeviceIdentifiers.Android;
 
-    protected override void DisposeCore()
+    protected override void Dispose(bool disposing)
     {
         _bluetoothManager.Dispose();
-        base.DisposeCore();
+        base.Dispose(disposing);
     }
 }

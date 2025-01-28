@@ -45,13 +45,13 @@ internal sealed class WinGattServerService(GattServerPeer peer, GattDeviceServic
     }
 
     /// <inheritdoc />
-    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicsAsyncCore()
+    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicsCore()
     {
         return DiscoverCharacteristic(() => _winService.GetCharacteristicsAsync());
     }
 
     /// <inheritdoc />
-    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicAsyncCore(BleUuid uuid)
+    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicsCore(BleUuid uuid)
     {
         return DiscoverCharacteristic(() => _winService.GetCharacteristicsForUuidAsync(uuid.Value));
     }

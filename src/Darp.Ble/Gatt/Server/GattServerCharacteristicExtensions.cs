@@ -93,4 +93,14 @@ public static class GattServerCharacteristicExtensions
         ArgumentNullException.ThrowIfNull(characteristic);
         characteristic.Characteristic.WriteWithoutResponse(bytes);
     }
+
+    /// <inheritdoc cref="IGattServerCharacteristic.ReadAsync"/>
+    /// <param name="characteristic">The characteristic with read property</param>
+    /// <param name="cancellationToken"> The CancellationToken to cancel the operation </param>
+    public static async Task<byte[]> ReadAsync(this IGattServerCharacteristic<Properties.Read> characteristic,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(characteristic);
+        return await characteristic.Characteristic.ReadAsync(cancellationToken).ConfigureAwait(false);
+    }
 }

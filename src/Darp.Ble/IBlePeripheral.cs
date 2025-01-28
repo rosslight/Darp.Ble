@@ -11,8 +11,9 @@ public interface IBlePeripheral
 
     /// <summary> A list of all centrals this peripheral is connected to </summary>
     IReadOnlyDictionary<BleAddress, IGattClientPeer> PeerDevices { get; }
+
     /// <summary> A collection of all added services </summary>
-    IReadOnlyDictionary<BleUuid, IGattClientService> Services { get; }
+    IReadOnlyCollection<IGattClientService> Services { get; }
 
     /// <summary> An observable which fires when a new GattClient was connected </summary>
     IObservable<IGattClientPeer> WhenConnected { get; }

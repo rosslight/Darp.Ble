@@ -1,4 +1,3 @@
-using System.Reactive.Disposables;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Darp.Ble.Data;
@@ -32,7 +31,7 @@ internal sealed class WinBlePeripheral(WinBleDevice device, ILogger<WinBlePeriph
         {
             return clientPeer;
         }
-        clientPeer = new WinGattClientPeer(gattSession, address);
+        clientPeer = new WinGattClientPeer(this, gattSession, address);
         OnConnectedCentral(clientPeer);
         return clientPeer;
     }
@@ -40,7 +39,7 @@ internal sealed class WinBlePeripheral(WinBleDevice device, ILogger<WinBlePeriph
     public IAsyncDisposable AdvertiseServices(IAdvertisingSet advertisingSet)
     {
         List<IAsyncDisposable> disposables = [];
-        foreach ((BleUuid _, IGattClientService value) in Services)
+        foreach (IGattClientService value in Services)
         {
             if (value is WinGattClientService service)
                 disposables.Add(service.Advertise(advertisingSet));

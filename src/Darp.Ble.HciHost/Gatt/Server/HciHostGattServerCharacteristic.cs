@@ -16,7 +16,7 @@ internal sealed class HciHostGattServerCharacteristic(
     BleUuid uuid,
     ushort attHandle,
     GattProperty property,
-    ILogger<HciHostGattServerCharacteristic> logger) : GattServerCharacteristic(service, uuid, logger)
+    ILogger<HciHostGattServerCharacteristic> logger) : GattServerCharacteristic(service, attHandle, uuid, property, logger)
 {
     private readonly HciHostGattServerPeer _serverPeer = serverPeer;
     private readonly Dictionary<BleUuid, HciHostGattServerDescriptor> _descriptorDictionary = new();
@@ -79,6 +79,11 @@ internal sealed class HciHostGattServerCharacteristic(
         if (!_descriptorDictionary.TryGetValue(Uuid, out HciHostGattServerDescriptor? descriptor))
             throw new GattCharacteristicException(this, "No descriptor defining self available");
         descriptor.WriteWithoutResponse(bytes);
+    }
+
+    protected override Task<byte[]> ReadAsyncCore(CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
     }
 
     protected override async Task<IDisposable> EnableNotificationsAsync<TState>(TState state,

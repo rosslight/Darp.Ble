@@ -54,5 +54,4 @@ public interface IGattClientCharacteristic<TProperty1>
 /// <typeparam name="T"> The type of the value </typeparam>
 /// <typeparam name="TProperty1"> The type of the property </typeparam>
 public interface IGattTypedClientCharacteristic<T, TProperty1> : IGattClientCharacteristic<TProperty1>
-    where T : unmanaged
     where TProperty1 : IBleProperty;

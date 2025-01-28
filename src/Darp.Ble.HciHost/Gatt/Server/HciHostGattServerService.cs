@@ -15,7 +15,7 @@ internal sealed class HciHostGattServerService(BleUuid uuid, ushort attHandle, u
     private readonly ushort _endGroupHandle = endGroupHandle;
     private readonly HciHostGattServerPeer _serverPeer = serverPeer;
 
-    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicsAsyncCore()
+    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicsCore()
     {
          return Observable.Create<IGattServerCharacteristic>(async (observer, token) =>
         {
@@ -75,8 +75,8 @@ internal sealed class HciHostGattServerService(BleUuid uuid, ushort attHandle, u
         });
     }
 
-    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicAsyncCore(BleUuid uuid)
+    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicsCore(BleUuid uuid)
     {
-        return DiscoverCharacteristicsAsyncCore().Where(x => x.Uuid == uuid);
+        return DiscoverCharacteristicsCore().Where(x => x.Uuid == uuid);
     }
 }

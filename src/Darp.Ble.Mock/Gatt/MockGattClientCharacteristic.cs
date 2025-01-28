@@ -1,22 +1,21 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
-using System.Reactive.Disposables;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
 
 namespace Darp.Ble.Mock.Gatt;
 
-internal sealed class MockGattClientCharacteristic : GattClientCharacteristic
+internal sealed class MockGattClientCharacteristic(
+    MockGattClientService service,
+    ushort attributeHandle,
+    BleUuid uuid,
+    GattProperty gattProperty,
+    IGattClientService.OnReadCallback? onRead,
+    IGattClientService.OnWriteCallback? onWrite)
+    : GattClientCharacteristic(service, uuid, gattProperty, onRead, onWrite)
 {
     private readonly ConcurrentDictionary<IGattClientPeer, Action<byte[]>> _notifyActions = [];
-
-    public MockGattClientCharacteristic(MockGattClientService service,
-        BleUuid uuid,
-        GattProperty gattProperty,
-        IGattClientService.OnReadCallback? onRead,
-        IGattClientService.OnWriteCallback? onWrite) : base(service, uuid, gattProperty, onRead, onWrite)
-    {
-    }
+    public ushort AttributeHandle { get; } = attributeHandle;
 
     public async Task WriteAsync(IGattClientPeer? clientPeer, byte[] bytes, CancellationToken cancellationToken)
     {

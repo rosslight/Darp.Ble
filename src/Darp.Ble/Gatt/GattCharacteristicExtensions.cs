@@ -114,6 +114,50 @@ public static partial class GattCharacteristicExtensions
         return service.AddCharacteristicAsync<T, TProp1>(uuid, onAsyncRead, onAsyncWrite, cancellationToken);
     }
 
+    public static async Task<GattTypedClientCharacteristic<T, TProp1>> AddTypedCharacteristicAsync<T, TProp1>(this IGattClientService service,
+        BleUuid uuid,
+        byte[] staticValue,
+        CancellationToken cancellationToken = default)
+        where TProp1 : IBleProperty
+    {
+        ArgumentNullException.ThrowIfNull(service);
+        return await service.AddCharacteristicAsync<T, TProp1>(
+            uuid,
+            _ => staticValue,
+            (_, value) =>
+            {
+                staticValue = value;
+                return GattProtocolStatus.Success;
+            },
+            cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public static async Task<GattTypedClientCharacteristic<T, TProp1>> AddCharacteristicAsync<T, TProp1>(this IGattClientService service,
+        BleUuid uuid,
+        Func<IGattClientPeer?, byte[]>? onRead = null,
+        Func<IGattClientPeer?, byte[], GattProtocolStatus>? onWrite = null,
+        CancellationToken cancellationToken = default)
+        where TProp1 : IBleProperty
+    {
+        ArgumentNullException.ThrowIfNull(service);
+        IGattClientService.OnReadCallback? onAsyncRead = onRead is null
+            ? null
+            : (peer, _) => ValueTask.FromResult(onRead(peer));
+        IGattClientService.OnWriteCallback? onAsyncWrite = onWrite is null
+            ? null
+            : (peer, bytes, _) => ValueTask.FromResult(onWrite(peer, bytes));
+        ArgumentNullException.ThrowIfNull(service);
+        IGattClientCharacteristic clientCharacteristic = await service.AddCharacteristicAsync(
+                uuid,
+                TProp1.GattProperty,
+                onAsyncRead,
+                onAsyncWrite,
+                cancellationToken)
+            .ConfigureAwait(false);
+        return new GattTypedClientCharacteristic<T, TProp1>(clientCharacteristic);
+    }
+
     /// <summary> Add a characteristic with a specific UUID to a service </summary>
     /// <param name="service"> The service to add the characteristic to </param>
     /// <param name="uuid"> The UUID of the characteristic to add </param>

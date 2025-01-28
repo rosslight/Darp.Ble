@@ -122,7 +122,6 @@ public sealed class GattClientCharacteristic<TProp1, TProp2>(IGattClientCharacte
 /// <typeparam name="TProp1"> The property </typeparam>
 public class GattTypedClientCharacteristic<T, TProp1>(IGattClientCharacteristic characteristic)
     : IGattTypedClientCharacteristic<T, TProp1>
-    where T : unmanaged
     where TProp1 : IBleProperty
 {
     /// <inheritdoc />

@@ -1,6 +1,7 @@
 using System.Text;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
+using Darp.Ble.Gatt.Server;
 
 namespace Darp.Ble.Gatt.Services;
 
@@ -15,7 +16,10 @@ public readonly record struct PnP(VendorIdSource VendorIdSource, ushort VendorId
 public static class DeviceInformationServiceContract
 {
     public static BleUuid Uuid => new(0x180A);
-    public static Characteristic<Properties.Read> ManufacturerNameCharacteristic { get; } = new(0x2A29);
+    public static TypedCharacteristic<string, Properties.Read> ManufacturerNameCharacteristic { get; } =
+        Characteristic.Create<Properties.Read>(0x2A29, Encoding.UTF8);
+    public static TypedCharacteristic<string, Properties.Read> ModelNumberCharacteristic { get; } =
+        Characteristic.Create<Properties.Read>(0x2A24, Encoding.UTF8);
 
     public static async Task<GattClientDeviceInformationService> AddDeviceInformationServiceAsync(
         this IBlePeripheral peripheral,
@@ -37,24 +41,24 @@ public static class DeviceInformationServiceContract
             ).ConfigureAwait(false);
 
         // Add optional manufacturer name characteristic
-        GattClientCharacteristic<Properties.Read>? manufacturerNameCharacteristic = null;
+        GattTypedClientCharacteristic<string, Properties.Read>? manufacturerNameCharacteristic = null;
         if (manufacturerName is not null)
         {
-            manufacturerNameCharacteristic = await service.AddCharacteristicAsync<Properties.Read>(
+            manufacturerNameCharacteristic = await service.AddTypedCharacteristicAsync<string, Properties.Read>(
                     ManufacturerNameCharacteristic.Uuid,
                     Encoding.UTF8.GetBytes(manufacturerName),
-                    cancellationToken)
+                    cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
         }
 
         // Add optional manufacturer name characteristic
-        GattClientCharacteristic<Properties.Read>? modelNumberCharacteristic = null;
+        GattTypedClientCharacteristic<string, Properties.Read>? modelNumberCharacteristic = null;
         if (modelNumber is not null)
         {
-            modelNumberCharacteristic = await service.AddCharacteristicAsync<Properties.Read>(
-                    ManufacturerNameCharacteristic.Uuid,
-                    Encoding.UTF8.GetBytes(modelNumber),
-                    cancellationToken)
+            modelNumberCharacteristic = await service.AddCharacteristicAsync<string, Properties.Read>(
+                    ModelNumberCharacteristic.Uuid,
+                    _ => Encoding.UTF8.GetBytes(modelNumber),
+                    cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -65,9 +69,37 @@ public static class DeviceInformationServiceContract
         };
     }
 
+    public static async Task<GattServerDeviceInformationService> DiscoverEchoServiceAsync(
+        this IGattServerPeer serverPeer,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(serverPeer);
+
+        // Discover the service
+        IGattServerService service = await serverPeer.DiscoverServiceAsync(Uuid, cancellationToken).ConfigureAwait(false);
+
+        // Discover the characteristics
+        await service.DiscoverCharacteristicAsync(cancellationToken).ConfigureAwait(false);
+        service.TryGetCharacteristic(ManufacturerNameCharacteristic, out IGattServerCharacteristic<Properties.Read>? manufacturerNameCharacteristic);
+        service.TryGetCharacteristic(ModelNumberCharacteristic, out IGattServerCharacteristic<Properties.Read>? modelNumberCharacteristic);
+
+        return new GattServerDeviceInformationService
+        {
+            ManufacturerName = manufacturerNameCharacteristic,
+            ModelNumber = modelNumberCharacteristic,
+        };
+    }
+
     public sealed class GattClientDeviceInformationService
     {
-        public required GattClientCharacteristic<Properties.Read>? ManufacturerName { get; init; }
-        public required GattClientCharacteristic<Properties.Read>? ModelNumber { get; init; }
+        public required GattTypedClientCharacteristic<string, Properties.Read>? ManufacturerName { get; init; }
+        public required GattTypedClientCharacteristic<string, Properties.Read>? ModelNumber { get; init; }
+    }
+
+    public sealed class GattServerDeviceInformationService
+    {
+        public required IGattServerCharacteristic<Properties.Read>? ManufacturerName { get; init; }
+        public required IGattServerCharacteristic<Properties.Read>? ModelNumber { get; init; }
     }
 }

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data;
 
 namespace Darp.Ble.Gatt.Server;
@@ -54,5 +55,25 @@ public static class GattServerServiceExtensions
         ArgumentNullException.ThrowIfNull(characteristic);
         IGattServerCharacteristic serverCharacteristic = await service.DiscoverCharacteristicAsync(characteristic.Uuid, cancellationToken).ConfigureAwait(false);
         return new GattServerCharacteristic<TProp1>(serverCharacteristic);
+    }
+
+    public static bool TryGetCharacteristic<TProp1>(this IGattServerService service,
+        Characteristic<TProp1> expectedCharacteristic,
+        [NotNullWhen(true)] out IGattServerCharacteristic<TProp1>? characteristic)
+        where TProp1 : IBleProperty
+    {
+        ArgumentNullException.ThrowIfNull(service);
+        ArgumentNullException.ThrowIfNull(expectedCharacteristic);
+        foreach (IGattServerCharacteristic serverCharacteristic in service.Characteristics)
+        {
+            if (serverCharacteristic.Uuid == expectedCharacteristic.Uuid
+                && serverCharacteristic.Property == expectedCharacteristic.Property)
+            {
+                characteristic = new GattServerCharacteristic<TProp1>(serverCharacteristic);
+                return true;
+            }
+        }
+        characteristic = null;
+        return false;
     }
 }

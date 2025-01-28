@@ -104,7 +104,9 @@ public static partial class AdvertisingDataExtensions
     public static IEnumerable<BleUuid> GetServiceUuids(this AdvertisingData data)
     {
         ArgumentNullException.ThrowIfNull(data);
-        return GetServicesInt(data);
+        return data.Count is 0
+            ? Array.Empty<BleUuid>()
+            : GetServicesInt(data);
 
         IEnumerable<BleUuid> GetServicesInt(AdvertisingData d)
         {

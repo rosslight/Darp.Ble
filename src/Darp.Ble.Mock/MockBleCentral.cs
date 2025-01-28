@@ -8,19 +8,22 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock;
 
-internal sealed class MockBleCentral(BleDevice device, MockBlePeripheral peripheralMock, ILogger<MockBleCentral> logger)
+internal sealed class MockBleCentral(MockBleDevice device, ILogger<MockBleCentral> logger)
     : BleCentral(device, logger)
 {
-    private readonly MockBlePeripheral _peripheralMock = peripheralMock;
+    private readonly MockBleDevice _device = device;
 
     /// <inheritdoc />
     protected override IObservable<GattServerPeer> ConnectToPeripheralCore(BleAddress address,
         BleConnectionParameters connectionParameters,
         BleScanParameters scanParameters)
     {
+        MockedBleDevice? peerDevice = _device.MockedDevices.FirstOrDefault(x => x.RandomAddress == address);
+        if (peerDevice is null)
+            return Observable.Throw<GattServerPeer>(new Exception("Unknown address"));
         return Observable.Create<GattServerPeer>(observer =>
         {
-            MockGattClientPeer clientPeer = _peripheralMock.OnCentralConnection(address);
+            MockGattClientPeer clientPeer = peerDevice.Peripheral.OnCentralConnection(address);
             // TODO _peripheralMock.StopAll();
             var mockDevice = new MockGattServerPeer(this, address, clientPeer, LoggerFactory.CreateLogger<MockGattServerPeer>());
             observer.OnNext(mockDevice);

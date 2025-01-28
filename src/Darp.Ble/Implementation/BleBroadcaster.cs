@@ -86,11 +86,15 @@ public abstract class BleBroadcaster(IBleDevice device, ILogger<BleBroadcaster> 
     /// <remarks> This method is not glued to the <see cref="IAsyncDisposable"/> interface. All disposes should be done using the  </remarks>
     internal async ValueTask DisposeAsync()
     {
-        DisposeCore();
         await DisposeAsyncCore().ConfigureAwait(false);
+        Dispose(disposing: false);
     }
-    /// <inheritdoc cref="IDisposable.Dispose"/>
-    protected virtual void DisposeCore() { }
     /// <inheritdoc cref="DisposeAsync"/>
     protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
+    /// <inheritdoc cref="IDisposable.Dispose"/>
+    /// <param name="disposing">
+    /// True, when this method was called by the synchronous <see cref="IDisposable.Dispose"/> method;
+    /// False if called by the asynchronous <see cref="IAsyncDisposable.DisposeAsync"/> method
+    /// </param>
+    protected virtual void Dispose(bool disposing) { }
 }

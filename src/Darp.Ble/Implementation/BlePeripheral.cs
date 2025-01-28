@@ -1,7 +1,6 @@
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Darp.Ble.Data;
-using Darp.Ble.Gap;
 using Darp.Ble.Gatt.Client;
 using Microsoft.Extensions.Logging;
 
@@ -15,12 +14,12 @@ public abstract class BlePeripheral(BleDevice device, ILogger<BlePeripheral> log
     /// <summary> The logger factory </summary>
     protected ILoggerFactory LoggerFactory => Device.LoggerFactory;
 
-    private readonly Dictionary<BleUuid, IGattClientService> _services = new();
+    private readonly List<IGattClientService> _services = [];
     private readonly Dictionary<BleAddress, IGattClientPeer> _peerDevices = new();
     private readonly Subject<IGattClientPeer> _whenConnected = new();
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<BleUuid, IGattClientService> Services => _services;
+    public IReadOnlyCollection<IGattClientService> Services => _services;
     /// <inheritdoc />
     public IReadOnlyDictionary<BleAddress, IGattClientPeer> PeerDevices => _peerDevices;
     /// <inheritdoc />
@@ -34,7 +33,7 @@ public abstract class BlePeripheral(BleDevice device, ILogger<BlePeripheral> log
     public async Task<IGattClientService> AddServiceAsync(BleUuid uuid, CancellationToken cancellationToken = default)
     {
         IGattClientService service = await AddServiceAsyncCore(uuid, cancellationToken).ConfigureAwait(false);
-        _services[service.Uuid] = service;
+        _services.Add(service);
         return service;
     }
 
@@ -58,11 +57,15 @@ public abstract class BlePeripheral(BleDevice device, ILogger<BlePeripheral> log
     /// <remarks> This method is not glued to the <see cref="IAsyncDisposable"/> interface. All disposes should be done using the  </remarks>
     public async ValueTask DisposeAsync()
     {
-        DisposeCore();
         await DisposeAsyncCore().ConfigureAwait(false);
+        Dispose(disposing: false);
     }
-    /// <inheritdoc cref="IDisposable.Dispose"/>
-    protected virtual void DisposeCore() { }
     /// <inheritdoc cref="DisposeAsync"/>
     protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
+    /// <inheritdoc cref="IDisposable.Dispose"/>
+    /// <param name="disposing">
+    /// True, when this method was called by the synchronous <see cref="IDisposable.Dispose"/> method;
+    /// False if called by the asynchronous <see cref="IAsyncDisposable.DisposeAsync"/> method
+    /// </param>
+    protected virtual void Dispose(bool disposing) { }
 }
