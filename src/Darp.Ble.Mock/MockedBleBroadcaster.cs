@@ -28,7 +28,7 @@ internal sealed class MockedBleBroadcaster(MockedBleDevice bleDevice, ILogger<Mo
                 Physical.NotAvailable,
                 set.Parameters.AdvertisingSId,
                 set.SelectedTxPower,
-                (Rssi)RandomNumberGenerator.GetInt32(-127, -20),
+                _device.Settings.TxPowerToRssi(set.SelectedTxPower),
                 PeriodicAdvertisingInterval.NoPeriodicAdvertising,
                 BleAddress.NotAvailable,
                 set.Data));

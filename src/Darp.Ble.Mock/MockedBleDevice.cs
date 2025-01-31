@@ -18,6 +18,8 @@ internal sealed class MockedBleDevice(
     public override string? Name { get; } = name;
     public IScheduler Scheduler { get; } = scheduler;
 
+    public MockDeviceSettings Settings { get; } = new();
+
     public new MockedBlePeripheral Peripheral
     {
         get => (MockedBlePeripheral)base.Peripheral;
@@ -41,7 +43,7 @@ internal sealed class MockedBleDevice(
     {
         Broadcaster = new MockedBleBroadcaster(this, LoggerFactory.CreateLogger<MockedBleBroadcaster>());
         Peripheral = new MockedBlePeripheral(this, LoggerFactory.CreateLogger<MockedBlePeripheral>());
-        await _onInitialize(this).ConfigureAwait(false);
+        await _onInitialize(this, Settings).ConfigureAwait(false);
         return InitializeResult.Success;
     }
 

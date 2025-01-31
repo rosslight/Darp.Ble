@@ -38,8 +38,6 @@ public abstract class GattServerPeer : IGattServerPeer
     protected ILoggerFactory LoggerFactory => Central.Device.LoggerFactory;
 
     /// <inheritdoc />
-    public IBleCentral Central => _central;
-    /// <inheritdoc />
     public BleAddress Address { get; }
     /// <inheritdoc />
     public IReadOnlyCollection<IGattServerService> Services => _services;

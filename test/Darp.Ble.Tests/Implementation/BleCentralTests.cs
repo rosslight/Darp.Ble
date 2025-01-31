@@ -15,7 +15,7 @@ namespace Darp.Ble.Tests.Implementation;
 
 public sealed class BleCentralTests
 {
-    private static async Task<IBleDevice> GetMockDeviceAsync(BleMockFactory.InitializeAsync? configure = null)
+    private static async Task<IBleDevice> GetMockDeviceAsync(BleMockFactory.InitializeSimpleAsync? configure = null)
     {
         configure ??= _ => Task.CompletedTask;
         BleManager bleManager = new BleManagerBuilder()

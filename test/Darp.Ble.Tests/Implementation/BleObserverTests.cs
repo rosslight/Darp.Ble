@@ -22,7 +22,7 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private const string AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName = "0201010908546573744E616D65";
 
-    private async Task<IBleDevice> GetMockDeviceAsync(BleMockFactory.InitializeAsync configure, IScheduler scheduler)
+    private async Task<IBleDevice> GetMockDeviceAsync(BleMockFactory.InitializeSimpleAsync configure, IScheduler scheduler)
     {
         BleManager bleManager = new BleManagerBuilder()
             .SetLogger(_loggerFactory)

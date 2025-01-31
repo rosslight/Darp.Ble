@@ -1,7 +1,7 @@
 using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
-using Darp.Ble.Implementation;
+using Darp.Ble.Gatt.Server;
 using Darp.Ble.Mock;
 
 namespace Darp.Ble.Examples.Unix;
@@ -49,29 +49,26 @@ internal sealed class Ble : IDisposable
         StopScan();
     }
 
-    public Task Initialize(IMockBleBroadcaster broadcaster, IBlePeripheral peripheral)
+    public async Task Initialize(IBleDevice bleDevice, MockDeviceSettings settings)
     {
-        broadcaster.OnGetAdvertisements = GetAdvertisements;
-        return Task.CompletedTask;
-    }
+        // Configure custom tx power to rssi behavior
+        settings.TxPowerToRssi = txPower => (Rssi)((double)txPower/3.0 * -2.0);
 
-    private IObservable<IGapAdvertisement> GetAdvertisements(BleObserver observer, AdvertisingParameters? parameters, CancellationTokenSource? cancellationTokenSource)
-    {
+        IAdvertisingSet set = await bleDevice.Broadcaster.CreateAdvertisingSetAsync().ConfigureAwait(false);
+        await set.StartAdvertisingAsync().ConfigureAwait(false);
         IObservable<AdvGenerator.DataExt> source = m_generator ?? Observable.Empty<AdvGenerator.DataExt>();
-        return source
-            .TakeWhile(_ => cancellationTokenSource?.IsCancellationRequested != true)
-            .Select(x => GapAdvertisement.FromExtendedAdvertisingReport(
-                observer,
-                DateTimeOffset.UtcNow,
-                parameters?.Type ?? BleEventType.None,
-                x.Address,
-                Physical.Le1M,
-                Physical.NotAvailable,
-                AdvertisingSId.NoAdIProvided,
-                x.TxPower,
-                x.Rssi,
-                PeriodicAdvertisingInterval.NoPeriodicAdvertising,
-                new BleAddress(UInt48.Zero),
-                x.Data));
+        source.Subscribe(x =>
+        {
+            set.SetRandomAddressAsync(x.Address).GetAwaiter().GetResult();
+            set.SetAdvertisingParametersAsync(new AdvertisingParameters
+            {
+                Type = BleEventType.None,
+                PrimaryPhy = Physical.Le1M,
+                AdvertisingSId = AdvertisingSId.NoAdIProvided,
+                AdvertisingTxPower = x.TxPower,
+                PeerAddress = BleAddress.NotAvailable,
+            }).GetAwaiter().GetResult();
+            set.SetAdvertisingDataAsync(x.Data).GetAwaiter().GetResult();
+        });
     }
 }
