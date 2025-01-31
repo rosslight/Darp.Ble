@@ -173,7 +173,7 @@ public static class DeviceInformationServiceContract
                 .ConfigureAwait(false);
         }
 
-        return new GattClientDeviceInformationService
+        return new GattClientDeviceInformationService(service)
         {
             ManufacturerName = manufacturerNameCharacteristic,
             ModelNumber = modelNumberCharacteristic,
@@ -211,7 +211,7 @@ public static class DeviceInformationServiceContract
         service.TryGetCharacteristic(SystemIdCharacteristic, out IGattServerCharacteristic<SystemId, Properties.Read>? systemIdCharacteristic);
         service.TryGetCharacteristic(RegulatoryCertificationDataCharacteristic, out IGattServerCharacteristic<Properties.Read>? regulatoryCertificationDataCharacteristic);
 
-        return new GattServerDeviceInformationService
+        return new GattServerDeviceInformationService(service)
         {
             ManufacturerName = manufacturerNameCharacteristic,
             ModelNumber = modelNumberCharacteristic,
@@ -226,7 +226,7 @@ public static class DeviceInformationServiceContract
 }
 
 /// <summary> The DeviceInformationService wrapper representing the gatt client </summary>
-public sealed class GattClientDeviceInformationService
+public sealed class GattClientDeviceInformationService(IGattClientService service) : GattClientServiceProxy(service)
 {
     /// <summary> The manufacturer name characteristic </summary>
     public required GattTypedClientCharacteristic<string, Properties.Read>? ManufacturerName { get; init; }
@@ -247,7 +247,7 @@ public sealed class GattClientDeviceInformationService
 }
 
 /// <summary> The DeviceInformationService wrapper representing the gatt server </summary>
-public sealed class GattServerDeviceInformationService
+public sealed class GattServerDeviceInformationService(IGattServerService service) : GattServerServiceProxy(service)
 {
     /// <summary> The manufacturer name characteristic </summary>
     public required IGattServerCharacteristic<string, Properties.Read>? ManufacturerName { get; init; }

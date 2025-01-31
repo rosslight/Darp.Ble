@@ -192,7 +192,7 @@ public static class HeartRateServiceContract
             ).ConfigureAwait(false);
         }
 
-        return new GattClientHeartRateService
+        return new GattClientHeartRateService(service)
         {
             HeartRateMeasurement = measurementCharacteristic,
             BodySensorLocation = bodySensorLocationCharacteristic,
@@ -222,7 +222,8 @@ public static class HeartRateServiceContract
 
         service.TryGetCharacteristic(BodySensorLocationCharacteristic, out IGattServerCharacteristic<HeartRateBodySensorLocation, Properties.Read>? bodySensorLocationCharacteristic);
         service.TryGetCharacteristic(HeartRateControlPointCharacteristic, out IGattServerCharacteristic<Properties.Write>? heartRateControlPointCharacteristic);
-        return new GattServerHeartRateService
+
+        return new GattServerHeartRateService(service)
         {
             HeartRateMeasurement = measurementCharacteristic,
             BodySensorLocation = bodySensorLocationCharacteristic,
@@ -232,7 +233,7 @@ public static class HeartRateServiceContract
 }
 
 /// <summary> The wrapper for the heart rate client service </summary>
-public sealed class GattClientHeartRateService
+public sealed class GattClientHeartRateService(IGattClientService service) : GattClientServiceProxy(service)
 {
     /// <summary> The mandatory heart rate measurement characteristic </summary>
     public required GattTypedClientCharacteristic<HeartRateMeasurement, Properties.Notify> HeartRateMeasurement { get; init; }
@@ -243,7 +244,7 @@ public sealed class GattClientHeartRateService
 }
 
 /// <summary> The HeartRate wrapper representing the gatt server </summary>
-public sealed class GattServerHeartRateService
+public sealed class GattServerHeartRateService(IGattServerService service) : GattServerServiceProxy(service)
 {
     /// <summary> The write characteristic </summary>
     public required IGattServerCharacteristic<HeartRateMeasurement, Properties.Notify> HeartRateMeasurement { get; init; }

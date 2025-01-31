@@ -55,7 +55,7 @@ public static class EchoServiceContract
             cancellationToken: cancellationToken
         ).ConfigureAwait(false);
 
-        return new GattClientEchoService { Write = writeCharacteristic, Notify = notifyCharacteristic };
+        return new GattClientEchoService(service) { Write = writeCharacteristic, Notify = notifyCharacteristic };
     }
 
     /// <summary> Discover the echo server </summary>
@@ -89,12 +89,12 @@ public static class EchoServiceContract
             notifyUuid,
             cancellationToken: cancellationToken
         ).ConfigureAwait(false);
-        return new GattServerEchoService { Write = char1, Notify = char2 };
+        return new GattServerEchoService(service) { Write = char1, Notify = char2 };
     }
 }
 
 /// <summary> The EchoService wrapper representing the gatt client </summary>
-public sealed class GattClientEchoService
+public sealed class GattClientEchoService(IGattClientService service) : GattClientServiceProxy(service)
 {
     /// <summary> The write characteristic </summary>
     public required IGattClientCharacteristic<Properties.Write> Write { get; init; }
@@ -103,7 +103,7 @@ public sealed class GattClientEchoService
 }
 
 /// <summary> The EchoService wrapper representing the gatt server </summary>
-public sealed class GattServerEchoService
+public sealed class GattServerEchoService(IGattServerService service) : GattServerServiceProxy(service)
 {
     /// <summary> The write characteristic </summary>
     public required IGattServerCharacteristic<Properties.Write> Write { get; init; }
