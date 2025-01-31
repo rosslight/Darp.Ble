@@ -5,7 +5,7 @@ namespace Darp.Ble.Gatt.Server;
 /// <summary> The interface defining a gatt server peer </summary>
 public interface IGattServerPeer : IAsyncDisposable
 {
-    /// <summary> The central that discovered this <see cref="IGattServerPeer"/> </summary>
+    /// <summary> The central which discovered the <see cref="IGattServerPeer"/> </summary>
     public IBleCentral Central { get; }
 
     /// <summary> The ble address of the service </summary>
