@@ -6,9 +6,14 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock;
 
-internal sealed class MockedBleDevice(string? name, IScheduler scheduler, ILoggerFactory loggerFactory)
+internal sealed class MockedBleDevice(
+    string? name,
+    BleMockFactory.InitializeAsync onInitialize,
+    IScheduler scheduler,
+    ILoggerFactory loggerFactory)
     : BleDevice(loggerFactory, loggerFactory.CreateLogger<MockedBleDevice>())
 {
+    private readonly BleMockFactory.InitializeAsync _onInitialize = onInitialize;
     public override string Identifier => BleDeviceIdentifiers.MockDevice;
     public override string? Name { get; } = name;
     public IScheduler Scheduler { get; } = scheduler;
@@ -32,11 +37,12 @@ internal sealed class MockedBleDevice(string? name, IScheduler scheduler, ILogge
         return Task.CompletedTask;
     }
 
-    protected override Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
+    protected override async Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
     {
         Broadcaster = new MockedBleBroadcaster(this, LoggerFactory.CreateLogger<MockedBleBroadcaster>());
         Peripheral = new MockedBlePeripheral(this, LoggerFactory.CreateLogger<MockedBlePeripheral>());
-        return Task.FromResult(InitializeResult.Success);
+        await _onInitialize(this).ConfigureAwait(false);
+        return InitializeResult.Success;
     }
 
     public IObservable<IGapAdvertisement> GetAdvertisements(BleObserver observer)

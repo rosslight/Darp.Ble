@@ -1,3 +1,4 @@
+using System.Reactive.Disposables;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
 
@@ -13,6 +14,7 @@ public static class AdvertisingSetExtensions
     /// <param name="data"> The data to be advertised </param>
     /// <param name="scanResponseData"> The data to return on scan responses </param>
     /// <param name="interval"> The interval to advertise in </param>
+    /// <param name="autoRestart"> If true, advertising will be restarted after a peripheral disconnected </param>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> An async disposable to stop the broadcast </returns>
     public static async Task<IAsyncDisposable> StartAdvertisingAsync(this IBleBroadcaster broadcaster,
@@ -21,6 +23,7 @@ public static class AdvertisingSetExtensions
         AdvertisingData? data = null,
         AdvertisingData? scanResponseData = null,
         ScanTiming interval = ScanTiming.Ms1000,
+        bool autoRestart = false,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(broadcaster);
@@ -37,7 +40,24 @@ public static class AdvertisingSetExtensions
             scanResponseData,
             cancellationToken)
             .ConfigureAwait(false);
-        return await set.StartAdvertisingAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+        IDisposable autoRestartDisposable = Disposable.Empty;
+        IAsyncDisposable advertisingDisposable;
+        if (autoRestart && broadcaster.Device.Capabilities.HasFlag(Capabilities.Peripheral))
+        {
+            autoRestartDisposable = broadcaster.Device.Peripheral.WhenDisconnected.Subscribe(__ =>
+            {
+                _ = Task.Run(async () =>
+                {
+                    advertisingDisposable = await set.StartAdvertisingAsync(cancellationToken: CancellationToken.None).ConfigureAwait(false);
+                }, CancellationToken.None);
+            });
+        }
+        advertisingDisposable = await set.StartAdvertisingAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+        return AsyncDisposable.Create(async () =>
+        {
+            autoRestartDisposable.Dispose();
+            await advertisingDisposable.DisposeAsync().ConfigureAwait(false);
+        });
     }
 
     /// <summary> Start advertising a specific advertising set </summary>

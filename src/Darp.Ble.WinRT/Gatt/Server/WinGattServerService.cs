@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.WinRT.Gatt.Server;
 
 internal sealed class WinGattServerService(GattServerPeer peer, GattDeviceService winService, ILogger<WinGattServerService> logger)
-    : GattServerService(peer, new BleUuid(winService.Uuid, inferType: true), logger)
+    : GattServerService(peer, BleUuid.FromGuid(winService.Uuid, inferType: true), logger)
 {
     private readonly GattDeviceService _winService = winService;
 

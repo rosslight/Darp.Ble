@@ -64,6 +64,22 @@ public static partial class AdvertisingDataExtensions
     /// <see cref="AdTypes.CompleteListOf16BitServiceOrServiceClassUuids"/>, <see cref="AdTypes.CompleteListOf32BitServiceOrServiceClassUuids"/> or <see cref="AdTypes.CompleteListOf128BitServiceOrServiceClassUuids"/>
     /// sections created or updated </summary>
     /// <param name="advertisingData"> The advertising data to base on </param>
+    /// <param name="peripheral"> The peripheral to add the services from </param>
+    /// <returns> The new advertising data </returns>
+    public static AdvertisingData WithCompleteListOfServiceUuids(
+        this AdvertisingData advertisingData,
+        IBlePeripheral peripheral
+    )
+    {
+        ArgumentNullException.ThrowIfNull(peripheral);
+        return advertisingData.WithCompleteListOfServiceUuids(peripheral.Services.Select(x => x.Uuid).ToArray());
+    }
+
+    /// <summary>
+    /// Create a new <see cref="AdvertisingData"/> object with the
+    /// <see cref="AdTypes.CompleteListOf16BitServiceOrServiceClassUuids"/>, <see cref="AdTypes.CompleteListOf32BitServiceOrServiceClassUuids"/> or <see cref="AdTypes.CompleteListOf128BitServiceOrServiceClassUuids"/>
+    /// sections created or updated </summary>
+    /// <param name="advertisingData"> The advertising data to base on </param>
     /// <param name="bleUuid"> The uuid to add </param>
     /// <param name="bleUuids"> Additional uuids to add </param>
     /// <returns> The new advertising data </returns>

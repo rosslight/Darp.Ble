@@ -28,7 +28,7 @@ public abstract class GattServerService(IGattServerPeer peer,
     protected ILoggerFactory LoggerFactory => Peer.Central.Device.LoggerFactory;
 
     /// <inheritdoc />
-    public async Task DiscoverCharacteristicAsync(CancellationToken cancellationToken = default)
+    public async Task DiscoverCharacteristicsAsync(CancellationToken cancellationToken = default)
     {
         await foreach (IGattServerCharacteristic characteristic in DiscoverCharacteristicsCore()
                            .ToAsyncEnumerable()

@@ -35,9 +35,8 @@ internal sealed class MockBleDevice(
     {
         foreach ((BleMockFactory.InitializeAsync onInitialize, string? peripheralName) in _deviceConfigurations)
         {
-            var device = new MockedBleDevice(peripheralName, Scheduler, LoggerFactory);
+            var device = new MockedBleDevice(peripheralName, onInitialize, Scheduler, LoggerFactory);
             await device.InitializeAsync(cancellationToken).ConfigureAwait(false);
-            await onInitialize.Invoke(device).ConfigureAwait(false);
             _mockedDevices.Add(device);
         }
 

@@ -105,7 +105,7 @@ public sealed class AdvertisingDataExtensionsGetterTests
     public void GetServices_WithMultipleServiceUuids_ReturnsUuids(string sections, BleUuidType type, params string[] guids)
     {
         // Arrange
-        BleUuid[] expectedUuids = guids.Select(x => new BleUuid(Guid.Parse(x)) {Type = type}).ToArray();
+        BleUuid[] expectedUuids = guids.Select(x => new BleUuid(type, Guid.Parse(x))).ToArray();
         AdvertisingData data = AdvertisingData.From(Convert.FromHexString(sections));
 
         // Act

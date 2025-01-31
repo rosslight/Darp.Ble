@@ -99,7 +99,7 @@ public abstract class GattServerCharacteristic(GattServerService service,
                 _notifyDisposable = null;
                 Logger.LogTrace("Starting to disable notifications on {@Characteristic}", this);
                 await DisableNotificationsAsync().ConfigureAwait(false);
-                Logger?.LogTrace("Disabled notifications on {@Characteristic}", this);
+                Logger.LogTrace("Disabled notifications on {@Characteristic}", this);
             }
             finally
             {

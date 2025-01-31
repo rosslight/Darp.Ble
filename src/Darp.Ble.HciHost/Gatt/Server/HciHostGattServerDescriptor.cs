@@ -36,12 +36,12 @@ internal sealed class HciHostGattServerDescriptor(HciHostGattServerPeer serverPe
         if (response.OpCode is AttOpCode.ATT_ERROR_RSP
             && AttErrorRsp.TryReadLittleEndian(response.Pdu, out AttErrorRsp errorRsp, out _))
         {
-            _logger?.LogWarning("Could not write with response: {ErrorCode}", errorRsp.ErrorCode);
+            _logger.LogWarning("Could not write with response: {ErrorCode}", errorRsp.ErrorCode);
             return false;
         }
         if (!(response.OpCode is AttOpCode.ATT_WRITE_RSP && AttWriteRsp.TryReadLittleEndian(response.Pdu, out AttWriteRsp _)))
         {
-            _logger?.LogWarning("Received unexpected att response {OpCode}", response.OpCode);
+            _logger.LogWarning("Received unexpected att response {OpCode}", response.OpCode);
             return false;
         }
         return true;

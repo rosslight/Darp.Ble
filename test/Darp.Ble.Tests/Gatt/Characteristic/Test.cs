@@ -6,6 +6,7 @@ using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Services;
+using static Darp.Ble.Gatt.Characteristic;
 
 namespace Darp.Ble.Tests.Gatt.Characteristic;
 
@@ -13,11 +14,16 @@ namespace Darp.Ble.Tests.Gatt.Characteristic;
 
 public sealed class Test
 {
-    public static BleUuid SomeUuid = new BleUuid(0x1234);
-    public static byte[] SomeBytes = Convert.FromHexString("");
+    public static BleUuid SomeUuid = 0x1234;
+    public static byte[] SomeBytes = [];
     public static IObservable<byte[]> SomeByteObservable = Observable.Return(Convert.FromHexString(""));
     public static IObservable<int> SomeIntObservable = Observable.Return(1);
     public static Characteristic<Properties.Read> Char1 { get; } = new(SomeUuid);
+    public static TypedCharacteristic<int, Properties.Read> ReadChar { get; } = Create<int, Properties.Read>(SomeUuid);
+    public static TypedCharacteristic<int, Properties.Write> WriteChar { get; } = Create<int, Properties.Write>(SomeUuid);
+    public static TypedCharacteristic<int, Properties.Notify> NotifyChar { get; } = Create<int, Properties.Notify>(SomeUuid);
+    public static TypedCharacteristic<int, Properties.Read, Properties.Notify> ReadNotifyChar { get; } = Create<int, Properties.Read, Properties.Notify>(SomeUuid);
+    public static TypedCharacteristic<int, Properties.Read, Properties.Write> ReadWriteChar { get; } = Create<int, Properties.Read, Properties.Write>(SomeUuid);
     public static Characteristic<Properties.Write> Char2 { get; } = new(SomeUuid);
     public static Characteristic<Properties.Notify> Char3 { get; } = new(SomeUuid);
     public static Characteristic<Properties.Indicate> Char4 { get; } = new(SomeUuid);
@@ -34,29 +40,29 @@ public sealed class Test
         IGattClientService service = null!;
         await service.AddCharacteristicAsync<Properties.Read>(SomeUuid, SomeBytes);
         await service.AddCharacteristicAsync<Properties.Read>(SomeUuid, onRead: _ => SomeBytes);
-        await service.AddCharacteristicAsync<int, Properties.Read>(SomeUuid);
-        await service.AddCharacteristicAsync<int, Properties.Read>(SomeUuid, 2);
-        await service.AddCharacteristicAsync<int, Properties.Read>(SomeUuid, _ => 2);
+        await service.AddCharacteristicAsync(ReadChar);
+        await service.AddCharacteristicAsync(ReadChar, 2);
+        await service.AddCharacteristicAsync(ReadChar, _ => 2);
 
         await service.AddCharacteristicAsync<Properties.Write>(SomeUuid, onWrite: (peer, bytes) => GattProtocolStatus.Success);
         await service.AddCharacteristicAsync<Properties.Write>(SomeUuid, onWrite: (peer, bytes, token) => ValueTask.FromResult(GattProtocolStatus.Success));
-        await service.AddCharacteristicAsync<int, Properties.Write>(SomeUuid);
-        await service.AddCharacteristicAsync<int, Properties.Write>(SomeUuid, onWrite: (peer, number) => GattProtocolStatus.Success);
+        await service.AddCharacteristicAsync(WriteChar);
+        await service.AddCharacteristicAsync(WriteChar, onWrite: (peer, number) => GattProtocolStatus.Success);
 
-        IGattClientPeer? peer = null!;
+        IGattClientPeer? peer = null;
         var cn1 = await service.AddCharacteristicAsync<Properties.Notify>(SomeUuid);
-        var cn11 = await service.AddCharacteristicAsync<Properties.Read, Properties.Notify>(SomeUuid, SomeBytes);
+        var cn11 = await service.AddCharacteristicAsync<Properties.Notify, Properties.Read>(SomeUuid, SomeBytes);
         cn1.NotifyAll(SomeBytes);
         cn11.UpdateValue(SomeBytes);
         cn11.Notify(peer, SomeBytes);
         cn11.NotifyAll(SomeBytes);
 
-        var cn2 = await service.AddCharacteristicAsync<int, Properties.Notify>(SomeUuid);
+        var cn2 = await service.AddCharacteristicAsync(NotifyChar);
         cn2.NotifyAll(3);
-        var cn3 = await service.AddCharacteristicAsync<int, Properties.Read, Properties.Notify>(SomeUuid, 3);
+        var cn3 = await service.AddCharacteristicAsync(ReadNotifyChar, 3);
         cn3.UpdateValue(SomeBytes);
         cn3.UpdateValue(32);
-        var cn4 = await service.AddCharacteristicAsync<int, Properties.Write, Properties.Read>(SomeUuid, 123123);
+        var cn4 = await service.AddCharacteristicAsync<int, Properties.Write, Properties.Read>(ReadWriteChar, 123123);
         cn4.UpdateValue(3);
         int value = cn4.GetValue<int>();
     }

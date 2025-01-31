@@ -90,7 +90,7 @@ internal sealed class HciHostGattServerCharacteristic(
         Action<TState, byte[]> onNotify,
         CancellationToken cancellationToken)
     {
-        if (!_descriptorDictionary.TryGetValue(new BleUuid(0x2902), out HciHostGattServerDescriptor? cccd))
+        if (!_descriptorDictionary.TryGetValue(0x2902, out HciHostGattServerDescriptor? cccd))
         {
             throw new GattCharacteristicException(this, "No cccd available");
         }
@@ -119,7 +119,7 @@ internal sealed class HciHostGattServerCharacteristic(
 
     protected override async Task DisableNotificationsAsync()
     {
-        if (!_descriptorDictionary.TryGetValue(new BleUuid(0x2902), out HciHostGattServerDescriptor? cccd))
+        if (!_descriptorDictionary.TryGetValue(0x2902, out HciHostGattServerDescriptor? cccd))
         {
             return;
         }

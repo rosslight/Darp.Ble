@@ -79,8 +79,8 @@ public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice>
             InitializeResult result = await InitializeAsyncCore(cancellationToken).ConfigureAwait(false);
             if (result is not InitializeResult.Success)
                 return result;
-            Logger.LogBleDeviceInitialized(Name);
             IsInitialized = true;
+            Logger.LogBleDeviceInitialized(Name);
             return InitializeResult.Success;
         }
         finally
@@ -118,7 +118,7 @@ public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice>
     [return: NotNullIfNotNull(nameof(param))]
     private T ThrowIfNull<T>(T? param, [CallerMemberName] string? roleName = null)
     {
-        if(!IsInitialized) throw new NotInitializedException(this);
+        if(!IsInitialized && !_isInitializing) throw new NotInitializedException(this);
         if (param is not null) return param;
         throw new NotSupportedException($"The device does not support role {roleName}");
     }

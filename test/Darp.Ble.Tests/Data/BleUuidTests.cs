@@ -12,7 +12,7 @@ public sealed class BleUuidTests
     public void Constructor_WithUInt16_SetsTypeToUuid16(ushort value, string expectedGuid)
     {
         Guid guid = Guid.Parse(expectedGuid);
-        var uuid = new BleUuid(value);
+        BleUuid uuid = BleUuid.FromUInt16(value);
 
         uuid.Type.Should().Be(BleUuidType.Uuid16);
         uuid.Value.Should().Be(guid);
@@ -24,7 +24,7 @@ public sealed class BleUuidTests
     public void Constructor_WithUInt32_SetsTypeToUuid32(uint value, string expectedGuid)
     {
         Guid guid = Guid.Parse(expectedGuid);
-        var uuid = new BleUuid(value);
+        BleUuid uuid = BleUuid.FromUInt32(value);
 
         uuid.Type.Should().Be(BleUuidType.Uuid32);
         uuid.Value.Should().Be(guid);
@@ -34,7 +34,7 @@ public sealed class BleUuidTests
     public void Constructor_WithGuid_SetsTypeToUuid128()
     {
         var guid = Guid.NewGuid();
-        var uuid = new BleUuid(guid);
+        BleUuid uuid = BleUuid.FromGuid(guid);
 
         uuid.Type.Should().Be(BleUuidType.Uuid128);
         uuid.Value.Should().Be(guid);
@@ -46,7 +46,7 @@ public sealed class BleUuidTests
     {
         byte[] bytes = Convert.FromHexString(hexString);
         var bytesUuid = new BleUuid(bytes);
-        var uint16Uuid = new BleUuid(value);
+        BleUuid uint16Uuid = value;
 
         bytesUuid.Should().Be(uint16Uuid);
     }
@@ -122,7 +122,7 @@ public sealed class BleUuidTests
     {
         Guid guid = Guid.Parse(guidString);
 
-        var uuidString = new BleUuid(guid).ToString();
+        var uuidString = BleUuid.FromGuid(guid).ToString();
 
         uuidString.Should().Be(guidString);
     }
@@ -131,7 +131,7 @@ public sealed class BleUuidTests
     public void TryFormat_CharSpan_FormatsUuidCorrectly()
     {
         var guid = Guid.NewGuid();
-        var uuid = new BleUuid(guid);
+        BleUuid uuid = BleUuid.FromGuid(guid);
         Span<char> destination = new char[36]; // GUID string length without hyphens
 
         bool success = uuid.TryFormat(destination, out int charsWritten, "D");
@@ -145,7 +145,7 @@ public sealed class BleUuidTests
     public void TryFormat_ByteSpan_FormatsUuidCorrectly()
     {
         var guid = Guid.NewGuid();
-        var uuid = new BleUuid(guid);
+        BleUuid uuid = BleUuid.FromGuid(guid);
         Span<byte> utf8Destination = new byte[36]; // Allocate more space than needed to ensure the GUID fits
 
         bool success = uuid.TryFormat(utf8Destination, out int bytesWritten, "D");
@@ -160,7 +160,7 @@ public sealed class BleUuidTests
     public void TryFormat_CharSpan_FailsGracefullyWhenDestinationTooSmall()
     {
         var guid = Guid.NewGuid();
-        var uuid = new BleUuid(guid);
+        BleUuid uuid = BleUuid.FromGuid(guid);
         Span<char> destination = new char[10]; // Deliberately too small
 
         bool success = uuid.TryFormat(destination, out int charsWritten, "D");
@@ -173,7 +173,7 @@ public sealed class BleUuidTests
     public void TryFormat_ByteSpan_FailsGracefullyWhenDestinationTooSmall()
     {
         var guid = Guid.NewGuid();
-        var uuid = new BleUuid(guid);
+        BleUuid uuid = BleUuid.FromGuid(guid);
         Span<byte> utf8Destination = new byte[10]; // Deliberately too small
 
         bool success = uuid.TryFormat(utf8Destination, out int bytesWritten, "D");
@@ -187,10 +187,10 @@ public sealed class BleUuidTests
     {
         const string format = "N";
         var guid = Guid.NewGuid();
-        var bleUuid = new BleUuid(guid);
+        BleUuid uuid = BleUuid.FromGuid(guid);
 
         var expected = guid.ToString(format, CultureInfo.InvariantCulture);
-        var result = bleUuid.ToString(format, CultureInfo.InvariantCulture);
+        var result = uuid.ToString(format, CultureInfo.InvariantCulture);
 
         result.Should().Be(expected);
     }
@@ -200,10 +200,10 @@ public sealed class BleUuidTests
     {
         const string format = "D";
         var guid = Guid.NewGuid();
-        var bleUuid = new BleUuid(guid);
+        BleUuid uuid = BleUuid.FromGuid(guid);
         Span<char> destination = new char[36]; // Length sufficient for "D" format
 
-        bool success = ((ISpanFormattable)bleUuid).TryFormat(destination, out int charsWritten, format, CultureInfo.InvariantCulture);
+        bool success = ((ISpanFormattable)uuid).TryFormat(destination, out int charsWritten, format, CultureInfo.InvariantCulture);
 
         success.Should().BeTrue();
         charsWritten.Should().Be(guid.ToString(format).Length);
@@ -215,10 +215,10 @@ public sealed class BleUuidTests
     {
         const string format = "D";
         var guid = Guid.NewGuid();
-        var bleUuid = new BleUuid(guid);
+        BleUuid uuid = BleUuid.FromGuid(guid);
         Span<byte> utf8Destination = new byte[36 * 3]; // Allocate more space than needed
 
-        bool success = ((IUtf8SpanFormattable)bleUuid).TryFormat(utf8Destination, out int bytesWritten, format.AsSpan(), CultureInfo.InvariantCulture);
+        bool success = ((IUtf8SpanFormattable)uuid).TryFormat(utf8Destination, out int bytesWritten, format.AsSpan(), CultureInfo.InvariantCulture);
 
         success.Should().BeTrue();
         var expectedString = guid.ToString(format);
@@ -231,10 +231,10 @@ public sealed class BleUuidTests
     public void TryFormat_SpanChar_WhenDestinationTooSmall_ReturnsFalse()
     {
         var guid = Guid.NewGuid();
-        var bleUuid = new BleUuid(guid);
+        BleUuid uuid = BleUuid.FromGuid(guid);
         Span<char> destination = new char[10]; // Deliberately too small
 
-        bool success = ((ISpanFormattable)bleUuid).TryFormat(destination, out int charsWritten, default, CultureInfo.InvariantCulture);
+        bool success = ((ISpanFormattable)uuid).TryFormat(destination, out int charsWritten, default, CultureInfo.InvariantCulture);
 
         success.Should().BeFalse();
         charsWritten.Should().Be(0);
@@ -244,10 +244,10 @@ public sealed class BleUuidTests
     public void TryFormat_SpanByte_WhenDestinationTooSmall_ReturnsFalse()
     {
         var guid = Guid.NewGuid();
-        var bleUuid = new BleUuid(guid);
+        BleUuid uuid = BleUuid.FromGuid(guid);
         Span<byte> utf8Destination = new byte[10]; // Deliberately too small
 
-        bool success = ((IUtf8SpanFormattable)bleUuid).TryFormat(utf8Destination, out int bytesWritten, default, CultureInfo.InvariantCulture);
+        bool success = ((IUtf8SpanFormattable)uuid).TryFormat(utf8Destination, out int bytesWritten, default, CultureInfo.InvariantCulture);
 
         success.Should().BeFalse();
         bytesWritten.Should().Be(0);
@@ -256,7 +256,7 @@ public sealed class BleUuidTests
     [Fact]
     public void TryWriteBytes_WithUuid16AndSufficientDestination_ReturnsTrueAndCopiesExpectedBytes()
     {
-        var bleUuid = new BleUuid(0xAABB);
+        BleUuid bleUuid = 0xAABB;
 
         Span<byte> destination = new byte[2];
 
@@ -271,7 +271,7 @@ public sealed class BleUuidTests
     [Fact]
     public void TryWriteBytes_WithUuid16AndInsufficientDestination_ReturnsFalseAndDestinationRemainsUnchanged()
     {
-        var bleUuid = new BleUuid(0xAABB);
+        BleUuid bleUuid = 0xAABB;
 
         Span<byte> destination = [ 0xFF ];
 
@@ -287,7 +287,7 @@ public sealed class BleUuidTests
     [Fact]
     public void TryWriteBytes_WithUuid32AndSufficientDestination_ReturnsTrueAndCopiesExpectedBytes()
     {
-        var bleUuid = new BleUuid(0xAABBCCDD);
+        BleUuid bleUuid = BleUuid.FromUInt32(0xAABBCCDD);
 
         Span<byte> destination = new byte[4];
 
@@ -302,7 +302,7 @@ public sealed class BleUuidTests
     [Fact]
     public void TryWriteBytes_WithUuid32AndInsufficientDestination_ReturnsFalseAndDestinationRemainsUnchanged()
     {
-        var bleUuid = new BleUuid(0xAABBCCDD);
+        BleUuid bleUuid = BleUuid.FromUInt32(0xAABBCCDD);
 
         Span<byte> destination = [ 0xFF, 0xFF, 0xFF ];
 
@@ -320,7 +320,7 @@ public sealed class BleUuidTests
             // Arrange
             var testGuid = new Guid("01020304-0506-0708-090a-0b0c0d0e0f10");
             // [ 04, 03, 02, 01, 06, 05, 08, 07, 09, 0A, 0B, 0C, 0D, 0E, 0F, 10 ]
-            var bleUuid = new BleUuid(testGuid);
+            BleUuid bleUuid = BleUuid.FromGuid(testGuid);
 
             Span<byte> destination = new byte[16];
 
@@ -340,7 +340,7 @@ public sealed class BleUuidTests
         {
             // Arrange
             var testGuid = new Guid("01020304-0506-0708-090a-0b0c0d0e0f10");
-            var bleUuid = new BleUuid(testGuid);
+            BleUuid bleUuid = BleUuid.FromGuid(testGuid);
 
             Span<byte> destination = new byte[15];
 

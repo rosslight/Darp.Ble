@@ -1,4 +1,3 @@
-using System.Reactive.Disposables;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
@@ -12,7 +11,7 @@ using Darp.Ble.Utils;
 namespace Darp.Ble.WinRT.Gatt;
 
 internal sealed class WinGattClientService(WinBlePeripheral peripheral, GattServiceProvider provider)
-    : GattClientService(peripheral, new BleUuid(provider.Service.Uuid, inferType: true))
+    : GattClientService(peripheral, BleUuid.FromGuid(provider.Service.Uuid, inferType: true))
 {
     private readonly GattServiceProvider _serviceProvider = provider;
     private readonly GattLocalService _winService = provider.Service;

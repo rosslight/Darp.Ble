@@ -91,57 +91,55 @@ public static class EchoServiceContract
         ).ConfigureAwait(false);
         return new GattServerEchoService { Write = char1, Notify = char2 };
     }
+}
 
-    public sealed class GattClientEchoService
+/// <summary> The EchoService wrapper representing the gatt client </summary>
+public sealed class GattClientEchoService
+{
+    /// <summary> The write characteristic </summary>
+    public required IGattClientCharacteristic<Properties.Write> Write { get; init; }
+    /// <summary> The notify characteristic </summary>
+    public required IGattClientCharacteristic<Properties.Notify> Notify { get; init; }
+}
+
+/// <summary> The EchoService wrapper representing the gatt server </summary>
+public sealed class GattServerEchoService
+{
+    /// <summary> The write characteristic </summary>
+    public required IGattServerCharacteristic<Properties.Write> Write { get; init; }
+    /// <summary> The notify characteristic </summary>
+    public required IGattServerCharacteristic<Properties.Notify> Notify { get; init; }
+
+    /// <summary> Subscribe to all notifications </summary>
+    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
+    /// <returns> A disposable to unsubscribe from notifications </returns>
+    public async Task<IAsyncDisposable> EnableNotificationsAsync(CancellationToken cancellationToken = default)
     {
-        /// <summary> The write characteristic </summary>
-        public required IGattClientCharacteristic<Properties.Write> Write { get; init; }
-        /// <summary> The notify characteristic </summary>
-        public required IGattClientCharacteristic<Properties.Notify> Notify { get; init; }
+        return await Notify.OnNotifyAsync(_ =>
+        {
+            // Do not do anything but subscribe
+        }, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
-    public sealed class GattServerEchoService
+    /// <summary> Query one request from the echo service </summary>
+    /// <param name="requestBytes"> The bytes of the request </param>
+    /// <param name="timeout"> The timeout. Default is 10 seconds </param>
+    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
+    /// <returns> The bytes returned by the echo service </returns>
+    public async Task<byte[]> QueryOneAsync(byte[] requestBytes,
+        TimeSpan? timeout = null,
+        CancellationToken cancellationToken = default)
     {
-        /// <summary> The write characteristic </summary>
-        public required IGattServerCharacteristic<Properties.Write> Write { get; init; }
-        /// <summary> The notify characteristic </summary>
-        public required IGattServerCharacteristic<Properties.Notify> Notify { get; init; }
-
-        /// <summary> Subscribe to all notifications </summary>
-        /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
-        /// <returns> A disposable to unsubscribe from notifications </returns>
-        public async Task<IAsyncDisposable> EnableNotificationsAsync(CancellationToken cancellationToken = default)
+        timeout ??= TimeSpan.FromSeconds(10);
+        IDisposableObservable<byte[]> disposableObs = await Notify.OnNotifyAsync(cancellationToken).ConfigureAwait(false);
+        await using (disposableObs.ConfigureAwait(false))
         {
-            return await Notify.OnNotifyAsync(_ =>
-            {
-                // Do not do anything but subscribe
-            }, cancellationToken: cancellationToken).ConfigureAwait(false);
-        }
-
-        /// <summary> Query one request from the echo service </summary>
-        /// <param name="requestBytes"> The bytes of the request </param>
-        /// <param name="timeout"> The timeout. Default is 10 seconds </param>
-        /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
-        /// <returns> The bytes returned by the echo service </returns>
-        public async Task<byte[]> QueryOneAsync(byte[] requestBytes,
-            TimeSpan? timeout = null,
-            CancellationToken cancellationToken = default)
-        {
-            timeout ??= TimeSpan.FromSeconds(10);
-            IDisposableObservable<byte[]> disposableObs = await Notify.OnNotifyAsync(cancellationToken).ConfigureAwait(false);
-            try
-            {
-                Task<byte[]> notifyConnected = disposableObs
-                    .Timeout(timeout.Value)
-                    .FirstAsync()
-                    .ToTask(cancellationToken);
-                await Write.WriteAsync(requestBytes, cancellationToken).ConfigureAwait(false);
-                return await notifyConnected.ConfigureAwait(false);
-            }
-            finally
-            {
-                await disposableObs.DisposeAsync().ConfigureAwait(false);
-            }
+            Task<byte[]> notifyConnected = disposableObs
+                .Timeout(timeout.Value)
+                .FirstAsync()
+                .ToTask(cancellationToken);
+            await Write.WriteAsync(requestBytes, cancellationToken).ConfigureAwait(false);
+            return await notifyConnected.ConfigureAwait(false);
         }
     }
 }

@@ -48,8 +48,8 @@ public abstract class BlePeripheral(BleDevice device, ILogger<BlePeripheral> log
     protected void OnConnectedCentral(IGattClientPeer clientPeer)
     {
         ArgumentNullException.ThrowIfNull(clientPeer);
-        _whenConnected.OnNext(clientPeer);
         _peerDevices[clientPeer.Address] = clientPeer;
+        _whenConnected.OnNext(clientPeer);
         clientPeer.WhenDisconnected.Subscribe(_ => _peerDevices.Remove(clientPeer.Address));
     }
 

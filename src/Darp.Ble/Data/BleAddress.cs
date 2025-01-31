@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 
 namespace Darp.Ble.Data;
 
@@ -151,6 +152,7 @@ public sealed record BleAddress : ISpanParsable<BleAddress>,
     public static BleAddress NewRandomStaticAddress()
     {
         Span<byte> buffer = stackalloc byte[6];
+        RandomNumberGenerator.Fill(buffer);
         buffer[5] = (byte)(buffer[5] | 0b11000000);
         var value = new UInt48(buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5]);
         return new BleAddress(BleAddressType.RandomStatic, value);

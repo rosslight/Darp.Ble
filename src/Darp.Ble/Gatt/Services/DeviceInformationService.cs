@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Text;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
@@ -5,22 +6,82 @@ using Darp.Ble.Gatt.Server;
 
 namespace Darp.Ble.Gatt.Services;
 
-public enum VendorIdSource : byte
+/// <summary> The SystemId </summary>
+/// <param name="ManufacturerDefinedIdentifier"> The 40-bit manufacturer defined identifier </param>
+/// <param name="OrganizationallyUniqueIdentifier"> The 24 bit organizational unique identifier </param>
+public readonly record struct SystemId(ulong ManufacturerDefinedIdentifier, uint OrganizationallyUniqueIdentifier)
 {
-    BluetoothSigAssigned = 0x01,
-    USBImplementersForumAssigned = 0x02,
+    /// <summary> Read the system id from a span in little endian format </summary>
+    /// <param name="source"> The source to read from </param>
+    /// <returns> The resulting system id </returns>
+    public static SystemId ReadLittleEndian(ReadOnlySpan<byte> source)
+    {
+        ulong systemId = BinaryPrimitives.ReadUInt64LittleEndian(source);
+        var oui = (uint)(systemId >> 40);
+        ulong mdi = systemId & 0xFFFFFFFFFF;
+        return new SystemId(mdi, oui);
+    }
+
+    /// <summary> Create a byte array in little endian format </summary>
+    /// <returns> The resulting byte array </returns>
+    public byte[] ToByteArrayLittleEndian()
+    {
+        ulong systemId = ((ulong)OrganizationallyUniqueIdentifier << 40) | ManufacturerDefinedIdentifier;
+
+        var buffer = new byte[8];
+        BinaryPrimitives.WriteUInt64LittleEndian(buffer, systemId);
+        return buffer;
+    }
 }
 
-public readonly record struct PnP(VendorIdSource VendorIdSource, ushort VendorId, ushort ProductId, ushort ProductVersion);
-
+/// <summary> The service contract for a device information service </summary>
+/// <seealso href="https://www.bluetooth.com/specifications/specs/dis-1-2/"/>
 public static class DeviceInformationServiceContract
 {
-    public static BleUuid Uuid => new(0x180A);
-    public static TypedCharacteristic<string, Properties.Read> ManufacturerNameCharacteristic { get; } =
-        Characteristic.Create<Properties.Read>(0x2A29, Encoding.UTF8);
-    public static TypedCharacteristic<string, Properties.Read> ModelNumberCharacteristic { get; } =
-        Characteristic.Create<Properties.Read>(0x2A24, Encoding.UTF8);
+    /// <summary> The uuid of the service </summary>
+    public static BleUuid Uuid => 0x180A;
+    /// <summary> The system id characteristic </summary>
+    public static TypedCharacteristic<SystemId, Properties.Read> SystemIdCharacteristic { get; } =
+        Characteristic.Create<SystemId, Properties.Read>(0x2A23,
+            bytes => SystemId.ReadLittleEndian(bytes),
+            id => id.ToByteArrayLittleEndian());
+    /// <summary> The manufacturer name characteristic </summary>
+    public static TypedCharacteristic<string, Properties.Read> ModelNumberCharacteristic { get; }
+        = Characteristic.Create<Properties.Read>(0x2A24, Encoding.UTF8);
+    /// <summary> The model number characteristic </summary>
+    public static TypedCharacteristic<string, Properties.Read> SerialNumberCharacteristic { get; }
+        = Characteristic.Create<Properties.Read>(0x2A25, Encoding.UTF8);
+    /// <summary> The serial number characteristic </summary>
+    public static TypedCharacteristic<string, Properties.Read> FirmwareRevisionCharacteristic { get; }
+        = Characteristic.Create<Properties.Read>(0x2A26, Encoding.UTF8);
+    /// <summary> The hardware revision characteristic </summary>
+    public static TypedCharacteristic<string, Properties.Read> HardwareRevisionCharacteristic { get; }
+        = Characteristic.Create<Properties.Read>(0x2A27, Encoding.UTF8);
+    /// <summary> The firmware revision characteristic </summary>
+    public static TypedCharacteristic<string, Properties.Read> SoftwareRevisionCharacteristic { get; }
+        = Characteristic.Create<Properties.Read>(0x2A28, Encoding.UTF8);
+    /// <summary> The software revision characteristic </summary>
+    public static TypedCharacteristic<string, Properties.Read> ManufacturerNameCharacteristic { get; }
+        = Characteristic.Create<Properties.Read>(0x2A29, Encoding.UTF8);
+    /// <summary> The regulatory certification data list characteristic </summary>
+    public static Characteristic<Properties.Read> RegulatoryCertificationDataCharacteristic { get; }
+        = new(0x2A2A);
+    /// <summary> The regulatory certification data list characteristic </summary>
+    public static TypedCharacteristic<string, Properties.Read> PnPIdCharacteristic { get; }
+        = Characteristic.Create<Properties.Read>(0x2A50, Encoding.UTF8);
 
+    /// <summary> Add a new DeviceInformationService to the peripheral </summary>
+    /// <param name="peripheral"></param>
+    /// <param name="manufacturerName"> The Manufacturer Name String characteristic shall represent the name of the manufacturer of the device </param>
+    /// <param name="modelNumber"> The Model Number String characteristic shall represent the model number that is assigned by the device vendor. </param>
+    /// <param name="serialNumber"> The Serial Number String characteristic shall represent the serial number for a particular instance of the device. </param>
+    /// <param name="hardwareRevision"> The Hardware Revision String characteristic shall represent the hardware revision for the hardware within the device. </param>
+    /// <param name="firmwareRevision"> The Firmware Revision String characteristic shall represent the firmware revision for the firmware within the device. </param>
+    /// <param name="softwareRevision"> The Software Revision String characteristic shall represent the software revision for the software within the device. </param>
+    /// <param name="systemId"> The System ID characteristic shall represent a structure containing an Organizationally Unique Identifier (OUI) followed by a manufacturer-defined identifier and is unique for each individual instance of the product. </param>
+    /// <param name="ieeeRegulatoryCertificationData"> The IEEE 11073-20601 Regulatory Certification Data List characteristic shall represent regulatory and certification information for the product in a list defined in IEEE 11073-20601 </param>
+    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
+    /// <returns> A task which contains the service on completion </returns>
     public static async Task<GattClientDeviceInformationService> AddDeviceInformationServiceAsync(
         this IBlePeripheral peripheral,
         string? manufacturerName = null,
@@ -29,7 +90,7 @@ public static class DeviceInformationServiceContract
         string? hardwareRevision = null,
         string? firmwareRevision = null,
         string? softwareRevision = null,
-        (int, int)? systemId = null,
+        SystemId? systemId = null,
         byte[]? ieeeRegulatoryCertificationData = null,
         CancellationToken cancellationToken = default
         )
@@ -44,21 +105,71 @@ public static class DeviceInformationServiceContract
         GattTypedClientCharacteristic<string, Properties.Read>? manufacturerNameCharacteristic = null;
         if (manufacturerName is not null)
         {
-            manufacturerNameCharacteristic = await service.AddCharacteristicAsync(
-                    ManufacturerNameCharacteristic,
-                    manufacturerName,
-                    cancellationToken: cancellationToken)
+            manufacturerNameCharacteristic = await service
+                .AddCharacteristicAsync(ManufacturerNameCharacteristic, manufacturerName, cancellationToken)
                 .ConfigureAwait(false);
         }
 
-        // Add optional manufacturer name characteristic
+        // Add optional model number characteristic
         GattTypedClientCharacteristic<string, Properties.Read>? modelNumberCharacteristic = null;
         if (modelNumber is not null)
         {
-            modelNumberCharacteristic = await service.AddCharacteristicAsync(
-                    ModelNumberCharacteristic,
-                    modelNumber,
-                    cancellationToken: cancellationToken)
+            modelNumberCharacteristic = await service
+                .AddCharacteristicAsync(ModelNumberCharacteristic, modelNumber, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        // Add optional serial number characteristic
+        GattTypedClientCharacteristic<string, Properties.Read>? serialNumberCharacteristic = null;
+        if (serialNumber is not null)
+        {
+            serialNumberCharacteristic = await service
+                .AddCharacteristicAsync(SerialNumberCharacteristic, serialNumber, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        // Add optional serial number characteristic
+        GattTypedClientCharacteristic<string, Properties.Read>? hardwareRevisionCharacteristic = null;
+        if (hardwareRevision is not null)
+        {
+            hardwareRevisionCharacteristic = await service
+                .AddCharacteristicAsync(HardwareRevisionCharacteristic, hardwareRevision, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        // Add optional serial number characteristic
+        GattTypedClientCharacteristic<string, Properties.Read>? firmwareRevisionCharacteristic = null;
+        if (firmwareRevision is not null)
+        {
+            firmwareRevisionCharacteristic = await service
+                .AddCharacteristicAsync(FirmwareRevisionCharacteristic, firmwareRevision, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        // Add optional serial number characteristic
+        GattTypedClientCharacteristic<string, Properties.Read>? softwareRevisionCharacteristic = null;
+        if (softwareRevision is not null)
+        {
+            softwareRevisionCharacteristic = await service
+                .AddCharacteristicAsync(SoftwareRevisionCharacteristic, softwareRevision, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        // Add optional serial number characteristic
+        GattTypedClientCharacteristic<SystemId, Properties.Read>? systemIdCharacteristic = null;
+        if (systemId is not null)
+        {
+            systemIdCharacteristic = await service
+                .AddCharacteristicAsync(SystemIdCharacteristic, systemId.Value, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        // Add optional serial number characteristic
+        GattClientCharacteristic<Properties.Read>? regulatoryCertificationDataCharacteristic = null;
+        if (ieeeRegulatoryCertificationData is not null)
+        {
+            regulatoryCertificationDataCharacteristic = await service
+                .AddCharacteristicAsync<Properties.Read>(RegulatoryCertificationDataCharacteristic.Uuid, ieeeRegulatoryCertificationData, cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -66,10 +177,20 @@ public static class DeviceInformationServiceContract
         {
             ManufacturerName = manufacturerNameCharacteristic,
             ModelNumber = modelNumberCharacteristic,
+            SerialNumberCharacteristic = serialNumberCharacteristic,
+            HardwareRevisionCharacteristic = hardwareRevisionCharacteristic,
+            FirmwareRevisionCharacteristic = firmwareRevisionCharacteristic,
+            SoftwareRevisionCharacteristic = softwareRevisionCharacteristic,
+            SystemIdCharacteristic = systemIdCharacteristic,
+            RegulatoryCertificationDataCharacteristic = regulatoryCertificationDataCharacteristic,
         };
     }
 
-    public static async Task<GattServerDeviceInformationService> DiscoverEchoServiceAsync(
+    /// <summary> Discover the device information service from the given peer gatt server </summary>
+    /// <param name="serverPeer"> The peer to discover the service from </param>
+    /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
+    /// <returns> A wrapper with the discovered characteristics </returns>
+    public static async Task<GattServerDeviceInformationService> DiscoverDeviceInformationServiceAsync(
         this IGattServerPeer serverPeer,
         CancellationToken cancellationToken = default
     )
@@ -80,26 +201,68 @@ public static class DeviceInformationServiceContract
         IGattServerService service = await serverPeer.DiscoverServiceAsync(Uuid, cancellationToken).ConfigureAwait(false);
 
         // Discover the characteristics
-        await service.DiscoverCharacteristicAsync(cancellationToken).ConfigureAwait(false);
+        await service.DiscoverCharacteristicsAsync(cancellationToken).ConfigureAwait(false);
         service.TryGetCharacteristic(ManufacturerNameCharacteristic, out IGattServerCharacteristic<string, Properties.Read>? manufacturerNameCharacteristic);
         service.TryGetCharacteristic(ModelNumberCharacteristic, out IGattServerCharacteristic<string, Properties.Read>? modelNumberCharacteristic);
+        service.TryGetCharacteristic(SerialNumberCharacteristic, out IGattServerCharacteristic<string, Properties.Read>? serialNumberCharacteristic);
+        service.TryGetCharacteristic(HardwareRevisionCharacteristic, out IGattServerCharacteristic<string, Properties.Read>? hardwareRevisionCharacteristic);
+        service.TryGetCharacteristic(FirmwareRevisionCharacteristic, out IGattServerCharacteristic<string, Properties.Read>? firmwareRevisionCharacteristic);
+        service.TryGetCharacteristic(SoftwareRevisionCharacteristic, out IGattServerCharacteristic<string, Properties.Read>? softwareRevisionCharacteristic);
+        service.TryGetCharacteristic(SystemIdCharacteristic, out IGattServerCharacteristic<SystemId, Properties.Read>? systemIdCharacteristic);
+        service.TryGetCharacteristic(RegulatoryCertificationDataCharacteristic, out IGattServerCharacteristic<Properties.Read>? regulatoryCertificationDataCharacteristic);
 
         return new GattServerDeviceInformationService
         {
             ManufacturerName = manufacturerNameCharacteristic,
             ModelNumber = modelNumberCharacteristic,
+            SerialNumber = serialNumberCharacteristic,
+            HardwareRevision = hardwareRevisionCharacteristic,
+            FirmwareRevision = firmwareRevisionCharacteristic,
+            SoftwareRevision = softwareRevisionCharacteristic,
+            SystemId = systemIdCharacteristic,
+            RegulatoryCertificationData = regulatoryCertificationDataCharacteristic,
         };
     }
+}
 
-    public sealed class GattClientDeviceInformationService
-    {
-        public required GattTypedClientCharacteristic<string, Properties.Read>? ManufacturerName { get; init; }
-        public required GattTypedClientCharacteristic<string, Properties.Read>? ModelNumber { get; init; }
-    }
+/// <summary> The DeviceInformationService wrapper representing the gatt client </summary>
+public sealed class GattClientDeviceInformationService
+{
+    /// <summary> The manufacturer name characteristic </summary>
+    public required GattTypedClientCharacteristic<string, Properties.Read>? ManufacturerName { get; init; }
+    /// <summary> The model number characteristic </summary>
+    public required GattTypedClientCharacteristic<string, Properties.Read>? ModelNumber { get; init; }
+    /// <summary> The serial number characteristic </summary>
+    public required GattTypedClientCharacteristic<string, Properties.Read>? SerialNumberCharacteristic { get; init; }
+    /// <summary> The hardware revision characteristic </summary>
+    public required GattTypedClientCharacteristic<string, Properties.Read>? HardwareRevisionCharacteristic { get; init; }
+    /// <summary> The firmware revision characteristic </summary>
+    public required GattTypedClientCharacteristic<string, Properties.Read>? FirmwareRevisionCharacteristic { get; init; }
+    /// <summary> The software revision characteristic </summary>
+    public required GattTypedClientCharacteristic<string, Properties.Read>? SoftwareRevisionCharacteristic { get; init; }
+    /// <summary> The system id characteristic </summary>
+    public required GattTypedClientCharacteristic<SystemId, Properties.Read>? SystemIdCharacteristic { get; init; }
+    /// <summary> The regulatory certification data list characteristic </summary>
+    public required GattClientCharacteristic<Properties.Read>? RegulatoryCertificationDataCharacteristic { get; init; }
+}
 
-    public sealed class GattServerDeviceInformationService
-    {
-        public required IGattServerCharacteristic<string, Properties.Read>? ManufacturerName { get; init; }
-        public required IGattServerCharacteristic<string, Properties.Read>? ModelNumber { get; init; }
-    }
+/// <summary> The DeviceInformationService wrapper representing the gatt server </summary>
+public sealed class GattServerDeviceInformationService
+{
+    /// <summary> The manufacturer name characteristic </summary>
+    public required IGattServerCharacteristic<string, Properties.Read>? ManufacturerName { get; init; }
+    /// <summary> The model number characteristic </summary>
+    public required IGattServerCharacteristic<string, Properties.Read>? ModelNumber { get; init; }
+    /// <summary> The serial number characteristic </summary>
+    public required IGattServerCharacteristic<string, Properties.Read>? SerialNumber { get; init; }
+    /// <summary> The hardware revision characteristic </summary>
+    public required IGattServerCharacteristic<string, Properties.Read>? HardwareRevision { get; init; }
+    /// <summary> The firmware revision characteristic </summary>
+    public required IGattServerCharacteristic<string, Properties.Read>? FirmwareRevision { get; init; }
+    /// <summary> The software revision characteristic </summary>
+    public required IGattServerCharacteristic<string, Properties.Read>? SoftwareRevision { get; init; }
+    /// <summary> The system id characteristic </summary>
+    public required IGattServerCharacteristic<SystemId, Properties.Read>? SystemId { get; init; }
+    /// <summary> The regulatory certification data list characteristic </summary>
+    public required IGattServerCharacteristic<Properties.Read>? RegulatoryCertificationData { get; init; }
 }

@@ -18,9 +18,9 @@ public sealed class GattServerPeerTests
     [InlineData(0x1234)]
     [InlineData(0x1234, 0x1235)]
     [InlineData(0x1234, 0x1235, 0x1236)]
-    public async Task DiscoverServicesAsync_AnyAmountOfServices_ShouldBeDiscovered(params int[] serviceUuids)
+    public async Task DiscoverServicesAsync_AnyAmountOfServices_ShouldBeDiscovered(params ushort[] serviceUuids)
     {
-        BleUuid[] bleUuids = serviceUuids.Select(x => new BleUuid((ushort)x)).ToArray();
+        BleUuid[] bleUuids = serviceUuids.Select(BleUuid.FromUInt16).ToArray();
         IObservable<IGattServerService> observable = Observable.Create<IGattServerService>(observer =>
         {
             foreach (BleUuid bleUuid in bleUuids)
@@ -38,7 +38,12 @@ public sealed class GattServerPeerTests
         await serverPeer.DiscoverServicesAsync();
 
         serverPeer.Services.Should().HaveCount(bleUuids.Length);
-        if (bleUuids.Length > 0) serverPeer.Services.Should().ContainKeys(bleUuids);
+        if (bleUuids.Length > 0)
+        {
+            serverPeer.Services
+                .Select(x => x.Uuid)
+                .Should().BeEquivalentTo(bleUuids);
+        }
     }
 
     [Fact]

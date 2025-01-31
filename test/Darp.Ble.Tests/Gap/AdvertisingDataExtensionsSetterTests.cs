@@ -15,10 +15,10 @@ public sealed class AdvertisingDataExtensionsSetterTests
     ]);
 
     private static readonly BleUuid UuidInvalid = new((BleUuidType)1, Guid.Empty); // Invalid type
-    private static readonly BleUuid Uuid16BitHeartRate = new(0x180D); // 16-bit
-    private static readonly BleUuid Uuid16BitDeviceInfo = new(0x180A); // another 16-bit
-    private static readonly BleUuid Uuid32 = new(0xAABBCCDD); // 32-bit
-    private static readonly BleUuid Uuid128BitCustom = new(Guid.Parse("12345678-1234-1234-1234-1234567890AB"));
+    private static readonly BleUuid Uuid16BitHeartRate = 0x180D; // 16-bit
+    private static readonly BleUuid Uuid16BitDeviceInfo = 0x180A; // another 16-bit
+    private static readonly BleUuid Uuid32 = BleUuid.FromUInt32(0xAABBCCDD); // 32-bit
+    private static readonly BleUuid Uuid128BitCustom = BleUuid.FromGuid(Guid.Parse("12345678-1234-1234-1234-1234567890AB"));
 
     [Fact]
     public void WithFlags_EmptyAdvertisingData_AddsNewFlagsSection()

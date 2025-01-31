@@ -17,7 +17,7 @@ public interface IGattServerService
     /// <summary> Discover all characteristics. Check <see cref="Characteristics"/> for the available characteristics </summary>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> A task that completes when all characteristics are discovered </returns>
-    Task DiscoverCharacteristicAsync(CancellationToken cancellationToken = default);
+    Task DiscoverCharacteristicsAsync(CancellationToken cancellationToken = default);
     /// <summary> Discover a characteristic with a given <paramref name="uuid"/> </summary>
     /// <param name="uuid"> The characteristic uuid to be discovered </param>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>

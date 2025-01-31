@@ -1,4 +1,3 @@
-using System.Reactive.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Windows.Foundation;
@@ -17,7 +16,7 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
         GattLocalCharacteristic winCharacteristic,
         IGattClientService.OnReadCallback? onRead,
         IGattClientService.OnWriteCallback? onWrite)
-        : base(winService, new BleUuid(winCharacteristic.Uuid, inferType: true), (GattProperty)winCharacteristic.CharacteristicProperties, onRead, onWrite)
+        : base(winService, BleUuid.FromGuid(winCharacteristic.Uuid, inferType: true), (GattProperty)winCharacteristic.CharacteristicProperties, onRead, onWrite)
     {
         WinService = winService;
         _winCharacteristic = winCharacteristic;

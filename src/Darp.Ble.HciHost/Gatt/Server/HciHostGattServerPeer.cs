@@ -106,8 +106,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
                 if (rsp.AttributeDataList.Length == 0) break;
                 foreach ((ushort handle, ushort endGroup, ushort value) in rsp.AttributeDataList)
                 {
-                    var uuid = new BleUuid(value);
-                    observer.OnNext(new HciHostGattServerService(uuid, handle, endGroup, this, LoggerFactory.CreateLogger<HciHostGattServerService>()));
+                    observer.OnNext(new HciHostGattServerService(value, handle, endGroup, this, LoggerFactory.CreateLogger<HciHostGattServerService>()));
                 }
                 startingHandle = rsp.AttributeDataList[^1].EndGroup;
             }
