@@ -145,7 +145,7 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
             {
                 ushort energy = 0;
                 var heartRateSubject = new BehaviorSubject<HeartRateMeasurement>(default);
-                Observable.Interval(TimeSpan.FromSeconds(1))
+                Observable.Interval(TimeSpan.FromMilliseconds(100))
                     .Select(_ => new HeartRateMeasurement(expectedValue)
                     {
                         EnergyExpended = energy++,

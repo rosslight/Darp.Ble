@@ -23,7 +23,7 @@ public sealed class BleDeviceTests
     {
         var logger = new TestLogger();
         BleManager manager = new BleManagerBuilder()
-            .SetLogger(new TestLoggerFactory())
+            .SetLogger(new TestLoggerFactory(logger))
             .Add<BleMockFactory>()
             .CreateManager();
         IBleDevice device = manager.EnumerateDevices().First();
@@ -36,7 +36,7 @@ public sealed class BleDeviceTests
     [SuppressMessage("Non-substitutable member", "NS1004:Argument matcher used with a non-virtual member of a class.")]
     public async Task InitializeAsync_FailedInitialization_ShouldHaveCorrectResult()
     {
-        var device = Substitute.For<BleDevice>((ILogger?)null);
+        var device = Substitute.For<BleDevice>(NullLoggerFactory.Instance, NullLogger<BleDevice>.Instance);
         device.InvokeNonPublicMethod("InitializeAsyncCore", Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(InitializeResult.DeviceNotAvailable));
 
@@ -52,7 +52,7 @@ public sealed class BleDeviceTests
     {
         var testScheduler = new TestScheduler();
 
-        var device = Substitute.For<BleDevice>((ILogger?)null);
+        var device = Substitute.For<BleDevice>(NullLoggerFactory.Instance, NullLogger<BleDevice>.Instance);
         device.InvokeNonPublicMethod("InitializeAsyncCore", Arg.Any<CancellationToken>())
             .Returns(_ => Observable.Return(InitializeResult.Success)
                 .Delay(TimeSpan.FromMilliseconds(1000), testScheduler)
@@ -72,7 +72,7 @@ public sealed class BleDeviceTests
     [SuppressMessage("Non-substitutable member", "NS1004:Argument matcher used with a non-virtual member of a class.")]
     public async Task InitializeAsync_SecondInitialization_AlreadyInitialized()
     {
-        var device = Substitute.For<BleDevice>((ILogger?)null);
+        var device = Substitute.For<BleDevice>(NullLoggerFactory.Instance, NullLogger<BleDevice>.Instance);
         device.InvokeNonPublicMethod("InitializeAsyncCore", Arg.Any<CancellationToken>())
             .Returns(_ => Task.FromResult(InitializeResult.Success));
 
@@ -88,7 +88,7 @@ public sealed class BleDeviceTests
     [Fact]
     public void Capability_NotInitialized_ShouldThrow()
     {
-        var device = Substitute.For<BleDevice>((ILogger?)null);
+        var device = Substitute.For<BleDevice>(NullLoggerFactory.Instance, NullLogger<BleDevice>.Instance);
         Action act = () => _ = device.Observer;
         act.Should().Throw<NotInitializedException>();
     }
@@ -98,7 +98,7 @@ public sealed class BleDeviceTests
     [SuppressMessage("Non-substitutable member", "NS1004:Argument matcher used with a non-virtual member of a class.")]
     public async Task Capability_NotSupported_ShouldThrow()
     {
-        var device = Substitute.For<BleDevice>((ILogger?)null);
+        var device = Substitute.For<BleDevice>(NullLoggerFactory.Instance, NullLogger<BleDevice>.Instance);
         device.InvokeNonPublicMethod("InitializeAsyncCore", Arg.Any<CancellationToken>())
             .Returns(_ => Task.FromResult(InitializeResult.Success));
 
@@ -112,12 +112,12 @@ public sealed class BleDeviceTests
     [SuppressMessage("Usage", "NS5000:Received check.")]
     public async Task DisposeAsync()
     {
-        var device = Substitute.For<BleDevice>((ILogger?)null);
+        var device = Substitute.For<BleDevice>(NullLoggerFactory.Instance, NullLogger<BleDevice>.Instance);
 
         await device.DisposeAsync();
 
         device.ReceivedWithAnyArgs(1).InvokeNonPublicMethod("DisposeAsyncCore");
-        device.ReceivedWithAnyArgs(1).InvokeNonPublicMethod("DisposeCore");
+        device.ReceivedWithAnyArgs(1).InvokeNonPublicMethod("Dispose", true);
     }
 
     [Fact]

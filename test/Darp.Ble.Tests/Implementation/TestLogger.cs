@@ -21,9 +21,9 @@ public sealed class TestLogger : ILogger
     }
 }
 
-public sealed class TestLoggerFactory : ILoggerFactory
+public sealed class TestLoggerFactory(TestLogger logger) : ILoggerFactory
 {
-    private readonly TestLogger _logger = new();
+    private readonly TestLogger _logger = logger;
 
     public ILogger CreateLogger(string categoryName)
     {

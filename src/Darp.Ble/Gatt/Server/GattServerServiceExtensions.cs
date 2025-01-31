@@ -21,6 +21,10 @@ public static class GattServerServiceExtensions
     {
         ArgumentNullException.ThrowIfNull(service);
         IGattServerCharacteristic serverCharacteristic = await service.DiscoverCharacteristicAsync(uuid, cancellationToken).ConfigureAwait(false);
+        if (!serverCharacteristic.Property.HasFlag(TProp1.GattProperty))
+        {
+            throw new Exception($"Discovered characteristic does not support property {TProp1.GattProperty}");
+        }
         return new GattServerCharacteristic<TProp1>(serverCharacteristic);
     }
 
@@ -40,6 +44,10 @@ public static class GattServerServiceExtensions
         ArgumentNullException.ThrowIfNull(service);
         ArgumentNullException.ThrowIfNull(characteristic);
         IGattServerCharacteristic serverCharacteristic = await service.DiscoverCharacteristicAsync(characteristic.Uuid, cancellationToken).ConfigureAwait(false);
+        if (!serverCharacteristic.Property.HasFlag(TProp1.GattProperty))
+        {
+            throw new Exception($"Discovered characteristic does not support property {TProp1.GattProperty}");
+        }
         return new GattServerCharacteristic<TProp1>(serverCharacteristic);
     }
 

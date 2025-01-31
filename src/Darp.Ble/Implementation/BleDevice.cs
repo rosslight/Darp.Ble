@@ -41,8 +41,6 @@ public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice>
                                         | (_bleBroadcaster is not null ? Capabilities.Broadcaster : Capabilities.None)
                                         | (_blePeripheral is not null ? Capabilities.Peripheral : Capabilities.None);
 
-    public virtual IBleObserver Test { get; set; } = null!;
-
     /// <inheritdoc />
     public IBleObserver Observer
     {

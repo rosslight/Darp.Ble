@@ -20,7 +20,7 @@ internal sealed class MockBleCentral(MockBleDevice device, ILogger<MockBleCentra
     {
         MockedBleDevice? peerDevice = _device.MockedDevices.FirstOrDefault(x => x.RandomAddress == address);
         if (peerDevice is null)
-            return Observable.Throw<GattServerPeer>(new Exception("Unknown address"));
+            return Observable.Throw<GattServerPeer>(new Exception($"Mock does not contain a device with address {address}"));
         return Observable.Create<GattServerPeer>(observer =>
         {
             MockGattClientPeer clientPeer = peerDevice.Peripheral.OnCentralConnection(address);
