@@ -1,4 +1,6 @@
 using Darp.Ble.Data;
+using Darp.Ble.Gatt.Server;
+using Darp.Ble.Gatt.Services;
 
 namespace Darp.Ble.Gatt.Client;
 
@@ -120,10 +122,15 @@ public sealed class GattClientCharacteristic<TProp1, TProp2>(IGattClientCharacte
 /// <param name="characteristic"> The actual characteristic </param>
 /// <typeparam name="T"> The type of the characteristic value </typeparam>
 /// <typeparam name="TProp1"> The property </typeparam>
-public class GattTypedClientCharacteristic<T, TProp1>(IGattClientCharacteristic characteristic, Func<byte[], T> onRead, Func<T, byte[]> onWrite)
+public class GattTypedClientCharacteristic<T, TProp1>(IGattClientCharacteristic characteristic,
+    IGattAttributeDeclaration<T>.ReadValueFunc onRead,
+    IGattAttributeDeclaration<T>.WriteValueFunc onWrite)
     : IGattTypedClientCharacteristic<T, TProp1>
     where TProp1 : IBleProperty
 {
+    private readonly IGattAttributeDeclaration<T>.ReadValueFunc _onRead = onRead;
+    private readonly IGattAttributeDeclaration<T>.WriteValueFunc _onWrite = onWrite;
+
     /// <inheritdoc />
     public GattProperty Property => Characteristic.Property;
     /// <inheritdoc />
@@ -131,8 +138,13 @@ public class GattTypedClientCharacteristic<T, TProp1>(IGattClientCharacteristic 
     /// <inheritdoc />
     public IGattClientCharacteristic Characteristic { get; } = characteristic;
 
-    public Func<byte[], T> OnRead { get; } = onRead;
-    public Func<T, byte[]> OnWrite { get; } = onWrite;
+    /// <inheritdoc cref="IGattAttributeDeclaration{T}.ReadValue(System.ReadOnlySpan{byte})" />
+    protected internal T ReadValue(ReadOnlySpan<byte> source) => _onRead(source);
+    /// <inheritdoc cref="IGattAttributeDeclaration{T}.WriteValue" />
+    protected internal byte[] WriteValue(T value) => _onWrite(value);
+
+    T IGattTypedClientCharacteristic<T, TProp1>.ReadValue(ReadOnlySpan<byte> source) => ReadValue(source);
+    byte[] IGattTypedClientCharacteristic<T, TProp1>.WriteValue(T value) => WriteValue(value);
 }
 
 /// <summary> The implementation of a gatt client characteristic with a single property </summary>
@@ -140,7 +152,15 @@ public class GattTypedClientCharacteristic<T, TProp1>(IGattClientCharacteristic 
 /// <typeparam name="T"> The type of the characteristic value </typeparam>
 /// <typeparam name="TProp1"> The first property </typeparam>
 /// <typeparam name="TProp2"> The second property </typeparam>
-public sealed class GattTypedClientCharacteristic<T, TProp1, TProp2>(IGattClientCharacteristic characteristic, Func<byte[], T> onRead, Func<T, byte[]> onWrite)
-    : GattTypedClientCharacteristic<T, TProp1>(characteristic, onRead, onWrite), IGattTypedClientCharacteristic<T, TProp2>
+public sealed class GattTypedClientCharacteristic<T, TProp1, TProp2>(
+    IGattClientCharacteristic characteristic,
+    IGattAttributeDeclaration<T>.ReadValueFunc onRead,
+    IGattAttributeDeclaration<T>.WriteValueFunc onWrite)
+    : GattTypedClientCharacteristic<T, TProp1>(characteristic, onRead, onWrite),
+        IGattTypedClientCharacteristic<T, TProp2>
     where TProp1 : IBleProperty
-    where TProp2 : IBleProperty;
+    where TProp2 : IBleProperty
+{
+    T IGattTypedClientCharacteristic<T, TProp2>.ReadValue(ReadOnlySpan<byte> source) => ReadValue(source);
+    byte[] IGattTypedClientCharacteristic<T, TProp2>.WriteValue(T value) => WriteValue(value);
+}

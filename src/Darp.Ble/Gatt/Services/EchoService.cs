@@ -32,7 +32,7 @@ public static class EchoServiceContract
         handleRequest ??= Observable.Return;
 
         // Add the client service
-        IGattClientService service = await peripheral.AddServiceAsync(serviceUuid, cancellationToken).ConfigureAwait(false);
+        IGattClientService service = await peripheral.AddServiceAsync(serviceUuid, isPrimary: true, cancellationToken).ConfigureAwait(false);
 
         // Add the mandatory write characteristic
         IGattClientCharacteristic<Properties.Notify> notifyCharacteristic = null!;

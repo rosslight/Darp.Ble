@@ -1,11 +1,13 @@
 using Darp.Ble.Data;
+using Darp.Ble.Gatt.Services;
 using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Gatt.Client;
 
 /// <summary> A gatt client service </summary>
 /// <param name="uuid"> The UUID of the client service </param>
-public abstract class GattClientService(BlePeripheral blePeripheral, BleUuid uuid) : IGattClientService
+/// <param name="type"> The type of the client service </param>
+public abstract class GattClientService(BlePeripheral blePeripheral, BleUuid uuid, GattServiceType type) : IGattClientService
 {
     private readonly List<IGattClientCharacteristic> _characteristics = [];
 
@@ -14,6 +16,8 @@ public abstract class GattClientService(BlePeripheral blePeripheral, BleUuid uui
 
     /// <inheritdoc />
     public BleUuid Uuid { get; } = uuid;
+    /// <inheritdoc />
+    public GattServiceType Type { get; } = type;
 
     /// <inheritdoc />
     public IReadOnlyCollection<IGattClientCharacteristic> Characteristics => _characteristics.AsReadOnly();

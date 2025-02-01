@@ -1,12 +1,9 @@
 using System.Reactive.Linq;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Security.Cryptography;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Services;
-using static Darp.Ble.Gatt.Characteristic;
+using static Darp.Ble.Gatt.CharacteristicDeclaration;
 
 namespace Darp.Ble.Tests.Gatt.Characteristic;
 
@@ -18,16 +15,16 @@ public sealed class Test
     public static byte[] SomeBytes = [];
     public static IObservable<byte[]> SomeByteObservable = Observable.Return(Convert.FromHexString(""));
     public static IObservable<int> SomeIntObservable = Observable.Return(1);
-    public static Characteristic<Properties.Read> Char1 { get; } = new(SomeUuid);
-    public static TypedCharacteristic<int, Properties.Read> ReadChar { get; } = Create<int, Properties.Read>(SomeUuid);
-    public static TypedCharacteristic<int, Properties.Write> WriteChar { get; } = Create<int, Properties.Write>(SomeUuid);
-    public static TypedCharacteristic<int, Properties.Notify> NotifyChar { get; } = Create<int, Properties.Notify>(SomeUuid);
-    public static TypedCharacteristic<int, Properties.Read, Properties.Notify> ReadNotifyChar { get; } = Create<int, Properties.Read, Properties.Notify>(SomeUuid);
-    public static TypedCharacteristic<int, Properties.Read, Properties.Write> ReadWriteChar { get; } = Create<int, Properties.Read, Properties.Write>(SomeUuid);
-    public static Characteristic<Properties.Write> Char2 { get; } = new(SomeUuid);
-    public static Characteristic<Properties.Notify> Char3 { get; } = new(SomeUuid);
-    public static Characteristic<Properties.Indicate> Char4 { get; } = new(SomeUuid);
-    public static Characteristic<Properties.Read, Properties.Write> Char5 { get; } = new(SomeUuid);
+    public static CharacteristicDeclaration<Properties.Read> Char1 { get; } = new(SomeUuid);
+    public static TypedCharacteristicDeclaration<int, Properties.Read> ReadChar { get; } = Create<int, Properties.Read>(SomeUuid);
+    public static TypedCharacteristicDeclaration<int, Properties.Write> WriteChar { get; } = Create<int, Properties.Write>(SomeUuid);
+    public static TypedCharacteristicDeclaration<int, Properties.Notify> NotifyChar { get; } = Create<int, Properties.Notify>(SomeUuid);
+    public static TypedCharacteristicDeclaration<int, Properties.Read, Properties.Notify> ReadNotifyChar { get; } = Create<int, Properties.Read, Properties.Notify>(SomeUuid);
+    public static TypedCharacteristicDeclaration<int, Properties.Read, Properties.Write> ReadWriteChar { get; } = Create<int, Properties.Read, Properties.Write>(SomeUuid);
+    public static CharacteristicDeclaration<Properties.Write> Char2 { get; } = new(SomeUuid);
+    public static CharacteristicDeclaration<Properties.Notify> Char3 { get; } = new(SomeUuid);
+    public static CharacteristicDeclaration<Properties.Indicate> Char4 { get; } = new(SomeUuid);
+    public static CharacteristicDeclaration<Properties.Read, Properties.Write> Char5 { get; } = new(SomeUuid);
     /*
     public static Characteristic<int, Properties.Read> Char11 { get; } = new(SomeUuid);
     public static Characteristic<int, Properties.Write> Char12 { get; } = new(SomeUuid);

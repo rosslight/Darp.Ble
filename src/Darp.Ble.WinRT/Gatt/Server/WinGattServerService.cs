@@ -6,12 +6,13 @@ using Windows.Devices.Enumeration;
 using Windows.Foundation;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Server;
+using Darp.Ble.Gatt.Services;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.WinRT.Gatt.Server;
 
 internal sealed class WinGattServerService(GattServerPeer peer, GattDeviceService winService, ILogger<WinGattServerService> logger)
-    : GattServerService(peer, BleUuid.FromGuid(winService.Uuid, inferType: true), logger)
+    : GattServerService(peer, BleUuid.FromGuid(winService.Uuid, inferType: true), GattServiceType.Undefined, logger)
 {
     private readonly GattDeviceService _winService = winService;
 

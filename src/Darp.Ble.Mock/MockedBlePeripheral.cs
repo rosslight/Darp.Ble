@@ -1,5 +1,6 @@
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
+using Darp.Ble.Gatt.Services;
 using Darp.Ble.Implementation;
 using Darp.Ble.Mock.Gatt;
 using Microsoft.Extensions.Logging;
@@ -19,9 +20,10 @@ internal sealed class MockedBlePeripheral(MockedBleDevice device, ILogger<Mocked
     }
 
     /// <inheritdoc />
-    protected override Task<IGattClientService> AddServiceAsyncCore(BleUuid uuid, CancellationToken cancellationToken)
+    protected override Task<IGattClientService> AddServiceAsyncCore(BleUuid uuid, bool isPrimary,
+        CancellationToken cancellationToken)
     {
-        var service = new MockGattClientService(uuid, this);
+        var service = new MockGattClientService(uuid, isPrimary ? GattServiceType.Primary : GattServiceType.Secondary, this);
         return Task.FromResult<IGattClientService>(service);
     }
 }

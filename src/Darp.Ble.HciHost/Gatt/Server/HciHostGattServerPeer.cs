@@ -7,6 +7,7 @@ using Darp.BinaryObjects;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Server;
+using Darp.Ble.Gatt.Services;
 using Darp.Ble.Hci;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload;
@@ -89,7 +90,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
                     {
                         StartingHandle = startingHandle,
                         EndingHandle = 0xFFFF,
-                        AttributeType = 0x2800,
+                        AttributeType = 0x2800, // TODO discover both primary and secondary services
                     }, cancellationToken: token)
                     .ConfigureAwait(false);
                 if (response.OpCode is AttOpCode.ATT_ERROR_RSP
@@ -106,7 +107,12 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
                 if (rsp.AttributeDataList.Length == 0) break;
                 foreach ((ushort handle, ushort endGroup, ushort value) in rsp.AttributeDataList)
                 {
-                    observer.OnNext(new HciHostGattServerService(value, handle, endGroup, this, LoggerFactory.CreateLogger<HciHostGattServerService>()));
+                    observer.OnNext(new HciHostGattServerService(value,
+                        GattServiceType.Primary,
+                        handle,
+                        endGroup,
+                        this,
+                        LoggerFactory.CreateLogger<HciHostGattServerService>()));
                 }
                 startingHandle = rsp.AttributeDataList[^1].EndGroup;
             }
@@ -125,7 +131,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
                     {
                         StartingHandle = startingHandle,
                         EndingHandle = 0xFFFF,
-                        AttributeType = 0x2800,
+                        AttributeType = 0x2800, // TODO discover both primary and secondary services
                         AttributeValue = uuid.Value.ToByteArray()[..2], // TODO Don't treat all uuids as 16 bit uuids
                     }, cancellationToken: token)
                     .ConfigureAwait(false);
@@ -143,7 +149,12 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
                 if (rsp.HandlesInformationList.Length == 0) break;
                 foreach ((ushort handle, ushort endGroup) in rsp.HandlesInformationList)
                 {
-                    return new HciHostGattServerService(uuid, handle, endGroup, this, LoggerFactory.CreateLogger<HciHostGattServerService>());
+                    return new HciHostGattServerService(uuid,
+                        GattServiceType.Primary,
+                        handle,
+                        endGroup,
+                        this,
+                        LoggerFactory.CreateLogger<HciHostGattServerService>());
                 }
                 startingHandle = rsp.HandlesInformationList[^1].GroupEndHandle;
             }

@@ -13,6 +13,7 @@ namespace Darp.Ble.WinRT;
 internal sealed class WinBlePeripheral(WinBleDevice device, ILogger<WinBlePeripheral> logger) : BlePeripheral(device, logger)
 {
     protected override async Task<IGattClientService> AddServiceAsyncCore(BleUuid uuid,
+        bool isPrimary,
         CancellationToken cancellationToken)
     {
         GattServiceProviderResult result = await GattServiceProvider

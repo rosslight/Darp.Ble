@@ -9,7 +9,7 @@ internal sealed class MockGattServerService(
     MockGattClientPeer clientPeer,
     MockGattServerPeer serverPeer,
     MockGattClientService clientService,
-    ILogger<MockGattServerService> logger) : GattServerService(serverPeer, clientService.Uuid, logger)
+    ILogger<MockGattServerService> logger) : GattServerService(serverPeer, clientService.Uuid, clientService.Type, logger)
 {
     private readonly MockGattClientService _clientService = clientService;
     public MockGattClientPeer GattClient { get; } = clientPeer;

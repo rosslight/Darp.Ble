@@ -6,12 +6,13 @@ using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
+using Darp.Ble.Gatt.Services;
 using Darp.Ble.Utils;
 
 namespace Darp.Ble.WinRT.Gatt;
 
 internal sealed class WinGattClientService(WinBlePeripheral peripheral, GattServiceProvider provider)
-    : GattClientService(peripheral, BleUuid.FromGuid(provider.Service.Uuid, inferType: true))
+    : GattClientService(peripheral, BleUuid.FromGuid(provider.Service.Uuid, inferType: true), GattServiceType.Undefined)
 {
     private readonly GattServiceProvider _serviceProvider = provider;
     private readonly GattLocalService _winService = provider.Service;

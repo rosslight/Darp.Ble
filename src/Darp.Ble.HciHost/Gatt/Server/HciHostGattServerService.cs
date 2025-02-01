@@ -2,14 +2,16 @@ using System.Buffers.Binary;
 using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Server;
+using Darp.Ble.Gatt.Services;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Att;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost.Gatt.Server;
 
-internal sealed class HciHostGattServerService(BleUuid uuid, ushort attHandle, ushort endGroupHandle,
-    HciHostGattServerPeer serverPeer, ILogger<HciHostGattServerService> logger) : GattServerService(serverPeer, uuid, logger)
+internal sealed class HciHostGattServerService(BleUuid uuid, GattServiceType type, ushort attHandle, ushort endGroupHandle,
+    HciHostGattServerPeer serverPeer, ILogger<HciHostGattServerService> logger)
+    : GattServerService(serverPeer, uuid, type, logger)
 {
     private readonly ushort _attHandle = attHandle;
     private readonly ushort _endGroupHandle = endGroupHandle;

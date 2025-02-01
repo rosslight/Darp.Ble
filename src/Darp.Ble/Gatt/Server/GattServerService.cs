@@ -1,4 +1,5 @@
 using Darp.Ble.Data;
+using Darp.Ble.Gatt.Services;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Gatt.Server;
@@ -6,9 +7,11 @@ namespace Darp.Ble.Gatt.Server;
 /// <summary> The abstract gatt server service implementation </summary>
 /// <param name="peer"> The peer this service was discovered from </param>
 /// <param name="uuid"> The uuid of the gatt service </param>
+/// <param name="type"> The type of the gatt service </param>
 /// <param name="logger"> An optional logger </param>
 public abstract class GattServerService(IGattServerPeer peer,
     BleUuid uuid,
+    GattServiceType type,
     ILogger<GattServerService> logger) : IGattServerService
 {
     private readonly SortedDictionary<ushort, IGattServerCharacteristic> _characteristics = [];
@@ -21,6 +24,8 @@ public abstract class GattServerService(IGattServerPeer peer,
 
     /// <inheritdoc />
     public BleUuid Uuid { get; } = uuid;
+    /// <inheritdoc />
+    public GattServiceType Type { get; } = type;
 
     /// <summary> The logger </summary>
     public ILogger<GattServerService> Logger { get; } = logger;

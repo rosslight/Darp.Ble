@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
 using Darp.Ble.Implementation;
 using Microsoft.Extensions.Logging;

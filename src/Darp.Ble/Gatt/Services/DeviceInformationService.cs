@@ -39,39 +39,38 @@ public readonly record struct SystemId(ulong ManufacturerDefinedIdentifier, uint
 public static class DeviceInformationServiceContract
 {
     /// <summary> The uuid of the service </summary>
-    public static BleUuid Uuid => 0x180A;
+    public static ServiceDeclaration DeviceInformationService => new(0x180A);
+
     /// <summary> The system id characteristic </summary>
-    public static TypedCharacteristic<SystemId, Properties.Read> SystemIdCharacteristic { get; } =
-        Characteristic.Create<SystemId, Properties.Read>(0x2A23,
-            bytes => SystemId.ReadLittleEndian(bytes),
-            id => id.ToByteArrayLittleEndian());
+    public static TypedCharacteristicDeclaration<SystemId, Properties.Read> SystemIdCharacteristic { get; } =
+        CharacteristicDeclaration.Create<SystemId, Properties.Read>(0x2A23, SystemId.ReadLittleEndian, id => id.ToByteArrayLittleEndian());
     /// <summary> The manufacturer name characteristic </summary>
-    public static TypedCharacteristic<string, Properties.Read> ModelNumberCharacteristic { get; }
-        = Characteristic.Create<Properties.Read>(0x2A24, Encoding.UTF8);
+    public static TypedCharacteristicDeclaration<string, Properties.Read> ModelNumberCharacteristic { get; }
+        = CharacteristicDeclaration.Create<Properties.Read>(0x2A24, Encoding.UTF8);
     /// <summary> The model number characteristic </summary>
-    public static TypedCharacteristic<string, Properties.Read> SerialNumberCharacteristic { get; }
-        = Characteristic.Create<Properties.Read>(0x2A25, Encoding.UTF8);
+    public static TypedCharacteristicDeclaration<string, Properties.Read> SerialNumberCharacteristic { get; }
+        = CharacteristicDeclaration.Create<Properties.Read>(0x2A25, Encoding.UTF8);
     /// <summary> The serial number characteristic </summary>
-    public static TypedCharacteristic<string, Properties.Read> FirmwareRevisionCharacteristic { get; }
-        = Characteristic.Create<Properties.Read>(0x2A26, Encoding.UTF8);
+    public static TypedCharacteristicDeclaration<string, Properties.Read> FirmwareRevisionCharacteristic { get; }
+        = CharacteristicDeclaration.Create<Properties.Read>(0x2A26, Encoding.UTF8);
     /// <summary> The hardware revision characteristic </summary>
-    public static TypedCharacteristic<string, Properties.Read> HardwareRevisionCharacteristic { get; }
-        = Characteristic.Create<Properties.Read>(0x2A27, Encoding.UTF8);
+    public static TypedCharacteristicDeclaration<string, Properties.Read> HardwareRevisionCharacteristic { get; }
+        = CharacteristicDeclaration.Create<Properties.Read>(0x2A27, Encoding.UTF8);
     /// <summary> The firmware revision characteristic </summary>
-    public static TypedCharacteristic<string, Properties.Read> SoftwareRevisionCharacteristic { get; }
-        = Characteristic.Create<Properties.Read>(0x2A28, Encoding.UTF8);
+    public static TypedCharacteristicDeclaration<string, Properties.Read> SoftwareRevisionCharacteristic { get; }
+        = CharacteristicDeclaration.Create<Properties.Read>(0x2A28, Encoding.UTF8);
     /// <summary> The software revision characteristic </summary>
-    public static TypedCharacteristic<string, Properties.Read> ManufacturerNameCharacteristic { get; }
-        = Characteristic.Create<Properties.Read>(0x2A29, Encoding.UTF8);
+    public static TypedCharacteristicDeclaration<string, Properties.Read> ManufacturerNameCharacteristic { get; }
+        = CharacteristicDeclaration.Create<Properties.Read>(0x2A29, Encoding.UTF8);
     /// <summary> The regulatory certification data list characteristic </summary>
-    public static Characteristic<Properties.Read> RegulatoryCertificationDataCharacteristic { get; }
+    public static CharacteristicDeclaration<Properties.Read> RegulatoryCertificationDataCharacteristic { get; }
         = new(0x2A2A);
     /// <summary> The regulatory certification data list characteristic </summary>
-    public static TypedCharacteristic<string, Properties.Read> PnPIdCharacteristic { get; }
-        = Characteristic.Create<Properties.Read>(0x2A50, Encoding.UTF8);
+    public static TypedCharacteristicDeclaration<string, Properties.Read> PnPIdCharacteristic { get; }
+        = CharacteristicDeclaration.Create<Properties.Read>(0x2A50, Encoding.UTF8);
 
     /// <summary> Add a new DeviceInformationService to the peripheral </summary>
-    /// <param name="peripheral"></param>
+    /// <param name="peripheral"> The peripheral to add the service to </param>
     /// <param name="manufacturerName"> The Manufacturer Name String characteristic shall represent the name of the manufacturer of the device </param>
     /// <param name="modelNumber"> The Model Number String characteristic shall represent the model number that is assigned by the device vendor. </param>
     /// <param name="serialNumber"> The Serial Number String characteristic shall represent the serial number for a particular instance of the device. </param>
@@ -97,7 +96,7 @@ public static class DeviceInformationServiceContract
     {
         ArgumentNullException.ThrowIfNull(peripheral);
         IGattClientService service = await peripheral.AddServiceAsync(
-            Uuid,
+            DeviceInformationService,
             cancellationToken
             ).ConfigureAwait(false);
 
@@ -198,7 +197,7 @@ public static class DeviceInformationServiceContract
         ArgumentNullException.ThrowIfNull(serverPeer);
 
         // Discover the service
-        IGattServerService service = await serverPeer.DiscoverServiceAsync(Uuid, cancellationToken).ConfigureAwait(false);
+        IGattServerService service = await serverPeer.DiscoverServiceAsync(DeviceInformationService, cancellationToken).ConfigureAwait(false);
 
         // Discover the characteristics
         await service.DiscoverCharacteristicsAsync(cancellationToken).ConfigureAwait(false);

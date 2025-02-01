@@ -37,7 +37,7 @@ internal sealed class AsyncDisposable : IAsyncDisposable
 /// <summary> Extensions for <see cref="IGattServerCharacteristic"/> </summary>
 public static class GattServerCharacteristicExtensions
 {
-    /// <inheritdoc cref="IGattServerCharacteristic.OnNotify"/>
+    /// <inheritdoc cref="IGattServerCharacteristic.OnNotifyAsync{TState}"/>
     /// <param name="characteristic">The characteristic with notify property</param>
     public static Task<IAsyncDisposable> OnNotifyAsync(this IGattServerCharacteristic<Properties.Notify> characteristic,
         Action<byte[]> callback,
@@ -89,7 +89,7 @@ public static class GattServerCharacteristicExtensions
         IAsyncDisposable disposable = await characteristic.Characteristic
             .OnNotifyAsync(
                 (characteristic, subject),
-                (tuple, bytes) => tuple.subject.OnNext(tuple.characteristic.OnRead(bytes)),
+                (tuple, bytes) => tuple.subject.OnNext(tuple.characteristic.ReadValue(bytes)),
                 cancellationToken)
             .ConfigureAwait(false);
         IAsyncDisposable combinedDisposable = AsyncDisposable.Create(async () =>
@@ -141,6 +141,6 @@ public static class GattServerCharacteristicExtensions
     {
         ArgumentNullException.ThrowIfNull(characteristic);
         byte[] bytes = await characteristic.Characteristic.ReadAsync(cancellationToken).ConfigureAwait(false);
-        return characteristic.OnRead(bytes);
+        return characteristic.ReadValue(bytes);
     }
 }

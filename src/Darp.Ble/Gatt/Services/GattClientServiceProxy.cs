@@ -16,6 +16,8 @@ public abstract class GattClientServiceProxy(IGattClientService service) : IGatt
     public IBlePeripheral Peripheral => _service.Peripheral;
     /// <inheritdoc />
     public BleUuid Uuid => _service.Uuid;
+    /// <inheritdoc />
+    public GattServiceType Type => _service.Type;
 
     IReadOnlyCollection<IGattClientCharacteristic> IGattClientService.Characteristics => _service.Characteristics;
     Task<IGattClientCharacteristic> IGattClientService.AddCharacteristicAsync(BleUuid uuid, GattProperty gattProperty,

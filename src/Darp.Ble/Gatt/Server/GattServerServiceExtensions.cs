@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data;
+using Darp.Ble.Gatt.Services;
 
 namespace Darp.Ble.Gatt.Server;
 
@@ -29,7 +30,7 @@ public static class GattServerServiceExtensions
     }
 
     /// <summary>
-    /// Discover a characteristic with a given <paramref name="characteristic"/> as <see cref="Characteristic{TProp1}"/>
+    /// Discover a characteristic with a given <paramref name="characteristic"/> as <see cref="CharacteristicDeclaration{TProp1}"/>
     /// </summary>
     /// <param name="service"> The service to discover the characteristics on </param>
     /// <param name="characteristic"> The characteristic to be discovered </param>
@@ -37,7 +38,7 @@ public static class GattServerServiceExtensions
     /// <typeparam name="TProp1"> The type of the characteristic </typeparam>
     /// <returns> The discovered gatt server characteristic </returns>
     public static async Task<IGattServerCharacteristic<TProp1>> DiscoverCharacteristicAsync<TProp1>(this IGattServerService service,
-        Characteristic<TProp1> characteristic,
+        CharacteristicDeclaration<TProp1> characteristic,
         CancellationToken cancellationToken = default)
         where TProp1 : IBleProperty
     {
@@ -52,7 +53,7 @@ public static class GattServerServiceExtensions
     }
 
     public static bool TryGetCharacteristic<TProp1>(this IGattServerService service,
-        Characteristic<TProp1> expectedCharacteristic,
+        CharacteristicDeclaration<TProp1> expectedCharacteristic,
         [NotNullWhen(true)] out IGattServerCharacteristic<TProp1>? characteristic)
         where TProp1 : IBleProperty
     {
@@ -61,7 +62,7 @@ public static class GattServerServiceExtensions
         foreach (IGattServerCharacteristic serverCharacteristic in service.Characteristics)
         {
             if (serverCharacteristic.Uuid == expectedCharacteristic.Uuid
-                && serverCharacteristic.Property == expectedCharacteristic.Property)
+                && expectedCharacteristic.Properties.HasFlag(serverCharacteristic.Property))
             {
                 characteristic = new GattServerCharacteristic<TProp1>(serverCharacteristic);
                 return true;
@@ -79,7 +80,7 @@ public static class GattServerServiceExtensions
     /// <typeparam name="TProp1"> The property of the characteristic </typeparam>
     /// <returns> True, when the characteristic was found; False, otherwise </returns>
     public static bool TryGetCharacteristic<T, TProp1>(this IGattServerService service,
-        TypedCharacteristic<T, TProp1> expectedCharacteristic,
+        TypedCharacteristicDeclaration<T, TProp1> expectedCharacteristic,
         [NotNullWhen(true)] out IGattServerCharacteristic<T, TProp1>? characteristic)
         where TProp1 : IBleProperty
     {
@@ -88,11 +89,11 @@ public static class GattServerServiceExtensions
         foreach (IGattServerCharacteristic serverCharacteristic in service.Characteristics)
         {
             if (serverCharacteristic.Uuid == expectedCharacteristic.Uuid
-                && serverCharacteristic.Property == expectedCharacteristic.Property)
+                && serverCharacteristic.Property == expectedCharacteristic.Properties)
             {
                 characteristic = new TypedGattServerCharacteristic<T, TProp1>(serverCharacteristic,
-                    expectedCharacteristic.OnRead,
-                    expectedCharacteristic.OnWrite);
+                    expectedCharacteristic.ReadValue,
+                    expectedCharacteristic.WriteValue);
                 return true;
             }
         }

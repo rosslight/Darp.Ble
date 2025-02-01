@@ -1,4 +1,5 @@
 using Darp.Ble.Data;
+using Darp.Ble.Gatt.Services;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Gatt.Server;
@@ -143,14 +144,22 @@ public sealed class GattServerCharacteristic<TProp1>(IGattServerCharacteristic s
 }
 
 public sealed class TypedGattServerCharacteristic<T, TProp1>(IGattServerCharacteristic serverCharacteristic,
-    Func<byte[], T> onRead,
-    Func<T, byte[]> onWrite)
+    IGattAttributeDeclaration<T>.ReadValueFunc onRead,
+    IGattAttributeDeclaration<T>.WriteValueFunc onWrite)
     : IGattServerCharacteristic<T, TProp1>
     where TProp1 : IBleProperty
 {
+    private readonly IGattAttributeDeclaration<T>.ReadValueFunc _onRead = onRead;
+    private readonly IGattAttributeDeclaration<T>.WriteValueFunc _onWrite = onWrite;
+
     /// <inheritdoc />
     public IGattServerCharacteristic Characteristic { get; } = serverCharacteristic;
 
-    public Func<byte[], T> OnRead { get; } = onRead;
-    public Func<T, byte[]> OnWrite { get; } = onWrite;
+    /// <inheritdoc cref="IGattAttributeDeclaration{T}.ReadValue(System.ReadOnlySpan{byte})" />
+    protected internal T ReadValue(ReadOnlySpan<byte> source) => _onRead(source);
+    /// <inheritdoc cref="IGattAttributeDeclaration{T}.WriteValue" />
+    protected internal byte[] WriteValue(T value) => _onWrite(value);
+
+    T IGattServerCharacteristic<T, TProp1>.ReadValue(ReadOnlySpan<byte> source) => ReadValue(source);
+    byte[] IGattServerCharacteristic<T, TProp1>.WriteValue(T value) => WriteValue(value);
 }

@@ -23,7 +23,7 @@ public static partial class GattCharacteristicExtensions
     {
         ArgumentNullException.ThrowIfNull(characteristic);
         byte[] bytes = characteristic.Characteristic.GetValue(clientPeer: null);
-        return characteristic.OnRead(bytes);
+        return characteristic.ReadValue(bytes);
     }
 
     /// <summary> Update a specific value of the characteristic with a <see cref="Properties.Read"/> property by manually writing to it </summary>
@@ -44,7 +44,7 @@ public static partial class GattCharacteristicExtensions
         where T : unmanaged
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        return characteristic.Characteristic.UpdateValue(clientPeer: null, characteristic.OnWrite(value));
+        return characteristic.Characteristic.UpdateValue(clientPeer: null, characteristic.WriteValue(value));
     }
 
     /// <summary> Notify a connected peer of a new value </summary>
@@ -65,7 +65,7 @@ public static partial class GattCharacteristicExtensions
     public static void Notify<T>(this IGattTypedClientCharacteristic<T, Properties.Notify> characteristic, IGattClientPeer peer, T value)
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        characteristic.Characteristic.NotifyValue(clientPeer: peer, characteristic.OnWrite(value));
+        characteristic.Characteristic.NotifyValue(clientPeer: peer, characteristic.WriteValue(value));
     }
 
     /// <summary> Notify all connected peers of a new value </summary>
@@ -84,6 +84,6 @@ public static partial class GattCharacteristicExtensions
     public static void NotifyAll<T>(this IGattTypedClientCharacteristic<T, Properties.Notify> characteristic, T value)
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        characteristic.Characteristic.NotifyValue(clientPeer: null, characteristic.OnWrite(value));
+        characteristic.Characteristic.NotifyValue(clientPeer: null, characteristic.WriteValue(value));
     }
 }

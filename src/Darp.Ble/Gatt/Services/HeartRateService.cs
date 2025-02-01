@@ -130,17 +130,15 @@ public static class HeartRateServiceContract
     private const GattProtocolStatus ControlPointNotSupported = (GattProtocolStatus)0x80;
 
     /// <summary> The 16-bit UUID of the heart rate service </summary>
-    public static BleUuid Uuid => 0x180D;
+    public static ServiceDeclaration HeartRateService => new(0x180D);
     /// <summary> The 16-bit UUID of the heart rate measurement characteristic </summary>
-    public static TypedCharacteristic<HeartRateMeasurement, Properties.Notify> HeartRateMeasurementCharacteristic { get; }
-        = Characteristic.Create<HeartRateMeasurement, Properties.Notify>(0x2A37,
-            bytes => HeartRateMeasurement.ReadLittleEndian(bytes),
-            measurement => measurement.ToByteArrayLittleEndian());
+    public static TypedCharacteristicDeclaration<HeartRateMeasurement, Properties.Notify> HeartRateMeasurementCharacteristic { get; }
+        = CharacteristicDeclaration.Create<HeartRateMeasurement, Properties.Notify>(0x2A37, HeartRateMeasurement.ReadLittleEndian, measurement => measurement.ToByteArrayLittleEndian());
     /// <summary> The 16-bit UUID of the body sensor location characteristic </summary>
-    public static TypedCharacteristic<HeartRateBodySensorLocation, Properties.Read> BodySensorLocationCharacteristic { get; }
-        = Characteristic.Create<HeartRateBodySensorLocation, Properties.Read>(0x2A38);
+    public static TypedCharacteristicDeclaration<HeartRateBodySensorLocation, Properties.Read> BodySensorLocationCharacteristic { get; }
+        = CharacteristicDeclaration.Create<HeartRateBodySensorLocation, Properties.Read>(0x2A38);
     /// <summary> The 16-bit UUID of the heart rate control point characteristic </summary>
-    public static Characteristic<Properties.Write> HeartRateControlPointCharacteristic { get; } = new(0x2A39);
+    public static CharacteristicDeclaration<Properties.Write> HeartRateControlPointCharacteristic { get; } = new(0x2A39);
 
     /// <summary> Add a heart rate service to the peripheral </summary>
     /// <param name="peripheral"> The peripheral to add the service to </param>
@@ -156,7 +154,7 @@ public static class HeartRateServiceContract
     )
     {
         ArgumentNullException.ThrowIfNull(peripheral);
-        IGattClientService service = await peripheral.AddServiceAsync(Uuid, token).ConfigureAwait(false);
+        IGattClientService service = await peripheral.AddServiceAsync(HeartRateService, token).ConfigureAwait(false);
 
         // Add the mandatory measurement characteristic
         GattTypedClientCharacteristic<HeartRateMeasurement, Properties.Notify> measurementCharacteristic = await service.AddCharacteristicAsync(
@@ -212,7 +210,7 @@ public static class HeartRateServiceContract
         ArgumentNullException.ThrowIfNull(serverPeer);
 
         // Discover the service
-        IGattServerService service = await serverPeer.DiscoverServiceAsync(Uuid, cancellationToken).ConfigureAwait(false);
+        IGattServerService service = await serverPeer.DiscoverServiceAsync(HeartRateService, cancellationToken).ConfigureAwait(false);
         await service.DiscoverCharacteristicsAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!service.TryGetCharacteristic(HeartRateMeasurementCharacteristic,
                 out IGattServerCharacteristic<HeartRateMeasurement, Properties.Notify>? measurementCharacteristic))

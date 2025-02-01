@@ -1,4 +1,5 @@
 using Darp.Ble.Data;
+using Darp.Ble.Gatt.Services;
 
 namespace Darp.Ble.Gatt.Server;
 
@@ -10,6 +11,8 @@ public interface IGattServerService
 
     /// <summary> The service uuid </summary>
     BleUuid Uuid { get; }
+    /// <summary> The type of the service </summary>
+    GattServiceType Type { get; }
 
     /// <summary> All discovered characteristics </summary>
     IReadOnlyCollection<IGattServerCharacteristic> Characteristics { get; }

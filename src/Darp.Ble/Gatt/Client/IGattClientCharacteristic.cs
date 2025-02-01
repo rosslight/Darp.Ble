@@ -56,6 +56,12 @@ public interface IGattClientCharacteristic<TProperty1>
 public interface IGattTypedClientCharacteristic<T, TProperty1> : IGattClientCharacteristic<TProperty1>
     where TProperty1 : IBleProperty
 {
-    public Func<byte[], T> OnRead { get; }
-    public Func<T, byte[]> OnWrite { get; }
+    /// <summary> Read the value from a given source of bytes </summary>
+    /// <param name="source"> The source to read from </param>
+    /// <returns> The value </returns>
+    T ReadValue(ReadOnlySpan<byte> source);
+    /// <summary> Write a specific value into a destination of bytes </summary>
+    /// <param name="value"> The value to write </param>
+    /// <returns> The byte array </returns>
+    byte[] WriteValue(T value);
 }

@@ -30,18 +30,20 @@ public abstract class BlePeripheral(BleDevice device, ILogger<BlePeripheral> log
     public IObservable<IGattClientPeer> WhenDisconnected => _whenConnected.SelectMany(x => x.WhenDisconnected.Select(_ => x));
 
     /// <inheritdoc />
-    public async Task<IGattClientService> AddServiceAsync(BleUuid uuid, CancellationToken cancellationToken = default)
+    public async Task<IGattClientService> AddServiceAsync(BleUuid uuid, bool isPrimary, CancellationToken cancellationToken = default)
     {
-        IGattClientService service = await AddServiceAsyncCore(uuid, cancellationToken).ConfigureAwait(false);
+        IGattClientService service = await AddServiceAsyncCore(uuid, isPrimary, cancellationToken).ConfigureAwait(false);
         _services.Add(service);
         return service;
     }
 
     /// <summary> Core implementation to add a new service </summary>
     /// <param name="uuid"> The uuid of the service to be added </param>
+    /// <param name="isPrimary"> True, if the service is a primary service; False, if secondary </param>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> The newly added service </returns>
-    protected abstract Task<IGattClientService> AddServiceAsyncCore(BleUuid uuid, CancellationToken cancellationToken);
+    protected abstract Task<IGattClientService> AddServiceAsyncCore(BleUuid uuid, bool isPrimary,
+        CancellationToken cancellationToken);
 
     /// <summary> Register a newly connected central </summary>
     /// <param name="clientPeer"> The GattClient peer </param>
