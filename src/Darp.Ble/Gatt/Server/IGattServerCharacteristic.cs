@@ -59,22 +59,14 @@ public interface IGattServerCharacteristic
 }
 
 /// <summary> The interface defining a strongly typed characteristic </summary>
-/// <typeparam name="TProp"> The property definition </typeparam>
-public interface IGattServerCharacteristic<TProp>
-{
-    /// <inheritdoc cref="IGattServerCharacteristic.Uuid"/>
-    BleUuid Uuid => Characteristic.Uuid;
-    /// <summary> The underlying characteristic </summary>
-    IGattServerCharacteristic Characteristic { get; }
-}
+/// <typeparam name="TProp1"> The first property definition </typeparam>
+public interface IGattServerCharacteristic<TProp1> : IGattServerCharacteristic
+    where TProp1 : IBleProperty;
 
-public interface IGattServerCharacteristic<T, TProp>
+/// <summary> The interface defining a characteristic with a value </summary>
+/// <typeparam name="T"> The type of the characteristic value </typeparam>
+public interface ITypedGattServerCharacteristic<T> : IGattServerCharacteristic
 {
-    /// <inheritdoc cref="IGattServerCharacteristic.Uuid"/>
-    BleUuid Uuid => Characteristic.Uuid;
-    /// <summary> The underlying characteristic </summary>
-    IGattServerCharacteristic Characteristic { get; }
-
     /// <summary> Read the value from a given source of bytes </summary>
     /// <param name="source"> The source to read from </param>
     /// <returns> The value </returns>
@@ -84,3 +76,9 @@ public interface IGattServerCharacteristic<T, TProp>
     /// <returns> The byte array </returns>
     byte[] WriteValue(T value);
 }
+
+/// <summary> The interface defining a strongly typed characteristic with a value </summary>
+/// <typeparam name="T"> The type of the characteristic value </typeparam>
+/// <typeparam name="TProp1"> The first property definition </typeparam>
+public interface ITypedGattServerCharacteristic<T, TProp1> : ITypedGattServerCharacteristic<T>
+    where TProp1 : IBleProperty;

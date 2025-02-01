@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data;
 using Microsoft.Extensions.Logging;
 
@@ -134,31 +135,97 @@ public abstract class GattServerCharacteristic(GattServerService service,
 
 /// <summary> The implementation of a strongly typed characteristic </summary>
 /// <param name="serverCharacteristic"> The underlying characteristic </param>
-/// <typeparam name="TProp1"> <inheritdoc cref="IGattServerCharacteristic{TProp1}"/> </typeparam>
-public sealed class GattServerCharacteristic<TProp1>(IGattServerCharacteristic serverCharacteristic) : IGattServerCharacteristic<TProp1>
+/// <typeparam name="TProp1"> The first property definition </typeparam>
+[SuppressMessage("Design", "CA1033:Interface methods should be callable by child types",
+    Justification = "Child classes should only be wrappers and should not call any methods")]
+public class GattServerCharacteristic<TProp1>(IGattServerCharacteristic serverCharacteristic)
+    : IGattServerCharacteristic<TProp1>
     where TProp1 : IBleProperty
 {
+    private readonly IGattServerCharacteristic _serverCharacteristic = serverCharacteristic;
+
     /// <inheritdoc />
-    public IGattServerCharacteristic Characteristic { get; } = serverCharacteristic;
+    public IGattServerService Service => _serverCharacteristic.Service;
+    /// <inheritdoc />
+    public ushort AttributeHandle => _serverCharacteristic.AttributeHandle;
+    /// <inheritdoc />
+    public BleUuid Uuid => _serverCharacteristic.Uuid;
+    /// <inheritdoc />
+    public GattProperty Property => _serverCharacteristic.Property;
+
+    Task IGattServerCharacteristic.WriteAsync(byte[] bytes, CancellationToken cancellationToken) => _serverCharacteristic.WriteAsync(bytes, cancellationToken);
+    void IGattServerCharacteristic.WriteWithoutResponse(byte[] bytes) => _serverCharacteristic.WriteWithoutResponse(bytes);
+    Task<IAsyncDisposable> IGattServerCharacteristic.OnNotifyAsync<TState>(TState state, Action<TState, byte[]> onNotify,
+        CancellationToken cancellationToken)
+        => _serverCharacteristic.OnNotifyAsync(state, onNotify, cancellationToken);
+    Task<byte[]> IGattServerCharacteristic.ReadAsync(CancellationToken cancellationToken)
+        => _serverCharacteristic.ReadAsync(cancellationToken);
 }
 
-public sealed class TypedGattServerCharacteristic<T, TProp1>(IGattServerCharacteristic serverCharacteristic,
-    IGattAttributeDeclaration<T>.ReadValueFunc onRead,
-    IGattAttributeDeclaration<T>.WriteValueFunc onWrite)
-    : IGattServerCharacteristic<T, TProp1>
+/// <summary> The implementation of a strongly typed characteristic </summary>
+/// <param name="serverCharacteristic"> The underlying characteristic </param>
+/// <typeparam name="TProp1"> The first property definition </typeparam>
+/// <typeparam name="TProp2"> The second property definition </typeparam>
+public sealed class GattServerCharacteristic<TProp1, TProp2>(IGattServerCharacteristic serverCharacteristic)
+    : GattServerCharacteristic<TProp1>(serverCharacteristic), IGattServerCharacteristic<TProp2>
+    where TProp1 : IBleProperty
+    where TProp2 : IBleProperty;
+
+/// <summary> The implementation of a strongly typed characteristic </summary>
+/// <param name="serverCharacteristic"> The underlying characteristic </param>
+/// <param name="onRead"> The callback to read a value from bytes </param>
+/// <param name="onWrite"> The callback to write a value to bytes </param>
+/// <typeparam name="T"> The type of the characteristic value </typeparam>
+/// <typeparam name="TProp1"> The first property definition </typeparam>
+[SuppressMessage("Design", "CA1033:Interface methods should be callable by child types",
+    Justification = "Child classes should only be wrappers and should not call any methods")]
+public class TypedGattServerCharacteristic<T, TProp1>(IGattServerCharacteristic serverCharacteristic,
+    IGattTypedCharacteristic<T>.ReadValueFunc onRead,
+    IGattTypedCharacteristic<T>.WriteValueFunc onWrite)
+    : ITypedGattServerCharacteristic<T, TProp1>
     where TProp1 : IBleProperty
 {
-    private readonly IGattAttributeDeclaration<T>.ReadValueFunc _onRead = onRead;
-    private readonly IGattAttributeDeclaration<T>.WriteValueFunc _onWrite = onWrite;
+    private readonly IGattServerCharacteristic _serverCharacteristic = serverCharacteristic;
+    private readonly IGattTypedCharacteristic<T>.ReadValueFunc _onRead = onRead;
+    private readonly IGattTypedCharacteristic<T>.WriteValueFunc _onWrite = onWrite;
 
     /// <inheritdoc />
-    public IGattServerCharacteristic Characteristic { get; } = serverCharacteristic;
+    public IGattServerService Service => _serverCharacteristic.Service;
+    /// <inheritdoc />
+    public ushort AttributeHandle => _serverCharacteristic.AttributeHandle;
+    /// <inheritdoc />
+    public BleUuid Uuid => _serverCharacteristic.Uuid;
+    /// <inheritdoc />
+    public GattProperty Property => _serverCharacteristic.Property;
 
-    /// <inheritdoc cref="IGattAttributeDeclaration{T}.ReadValue(System.ReadOnlySpan{byte})" />
+    /// <inheritdoc cref="IGattTypedCharacteristic{T}.ReadValue(System.ReadOnlySpan{byte})" />
     protected internal T ReadValue(ReadOnlySpan<byte> source) => _onRead(source);
-    /// <inheritdoc cref="IGattAttributeDeclaration{T}.WriteValue" />
+    /// <inheritdoc cref="IGattTypedCharacteristic{T}.WriteValue" />
     protected internal byte[] WriteValue(T value) => _onWrite(value);
 
-    T IGattServerCharacteristic<T, TProp1>.ReadValue(ReadOnlySpan<byte> source) => ReadValue(source);
-    byte[] IGattServerCharacteristic<T, TProp1>.WriteValue(T value) => WriteValue(value);
+    T ITypedGattServerCharacteristic<T>.ReadValue(ReadOnlySpan<byte> source) => ReadValue(source);
+    byte[] ITypedGattServerCharacteristic<T>.WriteValue(T value) => WriteValue(value);
+
+    Task IGattServerCharacteristic.WriteAsync(byte[] bytes, CancellationToken cancellationToken) => _serverCharacteristic.WriteAsync(bytes, cancellationToken);
+    void IGattServerCharacteristic.WriteWithoutResponse(byte[] bytes) => _serverCharacteristic.WriteWithoutResponse(bytes);
+    Task<IAsyncDisposable> IGattServerCharacteristic.OnNotifyAsync<TState>(TState state, Action<TState, byte[]> onNotify,
+        CancellationToken cancellationToken)
+        => _serverCharacteristic.OnNotifyAsync(state, onNotify, cancellationToken);
+    Task<byte[]> IGattServerCharacteristic.ReadAsync(CancellationToken cancellationToken)
+        => _serverCharacteristic.ReadAsync(cancellationToken);
 }
+
+/// <summary> The implementation of a strongly typed characteristic </summary>
+/// <param name="serverCharacteristic"> The underlying characteristic </param>
+/// <param name="onRead"> The callback to read a value from bytes </param>
+/// <param name="onWrite"> The callback to write a value to bytes </param>
+/// <typeparam name="T"> The type of the characteristic value </typeparam>
+/// <typeparam name="TProp1"> The first property definition </typeparam>
+/// <typeparam name="TProp2"> The second property definition </typeparam>
+public sealed class TypedGattServerCharacteristic<T, TProp1, TProp2>(IGattServerCharacteristic serverCharacteristic,
+    IGattTypedCharacteristic<T>.ReadValueFunc onRead,
+    IGattTypedCharacteristic<T>.WriteValueFunc onWrite)
+    : TypedGattServerCharacteristic<T, TProp1>(serverCharacteristic, onRead, onWrite),
+        ITypedGattServerCharacteristic<T, TProp2>
+    where TProp1 : IBleProperty
+    where TProp2 : IBleProperty;

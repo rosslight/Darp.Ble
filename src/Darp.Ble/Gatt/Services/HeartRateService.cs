@@ -213,13 +213,13 @@ public static class HeartRateServiceContract
         IGattServerService service = await serverPeer.DiscoverServiceAsync(HeartRateService, cancellationToken).ConfigureAwait(false);
         await service.DiscoverCharacteristicsAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
         if (!service.TryGetCharacteristic(HeartRateMeasurementCharacteristic,
-                out IGattServerCharacteristic<HeartRateMeasurement, Properties.Notify>? measurementCharacteristic))
+                out TypedGattServerCharacteristic<HeartRateMeasurement, Properties.Notify>? measurementCharacteristic))
         {
             throw new Exception("HeartRateMeasurement characteristic is not contained in service");
         }
 
-        service.TryGetCharacteristic(BodySensorLocationCharacteristic, out IGattServerCharacteristic<HeartRateBodySensorLocation, Properties.Read>? bodySensorLocationCharacteristic);
-        service.TryGetCharacteristic(HeartRateControlPointCharacteristic, out IGattServerCharacteristic<Properties.Write>? heartRateControlPointCharacteristic);
+        service.TryGetCharacteristic(BodySensorLocationCharacteristic, out TypedGattServerCharacteristic<HeartRateBodySensorLocation, Properties.Read>? bodySensorLocationCharacteristic);
+        service.TryGetCharacteristic(HeartRateControlPointCharacteristic, out GattServerCharacteristic<Properties.Write>? heartRateControlPointCharacteristic);
 
         return new GattServerHeartRateService(service)
         {
@@ -245,9 +245,9 @@ public sealed class GattClientHeartRateService(IGattClientService service) : Gat
 public sealed class GattServerHeartRateService(IGattServerService service) : GattServerServiceProxy(service)
 {
     /// <summary> The write characteristic </summary>
-    public required IGattServerCharacteristic<HeartRateMeasurement, Properties.Notify> HeartRateMeasurement { get; init; }
+    public required TypedGattServerCharacteristic<HeartRateMeasurement, Properties.Notify> HeartRateMeasurement { get; init; }
     /// <summary> The optional body sensor location characteristic </summary>
-    public required IGattServerCharacteristic<HeartRateBodySensorLocation, Properties.Read>? BodySensorLocation { get; init; }
+    public required TypedGattServerCharacteristic<HeartRateBodySensorLocation, Properties.Read>? BodySensorLocation { get; init; }
     /// <summary> The optional heart rate control point characteristic </summary>
-    public required IGattServerCharacteristic<Properties.Write>? HeartRateControlPoint { get; init; }
+    public required GattServerCharacteristic<Properties.Write>? HeartRateControlPoint { get; init; }
 }

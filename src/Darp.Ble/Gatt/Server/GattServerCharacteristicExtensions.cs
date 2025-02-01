@@ -1,4 +1,5 @@
 using System.Reactive.Subjects;
+using static Darp.Ble.Gatt.Properties;
 
 namespace Darp.Ble.Gatt.Server;
 
@@ -39,12 +40,12 @@ public static class GattServerCharacteristicExtensions
 {
     /// <inheritdoc cref="IGattServerCharacteristic.OnNotifyAsync{TState}"/>
     /// <param name="characteristic">The characteristic with notify property</param>
-    public static Task<IAsyncDisposable> OnNotifyAsync(this IGattServerCharacteristic<Properties.Notify> characteristic,
+    public static Task<IAsyncDisposable> OnNotifyAsync(this IGattServerCharacteristic<Notify> characteristic,
         Action<byte[]> callback,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        return characteristic.Characteristic.OnNotifyAsync(callback, (action, memory) => action(memory), cancellationToken);
+        return characteristic.OnNotifyAsync(callback, (action, memory) => action(memory), cancellationToken);
     }
 
     /// <summary>
@@ -54,13 +55,13 @@ public static class GattServerCharacteristicExtensions
     /// <param name="characteristic">The characteristic with notify property</param>
     /// <param name="cancellationToken"> The CancellationToken to cancel the initial subscription process </param>
     /// <returns> A task which completes when notifications are enabled. Returns a disposable observable </returns>
-    public static async Task<IDisposableObservable<byte[]>> OnNotifyAsync(this IGattServerCharacteristic<Properties.Notify> characteristic,
+    public static async Task<IDisposableObservable<byte[]>> OnNotifyAsync(this IGattServerCharacteristic<Notify> characteristic,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(characteristic);
 #pragma warning disable CA2000
         var subject = new Subject<byte[]>();
-        IAsyncDisposable disposable = await characteristic.Characteristic
+        IAsyncDisposable disposable = await characteristic
             .OnNotifyAsync(subject, (s, bytes) => s.OnNext(bytes), cancellationToken)
             .ConfigureAwait(false);
         IAsyncDisposable combinedDisposable = AsyncDisposable.Create(async () =>
@@ -80,13 +81,14 @@ public static class GattServerCharacteristicExtensions
     /// <param name="characteristic">The characteristic with notify property</param>
     /// <param name="cancellationToken"> The CancellationToken to cancel the initial subscription process </param>
     /// <returns> A task which completes when notifications are enabled. Returns a disposable observable </returns>
-    public static async Task<IDisposableObservable<T>> OnNotifyAsync<T>(this IGattServerCharacteristic<T, Properties.Notify> characteristic,
+    public static async Task<IDisposableObservable<T>> OnNotifyAsync<T>(
+        this ITypedGattServerCharacteristic<T, Notify> characteristic,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(characteristic);
 #pragma warning disable CA2000
         var subject = new Subject<T>();
-        IAsyncDisposable disposable = await characteristic.Characteristic
+        IAsyncDisposable disposable = await characteristic
             .OnNotifyAsync(
                 (characteristic, subject),
                 (tuple, bytes) => tuple.subject.OnNext(tuple.characteristic.ReadValue(bytes)),
@@ -106,41 +108,41 @@ public static class GattServerCharacteristicExtensions
     /// <param name="characteristic">The characteristic with notify property</param>
     /// <param name="bytes"> The array of bytes to be written </param>
     /// <param name="cancellationToken"> The CancellationToken to cancel the operation </param>
-    public static async Task WriteAsync(this IGattServerCharacteristic<Properties.Write> characteristic,
+    public static async Task WriteAsync(this IGattServerCharacteristic<Write> characteristic,
         byte[] bytes,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        await characteristic.Characteristic.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
+        await characteristic.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc cref="IGattServerCharacteristic.WriteWithoutResponse"/>
     /// <param name="characteristic">The characteristic with notify property</param>
     /// <param name="bytes"> The array of bytes to be written </param>
-    public static void WriteWithoutResponse(this IGattServerCharacteristic<Properties.WriteWithoutResponse> characteristic, byte[] bytes)
+    public static void WriteWithoutResponse(this IGattServerCharacteristic<WriteWithoutResponse> characteristic, byte[] bytes)
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        characteristic.Characteristic.WriteWithoutResponse(bytes);
+        characteristic.WriteWithoutResponse(bytes);
     }
 
     /// <inheritdoc cref="IGattServerCharacteristic.ReadAsync"/>
     /// <param name="characteristic">The characteristic with read property</param>
     /// <param name="cancellationToken"> The CancellationToken to cancel the operation </param>
-    public static async Task<byte[]> ReadAsync(this IGattServerCharacteristic<Properties.Read> characteristic,
+    public static async Task<byte[]> ReadAsync(this IGattServerCharacteristic<Read> characteristic,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        return await characteristic.Characteristic.ReadAsync(cancellationToken).ConfigureAwait(false);
+        return await characteristic.ReadAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc cref="IGattServerCharacteristic.ReadAsync"/>
     /// <param name="characteristic">The characteristic with read property</param>
     /// <param name="cancellationToken"> The CancellationToken to cancel the operation </param>
-    public static async Task<T> ReadAsync<T>(this IGattServerCharacteristic<T, Properties.Read> characteristic,
+    public static async Task<T> ReadAsync<T>(this ITypedGattServerCharacteristic<T, Read> characteristic,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        byte[] bytes = await characteristic.Characteristic.ReadAsync(cancellationToken).ConfigureAwait(false);
+        byte[] bytes = await characteristic.ReadAsync(cancellationToken).ConfigureAwait(false);
         return characteristic.ReadValue(bytes);
     }
 }

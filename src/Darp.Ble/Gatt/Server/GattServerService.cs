@@ -66,6 +66,7 @@ public abstract class GattServerService(IGattServerPeer peer,
         }
         return characteristicToReturn ?? throw new Exception($"No characteristic with Uuid {uuid} was discovered");
     }
+
     /// <summary> Core implementation to discover a characteristic with a given <paramref name="uuid"/> </summary>
     /// <param name="uuid"> The characteristic uuid to be discovered </param>
     /// <returns> An observable with all characteristics </returns>

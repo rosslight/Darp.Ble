@@ -5,7 +5,7 @@ using Darp.Ble.Data;
 namespace Darp.Ble.Gatt;
 
 /// <summary> The characteristic declaration </summary>
-public interface IGattCharacteristicDeclaration
+public interface IGattCharacteristicDeclaration : IGattAttributeDeclaration
 {
     /// <summary> Properties that are part of the characteristic declaration </summary>
     GattProperty Properties { get; }
@@ -14,7 +14,7 @@ public interface IGattCharacteristicDeclaration
 /// <summary> The characteristic declaration with specified properties </summary>
 /// <typeparam name="TProp1"> The type of the first property </typeparam>
 public interface IGattCharacteristicDeclaration<TProp1>
-    : IGattCharacteristicDeclaration, IGattAttributeDeclaration
+    : IGattCharacteristicDeclaration
     where TProp1 : IBleProperty;
 
 /// <summary> The characteristic declaration </summary>
@@ -63,8 +63,8 @@ public static class CharacteristicDeclaration
     /// <typeparam name="TProp1"> The type of the first property </typeparam>
     /// <returns> A typed characteristic declaration </returns>
     public static TypedCharacteristicDeclaration<T, TProp1> Create<T, TProp1>(BleUuid uuid,
-        IGattAttributeDeclaration<T>.ReadValueFunc onRead,
-        IGattAttributeDeclaration<T>.WriteValueFunc onWrite)
+        IGattTypedCharacteristic<T>.ReadValueFunc onRead,
+        IGattTypedCharacteristic<T>.WriteValueFunc onWrite)
         where TProp1 : IBleProperty
     {
         return new TypedCharacteristicDeclaration<T, TProp1>(uuid, onRead, onWrite);
@@ -79,8 +79,8 @@ public static class CharacteristicDeclaration
     /// <typeparam name="TProp2"> The type of the second property </typeparam>
     /// <returns> A typed characteristic declaration </returns>
     public static TypedCharacteristicDeclaration<T, TProp1, TProp2> Create<T, TProp1, TProp2>(BleUuid uuid,
-        IGattAttributeDeclaration<T>.ReadValueFunc onRead,
-        IGattAttributeDeclaration<T>.WriteValueFunc onWrite)
+        IGattTypedCharacteristic<T>.ReadValueFunc onRead,
+        IGattTypedCharacteristic<T>.WriteValueFunc onWrite)
         where TProp1 : IBleProperty
         where TProp2 : IBleProperty
     {

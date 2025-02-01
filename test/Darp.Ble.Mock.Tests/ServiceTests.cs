@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Darp.Ble.Data;
@@ -10,6 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock.Tests;
 
+[SuppressMessage("Naming", "CA1707:Identifiers should not contain underscores")]
 public sealed class ServiceTests(ILoggerFactory loggerFactory)
 {
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
@@ -127,5 +129,41 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
         measurement.Value.Should().Be(expectedValue);
         measurement.EnergyExpended.Should().Be(0);
         measurement.IsSensorContactDetected.Should().Be(expectedIsSensorContactDetected);
+    }
+
+    [Fact]
+    public async Task BatteryService_ShouldWork()
+    {
+        const byte expectedValue = 30;
+
+        BleManager manager = new BleManagerBuilder()
+            .AddMock(factory => factory.AddPeripheral(async device =>
+            {
+                GattClientBatteryService service = await device.Peripheral.AddBatteryService();
+                await device.Broadcaster.StartAdvertisingAsync(
+                    data: AdvertisingData.Empty.WithCompleteListOfServiceUuids(device.Peripheral),
+                    autoRestart: true);
+                Observable.Interval(TimeSpan.FromMilliseconds(100))
+                    .Subscribe(_ => service.BatteryLevel.NotifyAll(expectedValue));
+                device.Peripheral.WhenConnected.Subscribe(clientPeer =>
+                {
+                    // Notify subscribers of the current value as soon as they subscribe
+                    service.BatteryLevel.Notify(clientPeer, expectedValue);
+                });
+            }))
+            .SetLogger(_loggerFactory)
+            .CreateManager();
+        IBleDevice device = manager.EnumerateDevices().First();
+        await device.InitializeAsync();
+
+        IGapAdvertisement advertisement = await device.Observer.RefCount().FirstAsync();
+        await using IGattServerPeer peer = await advertisement.ConnectToPeripheral().FirstAsync();
+        GattServerBatteryService service = await peer.DiscoverBatteryServiceAsync();
+
+        var readLevel = await service.BatteryLevel.ReadAsync<byte>();
+        readLevel.Should().Be(expectedValue);
+        await using IDisposableObservable<byte> notifyable = await service.BatteryLevel.OnNotifyAsync<byte>();
+        byte notifiedLevel = await notifyable.FirstAsync();
+        notifiedLevel.Should().Be(readLevel);
     }
 }

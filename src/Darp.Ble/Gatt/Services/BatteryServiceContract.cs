@@ -1,4 +1,5 @@
 using Darp.Ble.Gatt.Client;
+using Darp.Ble.Gatt.Server;
 using static Darp.Ble.Gatt.Properties;
 
 namespace Darp.Ble.Gatt.Services;
@@ -30,7 +31,8 @@ public static class BatteryServiceContract
         ArgumentNullException.ThrowIfNull(peripheral);
         IGattClientService service = await peripheral.AddServiceAsync(BatteryService, cancellationToken).ConfigureAwait(false);
 
-        GattTypedClientCharacteristic<byte, Read, Notify> batteryLevelCharacteristic = await GattCharacteristicExtensions.AddCharacteristicAsync(service, BatteryLevelCharacteristic,
+        GattTypedClientCharacteristic<byte, Read, Notify> batteryLevelCharacteristic = await service.AddCharacteristicAsync(
+                BatteryLevelCharacteristic,
                 staticValue: initialBatteryLevel,
                 cancellationToken: cancellationToken)
             .ConfigureAwait(false);
@@ -44,10 +46,40 @@ public static class BatteryServiceContract
             BatteryLevel = batteryLevelCharacteristic,
         };
     }
+
+    /// <summary> Discover the battery service </summary>
+    /// <param name="serverPeer"> The peer to discover the service from </param>
+    /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
+    /// <returns> A wrapper with the discovered characteristics </returns>
+    public static async Task<GattServerBatteryService> DiscoverBatteryServiceAsync(
+        this IGattServerPeer serverPeer,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(serverPeer);
+
+        // Discover the service
+        IGattServerService service = await serverPeer.DiscoverServiceAsync(BatteryService, cancellationToken).ConfigureAwait(false);
+
+        // Discover the characteristics
+        await service.DiscoverCharacteristicsAsync(cancellationToken).ConfigureAwait(false);
+        TypedGattServerCharacteristic<byte, Read, Notify> batteryLevelCharacteristic = service
+            .GetCharacteristic(BatteryLevelCharacteristic);
+
+        return new GattServerBatteryService(service) { BatteryLevel = batteryLevelCharacteristic };
+    }
 }
 
 /// <summary> The BatteryService wrapper representing the gatt client </summary>
 public sealed class GattClientBatteryService(IGattClientService service) : GattClientServiceProxy(service)
 {
-    public required GattTypedClientCharacteristic<byte, Properties.Read, Properties.Notify> BatteryLevel { get; init; }
+    /// <summary> The battery level characteristic </summary>
+    public required GattTypedClientCharacteristic<byte, Read, Notify> BatteryLevel { get; init; }
+}
+
+/// <summary> The BatteryService wrapper representing the gatt server </summary>
+public sealed class GattServerBatteryService(IGattServerService service) : GattServerServiceProxy(service)
+{
+    /// <summary> The battery level characteristic </summary>
+    public required TypedGattServerCharacteristic<byte, Read, Notify> BatteryLevel { get; init; }
 }

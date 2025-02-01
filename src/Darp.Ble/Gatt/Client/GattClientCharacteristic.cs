@@ -121,13 +121,13 @@ public sealed class GattClientCharacteristic<TProp1, TProp2>(IGattClientCharacte
 /// <typeparam name="T"> The type of the characteristic value </typeparam>
 /// <typeparam name="TProp1"> The property </typeparam>
 public class GattTypedClientCharacteristic<T, TProp1>(IGattClientCharacteristic characteristic,
-    IGattAttributeDeclaration<T>.ReadValueFunc onRead,
-    IGattAttributeDeclaration<T>.WriteValueFunc onWrite)
+    IGattTypedCharacteristic<T>.ReadValueFunc onRead,
+    IGattTypedCharacteristic<T>.WriteValueFunc onWrite)
     : IGattTypedClientCharacteristic<T, TProp1>
     where TProp1 : IBleProperty
 {
-    private readonly IGattAttributeDeclaration<T>.ReadValueFunc _onRead = onRead;
-    private readonly IGattAttributeDeclaration<T>.WriteValueFunc _onWrite = onWrite;
+    private readonly IGattTypedCharacteristic<T>.ReadValueFunc _onRead = onRead;
+    private readonly IGattTypedCharacteristic<T>.WriteValueFunc _onWrite = onWrite;
 
     /// <inheritdoc />
     public GattProperty Property => Characteristic.Property;
@@ -136,9 +136,9 @@ public class GattTypedClientCharacteristic<T, TProp1>(IGattClientCharacteristic 
     /// <inheritdoc />
     public IGattClientCharacteristic Characteristic { get; } = characteristic;
 
-    /// <inheritdoc cref="IGattAttributeDeclaration{T}.ReadValue(System.ReadOnlySpan{byte})" />
+    /// <inheritdoc cref="IGattTypedCharacteristic{T}.ReadValue(System.ReadOnlySpan{byte})" />
     protected internal T ReadValue(ReadOnlySpan<byte> source) => _onRead(source);
-    /// <inheritdoc cref="IGattAttributeDeclaration{T}.WriteValue" />
+    /// <inheritdoc cref="IGattTypedCharacteristic{T}.WriteValue" />
     protected internal byte[] WriteValue(T value) => _onWrite(value);
 
     T IGattTypedClientCharacteristic<T, TProp1>.ReadValue(ReadOnlySpan<byte> source) => ReadValue(source);
@@ -152,8 +152,8 @@ public class GattTypedClientCharacteristic<T, TProp1>(IGattClientCharacteristic 
 /// <typeparam name="TProp2"> The second property </typeparam>
 public sealed class GattTypedClientCharacteristic<T, TProp1, TProp2>(
     IGattClientCharacteristic characteristic,
-    IGattAttributeDeclaration<T>.ReadValueFunc onRead,
-    IGattAttributeDeclaration<T>.WriteValueFunc onWrite)
+    IGattTypedCharacteristic<T>.ReadValueFunc onRead,
+    IGattTypedCharacteristic<T>.WriteValueFunc onWrite)
     : GattTypedClientCharacteristic<T, TProp1>(characteristic, onRead, onWrite),
         IGattTypedClientCharacteristic<T, TProp2>
     where TProp1 : IBleProperty

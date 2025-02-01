@@ -200,14 +200,14 @@ public static class DeviceInformationServiceContract
 
         // Discover the characteristics
         await service.DiscoverCharacteristicsAsync(cancellationToken).ConfigureAwait(false);
-        service.TryGetCharacteristic(ManufacturerNameCharacteristic, out IGattServerCharacteristic<string, Properties.Read>? manufacturerNameCharacteristic);
-        service.TryGetCharacteristic(ModelNumberCharacteristic, out IGattServerCharacteristic<string, Properties.Read>? modelNumberCharacteristic);
-        service.TryGetCharacteristic(SerialNumberCharacteristic, out IGattServerCharacteristic<string, Properties.Read>? serialNumberCharacteristic);
-        service.TryGetCharacteristic(HardwareRevisionCharacteristic, out IGattServerCharacteristic<string, Properties.Read>? hardwareRevisionCharacteristic);
-        service.TryGetCharacteristic(FirmwareRevisionCharacteristic, out IGattServerCharacteristic<string, Properties.Read>? firmwareRevisionCharacteristic);
-        service.TryGetCharacteristic(SoftwareRevisionCharacteristic, out IGattServerCharacteristic<string, Properties.Read>? softwareRevisionCharacteristic);
-        service.TryGetCharacteristic(SystemIdCharacteristic, out IGattServerCharacteristic<SystemId, Properties.Read>? systemIdCharacteristic);
-        service.TryGetCharacteristic(RegulatoryCertificationDataCharacteristic, out IGattServerCharacteristic<Properties.Read>? regulatoryCertificationDataCharacteristic);
+        service.TryGetCharacteristic(ManufacturerNameCharacteristic, out TypedGattServerCharacteristic<string, Properties.Read>? manufacturerNameCharacteristic);
+        service.TryGetCharacteristic(ModelNumberCharacteristic, out TypedGattServerCharacteristic<string, Properties.Read>? modelNumberCharacteristic);
+        service.TryGetCharacteristic(SerialNumberCharacteristic, out TypedGattServerCharacteristic<string, Properties.Read>? serialNumberCharacteristic);
+        service.TryGetCharacteristic(HardwareRevisionCharacteristic, out TypedGattServerCharacteristic<string, Properties.Read>? hardwareRevisionCharacteristic);
+        service.TryGetCharacteristic(FirmwareRevisionCharacteristic, out TypedGattServerCharacteristic<string, Properties.Read>? firmwareRevisionCharacteristic);
+        service.TryGetCharacteristic(SoftwareRevisionCharacteristic, out TypedGattServerCharacteristic<string, Properties.Read>? softwareRevisionCharacteristic);
+        service.TryGetCharacteristic(SystemIdCharacteristic, out TypedGattServerCharacteristic<SystemId, Properties.Read>? systemIdCharacteristic);
+        service.TryGetCharacteristic(RegulatoryCertificationDataCharacteristic, out GattServerCharacteristic<Properties.Read>? regulatoryCertificationDataCharacteristic);
 
         return new GattServerDeviceInformationService(service)
         {
@@ -248,19 +248,19 @@ public sealed class GattClientDeviceInformationService(IGattClientService servic
 public sealed class GattServerDeviceInformationService(IGattServerService service) : GattServerServiceProxy(service)
 {
     /// <summary> The manufacturer name characteristic </summary>
-    public required IGattServerCharacteristic<string, Properties.Read>? ManufacturerName { get; init; }
+    public required TypedGattServerCharacteristic<string, Properties.Read>? ManufacturerName { get; init; }
     /// <summary> The model number characteristic </summary>
-    public required IGattServerCharacteristic<string, Properties.Read>? ModelNumber { get; init; }
+    public required TypedGattServerCharacteristic<string, Properties.Read>? ModelNumber { get; init; }
     /// <summary> The serial number characteristic </summary>
-    public required IGattServerCharacteristic<string, Properties.Read>? SerialNumber { get; init; }
+    public required TypedGattServerCharacteristic<string, Properties.Read>? SerialNumber { get; init; }
     /// <summary> The hardware revision characteristic </summary>
-    public required IGattServerCharacteristic<string, Properties.Read>? HardwareRevision { get; init; }
+    public required TypedGattServerCharacteristic<string, Properties.Read>? HardwareRevision { get; init; }
     /// <summary> The firmware revision characteristic </summary>
-    public required IGattServerCharacteristic<string, Properties.Read>? FirmwareRevision { get; init; }
+    public required TypedGattServerCharacteristic<string, Properties.Read>? FirmwareRevision { get; init; }
     /// <summary> The software revision characteristic </summary>
-    public required IGattServerCharacteristic<string, Properties.Read>? SoftwareRevision { get; init; }
+    public required TypedGattServerCharacteristic<string, Properties.Read>? SoftwareRevision { get; init; }
     /// <summary> The system id characteristic </summary>
-    public required IGattServerCharacteristic<SystemId, Properties.Read>? SystemId { get; init; }
+    public required TypedGattServerCharacteristic<SystemId, Properties.Read>? SystemId { get; init; }
     /// <summary> The regulatory certification data list characteristic </summary>
-    public required IGattServerCharacteristic<Properties.Read>? RegulatoryCertificationData { get; init; }
+    public required GattServerCharacteristic<Properties.Read>? RegulatoryCertificationData { get; init; }
 }
