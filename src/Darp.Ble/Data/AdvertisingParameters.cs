@@ -1,5 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
-
 namespace Darp.Ble.Data;
 
 public enum AdvertisingFilterPolicy

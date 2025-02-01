@@ -1,7 +1,6 @@
 using System.Runtime.CompilerServices;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
-using Darp.Ble.Gatt.Services;
 
 namespace Darp.Ble.Gatt;
 

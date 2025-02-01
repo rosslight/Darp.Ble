@@ -1,6 +1,5 @@
 using System.Buffers.Binary;
 using System.Text;
-using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
 

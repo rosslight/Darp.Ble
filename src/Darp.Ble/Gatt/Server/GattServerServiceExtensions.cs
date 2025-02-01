@@ -1,6 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data;
-using Darp.Ble.Gatt.Services;
 
 namespace Darp.Ble.Gatt.Server;
 

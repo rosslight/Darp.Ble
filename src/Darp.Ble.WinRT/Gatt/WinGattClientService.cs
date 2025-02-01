@@ -4,6 +4,7 @@ using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
+using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Gatt.Services;

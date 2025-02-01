@@ -1,6 +1,7 @@
 using System.Buffers.Binary;
 using System.Reactive.Linq;
 using Darp.Ble.Data;
+using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Gatt.Services;
 using Darp.Ble.Hci.Package;
