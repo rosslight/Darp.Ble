@@ -149,10 +149,11 @@ public class GattClientCharacteristic<TProp1>(IGattClientCharacteristic characte
     /// <inheritdoc />
     public IReadOnlyDictionary<BleUuid, IGattClientDescriptor> Descriptors => Characteristic.Descriptors;
 
-    Task<IGattClientDescriptor> IGattClientCharacteristic.AddDescriptorAsync(BleUuid uuid,
-        IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite,
-        CancellationToken cancellationToken)
+    /// <inheritdoc />
+    public Task<IGattClientDescriptor> AddDescriptorAsync(BleUuid uuid,
+        IGattClientAttribute.OnReadCallback? onRead = null,
+        IGattClientAttribute.OnWriteCallback? onWrite = null,
+        CancellationToken cancellationToken = default)
         => Characteristic.AddDescriptorAsync(uuid, onRead, onWrite, cancellationToken);
     ValueTask<byte[]> IGattClientAttribute.GetValueAsync(IGattClientPeer? clientPeer, CancellationToken cancellationToken)
         => Characteristic.GetValueAsync(clientPeer, cancellationToken);

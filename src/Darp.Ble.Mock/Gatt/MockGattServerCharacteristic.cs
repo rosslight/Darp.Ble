@@ -19,7 +19,7 @@ internal sealed class MockGattServerCharacteristic(MockGattServerService service
     protected override IObservable<IGattServerDescriptor> DiscoverDescriptorsCore() => _characteristic
         .Descriptors
         .ToObservable()
-        .Where(x => x is MockGattClientDescriptor)
+        .Where(x => x.Value is MockGattClientDescriptor)
         .Select(x => new MockGattServerDescriptor(this,
             x.Key,
             (MockGattClientDescriptor)x.Value,

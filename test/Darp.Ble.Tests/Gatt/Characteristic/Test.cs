@@ -34,7 +34,7 @@ public sealed class Test
     public async Task X()
     {
         IGattClientService service = null!;
-        await service.AddCharacteristicAsync<Properties.Read>(SomeUuid, SomeBytes);
+        var x = await service.AddCharacteristicAsync<Properties.Read>(SomeUuid, SomeBytes);
         await service.AddCharacteristicAsync<Properties.Read>(SomeUuid, onRead: _ => SomeBytes);
         await service.AddCharacteristicAsync(ReadChar);
         var aa = await service.AddCharacteristicAsync(ReadChar, 2);

@@ -24,8 +24,8 @@ public interface IGattClientCharacteristic : IGattClientAttribute
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> A task which holds the descriptor on completion </returns>
     Task<IGattClientDescriptor> AddDescriptorAsync(BleUuid uuid,
-        OnReadCallback? onRead,
-        OnWriteCallback? onWrite,
+        OnReadCallback? onRead = null,
+        OnWriteCallback? onWrite = null,
         CancellationToken cancellationToken = default);
 
     /// <summary> Notify subscribers about a new value </summary>

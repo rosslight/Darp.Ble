@@ -135,11 +135,13 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
     public async Task BatteryService_ShouldWork()
     {
         const byte expectedValue = 30;
+        const string expectedUserDescription = "customString";
 
         BleManager manager = new BleManagerBuilder()
             .AddMock(factory => factory.AddPeripheral(async device =>
             {
-                GattClientBatteryService service = await device.Peripheral.AddBatteryService();
+                GattClientBatteryService service = await device.Peripheral.AddBatteryService(
+                    batteryLevelDescription: expectedUserDescription);
                 await device.Broadcaster.StartAdvertisingAsync(
                     data: AdvertisingData.Empty.WithCompleteListOfServiceUuids(device.Peripheral),
                     autoRestart: true);
@@ -159,7 +161,8 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
         IGapAdvertisement advertisement = await device.Observer.RefCount().FirstAsync();
         await using IGattServerPeer peer = await advertisement.ConnectToPeripheral().FirstAsync();
         GattServerBatteryService service = await peer.DiscoverBatteryServiceAsync();
-        var userDescription = await service.BatteryLevel.Descriptors[DescriptorDeclaration.CharacteristicUserDescription.Uuid].ReadAsync();
+        string userDescription = await service.BatteryLevel.ReadUserDescriptionAsync();
+        userDescription.Should().Be(expectedUserDescription);
         var readLevel = await service.BatteryLevel.ReadAsync<byte>();
         readLevel.Should().Be(expectedValue);
         await using IDisposableObservable<byte> notifyable = await service.BatteryLevel.OnNotifyAsync<byte>();

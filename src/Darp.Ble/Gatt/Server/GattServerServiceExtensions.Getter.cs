@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace Darp.Ble.Gatt.Server;
 
@@ -182,5 +183,43 @@ public static partial class GattServerServiceExtensions
         if (!service.TryGetCharacteristic(characteristicDeclaration, out TypedGattServerCharacteristic<T, TProp1, TProp2>? characteristic))
             throw new Exception($"Characteristic {characteristicDeclaration.Uuid} not found");
         return characteristic;
+    }
+
+    /// <summary> Tries to get a descriptor that was already discovered </summary>
+    /// <param name="characteristic"> The characteristic the descriptor belongs to </param>
+    /// <param name="descriptorDeclaration"> The descriptor definition </param>
+    /// <param name="descriptor"> The descriptor if found </param>
+    /// <returns> The gatt server characteristic </returns>
+    public static bool TryGetDescriptor(this IGattServerCharacteristic characteristic,
+        DescriptorDeclaration descriptorDeclaration,
+        [NotNullWhen(true)] out IGattServerDescriptor? descriptor)
+    {
+        ArgumentNullException.ThrowIfNull(characteristic);
+        ArgumentNullException.ThrowIfNull(descriptorDeclaration);
+        return characteristic.Descriptors.TryGetValue(descriptorDeclaration.Uuid, out descriptor);
+    }
+
+    /// <summary> Get a descriptor that was already discovered </summary>
+    /// <param name="characteristic"> The characteristic the descriptor belongs to </param>
+    /// <param name="descriptorDeclaration"> The descriptor definition </param>
+    /// <returns> The gatt server characteristic </returns>
+    public static IGattServerDescriptor GetDescriptor(this IGattServerCharacteristic characteristic,
+        DescriptorDeclaration descriptorDeclaration)
+    {
+        if (!characteristic.TryGetDescriptor(descriptorDeclaration, out IGattServerDescriptor? descriptor))
+            throw new Exception($"Descriptor {descriptorDeclaration.Uuid} not found");
+        return descriptor;
+    }
+
+    /// <summary> Read the user description descriptor </summary>
+    /// <param name="characteristic"> The characteristic the descriptor belongs to </param>
+    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
+    /// <returns> The user description </returns>
+    public static async Task<string> ReadUserDescriptionAsync(this IGattServerCharacteristic characteristic,
+        CancellationToken cancellationToken = default)
+    {
+        IGattServerDescriptor descriptor = characteristic.GetDescriptor(DescriptorDeclaration.CharacteristicUserDescription);
+        byte[] bytes = await descriptor.ReadAsync(cancellationToken).ConfigureAwait(false);
+        return Encoding.UTF8.GetString(bytes);
     }
 }
