@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
 using Darp.Ble.Implementation;
 using Microsoft.Extensions.Logging;
@@ -12,7 +11,7 @@ namespace Darp.Ble.Gatt.Server;
 public abstract class GattServerPeer : IGattServerPeer
 {
     private readonly BleCentral _central;
-    private readonly Dictionary<BleUuid, IGattServerService> _services = new();
+    private readonly List<IGattServerService> _services = [];
     private bool _isDisposing;
 
     /// <summary> The behavior subject where the implementation can write to </summary>
@@ -22,22 +21,25 @@ public abstract class GattServerPeer : IGattServerPeer
     /// <param name="central"> The central that initiated the connection </param>
     /// <param name="address"> The address of the service </param>
     /// <param name="logger"> An optional logger </param>
-    protected GattServerPeer(BleCentral central, BleAddress address, ILogger? logger)
+    protected GattServerPeer(BleCentral central, BleAddress address, ILogger<GattServerPeer> logger)
     {
         _central = central;
         Logger = logger;
         Address = address;
-        Logger?.LogBleServerPeerConnected(address);
+        Logger.LogBleServerPeerConnected(address);
     }
 
     /// <inheritdoc />
     public IBleCentral Central => _central;
     /// <summary> The logger </summary>
-    protected ILogger? Logger { get; }
+    protected ILogger<GattServerPeer> Logger { get; }
+    /// <summary> The logger factory </summary>
+    protected ILoggerFactory LoggerFactory => Central.Device.LoggerFactory;
+
     /// <inheritdoc />
     public BleAddress Address { get; }
     /// <inheritdoc />
-    public IReadOnlyDictionary<BleUuid, IGattServerService> Services => _services;
+    public IReadOnlyCollection<IGattServerService> Services => _services;
     /// <inheritdoc />
     public bool IsConnected => ConnectionSubject.Value is ConnectionStatus.Connected;
     /// <inheritdoc />
@@ -52,7 +54,7 @@ public abstract class GattServerPeer : IGattServerPeer
                            .WithCancellation(cancellationToken)
                            .ConfigureAwait(false))
         {
-            _services[service.Uuid] = service;
+            _services.Add(service);
         }
     }
 
@@ -60,13 +62,16 @@ public abstract class GattServerPeer : IGattServerPeer
     public async Task<IGattServerService> DiscoverServiceAsync(BleUuid uuid, CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_isDisposing, this);
-        IGattServerService service = await DiscoverServiceCore(uuid)
-            .FirstAsync()
-            .ToTask(cancellationToken)
-            .ConfigureAwait(false);
-
-        _services[service.Uuid] = service;
-        return service;
+        IGattServerService? serviceToReturn = null;
+        await foreach (IGattServerService service in DiscoverServiceCore(uuid)
+                           .ToAsyncEnumerable()
+                           .WithCancellation(cancellationToken)
+                           .ConfigureAwait(false))
+        {
+            serviceToReturn ??= service;
+            _services.Add(service);
+        }
+        return serviceToReturn ?? throw new Exception($"No service with Uuid {uuid} was discovered");
     }
 
     /// <summary> Core implementation to discover services </summary>
@@ -87,7 +92,7 @@ public abstract class GattServerPeer : IGattServerPeer
         _isDisposing = true;
         DisposeCore();
         await DisposeAsyncCore().ConfigureAwait(false);
-        Logger?.LogBleServerPeerDisposed(Address);
+        Logger.LogBleServerPeerDisposed(Address);
         _central.RemovePeer(this);
         Debug.Assert(ConnectionSubject.Value is ConnectionStatus.Disconnected, "Disposing of connection subject even though it is not in completed state");
         ConnectionSubject.OnCompleted();

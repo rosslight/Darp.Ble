@@ -13,7 +13,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost;
 
-internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger? logger) : BleCentral(device, logger)
+internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger<HciHostBleCentral> logger) : BleCentral(device, logger)
 {
     private readonly Hci.HciHost _host = device.Host;
 
@@ -54,7 +54,7 @@ internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger? logger
                 })
                 .Timeout(timeout)
                 .SelectWhereLeMetaEvent<HciLeEnhancedConnectionCompleteV1Event>()
-                .Select(x => new HciHostGattServerPeer(this, _host, x.Data, address, Logger))
+                .Select(x => new HciHostGattServerPeer(this, _host, x.Data, address, LoggerFactory.CreateLogger<HciHostGattServerPeer>()))
                 .Subscribe(observer.OnNext, observer.OnError, observer.OnCompleted);
         });
     }

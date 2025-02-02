@@ -10,7 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Android;
 
-public sealed class AndroidBleObserver(BleDevice device, BluetoothLeScanner bluetoothLeScanner, ILogger? logger)
+public sealed class AndroidBleObserver(BleDevice device, BluetoothLeScanner bluetoothLeScanner, ILogger<AndroidBleObserver> logger)
     : BleObserver(device, logger)
 {
     private readonly BluetoothLeScanner _bluetoothLeScanner = bluetoothLeScanner;
@@ -29,7 +29,8 @@ public sealed class AndroidBleObserver(BleDevice device, BluetoothLeScanner blue
             return false;
         }
         _scanCallback = new BleObserverScanCallback(this);
-        ScanSettings? scanSettings = new ScanSettings.Builder()
+        using var settingsBuilder = new ScanSettings.Builder();
+        ScanSettings? scanSettings = settingsBuilder
             .SetCallbackType(ScanCallbackType.AllMatches)
             ?.SetMatchMode(BluetoothScanMatchMode.Aggressive)
             ?.SetReportDelay(0)

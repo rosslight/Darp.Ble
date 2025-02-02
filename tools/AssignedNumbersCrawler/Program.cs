@@ -5,20 +5,24 @@ using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
 using AssignedNumbersCrawler;
+using YamlDotNet.Core.Tokens;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
 string numbersDirectory = args[0];
 string targetDirectory = args[1];
 
-await using var adTypesWriter = new StreamWriter(File.Create($"{targetDirectory}/AssignedNumbers/AdTypes.cs"));
+await using var adTypesWriter = new StreamWriter(File.Create($"{targetDirectory}/src/Darp.Ble/Data/AssignedNumbers/AdTypes.cs"));
 await adTypesWriter.WriteAsync(ReadAdTypes(numbersDirectory));
-await using var companyIdentifierWriter = new StreamWriter(File.Create($"{targetDirectory}/AssignedNumbers/CompanyIdentifiers.cs"));
+await using var companyIdentifierWriter = new StreamWriter(File.Create($"{targetDirectory}/src/Darp.Ble/Data/AssignedNumbers/CompanyIdentifiers.cs"));
 await companyIdentifierWriter.WriteAsync(ReadCompanyIdentifiers(numbersDirectory));
+await using var coreVersionWriter = new StreamWriter(File.Create($"{targetDirectory}/src/Darp.Ble.Hci/AssignedNumbers/CoreVersion.cs"));
+await coreVersionWriter.WriteAsync(ReadCoreVersion(numbersDirectory));
 return;
 
 string ReadAdTypes(string inputDir) => ReadFile<AdType, byte>(
     $@"{inputDir}\assigned_numbers\core\ad_types.yaml",
+    "Darp.Ble.Data.AssignedNumbers",
     "ad_types", (value, i) =>
     {
         string name = FixNaming(value.Name, i);
@@ -29,8 +33,9 @@ string ReadAdTypes(string inputDir) => ReadFile<AdType, byte>(
                 """;
     });
 
-string ReadCompanyIdentifiers(string inputDir) => ReadFile<CompanyIdentifier, ushort>(
+string ReadCompanyIdentifiers(string inputDir) => ReadFile<ValueNameObject, ushort>(
     $@"{inputDir}\assigned_numbers\company_identifiers\company_identifiers.yaml",
+    "Darp.Ble.Data.AssignedNumbers",
     "company_identifiers", (value, i) =>
     {
         string name = FixNaming(value.Name, i);
@@ -40,7 +45,28 @@ string ReadCompanyIdentifiers(string inputDir) => ReadFile<CompanyIdentifier, us
                 """;
     });
 
-string ReadFile<T, TEnum>(string path, string key, Func<T, int, string> func)
+string ReadCoreVersion(string inputDir) => ReadFile<ValueNameObject, byte>(
+    $@"{inputDir}\assigned_numbers\core\core_version.yaml",
+    "Darp.Ble.Hci.AssignedNumbers",
+    "core_version", (value, i) =>
+    {
+        string name = value.Name;
+        int bracketsIndex = name.IndexOf('(', StringComparison.Ordinal);
+        if (bracketsIndex > 0)
+        {
+            name = name[..bracketsIndex];
+        }
+        name = FixNaming(name, i);
+        return $"""
+                    /// <summary> {FixXmlDocNaming(value.Name)} </summary>
+                    {name} = {value.Value},
+                """;
+    });
+
+string ReadFile<T, TEnum>(string path,
+    string nameSpace,
+    string key,
+    Func<T, int, string> func)
     where T : INameable
     where TEnum : INumber<TEnum>
 {
@@ -62,7 +88,7 @@ string ReadFile<T, TEnum>(string path, string key, Func<T, int, string> func)
         var t => t
     };
     builder.AppendLine(CultureInfo.InvariantCulture, $$"""
-                                                       namespace Darp.Ble.Data.AssignedNumbers;
+                                                       namespace {{nameSpace}};
 
                                                        /// <summary>
                                                        /// The {{enumName}}.
@@ -94,7 +120,7 @@ string FixXmlDocNaming(string original)
 
 string FixNaming(string original, int i)
 {
-    if (original.Length == 0) throw new Exception($"Value has an empty name");
+    if (original.Length == 0) throw new Exception("Value has an empty name");
     string res = original[0] switch
     {
         '0' => "Zero",
@@ -107,10 +133,10 @@ string FixNaming(string original, int i)
         '7' => "Seven",
         '8' => "Eight",
         '9' => "Nine",
-        var s => s.ToString()
+        var s => s.ToString(),
     };
     string result = ToPascalCase(res + original[1..]);
-    result = result.Replace("UuiD", "Uuid");
+    result = result.Replace("UuiD", "Uuid", StringComparison.Ordinal);
     if (i > 1)
         result = $"{result}{i}";
     return result;

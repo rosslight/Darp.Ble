@@ -7,7 +7,7 @@ namespace Darp.Ble.Hci.Package;
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-d57613e7-b364-9fe1-0c64-4a992117710f"/>
 public sealed class HciCommandPacket<TParameters>(TParameters commandParameters)
     : IHciPacket<HciCommandPacket<TParameters>, TParameters>
-    where TParameters : unmanaged, IHciCommand
+    where TParameters : IHciCommand
 {
     /// <inheritdoc />
     public static int HeaderLength => 3;

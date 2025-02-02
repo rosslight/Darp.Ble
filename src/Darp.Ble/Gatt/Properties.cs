@@ -11,6 +11,12 @@ public static class Properties
         /// <inheritdoc />
         static GattProperty IBleProperty.GattProperty => GattProperty.Notify;
     }
+    /// <summary> A class which represents the <see cref="GattProperty.Indicate"/> </summary>
+    public sealed class Indicate : IBleProperty
+    {
+        /// <inheritdoc />
+        static GattProperty IBleProperty.GattProperty => GattProperty.Indicate;
+    }
 
     /// <summary> A class which represents the <see cref="GattProperty.Write"/> </summary>
     public sealed class Write : IBleProperty
@@ -19,15 +25,15 @@ public static class Properties
         static GattProperty IBleProperty.GattProperty => GattProperty.Write;
     }
 
-    /// <summary> A class which represents the <see cref="GattProperty.Read"/> </summary>
-    public sealed class Read : IBleProperty
+    /// <summary> A class which represents the <see cref="GattProperty.Write"/> </summary>
+    public sealed class WriteWithoutResponse : IBleProperty
     {
         /// <inheritdoc />
-        static GattProperty IBleProperty.GattProperty => GattProperty.Read;
+        static GattProperty IBleProperty.GattProperty => GattProperty.WriteWithoutResponse;
     }
 
-    /// <summary> A class which represents the <see cref="GattProperty.Read"/> with a generic type </summary>
-    public sealed class Read<T> : IBleProperty where T : unmanaged
+    /// <summary> A class which represents the <see cref="GattProperty.Read"/> </summary>
+    public sealed class Read : IBleProperty
     {
         /// <inheritdoc />
         static GattProperty IBleProperty.GattProperty => GattProperty.Read;

@@ -10,16 +10,19 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.Implementation;
 
 /// <summary> The central view of a ble device </summary>
-public abstract class BleCentral(BleDevice device, ILogger? logger) : IBleCentral
+public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) : IBleCentral
 {
     private readonly ConcurrentDictionary<BleAddress, IGattServerPeer> _peerDevices = new();
     private readonly BleDevice _device = device;
 
     /// <summary> The logger </summary>
-    protected ILogger? Logger { get; } = logger;
+    protected ILogger<BleCentral> Logger { get; } = logger;
+    /// <summary> The logger factory </summary>
+    protected ILoggerFactory LoggerFactory => Device.LoggerFactory;
 
     /// <inheritdoc />
     public IBleDevice Device { get; } = device;
+
     /// <inheritdoc />
     public IReadOnlyCollection<IGattServerPeer> PeerDevices => _peerDevices.Values.ToArray();
 
@@ -53,7 +56,7 @@ public abstract class BleCentral(BleDevice device, ILogger? logger) : IBleCentra
                     {
                         peer.WhenConnectionStatusChanged
                             .Where(x => x is ConnectionStatus.Disconnected)
-                            .Do(_ => Logger?.LogTrace("Received disconnection event for Peer {@Peer}", peer))
+                            .Do(_ => Logger.LogTrace("Received disconnection event for Peer {@Peer}", peer))
                             .FirstAsync()
                             .Subscribe(__ => _ = peer.DisposeAsync().AsTask());
                         _peerDevices[peer.Address] = peer;
@@ -87,8 +90,15 @@ public abstract class BleCentral(BleDevice device, ILogger? logger) : IBleCentra
         return _peerDevices.TryRemove(peer.Address, out _);
     }
 
-    /// <inheritdoc />
+    /// <summary> A method that can be used to clean up all resources. </summary>
+    /// <remarks> This method is not glued to the <see cref="IAsyncDisposable"/> interface. All disposes should be done using the  </remarks>
     public async ValueTask DisposeAsync()
+    {
+        await DisposeAsyncCore().ConfigureAwait(false);
+        Dispose(disposing: false);
+    }
+    /// <inheritdoc cref="DisposeAsync"/>
+    protected virtual async ValueTask DisposeAsyncCore()
     {
         foreach (BleAddress address in _peerDevices.Keys)
         {
@@ -97,12 +107,11 @@ public abstract class BleCentral(BleDevice device, ILogger? logger) : IBleCentra
                 await peer.DisposeAsync().ConfigureAwait(false);
             }
         }
-        DisposeCore();
-        await DisposeAsyncCore().ConfigureAwait(false);
-        GC.SuppressFinalize(this);
     }
-    /// <inheritdoc cref="DisposeAsync"/>
-    protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
     /// <inheritdoc cref="IDisposable.Dispose"/>
-    protected virtual void DisposeCore() { }
+    /// <param name="disposing">
+    /// True, when this method was called by the synchronous <see cref="IDisposable.Dispose"/> method;
+    /// False if called by the asynchronous <see cref="IAsyncDisposable.DisposeAsync"/> method
+    /// </param>
+    protected virtual void Dispose(bool disposing) { }
 }

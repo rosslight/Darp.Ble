@@ -5,19 +5,21 @@ using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Windows.Devices.Enumeration;
 using Windows.Foundation;
 using Darp.Ble.Data;
+using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Server;
+using Darp.Ble.Gatt.Services;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.WinRT.Gatt.Server;
 
-internal sealed class WinGattServerService(GattDeviceService winService, ILogger? logger)
-    : GattServerService(new BleUuid(winService.Uuid, inferType: true), logger)
+internal sealed class WinGattServerService(GattServerPeer peer, GattDeviceService winService, ILogger<WinGattServerService> logger)
+    : GattServerService(peer, BleUuid.FromGuid(winService.Uuid, inferType: true), GattServiceType.Undefined, logger)
 {
     private readonly GattDeviceService _winService = winService;
 
-    private IObservable<IGattServerCharacteristic> DiscoverCharacteristic(Func<IAsyncOperation<GattCharacteristicsResult>> getServices)
+    private IObservable<GattServerCharacteristic> DiscoverCharacteristic(Func<IAsyncOperation<GattCharacteristicsResult>> getServices)
     {
-        return Observable.Create<IGattServerCharacteristic>(async (observer, cancellationToken) =>
+        return Observable.Create<GattServerCharacteristic>(async (observer, cancellationToken) =>
         {
             DeviceAccessStatus accessStatus = await _winService.RequestAccessAsync()
                 .AsTask(cancellationToken)
@@ -38,20 +40,20 @@ internal sealed class WinGattServerService(GattDeviceService winService, ILogger
 
                     foreach (GattCharacteristic gattCharacteristic in result.Characteristics)
                     {
-                        observer.OnNext(new WinGattServerCharacteristic(gattCharacteristic, Logger));
+                        observer.OnNext(new WinGattServerCharacteristic(this, gattCharacteristic, LoggerFactory.CreateLogger<WinGattServerCharacteristic>()));
                     }
                 }, observer.OnError, observer.OnCompleted);
         });
     }
 
     /// <inheritdoc />
-    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicsAsyncCore()
+    protected override IObservable<GattServerCharacteristic> DiscoverCharacteristicsCore()
     {
         return DiscoverCharacteristic(() => _winService.GetCharacteristicsAsync());
     }
 
     /// <inheritdoc />
-    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicAsyncCore(BleUuid uuid)
+    protected override IObservable<GattServerCharacteristic> DiscoverCharacteristicsCore(BleUuid uuid)
     {
         return DiscoverCharacteristic(() => _winService.GetCharacteristicsForUuidAsync(uuid.Value));
     }

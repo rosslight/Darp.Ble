@@ -1,7 +1,6 @@
 using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using Darp.BinaryObjects;
-using Darp.Ble.Hci.Payload;
 
 namespace Darp.Ble.Hci.Package;
 

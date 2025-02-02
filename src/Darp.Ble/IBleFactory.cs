@@ -6,7 +6,7 @@ namespace Darp.Ble;
 public interface IBleFactory
 {
     /// <summary> Enumerate all adapters which can be found by the implementation </summary>
-    /// <param name="logger"> An observable for logs </param>
+    /// <param name="loggerFactory"> The logger factory </param>
     /// <returns> All implementation specific ble devices </returns>
-    IEnumerable<IBleDevice> EnumerateDevices(ILogger? logger);
+    IEnumerable<IBleDevice> EnumerateDevices(ILoggerFactory loggerFactory);
 }

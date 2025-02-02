@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
 
@@ -10,3 +9,4 @@ public interface IHciCommand : IBinaryWritable
     /// <summary> The OpCode of the command </summary>
     static abstract HciOpCode OpCode { get; }
 }
+

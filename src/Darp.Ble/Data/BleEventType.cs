@@ -4,7 +4,7 @@ namespace Darp.Ble.Data;
 /// The event type of the advertising report
 /// </summary>
 [Flags]
-public enum BleEventType
+public enum BleEventType : ushort
 {
     /// <summary> None </summary>
     None = 0,

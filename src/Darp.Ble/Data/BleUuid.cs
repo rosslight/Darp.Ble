@@ -4,7 +4,12 @@ using System.Diagnostics.CodeAnalysis;
 namespace Darp.Ble.Data;
 
 /// <summary> The Ble Uuid </summary>
-public sealed record BleUuid : ISpanParsable<BleUuid>, ISpanFormattable, IUtf8SpanFormattable
+public sealed record BleUuid : ISpanParsable<BleUuid>,
+    ISpanFormattable,
+    IUtf8SpanFormattable,
+    IEquatable<Guid?>,
+    IEquatable<uint?>,
+    IEquatable<ushort?>
 {
     /// <summary> The type of the uuid </summary>
     public required BleUuidType Type { get; init; }
@@ -20,25 +25,6 @@ public sealed record BleUuid : ISpanParsable<BleUuid>, ISpanFormattable, IUtf8Sp
         Type = type;
         Value = value;
     }
-
-    /// <summary> Initializes a BleUuid from a 16 bit integer </summary>
-    /// <param name="value"> The uuid </param>
-    /// <returns> The bleUuid with type <see cref="BleUuidType.Uuid16"/> </returns>
-    [SetsRequiredMembers]
-    public BleUuid(ushort value) : this(BleUuidType.Uuid16, CreateGuid(value)) {}
-
-    /// <summary> Initializes a BleUuid from a 32 bit integer </summary>
-    /// <param name="value"> The uuid </param>
-    /// <returns> The bleUuid with type <see cref="BleUuidType.Uuid32"/> </returns>
-    [SetsRequiredMembers]
-    public BleUuid (uint value) : this(BleUuidType.Uuid32, CreateGuid(value)) {}
-
-    /// <summary> Initializes a BleUuid from a guid </summary>
-    /// <param name="value"> The uuid </param>
-    /// <param name="inferType"> If true, the <see cref="BleUuidType"/> will be inferred from the given <paramref name="value"/> </param>
-    /// <returns> The bleUuid with type <see cref="BleUuidType.Uuid128"/> </returns>
-    [SetsRequiredMembers]
-    public BleUuid(Guid value, bool inferType = false) : this(inferType ? InferType(value) : BleUuidType.Uuid128, value) {}
 
     private static BleUuidType InferType(Guid value)
     {
@@ -117,12 +103,30 @@ public sealed record BleUuid : ISpanParsable<BleUuid>, ISpanFormattable, IUtf8Sp
     public static BleUuid Parse(string s, IFormatProvider? provider) => Parse((ReadOnlySpan<char>)s, provider);
 
     /// <inheritdoc cref="TryParse(ReadOnlySpan{char},System.IFormatProvider?,out BleUuid?)"/>
-    public static bool TryParse(string? s, IFormatProvider? provider, [NotNullWhen(true)] out BleUuid? result)
+    public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [NotNullWhen(true)] out BleUuid? result)
     {
         if (s is not null) return TryParse((ReadOnlySpan<char>)s, provider, out result);
-        result = default;
+        result = null;
         return false;
     }
+
+    /// <inheritdoc />
+    /// <remarks> Infers type from the given Guid </remarks>
+    public bool Equals(Guid? other)
+    {
+        return Value == other && Type == InferType(other.Value);
+    }
+
+    /// <inheritdoc />
+    /// <remarks> Expects guid to be <see cref="BleUuidType.Uuid32"/> </remarks>
+    public bool Equals(uint? other) => other is not null && Type == BleUuidType.Uuid32 && Value == CreateGuid(other.Value);
+
+    /// <inheritdoc />
+    /// <remarks> Expects guid to be <see cref="BleUuidType.Uuid16"/> </remarks>
+    public bool Equals(ushort? other) => other is not null && Type == BleUuidType.Uuid16 && Value == CreateGuid(other.Value);
+
+    /// <inheritdoc />
+    public override int GetHashCode() => Type.GetHashCode() ^ Value.GetHashCode();
 
     /// <inheritdoc />
     public override string ToString() => Value.ToString();
@@ -151,4 +155,51 @@ public sealed record BleUuid : ISpanParsable<BleUuid>, ISpanFormattable, IUtf8Sp
     {
         return TryFormat(utf8Destination, out bytesWritten, format);
     }
+
+    /// <summary> Write the ble uuid to a span </summary>
+    /// <param name="destination"> The span to be written to </param>
+    /// <returns> True if the uuid is successfully written to the specified span; False otherwise </returns>
+    public bool TryWriteBytes(Span<byte> destination)
+    {
+        switch (Type)
+        {
+            case BleUuidType.Uuid16:
+            {
+                Span<byte> bytes = stackalloc byte[16];
+                Value.TryWriteBytes(bytes);
+                return bytes[..2].TryCopyTo(destination);
+            }
+            case BleUuidType.Uuid32:
+            {
+                Span<byte> bytes = stackalloc byte[16];
+                Value.TryWriteBytes(bytes);
+                return bytes[..4].TryCopyTo(destination);
+            }
+            case BleUuidType.Uuid128:
+                return Value.TryWriteBytes(destination);
+            default:
+                return false;
+        }
+    }
+
+    /// <summary> Creates a new BleUuid from a 16-bit integer </summary>
+    /// <param name="value"> The 16-bit uuid </param>
+    /// <returns> The bleUuid with type <see cref="BleUuidType.Uuid16"/> </returns>
+    public static implicit operator BleUuid(ushort value) => FromUInt16(value);
+
+    /// <summary> Creates a new BleUuid from a 16-bit integer </summary>
+    /// <param name="value"> The 16-bit uuid </param>
+    /// <returns> The bleUuid with type <see cref="BleUuidType.Uuid16"/> </returns>
+    public static BleUuid FromUInt16(ushort value) => new(BleUuidType.Uuid16, CreateGuid(value));
+
+    /// <summary> Creates a new BleUuid from a 32-bit integer </summary>
+    /// <param name="value"> The 16-bit uuid </param>
+    /// <returns> The bleUuid with type <see cref="BleUuidType.Uuid32"/> </returns>
+    public static BleUuid FromUInt32(uint value) => new(BleUuidType.Uuid32, CreateGuid(value));
+
+    /// <summary> Creates a newBleUuid from a guid </summary>
+    /// <param name="value"> The uuid </param>
+    /// <param name="inferType"> If true, the <see cref="BleUuidType"/> will be inferred from the given <paramref name="value"/>; <see cref="BleUuidType.Uuid128"/> otherwise </param>
+    /// <returns> The bleUuid with type <see cref="BleUuidType.Uuid128"/> or inferred type </returns>
+    public static BleUuid FromGuid(Guid value, bool inferType = false) => new(inferType ? InferType(value) : BleUuidType.Uuid128, value);
 }

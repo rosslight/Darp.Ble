@@ -6,6 +6,7 @@ using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
+using Darp.Ble.Gatt.Server;
 using Darp.Ble.Implementation;
 using Darp.Ble.Mock;
 using Darp.Ble.Tests.TestUtils;
@@ -16,16 +17,20 @@ using NSubstitute;
 
 namespace Darp.Ble.Tests.Implementation;
 
-public sealed class BleObserverTests(ILogger<BleObserverTests> logger)
+public sealed class BleObserverTests(ILoggerFactory loggerFactory)
 {
-    private readonly ILogger<BleObserverTests> _logger = logger;
+    private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private const string AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName = "0201010908546573744E616D65";
 
-    private async Task<IBleDevice> GetMockDeviceAsync(BleMockFactory.InitializeAsync configure)
+    private async Task<IBleDevice> GetMockDeviceAsync(BleMockFactory.InitializeSimpleAsync configure, IScheduler scheduler)
     {
         BleManager bleManager = new BleManagerBuilder()
-            .SetLogger(_logger)
-            .Add(new BleMockFactory { OnInitialize = configure } )
+            .SetLogger(_loggerFactory)
+            .Add<BleMockFactory>(factory =>
+            {
+                factory.AddPeripheral(configure);
+                factory.Scheduler = scheduler;
+            })
             .CreateManager();
         IBleDevice device = bleManager.EnumerateDevices().First();
         InitializeResult result = await device.InitializeAsync();
@@ -36,20 +41,20 @@ public sealed class BleObserverTests(ILogger<BleObserverTests> logger)
     private async Task<IBleDevice> Get1000MsAdvertisementMockDeviceAsync(IScheduler scheduler)
     {
         AdvertisingData adData = AdvertisingData.From(AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName.ToByteArray());
-        return await GetMockDeviceAsync(Configure);
+        return await GetMockDeviceAsync(Configure, scheduler);
 
-        Task Configure(IBleBroadcaster broadcaster, IBlePeripheral _)
+        async Task Configure(IBleDevice d)
         {
-            IObservable<AdvertisingData> source = Observable.Interval(TimeSpan.FromMilliseconds(1000), scheduler)
-                .Select(_ => adData);
-            broadcaster.Advertise(source);
-            return Task.CompletedTask;
+            await d.Broadcaster.StartAdvertisingAsync(
+                data: adData,
+                interval: ScanTiming.Ms1000
+                );
         }
     }
 
     private async Task<IBleDevice> GetMockDeviceAsync()
     {
-        return await GetMockDeviceAsync((_, _) => Task.CompletedTask);
+        return await GetMockDeviceAsync(_ => Task.CompletedTask, Scheduler.Default);
     }
 
     [Fact]

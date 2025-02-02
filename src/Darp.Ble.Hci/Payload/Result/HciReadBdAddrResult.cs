@@ -1,7 +1,5 @@
-using System.Runtime.InteropServices;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.Payload.Command;
-using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci.Payload.Result;
 
@@ -12,5 +10,5 @@ public readonly partial record struct HciReadBdAddrResult
     /// <summary> The <see cref="HciCommandStatus"/> </summary>
     public required HciCommandStatus Status { get; init; }
     /// <summary> The BD_ADDR </summary>
-    public required DeviceAddress Address { get; init; }
+    public required UInt48 Address { get; init; }
 }

@@ -25,7 +25,7 @@ public sealed class HciLeSetRandomAddressCommandTests
         bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeTrue();
         value.GetByteCount().Should().Be(6);
-        value.RandomAddress.Should().Be((DeviceAddress)address);
+        value.RandomAddress.Should().Be((UInt48)address);
         Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
     }
 

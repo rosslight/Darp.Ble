@@ -13,7 +13,7 @@ public static class CommandPackageExtensions
 {
     [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
     private static void OnNextEventPacket<TCommand>(this IObserver<HciEventPacket> observer, HciEventPacket package)
-        where TCommand : unmanaged, IHciCommand
+        where TCommand : IHciCommand
     {
         try
         {
@@ -33,9 +33,8 @@ public static class CommandPackageExtensions
         }
     }
 
-    private static IObservable<HciEventPacket> QueryCommand<TCommand>(this HciHost hciHost,
-        TCommand command = default)
-        where TCommand : unmanaged, IHciCommand
+    private static IObservable<HciEventPacket> QueryCommand<TCommand>(this HciHost hciHost, TCommand command)
+        where TCommand : IHciCommand
     {
         return Observable.Create<HciEventPacket>(observer =>
         {
@@ -50,6 +49,22 @@ public static class CommandPackageExtensions
 
     /// <summary> Query a command expecting a <see cref="HciCommandCompleteEvent{TParameters}"/> </summary>
     /// <param name="hciHost"> The hci host </param>
+    /// <param name="timeout"> The timeout waiting for the response </param>
+    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
+    /// <typeparam name="TCommand"> The type of the command </typeparam>
+    /// <typeparam name="TResponse"> The type of the parameters of the response packet </typeparam>
+    /// <returns> The parameters of the response packet </returns>
+    public static Task<TResponse> QueryCommandCompletionAsync<TCommand, TResponse>(this HciHost hciHost,
+        TimeSpan? timeout = null,
+        CancellationToken cancellationToken = default)
+        where TCommand : unmanaged, IHciCommand
+        where TResponse : unmanaged, IBinaryReadable<TResponse>
+    {
+        return hciHost.QueryCommandCompletionAsync<TCommand, TResponse>(default, timeout, cancellationToken);
+    }
+
+    /// <summary> Query a command expecting a <see cref="HciCommandCompleteEvent{TParameters}"/> </summary>
+    /// <param name="hciHost"> The hci host </param>
     /// <param name="command"> The command to be sent </param>
     /// <param name="timeout"> The timeout waiting for the response </param>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
@@ -57,9 +72,9 @@ public static class CommandPackageExtensions
     /// <typeparam name="TParameters"> The type of the parameters of the response packet </typeparam>
     /// <returns> The parameters of the response packet </returns>
     public static async Task<TParameters> QueryCommandCompletionAsync<TCommand, TParameters>(this HciHost hciHost,
-        TCommand command = default, TimeSpan? timeout = null,
+        TCommand command, TimeSpan? timeout = null,
         CancellationToken cancellationToken = default)
-        where TCommand : unmanaged, IHciCommand
+        where TCommand : IHciCommand
         where TParameters : unmanaged, IBinaryReadable<TParameters>
     {
         timeout ??= TimeSpan.FromSeconds(10);

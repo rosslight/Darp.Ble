@@ -6,8 +6,8 @@ namespace Darp.Ble.WinRT;
 public sealed class WinBleFactory : IBleFactory
 {
     /// <inheritdoc />
-    public IEnumerable<IBleDevice> EnumerateDevices(ILogger? logger)
+    public IEnumerable<IBleDevice> EnumerateDevices(ILoggerFactory loggerFactory)
     {
-        yield return new WinBleDevice(logger);
+        yield return new WinBleDevice(loggerFactory);
     }
 }

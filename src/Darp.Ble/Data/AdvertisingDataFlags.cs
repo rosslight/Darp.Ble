@@ -2,10 +2,10 @@ namespace Darp.Ble.Data;
 
 /// <summary> Supplement to the Bluetooth Core Specification | v11, Part A </summary>
 [Flags]
-public enum AdvertisingDataFlags
+public enum AdvertisingDataFlags : byte
 {
     /// <summary>Specifies no flag.</summary>
-    NotAvailable = 0b00000000,
+    None = 0b00000000,
     /// <summary>Specifies Bluetooth LE Limited Discoverable Mode.</summary>
     LimitedDiscoverableMode = 0b00000001,
     /// <summary>Specifies Bluetooth LE General Discoverable Mode.</summary>

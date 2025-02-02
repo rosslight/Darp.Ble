@@ -5,16 +5,20 @@ namespace Darp.Ble.Gatt.Server;
 /// <summary> The interface defining a gatt server peer </summary>
 public interface IGattServerPeer : IAsyncDisposable
 {
-    /// <summary> The central which discovered the peer device </summary>
-    IBleCentral Central { get; }
+    /// <summary> The central which discovered the <see cref="IGattServerPeer"/> </summary>
+    public IBleCentral Central { get; }
+
     /// <summary> The ble address of the service </summary>
     BleAddress Address { get; }
+
     /// <summary> All discovered services </summary>
-    IReadOnlyDictionary<BleUuid, IGattServerService> Services { get; }
+    IReadOnlyCollection<IGattServerService> Services { get; }
+
     /// <summary> True, if the peer is connected </summary>
     bool IsConnected { get; }
     /// <summary> Observe changes in the connection status </summary>
     IObservable<ConnectionStatus> WhenConnectionStatusChanged { get; }
+
     /// <summary> Discover all services of the peer peripheral </summary>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> A task </returns>
