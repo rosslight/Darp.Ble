@@ -67,11 +67,6 @@ internal sealed class HciHostGattServerService(BleUuid uuid, GattServiceType typ
             if (lastCharacteristic is not null) lastCharacteristic.EndHandle = _endGroupHandle;
             foreach (HciHostGattServerCharacteristic characteristic in discoveredCharacteristics)
             {
-                if (!await characteristic.DiscoverAllDescriptorsAsync(token).ConfigureAwait(false))
-                {
-                    Logger.LogWarning("Could not discover descriptors of characteristic {@Characteristic}", characteristic);
-                    continue;
-                }
                 observer.OnNext(characteristic);
             }
         });

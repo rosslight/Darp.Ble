@@ -3,15 +3,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Gatt.Server;
 
-public interface IGattServerDescriptor
-{
-    /// <summary> The characteristic that contains this descriptor </summary>
-    IGattServerCharacteristic Characteristic { get; }
-
-    /// <summary> The <see cref="BleUuid"/> of the descriptor </summary>
-    BleUuid Uuid { get; }
-}
-
 public abstract class GattServerDescriptor(
     GattServerCharacteristic characteristic,
     BleUuid uuid,
@@ -27,6 +18,11 @@ public abstract class GattServerDescriptor(
 
     /// <inheritdoc />
     public BleUuid Uuid { get; } = uuid;
+
+    /// <inheritdoc />
+    public abstract Task<byte[]> ReadAsync(CancellationToken cancellationToken = default);
+    /// <inheritdoc />
+    public abstract Task<bool> WriteAsync(byte[] bytes, CancellationToken cancellationToken = default);
 }
 
 /// <summary> The interface defining a gatt server characteristic </summary>

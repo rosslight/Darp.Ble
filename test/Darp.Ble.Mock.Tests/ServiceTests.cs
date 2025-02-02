@@ -159,7 +159,7 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
         IGapAdvertisement advertisement = await device.Observer.RefCount().FirstAsync();
         await using IGattServerPeer peer = await advertisement.ConnectToPeripheral().FirstAsync();
         GattServerBatteryService service = await peer.DiscoverBatteryServiceAsync();
-
+        var userDescription = await service.BatteryLevel.Descriptors[DescriptorDeclaration.CharacteristicUserDescription.Uuid].ReadAsync();
         var readLevel = await service.BatteryLevel.ReadAsync<byte>();
         readLevel.Should().Be(expectedValue);
         await using IDisposableObservable<byte> notifyable = await service.BatteryLevel.OnNotifyAsync<byte>();

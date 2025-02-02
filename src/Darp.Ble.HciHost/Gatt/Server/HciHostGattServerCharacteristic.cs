@@ -17,85 +17,94 @@ internal sealed class HciHostGattServerCharacteristic(
     GattProperty property,
     ILogger<HciHostGattServerCharacteristic> logger) : GattServerCharacteristic(service, attHandle, uuid, property, logger)
 {
-    private readonly Dictionary<BleUuid, HciHostGattServerDescriptor> _descriptorDictionary = new();
     private readonly HciHostGattServerPeer _peer = service.Peer;
     public new HciHostGattServerService Service { get; } = service;
     public ushort AttHandle { get; } = attHandle;
     internal ushort EndHandle { get; set; }
 
-    /// <summary>
-    /// BLUETOOTH CORE SPECIFICATION Version 5.4 | Vol 3, Part G, 4.7.1 Discover All Characteristic Descriptors
-    /// </summary>
-    public async Task<bool> DiscoverAllDescriptorsAsync(CancellationToken token)
-    {
-        ushort startingHandle = AttHandle;
-        while (!token.IsCancellationRequested && startingHandle < 0xFFFF)
-        {
-            AttReadResult response = await _peer.QueryAttPduAsync<AttFindInformationReq, AttFindInformationRsp>(
-                new AttFindInformationReq
-                {
-                    StartingHandle = startingHandle,
-                    EndingHandle = EndHandle,
-                }, cancellationToken: token)
-                .ConfigureAwait(false);
-            if (response.OpCode is AttOpCode.ATT_ERROR_RSP && AttErrorRsp
-                    .TryReadLittleEndian(response.Pdu, out AttErrorRsp errorRsp, out _))
-            {
-                if (errorRsp.ErrorCode is AttErrorCode.AttributeNotFoundError) break;
-                throw new GattCharacteristicException(this, $"Could not discover descriptors due to error {errorRsp.ErrorCode}");
-            }
-            if (!(response.OpCode is AttOpCode.ATT_FIND_INFORMATION_RSP && AttFindInformationRsp
-                    .TryReadLittleEndian(response.Pdu, out AttFindInformationRsp rsp, out _)))
-            {
-                throw new GattCharacteristicException(this, $"Received unexpected att response {response.OpCode}");
-            }
-            if (rsp.InformationData.Length == 0) break;
-            foreach ((ushort handle, ReadOnlyMemory<byte> uuid) in rsp.InformationData)
-            {
-                if (handle < startingHandle)
-                    throw new GattCharacteristicException(this, "Handle of discovered characteristic is smaller than starting handle of service");
-                var bleUuid = new BleUuid(uuid.Span);
-                _descriptorDictionary[bleUuid] = new HciHostGattServerDescriptor(this, bleUuid, handle, LoggerFactory.CreateLogger<HciHostGattServerDescriptor>());
-            }
-            ushort lastHandle = rsp.InformationData[^1].Handle;
-            if (lastHandle == EndHandle) break;
-            startingHandle = (ushort)(lastHandle + 1);
-        }
-        //Logger.Verbose("Discovered descriptors for characteristic {@Characteristic}", this);
-        return true;
-    }
-
     /// <inheritdoc />
+    /// <remarks> BLUETOOTH CORE SPECIFICATION Version 5.4 | Vol 3, Part G, 4.7.1 Discover All Characteristic Descriptors </remarks>
     protected override IObservable<IGattServerDescriptor> DiscoverDescriptorsCore()
     {
-        throw new NotImplementedException();
+        return Observable.Create<IGattServerDescriptor>(async (observer, token) =>
+        {
+            ushort startingHandle = AttHandle;
+            while (!token.IsCancellationRequested && startingHandle < 0xFFFF)
+            {
+                AttReadResult response = await _peer.QueryAttPduAsync<AttFindInformationReq, AttFindInformationRsp>(
+                        new AttFindInformationReq
+                        {
+                            StartingHandle = startingHandle,
+                            EndingHandle = EndHandle,
+                        }, cancellationToken: token)
+                    .ConfigureAwait(false);
+                if (response.OpCode is AttOpCode.ATT_ERROR_RSP && AttErrorRsp
+                        .TryReadLittleEndian(response.Pdu, out AttErrorRsp errorRsp, out _))
+                {
+                    if (errorRsp.ErrorCode is AttErrorCode.AttributeNotFoundError) break;
+                    observer.OnError(new GattCharacteristicException(this, $"Could not discover descriptors due to error {errorRsp.ErrorCode}"));
+                    return;
+                }
+
+                if (!(response.OpCode is AttOpCode.ATT_FIND_INFORMATION_RSP && AttFindInformationRsp
+                        .TryReadLittleEndian(response.Pdu, out AttFindInformationRsp rsp, out _)))
+                {
+                    observer.OnError(new GattCharacteristicException(this, $"Received unexpected att response {response.OpCode}"));
+                    return;
+                }
+
+                if (rsp.InformationData.Length == 0) break;
+                foreach ((ushort handle, ReadOnlyMemory<byte> uuid) in rsp.InformationData)
+                {
+                    if (handle < startingHandle)
+                    {
+                        observer.OnError(new GattCharacteristicException(this, "Handle of discovered characteristic is smaller than starting handle of service"));
+                        return;
+                    }
+                    var bleUuid = new BleUuid(uuid.Span);
+                    var descriptor = new HciHostGattServerDescriptor(this,
+                        bleUuid,
+                        handle,
+                        LoggerFactory.CreateLogger<HciHostGattServerDescriptor>());
+                    observer.OnNext(descriptor);
+                }
+
+                ushort lastHandle = rsp.InformationData[^1].Handle;
+                if (lastHandle == EndHandle) break;
+                startingHandle = (ushort)(lastHandle + 1);
+            }
+            observer.OnCompleted();
+            //Logger.Verbose("Discovered descriptors for characteristic {@Characteristic}", this);
+        });
     }
 
     /// <inheritdoc />
     protected override async Task WriteAsyncCore(byte[] bytes, CancellationToken cancellationToken)
     {
-        if (!_descriptorDictionary.TryGetValue(Uuid, out HciHostGattServerDescriptor? descriptor))
+        if (!Descriptors.TryGetValue(Uuid, out IGattServerDescriptor? descriptor))
             throw new GattCharacteristicException(this, "No descriptor defining self available");
         await descriptor.WriteAsync(bytes, cancellationToken).ConfigureAwait(false);
     }
 
     protected override void WriteWithoutResponseCore(byte[] bytes)
     {
-        if (!_descriptorDictionary.TryGetValue(Uuid, out HciHostGattServerDescriptor? descriptor))
+        if (!Descriptors.TryGetValue(Uuid, out IGattServerDescriptor? descriptor))
             throw new GattCharacteristicException(this, "No descriptor defining self available");
-        descriptor.WriteWithoutResponse(bytes);
+        _ = descriptor.WriteAsync(bytes);
     }
 
-    protected override Task<byte[]> ReadAsyncCore(CancellationToken cancellationToken)
+    protected override async Task<byte[]> ReadAsyncCore(CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        if (!Descriptors.TryGetValue(Uuid, out IGattServerDescriptor? descriptor))
+            throw new GattCharacteristicException(this, "No descriptor defining self available");
+        return await descriptor.ReadAsync(cancellationToken).ConfigureAwait(false);
     }
 
     protected override async Task<IDisposable> EnableNotificationsAsync<TState>(TState state,
         Action<TState, byte[]> onNotify,
         CancellationToken cancellationToken)
     {
-        if (!_descriptorDictionary.TryGetValue(0x2902, out HciHostGattServerDescriptor? cccd))
+        if (!Descriptors.TryGetValue(0x2902, out IGattServerDescriptor? cccd))
         {
             throw new GattCharacteristicException(this, "No cccd available");
         }
@@ -103,7 +112,7 @@ internal sealed class HciHostGattServerCharacteristic(
         {
             throw new GattCharacteristicException(this, "Characteristic does not support notification");
         }
-        if (!await cccd.WriteAsync([0x01, 0x00], cancellationToken).ConfigureAwait(false))
+        if (!await cccd.WriteAsync((byte[])[0x01, 0x00], cancellationToken).ConfigureAwait(false))
         {
             throw new GattCharacteristicException(this, "Could not write notification status to cccd");
         }
@@ -124,10 +133,10 @@ internal sealed class HciHostGattServerCharacteristic(
 
     protected override async Task DisableNotificationsAsync()
     {
-        if (!_descriptorDictionary.TryGetValue(0x2902, out HciHostGattServerDescriptor? cccd))
+        if (!Descriptors.TryGetValue(0x2902, out IGattServerDescriptor? cccd))
         {
             return;
         }
-        await cccd.WriteAsync([0x00, 0x00], default).ConfigureAwait(false);
+        await cccd.WriteAsync((byte[])[0x00, 0x00], CancellationToken.None).ConfigureAwait(false);
     }
 }

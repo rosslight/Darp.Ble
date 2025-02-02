@@ -24,7 +24,7 @@ internal sealed class HciHostGattServerDescriptor(HciHostGattServerCharacteristi
         });
     }
 
-    public async Task<bool> WriteAsync(byte[] bytes, CancellationToken cancellationToken)
+    public override async Task<bool> WriteAsync(byte[] bytes, CancellationToken cancellationToken = default)
     {
         AttReadResult response = await _peer.QueryAttPduAsync<AttWriteReq, AttWriteRsp>(
             new AttWriteReq
@@ -44,5 +44,10 @@ internal sealed class HciHostGattServerDescriptor(HciHostGattServerCharacteristi
             return false;
         }
         return true;
+    }
+
+    public override Task<byte[]> ReadAsync(CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
     }
 }

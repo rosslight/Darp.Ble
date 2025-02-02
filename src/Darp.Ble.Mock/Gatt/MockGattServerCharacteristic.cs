@@ -23,6 +23,7 @@ internal sealed class MockGattServerCharacteristic(MockGattServerService service
         .Select(x => new MockGattServerDescriptor(this,
             x.Key,
             (MockGattClientDescriptor)x.Value,
+            _gattClient,
             LoggerFactory.CreateLogger<MockGattServerDescriptor>()));
 
     /// <inheritdoc />
