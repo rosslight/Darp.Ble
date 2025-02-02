@@ -8,8 +8,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Android;
 
-public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, ILogger? logger)
-    : BleDevice(logger)
+public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, ILoggerFactory loggerFactory)
+    : BleDevice(loggerFactory, loggerFactory.CreateLogger<AndroidBleDevice>())
 {
     private readonly BluetoothManager _bluetoothManager = bluetoothManager;
     private BluetoothAdapter? BluetoothAdapter => _bluetoothManager.Adapter;
@@ -19,29 +19,43 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, ILogger?
 
     public override string? Name => BluetoothAdapter?.Name;
 
+    protected override Task SetRandomAddressAsyncCore(BleAddress randomAddress, CancellationToken cancellationToken)
+    {
+        throw new NotSupportedException();
+    }
+
     protected override Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
     {
-        if (BluetoothAdapter is null) return Task.FromResult(InitializeResult.DeviceNotAvailable);
-        if (!BluetoothAdapter.IsEnabled) return Task.FromResult(InitializeResult.DeviceNotEnabled);
-        if (!IsAvailable) return Task.FromResult(InitializeResult.DeviceNotAvailable);
+        if (BluetoothAdapter is null)
+            return Task.FromResult(InitializeResult.DeviceNotAvailable);
+        if (!BluetoothAdapter.IsEnabled)
+            return Task.FromResult(InitializeResult.DeviceNotEnabled);
+        if (!IsAvailable)
+            return Task.FromResult(InitializeResult.DeviceNotAvailable);
 
         if (HasScanPermissions() && BluetoothAdapter.BluetoothLeScanner is not null)
         {
-            Observer = new AndroidBleObserver(this, BluetoothAdapter.BluetoothLeScanner, Logger);
+            Observer = new AndroidBleObserver(
+                this,
+                BluetoothAdapter.BluetoothLeScanner,
+                LoggerFactory.CreateLogger<AndroidBleObserver>()
+            );
         }
         return Task.FromResult(InitializeResult.Success);
     }
 
-    private static bool HasScanPermissions() => OperatingSystem.IsAndroidVersionAtLeast(31)
-        ? Application.Context.CheckSelfPermission(Manifest.Permission.BluetoothScan) is Permission.Granted
-        : Application.Context.CheckSelfPermission(Manifest.Permission.AccessCoarseLocation) is Permission.Granted
-          && Application.Context.CheckSelfPermission(Manifest.Permission.AccessFineLocation) is Permission.Granted;
+    private static bool HasScanPermissions() =>
+        OperatingSystem.IsAndroidVersionAtLeast(31)
+            ? Application.Context.CheckSelfPermission(Manifest.Permission.BluetoothScan) is Permission.Granted
+            : Application.Context.CheckSelfPermission(Manifest.Permission.AccessCoarseLocation) is Permission.Granted
+                && Application.Context.CheckSelfPermission(Manifest.Permission.AccessFineLocation)
+                    is Permission.Granted;
 
-    public override string Identifier => "Darp.Ble.Android";
+    public override string Identifier => BleDeviceIdentifiers.Android;
 
-    protected override void DisposeCore()
+    protected override void Dispose(bool disposing)
     {
         _bluetoothManager.Dispose();
-        base.DisposeCore();
+        base.Dispose(disposing);
     }
 }

@@ -10,6 +10,7 @@ using Darp.Ble.Mock;
 using Darp.Ble.Tests.TestUtils;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Reactive.Testing;
 using NSubstitute;
 
@@ -22,7 +23,7 @@ public sealed class BleDeviceTests
     {
         var logger = new TestLogger();
         BleManager manager = new BleManagerBuilder()
-            .SetLogger(logger)
+            .SetLogger(new TestLoggerFactory(logger))
             .Add<BleMockFactory>()
             .CreateManager();
         IBleDevice device = manager.EnumerateDevices().First();
@@ -35,8 +36,9 @@ public sealed class BleDeviceTests
     [SuppressMessage("Non-substitutable member", "NS1004:Argument matcher used with a non-virtual member of a class.")]
     public async Task InitializeAsync_FailedInitialization_ShouldHaveCorrectResult()
     {
-        var device = Substitute.For<BleDevice>((ILogger?)null);
-        device.InvokeNonPublicMethod("InitializeAsyncCore", Arg.Any<CancellationToken>())
+        var device = Substitute.For<BleDevice>(NullLoggerFactory.Instance, NullLogger<BleDevice>.Instance);
+        device
+            .InvokeNonPublicMethod("InitializeAsyncCore", Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(InitializeResult.DeviceNotAvailable));
 
         InitializeResult result = await device.InitializeAsync();
@@ -51,11 +53,15 @@ public sealed class BleDeviceTests
     {
         var testScheduler = new TestScheduler();
 
-        var device = Substitute.For<BleDevice>((ILogger?)null);
-        device.InvokeNonPublicMethod("InitializeAsyncCore", Arg.Any<CancellationToken>())
-            .Returns(_ => Observable.Return(InitializeResult.Success)
-                .Delay(TimeSpan.FromMilliseconds(1000), testScheduler)
-                .ToTask());
+        var device = Substitute.For<BleDevice>(NullLoggerFactory.Instance, NullLogger<BleDevice>.Instance);
+        device
+            .InvokeNonPublicMethod("InitializeAsyncCore", Arg.Any<CancellationToken>())
+            .Returns(_ =>
+                Observable
+                    .Return(InitializeResult.Success)
+                    .Delay(TimeSpan.FromMilliseconds(1000), testScheduler)
+                    .ToTask()
+            );
 
         Task<InitializeResult> init1Task = device.InitializeAsync();
         Task<InitializeResult> init2Task = device.InitializeAsync();
@@ -71,8 +77,9 @@ public sealed class BleDeviceTests
     [SuppressMessage("Non-substitutable member", "NS1004:Argument matcher used with a non-virtual member of a class.")]
     public async Task InitializeAsync_SecondInitialization_AlreadyInitialized()
     {
-        var device = Substitute.For<BleDevice>((ILogger?)null);
-        device.InvokeNonPublicMethod("InitializeAsyncCore", Arg.Any<CancellationToken>())
+        var device = Substitute.For<BleDevice>(NullLoggerFactory.Instance, NullLogger<BleDevice>.Instance);
+        device
+            .InvokeNonPublicMethod("InitializeAsyncCore", Arg.Any<CancellationToken>())
             .Returns(_ => Task.FromResult(InitializeResult.Success));
 
         device.IsInitialized.Should().BeFalse();
@@ -87,7 +94,7 @@ public sealed class BleDeviceTests
     [Fact]
     public void Capability_NotInitialized_ShouldThrow()
     {
-        var device = Substitute.For<BleDevice>((ILogger?)null);
+        var device = Substitute.For<BleDevice>(NullLoggerFactory.Instance, NullLogger<BleDevice>.Instance);
         Action act = () => _ = device.Observer;
         act.Should().Throw<NotInitializedException>();
     }
@@ -97,8 +104,9 @@ public sealed class BleDeviceTests
     [SuppressMessage("Non-substitutable member", "NS1004:Argument matcher used with a non-virtual member of a class.")]
     public async Task Capability_NotSupported_ShouldThrow()
     {
-        var device = Substitute.For<BleDevice>((ILogger?)null);
-        device.InvokeNonPublicMethod("InitializeAsyncCore", Arg.Any<CancellationToken>())
+        var device = Substitute.For<BleDevice>(NullLoggerFactory.Instance, NullLogger<BleDevice>.Instance);
+        device
+            .InvokeNonPublicMethod("InitializeAsyncCore", Arg.Any<CancellationToken>())
             .Returns(_ => Task.FromResult(InitializeResult.Success));
 
         await device.InitializeAsync();
@@ -111,26 +119,22 @@ public sealed class BleDeviceTests
     [SuppressMessage("Usage", "NS5000:Received check.")]
     public async Task DisposeAsync()
     {
-        var device = Substitute.For<BleDevice>((ILogger?)null);
+        var device = Substitute.For<BleDevice>(NullLoggerFactory.Instance, NullLogger<BleDevice>.Instance);
 
         await device.DisposeAsync();
 
         device.ReceivedWithAnyArgs(1).InvokeNonPublicMethod("DisposeAsyncCore");
-        device.ReceivedWithAnyArgs(1).InvokeNonPublicMethod("DisposeCore");
+        device.ReceivedWithAnyArgs(1).InvokeNonPublicMethod("Dispose", true);
     }
 
     [Fact]
     public async Task ConnectingAndDisposing_ShouldNotThrow()
     {
-        var device = (MockBleDevice)new BleMockFactory
-        {
-            OnInitialize = (broadcaster, _) =>
-            {
-                broadcaster.Advertise(Observable.Interval(TimeSpan.FromMilliseconds(1000))
-                    .Select(_ => AdvertisingData.Empty), new AdvertisingParameters {Type = BleEventType.Connectable});
-                return Task.CompletedTask;
-            },
-        }.EnumerateDevices(logger: null).First();
+        var device = (MockBleDevice)
+            new BleMockFactory()
+                .AddPeripheral(async d => await d.Broadcaster.StartAdvertisingAsync(interval: ScanTiming.Ms1000))
+                .EnumerateDevices(NullLoggerFactory.Instance)
+                .First();
         await device.InitializeAsync();
         IGattServerPeer peer = await device.Observer.RefCount().ConnectToPeripheral().FirstAsync();
         await peer.DisposeAsync();

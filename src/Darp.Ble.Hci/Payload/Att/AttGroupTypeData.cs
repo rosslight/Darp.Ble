@@ -21,7 +21,11 @@ public readonly record struct AttGroupTypeData<TAttributeValue>(ushort Handle, u
     }
 
     /// <inheritdoc />
-    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out AttGroupTypeData<TAttributeValue> value, out int bytesRead)
+    public static bool TryReadLittleEndian(
+        ReadOnlySpan<byte> source,
+        out AttGroupTypeData<TAttributeValue> value,
+        out int bytesRead
+    )
     {
         value = default;
         bytesRead = 0;
@@ -41,7 +45,11 @@ public readonly record struct AttGroupTypeData<TAttributeValue>(ushort Handle, u
     }
 
     /// <inheritdoc />
-    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out AttGroupTypeData<TAttributeValue> value, out int bytesRead)
+    public static bool TryReadBigEndian(
+        ReadOnlySpan<byte> source,
+        out AttGroupTypeData<TAttributeValue> value,
+        out int bytesRead
+    )
     {
         throw new NotSupportedException();
     }

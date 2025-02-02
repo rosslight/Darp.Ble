@@ -1,6 +1,5 @@
 using System.Buffers.Binary;
 using Darp.BinaryObjects;
-using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci.Payload.Att;
 
@@ -10,11 +9,13 @@ public readonly record struct AttFindInformationRsp : IAttPdu, IBinaryReadable<A
 {
     /// <inheritdoc />
     public static AttOpCode ExpectedOpCode => AttOpCode.ATT_FIND_INFORMATION_RSP;
+
     /// <inheritdoc />
     public required AttOpCode OpCode { get; init; }
 
     /// <summary> The format of the information data </summary>
     public required AttFindInformationFormat Format { get; init; }
+
     /// <summary> The information data whose format is determined by the Format field </summary>
     public required AttFindInformationData[] InformationData { get; init; }
 
@@ -25,31 +26,42 @@ public readonly record struct AttFindInformationRsp : IAttPdu, IBinaryReadable<A
     }
 
     /// <inheritdoc />
-    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out AttFindInformationRsp value, out int bytesRead)
+    public static bool TryReadLittleEndian(
+        ReadOnlySpan<byte> source,
+        out AttFindInformationRsp value,
+        out int bytesRead
+    )
     {
         value = default;
         bytesRead = 0;
-        if (source.Length < 6) return false;
+        if (source.Length < 6)
+            return false;
         var opCode = (AttOpCode)source[0];
-        if (opCode != ExpectedOpCode) return false;
+        if (opCode != ExpectedOpCode)
+            return false;
         var format = (AttFindInformationFormat)source[1];
-        int informationDataLength = 2 + format switch
-        {
-            AttFindInformationFormat.HandleAnd16BitUuid => 2,
-            AttFindInformationFormat.HandleAnd128BitUuid => 16,
-            _ => -1,
-        };
-        if (informationDataLength < 4) return false;
+        int informationDataLength =
+            2
+            + format switch
+            {
+                AttFindInformationFormat.HandleAnd16BitUuid => 2,
+                AttFindInformationFormat.HandleAnd128BitUuid => 16,
+                _ => -1,
+            };
+        if (informationDataLength < 4)
+            return false;
 
-        if ((source.Length - 2) % informationDataLength != 0) return false;
+        if ((source.Length - 2) % informationDataLength != 0)
+            return false;
         int numberOfAttributes = (source.Length - 2) / informationDataLength;
         var attributeDataList = new AttFindInformationData[numberOfAttributes];
-        for (var i = 0; i < numberOfAttributes; i ++)
+        for (var i = 0; i < numberOfAttributes; i++)
         {
             int attStart = 2 + i * informationDataLength;
             attributeDataList[i] = new AttFindInformationData(
                 BinaryPrimitives.ReadUInt16LittleEndian(source[attStart..]),
-                source.Slice(attStart + 2, informationDataLength - 2).ToArray());
+                source.Slice(attStart + 2, informationDataLength - 2).ToArray()
+            );
         }
         value = new AttFindInformationRsp
         {

@@ -1,0 +1,31 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+## husky task runner examples -------------------
+## Note : for local installation use 'dotnet' prefix. e.g. 'dotnet husky'
+
+## run all tasks
+#husky run
+
+### run all tasks with group: 'group-name'
+#husky run --group group-name
+
+## run task with name: 'task-name'
+#husky run --name task-name
+
+## pass hook arguments to task
+#husky run --args "$1" "$2"
+
+## or put your custom commands -------------------
+#echo 'Husky.Net is awesome!'
+
+# Ensure we are following conventional commits
+if ! head -1 "$1" | grep -qE "^(feat|fix|refactor|perf|style|test|ci|docs|build|ops|chore)(\(.+?\))?:\s+.{1,}$"; then
+    echo "Aborting commit. Your commit message '$(head -1 "$1")' is invalid." >&2
+    echo "See https://gist.github.com/qoomon/5dfcdf8eec66a051ecd85625518cfd13 for a short explanation of conventional commits" >&2
+    exit 1
+fi
+if ! head -1 "$1" | grep -qE "^.{1,72}$"; then
+    echo "Aborting commit. Your commit message is too long (>72 characters). Make a linebreak to include further information in the body" >&2
+    exit 1
+fi

@@ -6,6 +6,7 @@ using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
+using Darp.Ble.Gatt.Server;
 using Darp.Ble.Implementation;
 using Darp.Ble.Mock;
 using Darp.Ble.Tests.TestUtils;
@@ -16,16 +17,23 @@ using NSubstitute;
 
 namespace Darp.Ble.Tests.Implementation;
 
-public sealed class BleObserverTests(ILogger<BleObserverTests> logger)
+public sealed class BleObserverTests(ILoggerFactory loggerFactory)
 {
-    private readonly ILogger<BleObserverTests> _logger = logger;
+    private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private const string AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName = "0201010908546573744E616D65";
 
-    private async Task<IBleDevice> GetMockDeviceAsync(BleMockFactory.InitializeAsync configure)
+    private async Task<IBleDevice> GetMockDeviceAsync(
+        BleMockFactory.InitializeSimpleAsync configure,
+        IScheduler scheduler
+    )
     {
         BleManager bleManager = new BleManagerBuilder()
-            .SetLogger(_logger)
-            .Add(new BleMockFactory { OnInitialize = configure } )
+            .SetLogger(_loggerFactory)
+            .Add<BleMockFactory>(factory =>
+            {
+                factory.AddPeripheral(configure);
+                factory.Scheduler = scheduler;
+            })
             .CreateManager();
         IBleDevice device = bleManager.EnumerateDevices().First();
         InitializeResult result = await device.InitializeAsync();
@@ -35,21 +43,20 @@ public sealed class BleObserverTests(ILogger<BleObserverTests> logger)
 
     private async Task<IBleDevice> Get1000MsAdvertisementMockDeviceAsync(IScheduler scheduler)
     {
-        AdvertisingData adData = AdvertisingData.From(AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName.ToByteArray());
-        return await GetMockDeviceAsync(Configure);
+        AdvertisingData adData = AdvertisingData.From(
+            AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName.ToByteArray()
+        );
+        return await GetMockDeviceAsync(Configure, scheduler);
 
-        Task Configure(IBleBroadcaster broadcaster, IBlePeripheral _)
+        async Task Configure(IBleDevice d)
         {
-            IObservable<AdvertisingData> source = Observable.Interval(TimeSpan.FromMilliseconds(1000), scheduler)
-                .Select(_ => adData);
-            broadcaster.Advertise(source);
-            return Task.CompletedTask;
+            await d.Broadcaster.StartAdvertisingAsync(data: adData, interval: ScanTiming.Ms1000);
         }
     }
 
     private async Task<IBleDevice> GetMockDeviceAsync()
     {
-        return await GetMockDeviceAsync((_, _) => Task.CompletedTask);
+        return await GetMockDeviceAsync(_ => Task.CompletedTask, Scheduler.Default);
     }
 
     [Fact]
@@ -95,7 +102,8 @@ public sealed class BleObserverTests(ILogger<BleObserverTests> logger)
     public void Observer_WhenFailedWithAnyException_ShouldReturnException()
     {
         var observer = Substitute.For<BleObserver>(null, null);
-        observer.InvokeNonPublicMethod("TryStartScanCore", Observable.Empty<IGapAdvertisement>())
+        observer
+            .InvokeNonPublicMethod("TryStartScanCore", Observable.Empty<IGapAdvertisement>())
             .ReturnsForAnyArgs(info =>
             {
                 info[0] = Observable.Throw<IGapAdvertisement>(new DummyException("Dummy"));
@@ -104,7 +112,8 @@ public sealed class BleObserverTests(ILogger<BleObserverTests> logger)
 
         Action act = () => _ = observer.RefCount().FirstAsync().Subscribe();
 
-        act.Should().Throw<BleObservationException>()
+        act.Should()
+            .Throw<BleObservationException>()
             .Where(x => typeof(DummyException).IsAssignableTo(x.InnerException!.GetType()));
     }
 
@@ -114,10 +123,13 @@ public sealed class BleObserverTests(ILogger<BleObserverTests> logger)
     public void Observer_WhenFailedWithBleObservationException_ShouldReturnException()
     {
         var observer = Substitute.For<BleObserver>(null, null);
-        observer.InvokeNonPublicMethod("TryStartScanCore", Observable.Empty<IGapAdvertisement>())
+        observer
+            .InvokeNonPublicMethod("TryStartScanCore", Observable.Empty<IGapAdvertisement>())
             .ReturnsForAnyArgs(info =>
             {
-                info[0] = Observable.Throw<IGapAdvertisement>(new BleObservationException(observer!, message: null, innerException: null));
+                info[0] = Observable.Throw<IGapAdvertisement>(
+                    new BleObservationException(observer!, message: null, innerException: null)
+                );
                 return false;
             });
 
@@ -132,7 +144,8 @@ public sealed class BleObserverTests(ILogger<BleObserverTests> logger)
     public void Connect_WhenFailed_ShouldFaultAndReturnEmptyDisposable()
     {
         var observer = Substitute.For<BleObserver>(null, null);
-        observer.InvokeNonPublicMethod("TryStartScanCore", Observable.Empty<IGapAdvertisement>())
+        observer
+            .InvokeNonPublicMethod("TryStartScanCore", Observable.Empty<IGapAdvertisement>())
             .ReturnsForAnyArgs(info =>
             {
                 info[0] = Observable.Throw<IGapAdvertisement>(new DummyException("Dummy"));
@@ -150,10 +163,7 @@ public sealed class BleObserverTests(ILogger<BleObserverTests> logger)
     [Fact]
     public async Task Configure_WhenCalled_ShouldSetParameters()
     {
-        var targetParameters = new BleScanParameters
-        {
-            ScanType = ScanType.Active,
-        };
+        var targetParameters = new BleScanParameters { ScanType = ScanType.Active };
         IBleDevice device = await GetMockDeviceAsync();
 
         device.Observer.Parameters.Should().NotBe(targetParameters);

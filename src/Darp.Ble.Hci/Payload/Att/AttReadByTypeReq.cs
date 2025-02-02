@@ -14,10 +14,13 @@ public readonly partial record struct AttReadByTypeReq<TAttributeType> : IAttPdu
 
     /// <inheritdoc />
     public AttOpCode OpCode => ExpectedOpCode;
+
     /// <summary> First requested handle number </summary>
     public required ushort StartingHandle { get; init; }
+
     /// <summary> Last requested handle number </summary>
     public required ushort EndingHandle { get; init; }
+
     /// <summary> 2 or 16 octet UUID </summary>
     public required TAttributeType AttributeType { get; init; }
 
@@ -34,7 +37,8 @@ public readonly partial record struct AttReadByTypeReq<TAttributeType> : IAttPdu
     public bool TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
     {
         bytesWritten = 0;
-        if (destination.Length < 6) return false;
+        if (destination.Length < 6)
+            return false;
         destination[0] = (byte)OpCode;
         BinaryPrimitives.WriteUInt16LittleEndian(destination[1..], StartingHandle);
         BinaryPrimitives.WriteUInt16LittleEndian(destination[3..], EndingHandle);

@@ -4,7 +4,6 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
-using Darp.Ble.Hci.Payload.Event;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci.Transport;
@@ -12,7 +11,7 @@ namespace Darp.Ble.Hci.Transport;
 /// <summary> A transport layer which sends HCI packets via a <see cref="SerialPort"/> </summary>
 public sealed class H4TransportLayer : ITransportLayer
 {
-    private readonly ILogger? _logger;
+    private readonly ILogger _logger;
     private readonly SerialPort _serialPort;
     private readonly ConcurrentQueue<IHciPacket> _txQueue;
     private readonly CancellationTokenSource _cancelSource;
@@ -23,7 +22,7 @@ public sealed class H4TransportLayer : ITransportLayer
     /// <summary> Instantiate a new h4 transport layer </summary>
     /// <param name="portName"> The name of the serial port </param>
     /// <param name="logger"> An optional logger </param>
-    public H4TransportLayer(string portName, ILogger? logger)
+    public H4TransportLayer(string portName, ILogger<H4TransportLayer> logger)
     {
         _logger = logger;
         _serialPort = new SerialPort(portName);
@@ -73,14 +72,26 @@ public sealed class H4TransportLayer : ITransportLayer
         where TPacket : IHciPacket<TPacket>, IBinaryReadable<TPacket>
     {
         // Read Header
-        await _serialPort.BaseStream.ReadExactlyAsync(buffer[..TPacket.HeaderLength], _cancelToken).ConfigureAwait(false);
+        await _serialPort
+            .BaseStream.ReadExactlyAsync(buffer[..TPacket.HeaderLength], _cancelToken)
+            .ConfigureAwait(false);
         byte payloadLength = buffer.Span[payloadLengthIndex];
         // Read Payload
         Memory<byte> payloadBuffer = buffer[TPacket.HeaderLength..(TPacket.HeaderLength + payloadLength)];
         await _serialPort.BaseStream.ReadExactlyAsync(payloadBuffer, _cancelToken).ConfigureAwait(false);
-        if (!TPacket.TryReadLittleEndian(buffer[..(TPacket.HeaderLength + payloadLength)].Span, out TPacket? packet, out _))
+        if (
+            !TPacket.TryReadLittleEndian(
+                buffer[..(TPacket.HeaderLength + payloadLength)].Span,
+                out TPacket? packet,
+                out _
+            )
+        )
         {
-            _logger?.LogPacketReceivingDecodingFailed((byte)TPacket.Type, buffer[..(TPacket.HeaderLength + payloadLength)].ToArray(), typeof(TPacket).Name);
+            _logger.LogPacketReceivingDecodingFailed(
+                (byte)TPacket.Type,
+                buffer[..(TPacket.HeaderLength + payloadLength)].ToArray(),
+                typeof(TPacket).Name
+            );
             return;
         }
         _rxSubject.OnNext(packet);
@@ -94,7 +105,8 @@ public sealed class H4TransportLayer : ITransportLayer
         {
             while (!_cancelToken.IsCancellationRequested)
             {
-                if (!_serialPort.IsOpen) continue;
+                if (!_serialPort.IsOpen)
+                    continue;
                 // Read Type
                 var type = (HciPacketType)_serialPort.BaseStream.ReadByte();
                 switch (type)
@@ -140,7 +152,8 @@ public sealed class H4TransportLayer : ITransportLayer
     /// <inheritdoc />
     public void Dispose()
     {
-        if (_isDisposing) return;
+        if (_isDisposing)
+            return;
         _isDisposing = true;
         _cancelSource.Cancel();
         _serialPort.Dispose();

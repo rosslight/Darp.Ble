@@ -1,15 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <TargetFramework>net8.0</TargetFramework>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\Darp.Ble.Hci\Darp.Ble.Hci.csproj" />
-        <ProjectReference Include="..\Darp.Ble\Darp.Ble.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <PackageReference Include="System.IO.Ports" Version="8.0.0" />
-        <PackageReference Include="System.Management" Version="8.0.0" />
-    </ItemGroup>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Darp.Ble.Hci\Darp.Ble.Hci.csproj" />
+    <ProjectReference Include="..\Darp.Ble\Darp.Ble.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="System.IO.Ports" />
+    <PackageReference Include="System.Management" />
+  </ItemGroup>
 </Project>

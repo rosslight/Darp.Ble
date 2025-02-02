@@ -10,33 +10,41 @@ namespace Darp.Ble.Implementation;
 /// <summary> The ble observer </summary>
 /// <param name="device"> The ble device </param>
 /// <param name="logger"> The logger </param>
-public abstract class BleObserver(BleDevice device, ILogger? logger) : IBleObserver
+public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger) : IBleObserver
 {
     /// <summary> The logger </summary>
-    protected ILogger? Logger { get; } = logger;
+    protected ILogger<BleObserver> Logger { get; } = logger;
+
+    /// <summary> The logger factory </summary>
+    protected ILoggerFactory LoggerFactory => Device.LoggerFactory;
+
     private readonly object _lockObject = new();
     private readonly List<IObserver<IGapAdvertisement>> _observers = [];
-    private bool _isDisposed;
+    private bool _isDisposing;
     private bool _stopping;
     private IObservable<IGapAdvertisement>? _scanObservable;
     private IDisposable? _scanDisposable;
 
     /// <inheritdoc />
     public IBleDevice Device { get; } = device;
+
     /// <inheritdoc />
-    public BleScanParameters Parameters { get; private set; } = new()
-    {
-        ScanType = ScanType.Passive,
-        ScanInterval = ScanTiming.Ms100,
-        ScanWindow = ScanTiming.Ms100,
-    };
+    public BleScanParameters Parameters { get; private set; } =
+        new()
+        {
+            ScanType = ScanType.Passive,
+            ScanInterval = ScanTiming.Ms100,
+            ScanWindow = ScanTiming.Ms100,
+        };
+
     /// <inheritdoc />
     public bool IsScanning => _scanDisposable is not null;
 
     /// <inheritdoc />
     public bool Configure(BleScanParameters parameters)
     {
-        if (IsScanning) return false;
+        if (IsScanning)
+            return false;
         Parameters = parameters;
         return true;
     }
@@ -49,18 +57,21 @@ public abstract class BleObserver(BleDevice device, ILogger? logger) : IBleObser
     /// <exception cref="ObjectDisposedException"> Thrown if the <see cref="BleObserver"/> was disposed </exception>
     public IDisposable Subscribe(IObserver<IGapAdvertisement> observer)
     {
-        ObjectDisposedException.ThrowIf(_isDisposed, nameof(BleObserver));
+        ObjectDisposedException.ThrowIf(_isDisposing, nameof(BleObserver));
         lock (_lockObject)
         {
             IDisposable? optDisposable = _scanObservable?.Subscribe(observer);
             _observers.Add(observer);
-            return Disposable.Create((This: this, Observer: observer, Disposable: optDisposable), state =>
-            {
-                state.Disposable?.Dispose();
-                state.This._observers.Remove(state.Observer);
-                if (state.This._observers.Count == 0)
-                    state.This.StopScan();
-            });
+            return Disposable.Create(
+                (This: this, Observer: observer, Disposable: optDisposable),
+                state =>
+                {
+                    state.Disposable?.Dispose();
+                    state.This._observers.Remove(state.Observer);
+                    if (state.This._observers.Count == 0)
+                        state.This.StopScan();
+                }
+            );
         }
     }
 
@@ -72,26 +83,32 @@ public abstract class BleObserver(BleDevice device, ILogger? logger) : IBleObser
     /// <exception cref="ObjectDisposedException"> Thrown if the <see cref="BleObserver"/> was disposed </exception>
     public IDisposable Connect()
     {
-        if(_isDisposed)
+        if (_isDisposing)
             return Disposable.Empty;
         lock (_lockObject)
         {
-            if (_scanDisposable is not null) return _scanDisposable;
+            if (_scanDisposable is not null)
+                return _scanDisposable;
             bool startScanSuccessful = TryStartScanCore(out IObservable<IGapAdvertisement> observable);
 
-            observable = observable
-                .Catch((Exception exception) => Observable.Throw<IGapAdvertisement>(exception switch
-                {
-                    BleObservationException e => e,
-                    _ => new BleObservationException(this, message: null, exception),
-                }));
+            observable = observable.Catch(
+                (Exception exception) =>
+                    Observable.Throw<IGapAdvertisement>(
+                        exception switch
+                        {
+                            BleObservationException e => e,
+                            _ => new BleObservationException(this, message: null, exception),
+                        }
+                    )
+            );
             // Use for loop to be resilient to disconnections on first connection
             for (int index = _observers.Count - 1; index >= 0; index--)
             {
                 observable.Subscribe(_observers[index]);
             }
 
-            if (!startScanSuccessful) return Disposable.Empty;
+            if (!startScanSuccessful)
+                return Disposable.Empty;
 
             _scanObservable = observable;
             _scanDisposable = Disposable.Create(this, self => self.StopScan());
@@ -114,7 +131,8 @@ public abstract class BleObserver(BleDevice device, ILogger? logger) : IBleObser
     {
         lock (_lockObject)
         {
-            if (_stopping) return;
+            if (_stopping)
+                return;
             _stopping = true;
             try
             {
@@ -141,17 +159,24 @@ public abstract class BleObserver(BleDevice device, ILogger? logger) : IBleObser
     /// <summary> Core implementation of stopping </summary>
     protected abstract void StopScanCore();
 
-    /// <inheritdoc />
+    /// <summary> A method that can be used to clean up all resources. </summary>
+    /// <remarks> This method is not glued to the <see cref="IAsyncDisposable"/> interface. All disposes should be done using the  </remarks>
     public async ValueTask DisposeAsync()
     {
-        if(_isDisposed) return;
-        _isDisposed = true;
-        DisposeCore();
+        if (_isDisposing)
+            return;
+        _isDisposing = true;
         await DisposeAsyncCore().ConfigureAwait(false);
-        GC.SuppressFinalize(this);
+        Dispose(disposing: false);
     }
+
     /// <inheritdoc cref="DisposeAsync"/>
     protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
+
     /// <inheritdoc cref="IDisposable.Dispose"/>
-    protected virtual void DisposeCore() { }
+    /// <param name="disposing">
+    /// True, when this method was called by the synchronous <see cref="IDisposable.Dispose"/> method;
+    /// False if called by the asynchronous <see cref="IAsyncDisposable.DisposeAsync"/> method
+    /// </param>
+    protected virtual void Dispose(bool disposing) { }
 }

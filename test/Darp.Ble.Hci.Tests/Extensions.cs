@@ -43,18 +43,23 @@ public static class Extensions
 
         if (i is not 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(source), $"Size of enumerable is not of a multiple of {numberOfItems}");
+            throw new ArgumentOutOfRangeException(
+                nameof(source),
+                $"Size of enumerable is not of a multiple of {numberOfItems}"
+            );
         }
     }
 
     public static bool TryWriteLittleEndian<T>(this T encodable, Span<byte> destination)
-        where T : IBinaryWritable =>
-        encodable.TryWriteLittleEndian(destination);
-    public static int GetByteCount<T>(this T encodable)
-        where T : IBinaryWritable =>
-        encodable.GetByteCount();
+        where T : IBinaryWritable => encodable.TryWriteLittleEndian(destination);
 
-    public static bool TryReadLittleEndian<T>(ReadOnlySpan<byte> memory, [NotNullWhen(true)] out T? result, out int decoded)
-        where T : IBinaryReadable<T> =>
-        T.TryReadLittleEndian(memory, out result, out decoded);
+    public static int GetByteCount<T>(this T encodable)
+        where T : IBinaryWritable => encodable.GetByteCount();
+
+    public static bool TryReadLittleEndian<T>(
+        ReadOnlySpan<byte> memory,
+        [NotNullWhen(true)] out T? result,
+        out int decoded
+    )
+        where T : IBinaryReadable<T> => T.TryReadLittleEndian(memory, out result, out decoded);
 }

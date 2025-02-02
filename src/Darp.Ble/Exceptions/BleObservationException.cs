@@ -27,7 +27,9 @@ public class BleObservationException : Exception
         {
             int? hResult = InnerException?.HResult;
             string reason = string.IsNullOrEmpty(InnerException?.Message)
-                ? hResult is null ? "unknown" : $"{Marshal.GetExceptionForHR(hResult.Value)?.Message}"
+                ? hResult is null
+                    ? "unknown"
+                    : $"{Marshal.GetExceptionForHR(hResult.Value)?.Message}"
                 : InnerException?.Message!;
             Message = $"Error during observation because of: {reason}";
         }

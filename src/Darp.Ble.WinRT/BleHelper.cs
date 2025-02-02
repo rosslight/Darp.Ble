@@ -1,5 +1,5 @@
-using Windows.Devices.Bluetooth;
 using Darp.Ble.Data;
+using Windows.Devices.Bluetooth;
 
 namespace Darp.Ble.WinRT;
 
@@ -11,7 +11,7 @@ public static class BleHelper
         {
             BluetoothAddressType.Public => BleAddressType.Public,
             BluetoothAddressType.Random => BleAddressType.RandomPrivateNonResolvable,
-            _ => BleAddressType.NotAvailable
+            _ => BleAddressType.NotAvailable,
         };
         return new BleAddress(addressType, (UInt48)winAddress);
     }

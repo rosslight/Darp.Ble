@@ -14,22 +14,24 @@ public sealed class AttFindByTypeValueRspTests
     [Theory]
     [InlineData("071700FFFF", 5, 0x0017, 0xFFFF)]
     [InlineData("071700FFFF00", 5, 0x0017, 0xFFFF)]
-    public void TryReadLittleEndian_ShouldBeValid(string hexBytes,
+    public void TryReadLittleEndian_ShouldBeValid(
+        string hexBytes,
         int expectedBytesRead,
         ushort foundAttributeHandle,
-        ushort groupEndHandle)
+        ushort groupEndHandle
+    )
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
         AttFindByTypeHandlesInformation[] handlesInformation =
         [
-            new()
-            {
-                FoundAttributeHandle = foundAttributeHandle,
-                GroupEndHandle = groupEndHandle,
-            },
+            new() { FoundAttributeHandle = foundAttributeHandle, GroupEndHandle = groupEndHandle },
         ];
 
-        bool success = AttFindByTypeValueRsp.TryReadLittleEndian(bytes, out AttFindByTypeValueRsp value, out int decoded);
+        bool success = AttFindByTypeValueRsp.TryReadLittleEndian(
+            bytes,
+            out AttFindByTypeValueRsp value,
+            out int decoded
+        );
 
         success.Should().BeTrue();
         decoded.Should().Be(expectedBytesRead);

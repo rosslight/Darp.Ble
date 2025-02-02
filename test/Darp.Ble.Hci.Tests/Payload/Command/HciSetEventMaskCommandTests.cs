@@ -13,14 +13,10 @@ public sealed class HciSetEventMaskCommandTests
 
     [Theory]
     [InlineData((EventMask)0xFFFFFFFFFFFFFF3F, "3FFFFFFFFFFFFFFF")]
-    public void TryWriteLittleEndian_ShouldBeValid(EventMask eventMask,
-        string expectedHexBytes)
+    public void TryWriteLittleEndian_ShouldBeValid(EventMask eventMask, string expectedHexBytes)
     {
         var buffer = new byte[8];
-        var value = new HciSetEventMaskCommand
-        {
-            Mask = eventMask,
-        };
+        var value = new HciSetEventMaskCommand { Mask = eventMask };
 
         bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeTrue();

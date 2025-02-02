@@ -1,7 +1,5 @@
-using System.Runtime.InteropServices;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.Payload.Command;
-using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci.Payload.Result;
 
@@ -11,8 +9,10 @@ public readonly partial record struct HciLeReadSuggestedDefaultDataLengthResult
 {
     /// <summary> The <see cref="HciCommandStatus"/> </summary>
     public required HciCommandStatus Status { get; init; }
+
     /// <summary> The Suggested_Max_TX_Octets </summary>
     public required ushort SuggestedMaxTxOctets { get; init; }
+
     /// <summary> The Suggested_Max_TX_Time </summary>
     public required ushort SuggestedMaxTxTime { get; init; }
 }

@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
 

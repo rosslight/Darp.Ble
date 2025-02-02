@@ -36,8 +36,8 @@ To release resources call `DisposeAsync`.
 
 ```csharp
 var bleManager = new BleManagerBuilder()
-    .Add<WinBleFactory>()
-    .Add(new HciHostBleFactory("COM7"))
+    .AddWinRT()
+    .AddSingleHciHost("COM7"))
     .CreateManager();
 
 var bleDevice = bleManager.EnumerateDevices().First();

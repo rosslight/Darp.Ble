@@ -11,10 +11,12 @@ public static class ReactiveExtensions
 {
     private static IObservable<T> TakeUntil<T>(this IObservable<T> source, CancellationToken cancellationToken)
     {
-        IObservable<T> cancelObservable = Observable.Create<T>(observer => cancellationToken.Register(() =>
-        {
-            observer.OnError(new OperationCanceledException(cancellationToken));
-        }));
+        IObservable<T> cancelObservable = Observable.Create<T>(observer =>
+            cancellationToken.Register(() =>
+            {
+                observer.OnError(new OperationCanceledException(cancellationToken));
+            })
+        );
         return source.TakeUntil(cancelObservable);
     }
 
@@ -29,25 +31,31 @@ public static class ReactiveExtensions
     /// <typeparam name="T"> The type of the source </typeparam>
     /// <typeparam name="TResult"> The type of the result </typeparam>
     /// <returns> The resulting observable </returns>
-    public static IObservable<TResult> SelectWhere<T, TResult>(this IObservable<T> source,
-        TrySelector<T, TResult> trySelector)
+    public static IObservable<TResult> SelectWhere<T, TResult>(
+        this IObservable<T> source,
+        TrySelector<T, TResult> trySelector
+    )
     {
         return Observable.Create<TResult>(observer =>
         {
-            return source.Subscribe(next =>
-            {
-                try
+            return source.Subscribe(
+                next =>
                 {
-                    if (trySelector(next, out TResult? result))
-                        observer.OnNext(result);
-                }
+                    try
+                    {
+                        if (trySelector(next, out TResult? result))
+                            observer.OnNext(result);
+                    }
 #pragma warning disable CA1031
-                catch (Exception e)
-                {
-                    observer.OnError(e);
-                }
+                    catch (Exception e)
+                    {
+                        observer.OnError(e);
+                    }
 #pragma warning restore CA1031
-            }, observer.OnError, observer.OnCompleted);
+                },
+                observer.OnError,
+                observer.OnCompleted
+            );
         });
     }
 
@@ -63,18 +71,24 @@ public static class ReactiveExtensions
     /// <param name="source"> The source to operate on </param>
     /// <typeparam name="TLeMetaEvent"> The type of the event data </typeparam>
     /// <returns> An observable with the le event data </returns>
-    public static IObservable<HciEventPacket<TLeMetaEvent>> SelectWhereLeMetaEvent<TLeMetaEvent>(this IObservable<HciEventPacket<HciLeMetaEvent>> source)
+    public static IObservable<HciEventPacket<TLeMetaEvent>> SelectWhereLeMetaEvent<TLeMetaEvent>(
+        this IObservable<HciEventPacket<HciLeMetaEvent>> source
+    )
         where TLeMetaEvent : IHciLeMetaEvent<TLeMetaEvent>
     {
         return Observable.Create<HciEventPacket<TLeMetaEvent>>(observer =>
         {
             return source
                 .Where(x => x.Data.SubEventCode == TLeMetaEvent.SubEventType)
-                .Subscribe(next =>
-                {
-                    if (HciEventPacket.TryWithData(next, out HciEventPacket<TLeMetaEvent>? result))
-                        observer.OnNext(result);
-                }, observer.OnError, observer.OnCompleted);
+                .Subscribe(
+                    next =>
+                    {
+                        if (HciEventPacket.TryWithData(next, out HciEventPacket<TLeMetaEvent>? result))
+                            observer.OnNext(result);
+                    },
+                    observer.OnError,
+                    observer.OnCompleted
+                );
         });
     }
 }

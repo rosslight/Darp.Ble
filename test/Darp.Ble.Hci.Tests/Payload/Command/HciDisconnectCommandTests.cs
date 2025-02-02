@@ -17,11 +17,7 @@ public sealed class HciDisconnectCommandTests
     public void TryWriteLittleEndian_ShouldBeValid(ushort handle, HciCommandStatus reason, string expectedHexBytes)
     {
         var buffer = new byte[3];
-        var value = new HciDisconnectCommand
-        {
-            ConnectionHandle = handle,
-            Reason = reason,
-        };
+        var value = new HciDisconnectCommand { ConnectionHandle = handle, Reason = reason };
 
         bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeTrue();

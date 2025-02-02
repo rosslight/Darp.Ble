@@ -14,9 +14,11 @@ public sealed class HciDisconnectionCompleteEventTests
 
     [Theory]
     [InlineData("010013", 0x0001, HciCommandStatus.RemoteUserTerminatedConnection)]
-    public void TryReadLittleEndian_HciSetEventMaskResult_ShouldBeValid(string hexBytes,
+    public void TryReadLittleEndian_HciSetEventMaskResult_ShouldBeValid(
+        string hexBytes,
         ushort expectedConnectionHandle,
-        HciCommandStatus expectedReason)
+        HciCommandStatus expectedReason
+    )
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
         var expectedValue = new HciDisconnectionCompleteEvent
