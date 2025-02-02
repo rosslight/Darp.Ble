@@ -20,7 +20,7 @@ public static partial class GattServerServiceExtensions
         foreach (IGattServerCharacteristic serverCharacteristic in service.Characteristics)
         {
             if (serverCharacteristic.Uuid == characteristicDeclaration.Uuid
-                && characteristicDeclaration.Properties.HasFlag(serverCharacteristic.Property))
+                && characteristicDeclaration.Properties.HasFlag(serverCharacteristic.Properties))
             {
                 characteristic = new GattServerCharacteristic<TProp1>(serverCharacteristic);
                 return true;
@@ -63,7 +63,7 @@ public static partial class GattServerServiceExtensions
         foreach (IGattServerCharacteristic serverCharacteristic in service.Characteristics)
         {
             if (serverCharacteristic.Uuid == characteristicDeclaration.Uuid
-                && characteristicDeclaration.Properties.HasFlag(serverCharacteristic.Property))
+                && characteristicDeclaration.Properties.HasFlag(serverCharacteristic.Properties))
             {
                 characteristic = new GattServerCharacteristic<TProp1, TProp2>(serverCharacteristic);
                 return true;
@@ -107,7 +107,7 @@ public static partial class GattServerServiceExtensions
         foreach (IGattServerCharacteristic serverCharacteristic in service.Characteristics)
         {
             if (serverCharacteristic.Uuid == characteristicDeclaration.Uuid
-                && characteristicDeclaration.Properties.HasFlag(serverCharacteristic.Property))
+                && characteristicDeclaration.Properties.HasFlag(serverCharacteristic.Properties))
             {
                 characteristic = new TypedGattServerCharacteristic<T, TProp1>(serverCharacteristic,
                     characteristicDeclaration.ReadValue,
@@ -154,7 +154,7 @@ public static partial class GattServerServiceExtensions
         foreach (IGattServerCharacteristic serverCharacteristic in service.Characteristics)
         {
             if (serverCharacteristic.Uuid == characteristicDeclaration.Uuid
-                && characteristicDeclaration.Properties.HasFlag(serverCharacteristic.Property))
+                && characteristicDeclaration.Properties.HasFlag(serverCharacteristic.Properties))
             {
                 characteristic = new TypedGattServerCharacteristic<T, TProp1, TProp2>(serverCharacteristic,
                     characteristicDeclaration.ReadValue,

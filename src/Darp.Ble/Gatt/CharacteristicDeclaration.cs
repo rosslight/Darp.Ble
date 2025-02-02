@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Text;
 using Darp.Ble.Data;
@@ -44,6 +45,7 @@ public sealed class CharacteristicDeclaration<TProp1, TProp2>(BleUuid uuid)
     /// <summary> Convert implicitly to a different order of type parameters </summary>
     /// <param name="characteristicDeclaration"> The characteristic declaration to convert </param>
     /// <returns> The converted characteristic declaration </returns>
+    [SuppressMessage("Usage", "CA2225:Operator overloads have named alternates", Justification = "Convenience method")]
     public static implicit operator CharacteristicDeclaration<TProp2, TProp1>(
         CharacteristicDeclaration<TProp1, TProp2> characteristicDeclaration)
     {

@@ -37,7 +37,8 @@ public sealed class Test
         await service.AddCharacteristicAsync<Properties.Read>(SomeUuid, SomeBytes);
         await service.AddCharacteristicAsync<Properties.Read>(SomeUuid, onRead: _ => SomeBytes);
         await service.AddCharacteristicAsync(ReadChar);
-        await service.AddCharacteristicAsync(ReadChar, 2);
+        var aa = await service.AddCharacteristicAsync(ReadChar, 2);
+        aa.UpdateValue(123);
         await service.AddCharacteristicAsync(ReadChar, _ => 2);
 
         await service.AddCharacteristicAsync<Properties.Write>(SomeUuid, onWrite: (peer, bytes) => GattProtocolStatus.Success);
@@ -56,7 +57,7 @@ public sealed class Test
         var cn2 = await service.AddCharacteristicAsync(NotifyChar);
         cn2.NotifyAll(3);
         var cn3 = await service.AddCharacteristicAsync(ReadNotifyChar, 3);
-        cn3.UpdateValue(SomeBytes);
+        //cn3.UpdateValue(SomeBytes);
         cn3.UpdateValue(32);
         var cn4 = await service.AddCharacteristicAsync<int, Properties.Write, Properties.Read>(ReadWriteChar, 123123);
         cn4.UpdateValue(3);

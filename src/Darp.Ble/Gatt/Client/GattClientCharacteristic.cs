@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data;
 
 namespace Darp.Ble.Gatt.Client;
@@ -18,7 +19,7 @@ public abstract class GattClientCharacteristic(GattClientService clientService,
     /// <inheritdoc />
     public BleUuid Uuid { get; } = uuid;
     /// <inheritdoc />
-    public GattProperty Property { get; } = gattProperty;
+    public GattProperty Properties { get; } = gattProperty;
 
     /// <inheritdoc />
     public ValueTask<byte[]> GetValueAsync(IGattClientPeer? clientPeer, CancellationToken cancellationToken)
@@ -95,16 +96,27 @@ public abstract class GattClientCharacteristic(GattClientService clientService,
 /// <summary> The implementation of a gatt client characteristic with a single property </summary>
 /// <param name="characteristic"> The actual characteristic </param>
 /// <typeparam name="TProp1"> The property </typeparam>
+[SuppressMessage("Design", "CA1033:Interface methods should be callable by child types",
+    Justification = "Child classes should only be wrappers and should not call any methods")]
 public class GattClientCharacteristic<TProp1>(IGattClientCharacteristic characteristic)
     : IGattClientCharacteristic<TProp1>
     where TProp1 : IBleProperty
 {
+    private readonly IGattClientCharacteristic _characteristic = characteristic;
+
     /// <inheritdoc />
-    public GattProperty Property => Characteristic.Property;
+    public BleUuid Uuid => _characteristic.Uuid;
     /// <inheritdoc />
-    public BleUuid Uuid => Characteristic.Uuid;
-    /// <inheritdoc />
-    public IGattClientCharacteristic Characteristic { get; } = characteristic;
+    public GattProperty Properties => _characteristic.Properties;
+
+    ValueTask<byte[]> IGattClientCharacteristic.GetValueAsync(IGattClientPeer? clientPeer, CancellationToken cancellationToken)
+        => _characteristic.GetValueAsync(clientPeer, cancellationToken);
+    ValueTask<GattProtocolStatus> IGattClientCharacteristic.UpdateValueAsync(IGattClientPeer? clientPeer, byte[] value, CancellationToken cancellationToken)
+        => _characteristic.UpdateValueAsync(clientPeer, value, cancellationToken);
+    void IGattClientCharacteristic.NotifyValue(IGattClientPeer? clientPeer, byte[] value)
+        => _characteristic.NotifyValue(clientPeer, value);
+    Task IGattClientCharacteristic.IndicateAsync(IGattClientPeer? clientPeer, byte[] value, CancellationToken cancellationToken)
+        => _characteristic.IndicateAsync(clientPeer, value, cancellationToken);
 }
 
 /// <summary> The implementation of a gatt client characteristic with a single property </summary>
@@ -115,50 +127,3 @@ public sealed class GattClientCharacteristic<TProp1, TProp2>(IGattClientCharacte
     : GattClientCharacteristic<TProp1>(characteristic), IGattClientCharacteristic<TProp2>
     where TProp1 : IBleProperty
     where TProp2 : IBleProperty;
-
-/// <summary> The implementation of a gatt client characteristic with a single property </summary>
-/// <param name="characteristic"> The actual characteristic </param>
-/// <typeparam name="T"> The type of the characteristic value </typeparam>
-/// <typeparam name="TProp1"> The property </typeparam>
-public class GattTypedClientCharacteristic<T, TProp1>(IGattClientCharacteristic characteristic,
-    IGattTypedCharacteristic<T>.ReadValueFunc onRead,
-    IGattTypedCharacteristic<T>.WriteValueFunc onWrite)
-    : IGattTypedClientCharacteristic<T, TProp1>
-    where TProp1 : IBleProperty
-{
-    private readonly IGattTypedCharacteristic<T>.ReadValueFunc _onRead = onRead;
-    private readonly IGattTypedCharacteristic<T>.WriteValueFunc _onWrite = onWrite;
-
-    /// <inheritdoc />
-    public GattProperty Property => Characteristic.Property;
-    /// <inheritdoc />
-    public BleUuid Uuid => Characteristic.Uuid;
-    /// <inheritdoc />
-    public IGattClientCharacteristic Characteristic { get; } = characteristic;
-
-    /// <inheritdoc cref="IGattTypedCharacteristic{T}.ReadValue(System.ReadOnlySpan{byte})" />
-    protected internal T ReadValue(ReadOnlySpan<byte> source) => _onRead(source);
-    /// <inheritdoc cref="IGattTypedCharacteristic{T}.WriteValue" />
-    protected internal byte[] WriteValue(T value) => _onWrite(value);
-
-    T IGattTypedClientCharacteristic<T, TProp1>.ReadValue(ReadOnlySpan<byte> source) => ReadValue(source);
-    byte[] IGattTypedClientCharacteristic<T, TProp1>.WriteValue(T value) => WriteValue(value);
-}
-
-/// <summary> The implementation of a gatt client characteristic with a single property </summary>
-/// <param name="characteristic"> The actual characteristic </param>
-/// <typeparam name="T"> The type of the characteristic value </typeparam>
-/// <typeparam name="TProp1"> The first property </typeparam>
-/// <typeparam name="TProp2"> The second property </typeparam>
-public sealed class GattTypedClientCharacteristic<T, TProp1, TProp2>(
-    IGattClientCharacteristic characteristic,
-    IGattTypedCharacteristic<T>.ReadValueFunc onRead,
-    IGattTypedCharacteristic<T>.WriteValueFunc onWrite)
-    : GattTypedClientCharacteristic<T, TProp1>(characteristic, onRead, onWrite),
-        IGattTypedClientCharacteristic<T, TProp2>
-    where TProp1 : IBleProperty
-    where TProp2 : IBleProperty
-{
-    T IGattTypedClientCharacteristic<T, TProp2>.ReadValue(ReadOnlySpan<byte> source) => ReadValue(source);
-    byte[] IGattTypedClientCharacteristic<T, TProp2>.WriteValue(T value) => WriteValue(value);
-}

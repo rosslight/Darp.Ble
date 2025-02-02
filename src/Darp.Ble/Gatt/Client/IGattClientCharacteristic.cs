@@ -8,9 +8,7 @@ public interface IGattClientCharacteristic
     /// <summary> The UUID of the characteristic </summary>
     BleUuid Uuid { get; }
     /// <summary> The property of the characteristic </summary>
-#pragma warning disable CA1716 // Using a reserved keyword as the name of a virtual/ interface member makes it harder for consumers in other languages to override/ implement the member.
-    GattProperty Property { get; }
-#pragma warning restore CA1716
+    GattProperty Properties { get; }
 
     /// <summary> Get the current value of the characteristic </summary>
     /// <param name="clientPeer"> The client peer to get the value for. If null, all subscribed clients will be taken into account </param>
@@ -36,32 +34,6 @@ public interface IGattClientCharacteristic
 }
 
 /// <summary> A gatt client characteristic with a single property </summary>
-/// <typeparam name="TProperty1"> The type of the property </typeparam>
-public interface IGattClientCharacteristic<TProperty1>
-    where TProperty1 : IBleProperty
-{
-    /// <inheritdoc cref="IGattClientCharacteristic.Uuid"/>
-    BleUuid Uuid => Characteristic.Uuid;
-    /// <inheritdoc cref="IGattClientCharacteristic.Property"/>
-#pragma warning disable CA1716 // Using a reserved keyword as the name of a virtual/ interface member makes it harder for consumers in other languages to override/ implement the member.
-    GattProperty Property => Characteristic.Property;
-#pragma warning restore CA1716
-    /// <summary> The gatt client characteristic </summary>
-    IGattClientCharacteristic Characteristic { get; }
-}
-
-/// <summary> A gatt client characteristic with a single proprety and a specified type for the value </summary>
-/// <typeparam name="T"> The type of the value </typeparam>
-/// <typeparam name="TProperty1"> The type of the property </typeparam>
-public interface IGattTypedClientCharacteristic<T, TProperty1> : IGattClientCharacteristic<TProperty1>
-    where TProperty1 : IBleProperty
-{
-    /// <summary> Read the value from a given source of bytes </summary>
-    /// <param name="source"> The source to read from </param>
-    /// <returns> The value </returns>
-    T ReadValue(ReadOnlySpan<byte> source);
-    /// <summary> Write a specific value into a destination of bytes </summary>
-    /// <param name="value"> The value to write </param>
-    /// <returns> The byte array </returns>
-    byte[] WriteValue(T value);
-}
+/// <typeparam name="TProp1"> The type of the property </typeparam>
+public interface IGattClientCharacteristic<TProp1> : IGattClientCharacteristic
+    where TProp1 : IBleProperty;

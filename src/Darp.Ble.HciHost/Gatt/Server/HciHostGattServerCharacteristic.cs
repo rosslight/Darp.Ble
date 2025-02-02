@@ -22,7 +22,6 @@ internal sealed class HciHostGattServerCharacteristic(
     private readonly Dictionary<BleUuid, HciHostGattServerDescriptor> _descriptorDictionary = new();
     public ushort AttHandle { get; } = attHandle;
     internal ushort EndHandle { get; set; }
-    public GattProperty Property { get; } = property;
 
     /// <summary>
     /// BLUETOOTH CORE SPECIFICATION Version 5.4 | Vol 3, Part G, 4.7.1 Discover All Characteristic Descriptors
@@ -94,7 +93,7 @@ internal sealed class HciHostGattServerCharacteristic(
         {
             throw new GattCharacteristicException(this, "No cccd available");
         }
-        if (!Property.HasFlag(GattProperty.Notify))
+        if (!Properties.HasFlag(GattProperty.Notify))
         {
             throw new GattCharacteristicException(this, "Characteristic does not support notification");
         }

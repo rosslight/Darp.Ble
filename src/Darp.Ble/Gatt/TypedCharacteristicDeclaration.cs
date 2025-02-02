@@ -1,11 +1,19 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data;
 
 namespace Darp.Ble.Gatt;
 
+/// <summary> A typed characteristic declaration </summary>
+/// <typeparam name="T"> The type of the characteristic value </typeparam>
+/// <typeparam name="TProp1"> The type of the first property </typeparam>
 public interface IGattTypedCharacteristicDeclaration<T, TProp1>
     : IGattCharacteristicDeclaration, IGattTypedCharacteristic<T>
     where TProp1 : IBleProperty;
 
+/// <summary> The typed characteristic declaration </summary>
+/// <param name="uuid"> The uuid of the characteristic </param>
+/// <typeparam name="T"> The type of the characteristic value </typeparam>
+/// <typeparam name="TProp1"> The type of the first property </typeparam>
 public class TypedCharacteristicDeclaration<T, TProp1>(BleUuid uuid,
     IGattTypedCharacteristic<T>.ReadValueFunc onRead,
     IGattTypedCharacteristic<T>.WriteValueFunc onWrite)
@@ -29,6 +37,11 @@ public class TypedCharacteristicDeclaration<T, TProp1>(BleUuid uuid,
     byte[] IGattTypedCharacteristic<T>.WriteValue(T value) => WriteValue(value);
 }
 
+/// <summary> The typed characteristic declaration </summary>
+/// <param name="uuid"> The uuid of the characteristic </param>
+/// <typeparam name="T"> The type of the characteristic value </typeparam>
+/// <typeparam name="TProp1"> The type of the first property </typeparam>
+/// <typeparam name="TProp2"> The type of the second property </typeparam>
 public sealed class TypedCharacteristicDeclaration<T, TProp1, TProp2>(BleUuid uuid,
     IGattTypedCharacteristic<T>.ReadValueFunc onRead,
     IGattTypedCharacteristic<T>.WriteValueFunc onWrite)
@@ -42,6 +55,7 @@ public sealed class TypedCharacteristicDeclaration<T, TProp1, TProp2>(BleUuid uu
     /// <summary> Convert implicitly to a different order of type parameters </summary>
     /// <param name="characteristicDeclaration"> The characteristic declaration to convert </param>
     /// <returns> The converted characteristic declaration </returns>
+    [SuppressMessage("Usage", "CA2225:Operator overloads have named alternates", Justification = "Convenience method")]
     public static implicit operator TypedCharacteristicDeclaration<T, TProp2, TProp1>(
         TypedCharacteristicDeclaration<T, TProp1, TProp2> characteristicDeclaration)
     {
