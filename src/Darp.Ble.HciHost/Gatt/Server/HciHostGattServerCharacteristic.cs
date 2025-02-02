@@ -11,15 +11,15 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.HciHost.Gatt.Server;
 
 internal sealed class HciHostGattServerCharacteristic(
-    GattServerService service,
-    HciHostGattServerPeer serverPeer,
+    HciHostGattServerService service,
     BleUuid uuid,
     ushort attHandle,
     GattProperty property,
     ILogger<HciHostGattServerCharacteristic> logger) : GattServerCharacteristic(service, attHandle, uuid, property, logger)
 {
-    private readonly HciHostGattServerPeer _serverPeer = serverPeer;
     private readonly Dictionary<BleUuid, HciHostGattServerDescriptor> _descriptorDictionary = new();
+    private readonly HciHostGattServerPeer _peer = service.Peer;
+    public new HciHostGattServerService Service { get; } = service;
     public ushort AttHandle { get; } = attHandle;
     internal ushort EndHandle { get; set; }
 
@@ -31,7 +31,7 @@ internal sealed class HciHostGattServerCharacteristic(
         ushort startingHandle = AttHandle;
         while (!token.IsCancellationRequested && startingHandle < 0xFFFF)
         {
-            AttReadResult response = await _serverPeer.QueryAttPduAsync<AttFindInformationReq, AttFindInformationRsp>(
+            AttReadResult response = await _peer.QueryAttPduAsync<AttFindInformationReq, AttFindInformationRsp>(
                 new AttFindInformationReq
                 {
                     StartingHandle = startingHandle,
@@ -55,7 +55,7 @@ internal sealed class HciHostGattServerCharacteristic(
                 if (handle < startingHandle)
                     throw new GattCharacteristicException(this, "Handle of discovered characteristic is smaller than starting handle of service");
                 var bleUuid = new BleUuid(uuid.Span);
-                _descriptorDictionary[bleUuid] = new HciHostGattServerDescriptor(_serverPeer, bleUuid, handle, LoggerFactory.CreateLogger<HciHostGattServerDescriptor>());
+                _descriptorDictionary[bleUuid] = new HciHostGattServerDescriptor(this, bleUuid, handle, LoggerFactory.CreateLogger<HciHostGattServerDescriptor>());
             }
             ushort lastHandle = rsp.InformationData[^1].Handle;
             if (lastHandle == EndHandle) break;
@@ -63,6 +63,12 @@ internal sealed class HciHostGattServerCharacteristic(
         }
         //Logger.Verbose("Discovered descriptors for characteristic {@Characteristic}", this);
         return true;
+    }
+
+    /// <inheritdoc />
+    protected override IObservable<IGattServerDescriptor> DiscoverDescriptorsCore()
+    {
+        throw new NotImplementedException();
     }
 
     /// <inheritdoc />
@@ -101,7 +107,7 @@ internal sealed class HciHostGattServerCharacteristic(
         {
             throw new GattCharacteristicException(this, "Could not write notification status to cccd");
         }
-        return _serverPeer.WhenAttPduReceived
+        return _peer.WhenAttPduReceived
             .Where(x => x.OpCode is AttOpCode.ATT_HANDLE_VALUE_NTF)
             .SelectWhere(((AttOpCode OpCode, byte[] Pdu) t, [NotNullWhen(true)] out byte[]? result) =>
             {

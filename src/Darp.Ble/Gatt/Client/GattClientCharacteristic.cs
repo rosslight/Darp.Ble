@@ -5,11 +5,13 @@ namespace Darp.Ble.Gatt.Client;
 
 /// <summary> An abstract gatt client characteristic </summary>
 /// <param name="clientService"> The parent client service </param>
+/// <param name="attributeHandle"> The AttributeHandle of the characteristic </param>
 /// <param name="uuid"> The UUID of the characteristic </param>
 /// <param name="gattProperty"> The property of the characteristic </param>
 /// <param name="onRead"> The callback to be called when a read operation was requested on this attribute </param>
 /// <param name="onWrite"> The callback to be called when a write operation was requested on this attribute </param>
 public abstract class GattClientCharacteristic(GattClientService clientService,
+    ushort attributeHandle,
     BleUuid uuid,
     GattProperty gattProperty,
     IGattClientAttribute.OnReadCallback? onRead,
@@ -19,8 +21,11 @@ public abstract class GattClientCharacteristic(GattClientService clientService,
     private readonly IGattClientAttribute.OnReadCallback? _onRead = onRead;
     private readonly IGattClientAttribute.OnWriteCallback? _onWrite = onWrite;
 
+    /// <inheritdoc />
     public IGattClientService Service { get; } = clientService;
 
+    /// <inheritdoc />
+    public ushort AttributeHandle { get; } = attributeHandle;
     /// <inheritdoc />
     public BleUuid Uuid { get; } = uuid;
     /// <inheritdoc />
@@ -134,6 +139,9 @@ public class GattClientCharacteristic<TProp1>(IGattClientCharacteristic characte
 
     /// <inheritdoc />
     public IGattClientService Service => Characteristic.Service;
+
+    /// <inheritdoc />
+    public ushort AttributeHandle => Characteristic.AttributeHandle;
     /// <inheritdoc />
     public BleUuid Uuid => Characteristic.Uuid;
     /// <inheritdoc />

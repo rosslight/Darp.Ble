@@ -1,4 +1,5 @@
 using System.Reactive.Linq;
+using System.Reactive.Windows.Foundation;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
@@ -10,10 +11,36 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.WinRT.Gatt.Server;
 
-internal sealed class WinGattServerCharacteristic(GattServerService service, GattCharacteristic gattCharacteristic, ILogger<WinGattServerCharacteristic> logger)
+internal sealed class WinGattServerCharacteristic(GattServerService service,
+    GattCharacteristic gattCharacteristic,
+    ILogger<WinGattServerCharacteristic> logger)
     : GattServerCharacteristic(service, gattCharacteristic.AttributeHandle, BleUuid.FromGuid(gattCharacteristic.Uuid, inferType: true), (GattProperty)gattCharacteristic.CharacteristicProperties, logger)
 {
     private readonly GattCharacteristic _gattCharacteristic = gattCharacteristic;
+
+    /// <inheritdoc />
+    protected override IObservable<IGattServerDescriptor> DiscoverDescriptorsCore()
+    {
+        return Observable.Create<IGattServerDescriptor>(observer =>
+        {
+            return _gattCharacteristic.GetDescriptorsAsync()
+                .ToObservable()
+                .Subscribe(result =>
+                {
+                    if (result.Status is not GattCommunicationStatus.Success)
+                    {
+                        observer.OnError(new Exception($"Could not query new descriptor for characteristic - got result {result.Status} ({result.ProtocolError})"));
+                        return;
+                    }
+                    foreach (GattDescriptor descriptor in result.Descriptors)
+                    {
+                        observer.OnNext(new WinGattServerDescriptor(this,
+                            descriptor,
+                            LoggerFactory.CreateLogger<WinGattServerDescriptor>()));
+                    }
+                });
+        });
+    }
 
     /// <inheritdoc />
     protected override async Task WriteAsyncCore(byte[] bytes, CancellationToken cancellationToken)

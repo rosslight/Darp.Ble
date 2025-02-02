@@ -34,18 +34,20 @@ public abstract class GattServerService(IGattServerPeer peer,
     /// <inheritdoc />
     public async Task DiscoverCharacteristicsAsync(CancellationToken cancellationToken = default)
     {
-        await foreach (IGattServerCharacteristic characteristic in DiscoverCharacteristicsCore()
+        await foreach (GattServerCharacteristic characteristic in DiscoverCharacteristicsCore()
                            .ToAsyncEnumerable()
                            .WithCancellation(cancellationToken)
                            .ConfigureAwait(false))
         {
+            await characteristic.DiscoverDescriptorsAsync(cancellationToken)
+                .ConfigureAwait(false);
             _characteristics[characteristic.AttributeHandle] = characteristic;
         }
     }
 
     /// <summary> Core implementation to discover all characteristics </summary>
     /// <returns> An observable with all characteristics </returns>
-    protected abstract IObservable<IGattServerCharacteristic> DiscoverCharacteristicsCore();
+    protected abstract IObservable<GattServerCharacteristic> DiscoverCharacteristicsCore();
 
     /// <inheritdoc />
     public async Task<IGattServerCharacteristic> DiscoverCharacteristicAsync(BleUuid uuid, CancellationToken cancellationToken = default)
@@ -56,11 +58,13 @@ public abstract class GattServerService(IGattServerPeer peer,
                 return characteristic;
         }
         IGattServerCharacteristic? characteristicToReturn = null;
-        await foreach (IGattServerCharacteristic characteristic in DiscoverCharacteristicsCore(uuid)
+        await foreach (GattServerCharacteristic characteristic in DiscoverCharacteristicsCore(uuid)
                            .ToAsyncEnumerable()
                            .WithCancellation(cancellationToken)
                            .ConfigureAwait(false))
         {
+            await characteristic.DiscoverDescriptorsAsync(cancellationToken)
+                .ConfigureAwait(false);
             characteristicToReturn ??= characteristic;
             _characteristics[characteristic.AttributeHandle] = characteristic;
         }
@@ -70,5 +74,5 @@ public abstract class GattServerService(IGattServerPeer peer,
     /// <summary> Core implementation to discover a characteristic with a given <paramref name="uuid"/> </summary>
     /// <param name="uuid"> The characteristic uuid to be discovered </param>
     /// <returns> An observable with all characteristics </returns>
-    protected abstract IObservable<IGattServerCharacteristic> DiscoverCharacteristicsCore(BleUuid uuid);
+    protected abstract IObservable<GattServerCharacteristic> DiscoverCharacteristicsCore(BleUuid uuid);
 }

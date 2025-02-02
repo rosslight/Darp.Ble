@@ -28,6 +28,9 @@ public class GattTypedClientCharacteristic<T, TProp1>(IGattClientCharacteristic 
 
     /// <inheritdoc />
     public IGattClientService Service => Characteristic.Service;
+
+    /// <inheritdoc />
+    public ushort AttributeHandle => Characteristic.AttributeHandle;
     /// <inheritdoc />
     public BleUuid Uuid => Characteristic.Uuid;
     /// <inheritdoc />

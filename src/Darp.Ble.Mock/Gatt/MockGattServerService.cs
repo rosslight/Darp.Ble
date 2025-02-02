@@ -15,14 +15,18 @@ internal sealed class MockGattServerService(
     public MockGattClientPeer GattClient { get; } = clientPeer;
 
     /// <inheritdoc />
-    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicsCore() => _clientService
+    protected override IObservable<GattServerCharacteristic> DiscoverCharacteristicsCore() => _clientService
         .Characteristics
         .ToObservable()
         .Where(x => x is MockGattClientCharacteristic)
-        .Select(x => new MockGattServerCharacteristic(this, x.Uuid, (MockGattClientCharacteristic)x, GattClient, LoggerFactory.CreateLogger<MockGattServerCharacteristic>()));
+        .Select(x => new MockGattServerCharacteristic(this,
+            x.Uuid,
+            (MockGattClientCharacteristic)x,
+            GattClient,
+            LoggerFactory.CreateLogger<MockGattServerCharacteristic>()));
 
     /// <inheritdoc />
-    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicsCore(BleUuid uuid)
+    protected override IObservable<GattServerCharacteristic> DiscoverCharacteristicsCore(BleUuid uuid)
     {
         return DiscoverCharacteristicsCore().Where(x => x.Uuid == uuid);
     }

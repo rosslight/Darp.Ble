@@ -1,6 +1,33 @@
 using Darp.Ble.Data;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Gatt.Server;
+
+public interface IGattServerDescriptor
+{
+    /// <summary> The characteristic that contains this descriptor </summary>
+    IGattServerCharacteristic Characteristic { get; }
+
+    /// <summary> The <see cref="BleUuid"/> of the descriptor </summary>
+    BleUuid Uuid { get; }
+}
+
+public abstract class GattServerDescriptor(
+    GattServerCharacteristic characteristic,
+    BleUuid uuid,
+    ILogger<GattServerDescriptor> logger) : IGattServerDescriptor
+{
+    /// <summary> The optional logger </summary>
+    protected ILogger<GattServerDescriptor> Logger { get; } = logger;
+    /// <summary> The logger factory </summary>
+    protected ILoggerFactory LoggerFactory => Characteristic.Service.Peer.Central.Device.LoggerFactory;
+
+    /// <inheritdoc />
+    public IGattServerCharacteristic Characteristic { get; } = characteristic;
+
+    /// <inheritdoc />
+    public BleUuid Uuid { get; } = uuid;
+}
 
 /// <summary> The interface defining a gatt server characteristic </summary>
 public interface IGattServerCharacteristic
@@ -13,12 +40,15 @@ public interface IGattServerCharacteristic
     /// <summary> The <see cref="BleUuid"/> of the characteristic </summary>
     BleUuid Uuid { get; }
     /// <summary> The Gatt Property </summary>
-    public GattProperty Properties { get; }
+    GattProperty Properties { get; }
+    /// <summary> The descriptors associated with this characteristic </summary>
+    /// <remarks> The descriptor discovery happened automatically </remarks>
+    IReadOnlyDictionary<BleUuid, IGattServerDescriptor> Descriptors { get; }
 
     /// <summary> Write <paramref name="bytes"/> to the characteristic depending on the length, </summary>
     /// <param name="bytes"> The array of bytes to be written </param>
     /// <param name="cancellationToken"> The CancellationToken to cancel the operation </param>
-    /// <returns> A Task which completes when the response was received. True, when the write was successful </returns>
+    /// <returns> A Task which completes when the response was received. True, when the write operation was successful </returns>
     /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/generic-attribute-profile--gatt-.html#UUID-53b00647-5dd9-99ae-3e74-8fc688b108d1">Write Characteristic Value</seealso>
     /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/generic-attribute-profile--gatt-.html#UUID-6dec55a7-3938-eaa1-286d-80dfd34a8ab5">Write Long Characteristic Value</seealso>
     Task WriteAsync(byte[] bytes, CancellationToken cancellationToken);

@@ -12,17 +12,16 @@ internal sealed class MockGattClientCharacteristic(
     GattProperty gattProperty,
     IGattClientAttribute.OnReadCallback? onRead,
     IGattClientAttribute.OnWriteCallback? onWrite)
-    : GattClientCharacteristic(service, uuid, gattProperty, onRead, onWrite)
+    : GattClientCharacteristic(service, attributeHandle, uuid, gattProperty, onRead, onWrite)
 {
     private readonly ConcurrentDictionary<IGattClientPeer, Action<byte[]>> _notifyActions = [];
-    public ushort AttributeHandle { get; } = attributeHandle;
 
     public async Task WriteAsync(IGattClientPeer? clientPeer, byte[] bytes, CancellationToken cancellationToken)
     {
         await UpdateValueAsync(clientPeer, bytes, cancellationToken).ConfigureAwait(false);
     }
 
-    public Task EnableNotificationsAsync(IGattClientPeer clientPeer, Action<byte[]> onNotify, CancellationToken cancellationToken)
+    public Task EnableNotificationsAsync(IGattClientPeer clientPeer, Action<byte[]> onNotify, CancellationToken _)
     {
         bool newlyAdded = _notifyActions.TryAdd(clientPeer, onNotify);
         Debug.Assert(newlyAdded, "This method should not be called if a callback was added for this peer already");

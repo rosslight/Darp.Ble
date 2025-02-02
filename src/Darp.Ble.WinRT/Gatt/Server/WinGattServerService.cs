@@ -17,9 +17,9 @@ internal sealed class WinGattServerService(GattServerPeer peer, GattDeviceServic
 {
     private readonly GattDeviceService _winService = winService;
 
-    private IObservable<IGattServerCharacteristic> DiscoverCharacteristic(Func<IAsyncOperation<GattCharacteristicsResult>> getServices)
+    private IObservable<GattServerCharacteristic> DiscoverCharacteristic(Func<IAsyncOperation<GattCharacteristicsResult>> getServices)
     {
-        return Observable.Create<IGattServerCharacteristic>(async (observer, cancellationToken) =>
+        return Observable.Create<GattServerCharacteristic>(async (observer, cancellationToken) =>
         {
             DeviceAccessStatus accessStatus = await _winService.RequestAccessAsync()
                 .AsTask(cancellationToken)
@@ -47,13 +47,13 @@ internal sealed class WinGattServerService(GattServerPeer peer, GattDeviceServic
     }
 
     /// <inheritdoc />
-    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicsCore()
+    protected override IObservable<GattServerCharacteristic> DiscoverCharacteristicsCore()
     {
         return DiscoverCharacteristic(() => _winService.GetCharacteristicsAsync());
     }
 
     /// <inheritdoc />
-    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicsCore(BleUuid uuid)
+    protected override IObservable<GattServerCharacteristic> DiscoverCharacteristicsCore(BleUuid uuid)
     {
         return DiscoverCharacteristic(() => _winService.GetCharacteristicsForUuidAsync(uuid.Value));
     }

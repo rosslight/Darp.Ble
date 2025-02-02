@@ -17,7 +17,10 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
         GattLocalCharacteristic winCharacteristic,
         IGattClientAttribute.OnReadCallback? onRead,
         IGattClientAttribute.OnWriteCallback? onWrite)
-        : base(winService, BleUuid.FromGuid(winCharacteristic.Uuid, inferType: true), (GattProperty)winCharacteristic.CharacteristicProperties, onRead, onWrite)
+        : base(winService,
+            (ushort)winCharacteristic.GetHashCode(), // TODO: some other way?
+            BleUuid.FromGuid(winCharacteristic.Uuid, inferType: true),
+            (GattProperty)winCharacteristic.CharacteristicProperties, onRead, onWrite)
     {
         Service = winService;
         _winCharacteristic = winCharacteristic;

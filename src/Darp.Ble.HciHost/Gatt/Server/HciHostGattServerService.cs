@@ -11,23 +11,23 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.HciHost.Gatt.Server;
 
 internal sealed class HciHostGattServerService(BleUuid uuid, GattServiceType type, ushort attHandle, ushort endGroupHandle,
-    HciHostGattServerPeer serverPeer, ILogger<HciHostGattServerService> logger)
-    : GattServerService(serverPeer, uuid, type, logger)
+    HciHostGattServerPeer peer, ILogger<HciHostGattServerService> logger)
+    : GattServerService(peer, uuid, type, logger)
 {
     private readonly ushort _attHandle = attHandle;
     private readonly ushort _endGroupHandle = endGroupHandle;
-    private readonly HciHostGattServerPeer _serverPeer = serverPeer;
+    public new HciHostGattServerPeer Peer { get; } = peer;
 
-    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicsCore()
+    protected override IObservable<GattServerCharacteristic> DiscoverCharacteristicsCore()
     {
-         return Observable.Create<IGattServerCharacteristic>(async (observer, token) =>
+         return Observable.Create<GattServerCharacteristic>(async (observer, token) =>
         {
             ushort startingHandle = _attHandle;
             HciHostGattServerCharacteristic? lastCharacteristic = null;
             List<HciHostGattServerCharacteristic> discoveredCharacteristics = [];
             while (!token.IsCancellationRequested && startingHandle < 0xFFFF)
             {
-                AttReadResult response = await _serverPeer.QueryAttPduAsync<AttReadByTypeReq<ushort>, AttReadByTypeRsp>(
+                AttReadResult response = await Peer.QueryAttPduAsync<AttReadByTypeReq<ushort>, AttReadByTypeRsp>(
                     new AttReadByTypeReq<ushort>
                 {
                     StartingHandle = startingHandle,
@@ -54,7 +54,6 @@ internal sealed class HciHostGattServerService(BleUuid uuid, GattServiceType typ
                     ushort characteristicHandle = BinaryPrimitives.ReadUInt16LittleEndian(memory.Span[1..]);
                     var characteristicUuid = new BleUuid(memory.Span[3..]);
                     var characteristic = new HciHostGattServerCharacteristic(this,
-                        _serverPeer,
                         characteristicUuid,
                         characteristicHandle,
                         properties,
@@ -68,9 +67,9 @@ internal sealed class HciHostGattServerService(BleUuid uuid, GattServiceType typ
             if (lastCharacteristic is not null) lastCharacteristic.EndHandle = _endGroupHandle;
             foreach (HciHostGattServerCharacteristic characteristic in discoveredCharacteristics)
             {
-                if (!await characteristic.DiscoverAllDescriptorsAsync(token))
+                if (!await characteristic.DiscoverAllDescriptorsAsync(token).ConfigureAwait(false))
                 {
-                    Logger?.LogWarning("Could not discover descriptors of characteristic {@Characteristic}", characteristic);
+                    Logger.LogWarning("Could not discover descriptors of characteristic {@Characteristic}", characteristic);
                     continue;
                 }
                 observer.OnNext(characteristic);
@@ -78,7 +77,7 @@ internal sealed class HciHostGattServerService(BleUuid uuid, GattServiceType typ
         });
     }
 
-    protected override IObservable<IGattServerCharacteristic> DiscoverCharacteristicsCore(BleUuid uuid)
+    protected override IObservable<GattServerCharacteristic> DiscoverCharacteristicsCore(BleUuid uuid)
     {
         return DiscoverCharacteristicsCore().Where(x => x.Uuid == uuid);
     }

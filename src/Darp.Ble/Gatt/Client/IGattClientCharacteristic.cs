@@ -8,12 +8,21 @@ public interface IGattClientCharacteristic : IGattClientAttribute
     /// <summary> The service this characteristic was added to </summary>
     IGattClientService Service { get; }
 
+    /// <summary> The handle of the characteristic attribute </summary>
+    ushort AttributeHandle { get; }
     /// <summary> The UUID of the characteristic </summary>
     BleUuid Uuid { get; }
     /// <summary> The property of the characteristic </summary>
     GattProperty Properties { get; }
+    /// <summary> The descriptors added to this characteristic </summary>
     IReadOnlyDictionary<BleUuid, IGattClientDescriptor> Descriptors { get; }
 
+    /// <summary> Add a new descriptor </summary>
+    /// <param name="uuid"> The uuid of the descriptor to be added </param>
+    /// <param name="onRead"> The callback to be called when a read operation was requested on this attribute </param>
+    /// <param name="onWrite"> The callback to be called when a write operation was requested on this attribute </param>
+    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
+    /// <returns> A task which holds the descriptor on completion </returns>
     Task<IGattClientDescriptor> AddDescriptorAsync(BleUuid uuid,
         OnReadCallback? onRead,
         OnWriteCallback? onWrite,

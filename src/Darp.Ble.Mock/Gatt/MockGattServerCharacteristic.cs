@@ -1,4 +1,5 @@
 using System.Reactive.Disposables;
+using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Server;
 using Microsoft.Extensions.Logging;
@@ -14,6 +15,15 @@ internal sealed class MockGattServerCharacteristic(MockGattServerService service
 {
     private readonly MockGattClientCharacteristic _characteristic = characteristic;
     private readonly MockGattClientPeer _gattClient = gattClient;
+
+    protected override IObservable<IGattServerDescriptor> DiscoverDescriptorsCore() => _characteristic
+        .Descriptors
+        .ToObservable()
+        .Where(x => x is MockGattClientDescriptor)
+        .Select(x => new MockGattServerDescriptor(this,
+            x.Key,
+            (MockGattClientDescriptor)x.Value,
+            LoggerFactory.CreateLogger<MockGattServerDescriptor>()));
 
     /// <inheritdoc />
     protected override Task WriteAsyncCore(byte[] bytes, CancellationToken cancellationToken)

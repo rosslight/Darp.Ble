@@ -14,6 +14,7 @@ public abstract class GattServerCharacteristic(GattServerService service,
     private readonly SemaphoreSlim _notifySemaphore = new(1, 1);
     private IDisposable? _notifyDisposable;
     private readonly List<Action<byte[]>> _actions = [];
+    private readonly Dictionary<BleUuid, IGattServerDescriptor> _descriptors = [];
 
     /// <summary> The optional logger </summary>
     protected ILogger<GattServerCharacteristic> Logger { get; } = logger;
@@ -25,12 +26,30 @@ public abstract class GattServerCharacteristic(GattServerService service,
 
     /// <inheritdoc />
     public ushort AttributeHandle { get; } = attributeHandle;
-
     /// <inheritdoc />
     public BleUuid Uuid { get; } = uuid;
-
     /// <inheritdoc />
     public GattProperty Properties { get; } = property;
+    /// <inheritdoc />
+    public IReadOnlyDictionary<BleUuid, IGattServerDescriptor> Descriptors => _descriptors;
+
+    /// <summary> Discover descriptors </summary>
+    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
+    /// <returns> A task that completes when all descriptors where discovered </returns>
+    internal async Task DiscoverDescriptorsAsync(CancellationToken cancellationToken)
+    {
+        await foreach (IGattServerDescriptor descriptor in DiscoverDescriptorsCore()
+                           .ToAsyncEnumerable()
+                           .WithCancellation(cancellationToken)
+                           .ConfigureAwait(false))
+        {
+            _descriptors[descriptor.Uuid] = descriptor;
+        }
+    }
+
+    /// <summary> Discover descriptors async </summary>
+    /// <returns> An observable that completes when all descriptors were discovered </returns>
+    protected abstract IObservable<IGattServerDescriptor> DiscoverDescriptorsCore();
 
     /// <inheritdoc />
     public async Task WriteAsync(byte[] bytes, CancellationToken cancellationToken)
@@ -150,6 +169,8 @@ public class GattServerCharacteristic<TProp1>(IGattServerCharacteristic characte
     public BleUuid Uuid => Characteristic.Uuid;
     /// <inheritdoc />
     public GattProperty Properties => Characteristic.Properties;
+    /// <inheritdoc />
+    public IReadOnlyDictionary<BleUuid, IGattServerDescriptor> Descriptors => Characteristic.Descriptors;
 
     Task IGattServerCharacteristic.WriteAsync(byte[] bytes, CancellationToken cancellationToken) => Characteristic.WriteAsync(bytes, cancellationToken);
     void IGattServerCharacteristic.WriteWithoutResponse(byte[] bytes) => Characteristic.WriteWithoutResponse(bytes);
