@@ -14,8 +14,8 @@ internal sealed class MockGattClientService(BleUuid uuid, GattServiceType type, 
     /// <inheritdoc />
     protected override Task<IGattClientCharacteristic> CreateCharacteristicAsyncCore(BleUuid uuid,
         GattProperty gattProperty,
-        IGattClientService.OnReadCallback? onRead,
-        IGattClientService.OnWriteCallback? onWrite,
+        IGattClientAttribute.OnReadCallback? onRead,
+        IGattClientAttribute.OnWriteCallback? onWrite,
         CancellationToken cancellationToken)
     {
         return Task.FromResult<IGattClientCharacteristic>(new MockGattClientCharacteristic(this, _handle++, uuid, gattProperty, onRead, onWrite));

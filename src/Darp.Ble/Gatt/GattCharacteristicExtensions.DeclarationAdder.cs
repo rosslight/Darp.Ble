@@ -18,8 +18,8 @@ public static partial class GattCharacteristicExtensions
     [OverloadResolutionPriority(1)]
     public static Task<GattClientCharacteristic<TProp1>> AddCharacteristicAsync<TProp1>(this IGattClientService service,
         CharacteristicDeclaration<TProp1> characteristic,
-        IGattClientService.OnReadCallback? onRead = null,
-        IGattClientService.OnWriteCallback? onWrite = null,
+        IGattClientAttribute.OnReadCallback? onRead = null,
+        IGattClientAttribute.OnWriteCallback? onWrite = null,
         CancellationToken cancellationToken = default)
         where TProp1 : IBleProperty
     {
@@ -57,8 +57,8 @@ public static partial class GattCharacteristicExtensions
     [OverloadResolutionPriority(1)]
     public static Task<GattClientCharacteristic<TProp1, TProp2>> AddCharacteristicAsync<TProp1, TProp2>(this IGattClientService service,
         CharacteristicDeclaration<TProp1, TProp2> characteristic,
-        IGattClientService.OnReadCallback? onRead = null,
-        IGattClientService.OnWriteCallback? onWrite = null,
+        IGattClientAttribute.OnReadCallback? onRead = null,
+        IGattClientAttribute.OnWriteCallback? onWrite = null,
         CancellationToken cancellationToken = default)
         where TProp1 : IBleProperty
         where TProp2 : IBleProperty

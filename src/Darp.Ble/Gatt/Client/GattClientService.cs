@@ -24,8 +24,8 @@ public abstract class GattClientService(BlePeripheral blePeripheral, BleUuid uui
     /// <inheritdoc />
     public async Task<IGattClientCharacteristic> AddCharacteristicAsync(BleUuid uuid,
         GattProperty gattProperty,
-        IGattClientService.OnReadCallback? onRead,
-        IGattClientService.OnWriteCallback? onWrite,
+        IGattClientAttribute.OnReadCallback? onRead,
+        IGattClientAttribute.OnWriteCallback? onWrite,
         CancellationToken cancellationToken)
     {
         IGattClientCharacteristic characteristic = await CreateCharacteristicAsyncCore(uuid, gattProperty, onRead, onWrite, cancellationToken).ConfigureAwait(false);
@@ -42,7 +42,7 @@ public abstract class GattClientService(BlePeripheral blePeripheral, BleUuid uui
     /// <returns> A <see cref="IGattClientCharacteristic"/> </returns>
     protected abstract Task<IGattClientCharacteristic> CreateCharacteristicAsyncCore(BleUuid uuid,
         GattProperty gattProperty,
-        IGattClientService.OnReadCallback? onRead,
-        IGattClientService.OnWriteCallback? onWrite,
+        IGattClientAttribute.OnReadCallback? onRead,
+        IGattClientAttribute.OnWriteCallback? onWrite,
         CancellationToken cancellationToken);
 }

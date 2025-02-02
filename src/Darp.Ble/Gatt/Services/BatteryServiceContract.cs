@@ -38,7 +38,9 @@ public static class BatteryServiceContract
             .ConfigureAwait(false);
         if (batteryLevelDescription is not null)
         {
-            // await batteryLevelCharacteristic.AddUserDescriptionAsync(batteryLevelDescription, cancellationToken);
+            await batteryLevelCharacteristic
+                .AddUserDescriptionAsync(batteryLevelDescription, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         return new GattClientBatteryService(service)

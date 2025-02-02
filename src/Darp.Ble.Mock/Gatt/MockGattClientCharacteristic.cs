@@ -10,8 +10,8 @@ internal sealed class MockGattClientCharacteristic(
     ushort attributeHandle,
     BleUuid uuid,
     GattProperty gattProperty,
-    IGattClientService.OnReadCallback? onRead,
-    IGattClientService.OnWriteCallback? onWrite)
+    IGattClientAttribute.OnReadCallback? onRead,
+    IGattClientAttribute.OnWriteCallback? onWrite)
     : GattClientCharacteristic(service, uuid, gattProperty, onRead, onWrite)
 {
     private readonly ConcurrentDictionary<IGattClientPeer, Action<byte[]>> _notifyActions = [];
@@ -34,6 +34,14 @@ internal sealed class MockGattClientCharacteristic(
         await Task.Delay(200).ConfigureAwait(false);
         bool removedSuccessfully = _notifyActions.TryRemove(clientPeer, out _);
         Debug.Assert(removedSuccessfully, "This method should not be called if there is no callback to remove for this peer");
+    }
+
+    protected override Task<IGattClientDescriptor> AddDescriptorAsyncCore(BleUuid uuid,
+        IGattClientAttribute.OnReadCallback? onRead,
+        IGattClientAttribute.OnWriteCallback? onWrite,
+        CancellationToken cancellationToken)
+    {
+        return Task.FromResult<IGattClientDescriptor>(new MockGattClientDescriptor(this, uuid, onRead, onWrite));
     }
 
     protected override void NotifyCore(IGattClientPeer clientPeer, byte[] value)

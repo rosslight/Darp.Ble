@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices.WindowsRuntime;
+using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Windows.Foundation;
 using Windows.Storage.Streams;
@@ -9,16 +10,16 @@ namespace Darp.Ble.WinRT.Gatt;
 
 internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
 {
-    public WinGattClientService WinService { get; }
+    public new WinGattClientService Service { get; }
     private readonly GattLocalCharacteristic _winCharacteristic;
 
     public WinGattClientCharacteristic(WinGattClientService winService,
         GattLocalCharacteristic winCharacteristic,
-        IGattClientService.OnReadCallback? onRead,
-        IGattClientService.OnWriteCallback? onWrite)
+        IGattClientAttribute.OnReadCallback? onRead,
+        IGattClientAttribute.OnWriteCallback? onWrite)
         : base(winService, BleUuid.FromGuid(winCharacteristic.Uuid, inferType: true), (GattProperty)winCharacteristic.CharacteristicProperties, onRead, onWrite)
     {
-        WinService = winService;
+        Service = winService;
         _winCharacteristic = winCharacteristic;
         winCharacteristic.ReadRequested += async (_, args) =>
         {
@@ -26,7 +27,7 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
             GattReadRequest? request = await args.GetRequestAsync().AsTask().ConfigureAwait(false);
             try
             {
-                IGattClientPeer peerClient = WinService.Peripheral.GetOrRegisterSession(args.Session);
+                IGattClientPeer peerClient = Service.Peripheral.GetOrRegisterSession(args.Session);
                 byte[] value = await GetValueAsync(peerClient, CancellationToken.None).ConfigureAwait(false);
                 request.RespondWithValue(value.AsBuffer());
             }
@@ -41,8 +42,7 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
             GattWriteRequest request = await args.GetRequestAsync().AsTask().ConfigureAwait(false);
             try
             {
-                IGattClientPeer peerClient =
-                    WinService.Peripheral.GetOrRegisterSession(args.Session);
+                IGattClientPeer peerClient = Service.Peripheral.GetOrRegisterSession(args.Session);
                 DataReader reader = DataReader.FromBuffer(request.Value);
                 byte[] bytes = reader.DetachBuffer().ToArray();
                 GattProtocolStatus status =
@@ -60,6 +60,17 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
                 // ignored
             }
         };
+    }
+
+    protected override async Task<IGattClientDescriptor> AddDescriptorAsyncCore(BleUuid uuid, IGattClientAttribute.OnReadCallback? onRead, IGattClientAttribute.OnWriteCallback? onWrite,
+        CancellationToken cancellationToken)
+    {
+        var result = await _winCharacteristic
+            .CreateDescriptorAsync(uuid.Value, new GattLocalDescriptorParameters())
+            .AsTask(cancellationToken)
+            .ConfigureAwait(false);
+        if (result.Error is not BluetoothError.Success) throw new Exception("Could not add descriptor to windows");
+        return new WinGattClientDescriptor(this, result.Descriptor, uuid, onRead, onWrite);
     }
 
     protected override void NotifyCore(IGattClientPeer clientPeer, byte[] value)

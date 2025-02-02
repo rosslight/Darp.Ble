@@ -21,8 +21,8 @@ internal sealed class WinGattClientService(WinBlePeripheral peripheral, GattServ
 
     protected override async Task<IGattClientCharacteristic> CreateCharacteristicAsyncCore(BleUuid uuid,
         GattProperty gattProperty,
-        IGattClientService.OnReadCallback? onRead,
-        IGattClientService.OnWriteCallback? onWrite,
+        IGattClientAttribute.OnReadCallback? onRead,
+        IGattClientAttribute.OnWriteCallback? onWrite,
         CancellationToken cancellationToken)
     {
         GattLocalCharacteristicResult result = await _winService.CreateCharacteristicAsync(uuid.Value,

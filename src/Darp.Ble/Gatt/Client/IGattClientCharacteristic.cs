@@ -3,24 +3,22 @@ using Darp.Ble.Data;
 namespace Darp.Ble.Gatt.Client;
 
 /// <summary> A gatt client characteristic </summary>
-public interface IGattClientCharacteristic
+public interface IGattClientCharacteristic : IGattClientAttribute
 {
+    /// <summary> The service this characteristic was added to </summary>
+    IGattClientService Service { get; }
+
     /// <summary> The UUID of the characteristic </summary>
     BleUuid Uuid { get; }
     /// <summary> The property of the characteristic </summary>
     GattProperty Properties { get; }
+    IReadOnlyDictionary<BleUuid, IGattClientDescriptor> Descriptors { get; }
 
-    /// <summary> Get the current value of the characteristic </summary>
-    /// <param name="clientPeer"> The client peer to get the value for. If null, all subscribed clients will be taken into account </param>
-    /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
-    /// <returns> The current value </returns>
-    ValueTask<byte[]> GetValueAsync(IGattClientPeer? clientPeer, CancellationToken cancellationToken);
-    /// <summary> Update the characteristic value </summary>
-    /// <param name="clientPeer"> The client peer to update the value for. If null, all subscribed clients will be taken into account </param>
-    /// <param name="value"> The value to update with </param>
-    /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
-    /// <returns> The status of the update operation </returns>
-    ValueTask<GattProtocolStatus> UpdateValueAsync(IGattClientPeer? clientPeer, byte[] value, CancellationToken cancellationToken);
+    Task<IGattClientDescriptor> AddDescriptorAsync(BleUuid uuid,
+        OnReadCallback? onRead,
+        OnWriteCallback? onWrite,
+        CancellationToken cancellationToken = default);
+
     /// <summary> Notify subscribers about a new value </summary>
     /// <param name="clientPeer"> The client peer to notify. If null, all subscribed clients will be taken into account </param>
     /// <param name="value"> The value to update with </param>

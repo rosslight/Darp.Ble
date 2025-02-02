@@ -18,8 +18,8 @@ public static partial class GattCharacteristicExtensions
     [OverloadResolutionPriority(1)]
     public static async Task<GattClientCharacteristic<TProp1>> AddCharacteristicAsync<TProp1>(this IGattClientService service,
         BleUuid uuid,
-        IGattClientService.OnReadCallback? onRead = null,
-        IGattClientService.OnWriteCallback? onWrite = null,
+        IGattClientAttribute.OnReadCallback? onRead = null,
+        IGattClientAttribute.OnWriteCallback? onWrite = null,
         CancellationToken cancellationToken = default)
         where TProp1 : IBleProperty
     {
@@ -49,10 +49,10 @@ public static partial class GattCharacteristicExtensions
         where TProp1 : IBleProperty
     {
         ArgumentNullException.ThrowIfNull(service);
-        IGattClientService.OnReadCallback? onAsyncRead = onRead is null
+        IGattClientAttribute.OnReadCallback? onAsyncRead = onRead is null
             ? null
             : (peer, _) => ValueTask.FromResult(onRead(peer));
-        IGattClientService.OnWriteCallback? onAsyncWrite = onWrite is null
+        IGattClientAttribute.OnWriteCallback? onAsyncWrite = onWrite is null
             ? null
             : (peer, bytes, _) => ValueTask.FromResult(onWrite(peer, bytes));
         return await service.AddCharacteristicAsync<TProp1>(uuid, onAsyncRead, onAsyncWrite, cancellationToken).ConfigureAwait(false);
@@ -70,8 +70,8 @@ public static partial class GattCharacteristicExtensions
     [OverloadResolutionPriority(1)]
     public static async Task<GattClientCharacteristic<TProp1, TProp2>> AddCharacteristicAsync<TProp1, TProp2>(this IGattClientService service,
         BleUuid uuid,
-        IGattClientService.OnReadCallback? onRead = null,
-        IGattClientService.OnWriteCallback? onWrite = null,
+        IGattClientAttribute.OnReadCallback? onRead = null,
+        IGattClientAttribute.OnWriteCallback? onWrite = null,
         CancellationToken cancellationToken = default)
         where TProp1 : IBleProperty
         where TProp2 : IBleProperty

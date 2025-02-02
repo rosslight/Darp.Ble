@@ -27,13 +27,22 @@ public class GattTypedClientCharacteristic<T, TProp1>(IGattClientCharacteristic 
     private readonly IGattTypedCharacteristic<T>.WriteValueFunc _onWrite = onWrite;
 
     /// <inheritdoc />
+    public IGattClientService Service => Characteristic.Service;
+    /// <inheritdoc />
     public BleUuid Uuid => Characteristic.Uuid;
     /// <inheritdoc />
     public GattProperty Properties => Characteristic.Properties;
+    /// <inheritdoc />
+    public IReadOnlyDictionary<BleUuid, IGattClientDescriptor> Descriptors => Characteristic.Descriptors;
 
-    ValueTask<byte[]> IGattClientCharacteristic.GetValueAsync(IGattClientPeer? clientPeer, CancellationToken cancellationToken)
+    Task<IGattClientDescriptor> IGattClientCharacteristic.AddDescriptorAsync(BleUuid uuid,
+        IGattClientAttribute.OnReadCallback? onRead,
+        IGattClientAttribute.OnWriteCallback? onWrite,
+        CancellationToken cancellationToken)
+        => Characteristic.AddDescriptorAsync(uuid, onRead, onWrite, cancellationToken);
+    ValueTask<byte[]> IGattClientAttribute.GetValueAsync(IGattClientPeer? clientPeer, CancellationToken cancellationToken)
         => Characteristic.GetValueAsync(clientPeer, cancellationToken);
-    ValueTask<GattProtocolStatus> IGattClientCharacteristic.UpdateValueAsync(IGattClientPeer? clientPeer, byte[] value, CancellationToken cancellationToken)
+    ValueTask<GattProtocolStatus> IGattClientAttribute.UpdateValueAsync(IGattClientPeer? clientPeer, byte[] value, CancellationToken cancellationToken)
         => Characteristic.UpdateValueAsync(clientPeer, value, cancellationToken);
     void IGattClientCharacteristic.NotifyValue(IGattClientPeer? clientPeer, byte[] value)
         => Characteristic.NotifyValue(clientPeer, value);
