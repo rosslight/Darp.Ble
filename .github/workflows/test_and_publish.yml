@@ -38,6 +38,10 @@ jobs:
         run: |
           dotnet workload install android
 
+      - name: Check format
+        run: |
+          dotnet tool restore
+          dotnet csharpier --check .
       - name: Restore dependencies
         run:  dotnet restore /p:EnableWindowsTargeting=true
       - name: Build
