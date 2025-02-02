@@ -16,12 +16,28 @@ public sealed class GapAdvertisementTests(ILoggerFactory loggerFactory)
         .CreateManager();
 
     [Theory]
-    [InlineData(BleEventType.AdvInd, BleAddressType.Public, 0xAABBCCDDEEFF, Physical.Le1M, Physical.NotAvailable,
-        AdvertisingSId.NoAdIProvided, TxPowerLevel.NotAvailable, -40, PeriodicAdvertisingInterval.NoPeriodicAdvertising,
-        BleAddressType.NotAvailable, 0x000000000000,
-        AdTypes.Flags, "1A", AdTypes.CompleteListOf16BitServiceOrServiceClassUuids, "AABB",
-        "130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB")]
-    public async Task Advertisement_FromExtendedAdvertisingReport(BleEventType eventType, BleAddressType addressType, ulong address,
+    [InlineData(
+        BleEventType.AdvInd,
+        BleAddressType.Public,
+        0xAABBCCDDEEFF,
+        Physical.Le1M,
+        Physical.NotAvailable,
+        AdvertisingSId.NoAdIProvided,
+        TxPowerLevel.NotAvailable,
+        -40,
+        PeriodicAdvertisingInterval.NoPeriodicAdvertising,
+        BleAddressType.NotAvailable,
+        0x000000000000,
+        AdTypes.Flags,
+        "1A",
+        AdTypes.CompleteListOf16BitServiceOrServiceClassUuids,
+        "AABB",
+        "130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB"
+    )]
+    public async Task Advertisement_FromExtendedAdvertisingReport(
+        BleEventType eventType,
+        BleAddressType addressType,
+        ulong address,
         Physical primaryPhy,
         Physical secondaryPhy,
         AdvertisingSId advertisingSId,
@@ -34,24 +50,30 @@ public sealed class GapAdvertisementTests(ILoggerFactory loggerFactory)
         string sectionDataHex1,
         AdTypes advertisingDataType2,
         string sectionDataHex2,
-        string expectedReportHex)
+        string expectedReportHex
+    )
     {
         byte[] sectionData1 = Convert.FromHexString(sectionDataHex1);
         byte[] sectionData2 = Convert.FromHexString(sectionDataHex2);
         IBleDevice device = _manager.EnumerateDevices().First();
         await device.InitializeAsync();
 
-        GapAdvertisement adv = GapAdvertisement.FromExtendedAdvertisingReport(device.Observer,
+        GapAdvertisement adv = GapAdvertisement.FromExtendedAdvertisingReport(
+            device.Observer,
             DateTimeOffset.UtcNow,
             eventType,
             new BleAddress(addressType, (UInt48)address),
-            primaryPhy, secondaryPhy,
-            advertisingSId, txPower, (Rssi)rssi, periodicAdvertisingInterval, new BleAddress(directAddressType, (UInt48)directAddress),
+            primaryPhy,
+            secondaryPhy,
+            advertisingSId,
+            txPower,
+            (Rssi)rssi,
+            periodicAdvertisingInterval,
+            new BleAddress(directAddressType, (UInt48)directAddress),
             AdvertisingData.From(
-            [
-                (advertisingDataType1, sectionData1),
-                (advertisingDataType2, sectionData2),
-            ]));
+                [(advertisingDataType1, sectionData1), (advertisingDataType2, sectionData2)]
+            )
+        );
         string byteString = Convert.ToHexString(adv.AsByteArray());
 
         byteString.Should().Be(expectedReportHex);
@@ -80,7 +102,11 @@ public sealed class GapAdvertisementTests(ILoggerFactory loggerFactory)
     public void WithUserData_WithTestData_ShouldHaveEquivalentValues(string reportHex)
     {
         const int testData = 12345;
-        GapAdvertisement adv = GapAdvertisement.FromExtendedAdvertisingReport(null!, DateTimeOffset.UtcNow, reportHex.ToByteArray());
+        GapAdvertisement adv = GapAdvertisement.FromExtendedAdvertisingReport(
+            null!,
+            DateTimeOffset.UtcNow,
+            reportHex.ToByteArray()
+        );
 
         IGapAdvertisement<int> advWithData = adv.WithUserData(testData);
 

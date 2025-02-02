@@ -14,6 +14,7 @@ public interface IGattClientPeer
 
     /// <summary> True, if the peer is connected </summary>
     bool IsConnected { get; }
+
     /// <summary> An observable to notify about disconnection </summary>
     IObservable<Unit> WhenDisconnected { get; }
 }

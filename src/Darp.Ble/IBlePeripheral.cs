@@ -17,6 +17,7 @@ public interface IBlePeripheral
 
     /// <summary> An observable which fires when a new GattClient was connected </summary>
     IObservable<IGattClientPeer> WhenConnected { get; }
+
     /// <summary> An observable which fires when a GattClient disconnected </summary>
     IObservable<IGattClientPeer> WhenDisconnected { get; }
 
@@ -25,5 +26,9 @@ public interface IBlePeripheral
     /// <param name="isPrimary"> True, if the service is a primary service; False, if secondary </param>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> The newly added service </returns>
-    Task<IGattClientService> AddServiceAsync(BleUuid uuid, bool isPrimary = true, CancellationToken cancellationToken = default);
+    Task<IGattClientService> AddServiceAsync(
+        BleUuid uuid,
+        bool isPrimary = true,
+        CancellationToken cancellationToken = default
+    );
 }

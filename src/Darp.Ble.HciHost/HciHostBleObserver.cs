@@ -16,60 +16,90 @@ using UInt48 = Darp.Ble.Data.UInt48;
 namespace Darp.Ble.HciHost;
 
 /// <inheritdoc />
-internal sealed class HciHostBleObserver(HciHostBleDevice device, ILogger<HciHostBleObserver> logger)
-    : BleObserver(device, logger)
+internal sealed class HciHostBleObserver(
+    HciHostBleDevice device,
+    ILogger<HciHostBleObserver> logger
+) : BleObserver(device, logger)
 {
     private readonly HciHostBleDevice _device = device;
 
-    private static (HciLeSetExtendedScanParametersCommand, HciLeSetExtendedScanEnableCommand) CreateConfiguration(BleScanParameters parameters)
+    private static (
+        HciLeSetExtendedScanParametersCommand,
+        HciLeSetExtendedScanEnableCommand
+    ) CreateConfiguration(BleScanParameters parameters)
     {
         bool isInActiveMode = parameters.ScanType is ScanType.Active;
-        return (new HciLeSetExtendedScanParametersCommand
-        {
-            OwnAddressType = 0x01,
-            ScanningFilterPolicy = 0x00,
-            ScanPhys = 0b00000001,
-            ScanType = isInActiveMode ? (byte)0x01 : (byte)0x00,
-            ScanInterval = (ushort)parameters.ScanInterval,
-            ScanWindow = (ushort)parameters.ScanWindow,
-        }, new HciLeSetExtendedScanEnableCommand
-        {
-            Enable = 0x01,
-            FilterDuplicates = 0x00,
-            Duration = 0x0000,
-            Period = 0x0000,
-        });
+        return (
+            new HciLeSetExtendedScanParametersCommand
+            {
+                OwnAddressType = 0x01,
+                ScanningFilterPolicy = 0x00,
+                ScanPhys = 0b00000001,
+                ScanType = isInActiveMode ? (byte)0x01 : (byte)0x00,
+                ScanInterval = (ushort)parameters.ScanInterval,
+                ScanWindow = (ushort)parameters.ScanWindow,
+            },
+            new HciLeSetExtendedScanEnableCommand
+            {
+                Enable = 0x01,
+                FilterDuplicates = 0x00,
+                Duration = 0x0000,
+                Period = 0x0000,
+            }
+        );
     }
 
     /// <inheritdoc />
     protected override bool TryStartScanCore(out IObservable<IGapAdvertisement> observable)
     {
-        (HciLeSetExtendedScanParametersCommand Parameters, HciLeSetExtendedScanEnableCommand Enable) commands = CreateConfiguration(Parameters);
+        (
+            HciLeSetExtendedScanParametersCommand Parameters,
+            HciLeSetExtendedScanEnableCommand Enable
+        ) commands = CreateConfiguration(Parameters);
         //Logger.Verbose("AdvertisingScanner: Using scan params {@ScanParams} and enable params {@EnableParams}", commands.Parameters, commands.Enable);
-        observable = Observable.Create<IGapAdvertisement>(async (observer, token) =>
-        {
-            HciSetExtendedScanParametersResult paramSetResult = await _device.Host
-                .QueryCommandCompletionAsync<HciLeSetExtendedScanParametersCommand, HciSetExtendedScanParametersResult>(
-                    commands.Parameters, cancellationToken: token).ConfigureAwait(false);
-            if (paramSetResult.Status is not HciCommandStatus.Success)
+        observable = Observable.Create<IGapAdvertisement>(
+            async (observer, token) =>
             {
-                observer.OnError(new BleObservationStartException(this, $"Could not set scan parameters: {paramSetResult.Status}"));
-                return Disposable.Empty;
-            }
-            HciSetExtendedScanEnableResult enableResult = await _device.Host.QueryCommandCompletionAsync<HciLeSetExtendedScanEnableCommand, HciSetExtendedScanEnableResult>(commands.Enable, cancellationToken: token).ConfigureAwait(false);
-            if (enableResult.Status is not HciCommandStatus.Success)
-            {
-                observer.OnError(new BleObservationStartException(this, $"Could not enable scan: {enableResult.Status}"));
-                return Disposable.Empty;
-            }
+                HciSetExtendedScanParametersResult paramSetResult = await _device
+                    .Host.QueryCommandCompletionAsync<
+                        HciLeSetExtendedScanParametersCommand,
+                        HciSetExtendedScanParametersResult
+                    >(commands.Parameters, cancellationToken: token)
+                    .ConfigureAwait(false);
+                if (paramSetResult.Status is not HciCommandStatus.Success)
+                {
+                    observer.OnError(
+                        new BleObservationStartException(
+                            this,
+                            $"Could not set scan parameters: {paramSetResult.Status}"
+                        )
+                    );
+                    return Disposable.Empty;
+                }
+                HciSetExtendedScanEnableResult enableResult = await _device
+                    .Host.QueryCommandCompletionAsync<
+                        HciLeSetExtendedScanEnableCommand,
+                        HciSetExtendedScanEnableResult
+                    >(commands.Enable, cancellationToken: token)
+                    .ConfigureAwait(false);
+                if (enableResult.Status is not HciCommandStatus.Success)
+                {
+                    observer.OnError(
+                        new BleObservationStartException(
+                            this,
+                            $"Could not enable scan: {enableResult.Status}"
+                        )
+                    );
+                    return Disposable.Empty;
+                }
 
-            return _device.Host
-                .WhenHciEventPackageReceived
-                .SelectWhereEvent<HciLeExtendedAdvertisingReportEvent>()
-                .SelectMany(x => x.Data.Reports)
-                .Select(x => OnAdvertisementReport(this, x))
-                .Subscribe(observer);
-        });
+                return _device
+                    .Host.WhenHciEventPackageReceived.SelectWhereEvent<HciLeExtendedAdvertisingReportEvent>()
+                    .SelectMany(x => x.Data.Reports)
+                    .Select(x => OnAdvertisementReport(this, x))
+                    .Subscribe(observer);
+            }
+        );
         return true;
     }
 
@@ -83,12 +113,19 @@ internal sealed class HciHostBleObserver(HciHostBleDevice device, ILogger<HciHos
             Duration = 0x0000,
             Period = 0x0000,
         };
-        _ = _device.Host.QueryCommandCompletionAsync<HciLeSetExtendedScanEnableCommand, HciSetExtendedScanEnableResult>(stopScanCommand);
+        _ = _device.Host.QueryCommandCompletionAsync<
+            HciLeSetExtendedScanEnableCommand,
+            HciSetExtendedScanEnableResult
+        >(stopScanCommand);
     }
 
-    private static GapAdvertisement OnAdvertisementReport(BleObserver bleObserver, HciLeExtendedAdvertisingReport report)
+    private static GapAdvertisement OnAdvertisementReport(
+        BleObserver bleObserver,
+        HciLeExtendedAdvertisingReport report
+    )
     {
-        GapAdvertisement advertisement = GapAdvertisement.FromExtendedAdvertisingReport(bleObserver,
+        GapAdvertisement advertisement = GapAdvertisement.FromExtendedAdvertisingReport(
+            bleObserver,
             DateTimeOffset.UtcNow,
             (BleEventType)report.EventType,
             new BleAddress((BleAddressType)report.AddressType, (UInt48)report.Address.ToUInt64()),
@@ -98,8 +135,12 @@ internal sealed class HciHostBleObserver(HciHostBleDevice device, ILogger<HciHos
             (TxPowerLevel)report.TxPower,
             (Rssi)report.Rssi,
             (PeriodicAdvertisingInterval)report.PeriodicAdvertisingInterval,
-            new BleAddress((BleAddressType)report.DirectAddressType, (UInt48)report.DirectAddress.ToUInt64()),
-            AdvertisingData.From(report.Data));
+            new BleAddress(
+                (BleAddressType)report.DirectAddressType,
+                (UInt48)report.DirectAddress.ToUInt64()
+            ),
+            AdvertisingData.From(report.Data)
+        );
 
         return advertisement;
     }

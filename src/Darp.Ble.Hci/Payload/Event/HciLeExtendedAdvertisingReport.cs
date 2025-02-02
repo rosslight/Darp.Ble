@@ -10,28 +10,40 @@ public readonly partial record struct HciLeExtendedAdvertisingReport
 {
     /// <summary> The Event_Type </summary>
     public required ushort EventType { get; init; }
+
     /// <summary> The Address_Type </summary>
     public required byte AddressType { get; init; }
+
     /// <summary> The Address </summary>
     public required UInt48 Address { get; init; }
+
     /// <summary> The Primary_PHY </summary>
     public required byte PrimaryPhy { get; init; }
+
     /// <summary> The Secondary_PHY </summary>
     public required byte SecondaryPhy { get; init; }
+
     /// <summary> The Advertising_SID </summary>
     public required byte AdvertisingSId { get; init; }
+
     /// <summary> The TX_Power </summary>
     public required sbyte TxPower { get; init; }
+
     /// <summary> The RSSI </summary>
     public required sbyte Rssi { get; init; }
+
     /// <summary> The Periodic_Advertising_Interval </summary>
     public required ushort PeriodicAdvertisingInterval { get; init; }
+
     /// <summary> The Direct_Address_Type </summary>
     public required byte DirectAddressType { get; init; }
+
     /// <summary> The Direct_Address </summary>
     public required UInt48 DirectAddress { get; init; }
+
     /// <summary> The Data_Length </summary>
     public required byte DataLength { get; init; }
+
     /// <summary> The Data </summary>
     [BinaryElementCount(nameof(DataLength))]
     public required ReadOnlyMemory<byte> Data { get; init; }

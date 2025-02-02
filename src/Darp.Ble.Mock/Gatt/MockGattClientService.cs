@@ -5,19 +5,26 @@ using Darp.Ble.Gatt.Services;
 
 namespace Darp.Ble.Mock.Gatt;
 
-internal sealed class MockGattClientService(BleUuid uuid, GattServiceType type, MockedBlePeripheral blePeripheral)
-    : GattClientService(blePeripheral, uuid, type)
+internal sealed class MockGattClientService(
+    BleUuid uuid,
+    GattServiceType type,
+    MockedBlePeripheral blePeripheral
+) : GattClientService(blePeripheral, uuid, type)
 {
     private ushort _handle;
     public MockedBlePeripheral BlePeripheral { get; } = blePeripheral;
 
     /// <inheritdoc />
-    protected override Task<IGattClientCharacteristic> CreateCharacteristicAsyncCore(BleUuid uuid,
+    protected override Task<IGattClientCharacteristic> CreateCharacteristicAsyncCore(
+        BleUuid uuid,
         GattProperty gattProperty,
         IGattClientAttribute.OnReadCallback? onRead,
         IGattClientAttribute.OnWriteCallback? onWrite,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
-        return Task.FromResult<IGattClientCharacteristic>(new MockGattClientCharacteristic(this, _handle++, uuid, gattProperty, onRead, onWrite));
+        return Task.FromResult<IGattClientCharacteristic>(
+            new MockGattClientCharacteristic(this, _handle++, uuid, gattProperty, onRead, onWrite)
+        );
     }
 }

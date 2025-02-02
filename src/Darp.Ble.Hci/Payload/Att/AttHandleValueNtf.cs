@@ -9,10 +9,13 @@ public readonly partial record struct AttHandleValueNtf : IAttPdu
 {
     /// <inheritdoc />
     public static AttOpCode ExpectedOpCode => AttOpCode.ATT_HANDLE_VALUE_NTF;
+
     /// <inheritdoc />
     public required AttOpCode OpCode { get; init; }
+
     /// <summary> The handle of the attribute </summary>
     public required ushort Handle { get; init; }
+
     /// <summary> The current value of the attribute </summary>
     public required ReadOnlyMemory<byte> Value { get; init; }
 }

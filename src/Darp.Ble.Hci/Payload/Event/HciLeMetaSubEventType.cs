@@ -9,12 +9,16 @@ public enum HciLeMetaSubEventType : byte
 {
     /// <summary> Invalid sub event type </summary>
     None,
+
     /// <summary> <see cref="HciLeDataLengthChangeEvent"/> </summary>
     HCI_LE_Data_Length_Change = 0x07,
+
     /// <summary> <see cref="HciLeEnhancedConnectionCompleteV1Event"/> </summary>
     HCI_LE_Enhanced_Connection_Complete_V1 = 0x0A,
+
     /// <summary> <see cref="HciLeExtendedAdvertisingReportEvent"/> </summary>
     HCI_LE_Extended_Advertising_Report = 0x0D,
+
     /// <summary> The HCI_LE_Enhanced_Connection_Complete_v2 </summary>
     HCI_LE_Enhanced_Connection_Complete_v2 = 0x29,
 }

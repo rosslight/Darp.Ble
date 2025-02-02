@@ -1,7 +1,8 @@
 namespace Darp.Ble.Utils;
 
 /// <summary> An async disposable </summary>
-internal sealed class AnonymousAsyncDisposable<T>(T state, Func<T, ValueTask> onDispose) : IAsyncDisposable
+internal sealed class AnonymousAsyncDisposable<T>(T state, Func<T, ValueTask> onDispose)
+    : IAsyncDisposable
 {
     private readonly T _state = state;
     private Func<T, ValueTask>? _onDispose = onDispose;

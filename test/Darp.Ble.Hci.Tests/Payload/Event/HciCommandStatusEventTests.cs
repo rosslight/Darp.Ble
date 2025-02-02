@@ -15,10 +15,12 @@ public sealed class HciCommandStatusEventTests
 
     [Theory]
     [InlineData("00010604", HciCommandStatus.Success, 1, HciOpCode.HCI_Disconnect)]
-    public void TryReadLittleEndian_HciSetEventMaskResult_ShouldBeValid(string hexBytes,
+    public void TryReadLittleEndian_HciSetEventMaskResult_ShouldBeValid(
+        string hexBytes,
         HciCommandStatus expectedStatus,
         byte expectedNumHciCommandPackets,
-        HciOpCode expectedCommandOpCode)
+        HciOpCode expectedCommandOpCode
+    )
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
         var expectedValue = new HciCommandStatusEvent
@@ -28,7 +30,11 @@ public sealed class HciCommandStatusEventTests
             CommandOpCode = expectedCommandOpCode,
         };
 
-        bool success = Extensions.TryReadLittleEndian(bytes, out HciCommandStatusEvent value, out int decoded);
+        bool success = Extensions.TryReadLittleEndian(
+            bytes,
+            out HciCommandStatusEvent value,
+            out int decoded
+        );
 
         success.Should().BeTrue();
         decoded.Should().Be(4);
@@ -43,7 +49,11 @@ public sealed class HciCommandStatusEventTests
     public void TryReadLittleEndian_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
-        bool success = Extensions.TryReadLittleEndian(bytes, out HciCommandStatusEvent _, out int decoded);
+        bool success = Extensions.TryReadLittleEndian(
+            bytes,
+            out HciCommandStatusEvent _,
+            out int decoded
+        );
 
         success.Should().BeFalse();
         decoded.Should().Be(expectedBytesDecoded);

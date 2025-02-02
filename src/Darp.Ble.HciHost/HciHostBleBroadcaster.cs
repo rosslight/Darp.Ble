@@ -17,8 +17,8 @@ namespace Darp.Ble.HciHost;
 internal sealed class HciHostBleBroadcaster(
     HciHostBleDevice device,
     ushort maxAdvertisingDataLength,
-    ILogger<HciHostBleBroadcaster> logger)
-    : BleBroadcaster(device, logger)
+    ILogger<HciHostBleBroadcaster> logger
+) : BleBroadcaster(device, logger)
 {
     private readonly HciHostBleDevice _device = device;
     private readonly ConcurrentDictionary<byte, IAdvertisingSet> _advertisingSets = [];
@@ -26,12 +26,17 @@ internal sealed class HciHostBleBroadcaster(
     public ushort MaxAdvertisingDataLength { get; } = maxAdvertisingDataLength;
     public Hci.HciHost Host => _device.Host;
 
-    private async Task RegisterAdvertisingSetAsync(HciAdvertisingSet advertisingSet, CancellationToken cancellationToken)
+    private async Task RegisterAdvertisingSetAsync(
+        HciAdvertisingSet advertisingSet,
+        CancellationToken cancellationToken
+    )
     {
-        HciLeReadNumberOfSupportedAdvertisingSetsResult result = await Host
-            .QueryCommandCompletionAsync<HciLeReadNumberOfSupportedAdvertisingSetsCommand, HciLeReadNumberOfSupportedAdvertisingSetsResult>(
-                cancellationToken: cancellationToken)
-            .ConfigureAwait(false);
+        HciLeReadNumberOfSupportedAdvertisingSetsResult result =
+            await Host.QueryCommandCompletionAsync<
+                HciLeReadNumberOfSupportedAdvertisingSetsCommand,
+                HciLeReadNumberOfSupportedAdvertisingSetsResult
+            >(cancellationToken: cancellationToken)
+                .ConfigureAwait(false);
         for (byte handle = 0; handle < result.NumSupportedAdvertisingSets; handle++)
         {
             if (!_advertisingSets.TryAdd(handle, advertisingSet))
@@ -42,14 +47,19 @@ internal sealed class HciHostBleBroadcaster(
 #pragma warning restore CS0618
             return;
         }
-        throw new ArgumentOutOfRangeException(nameof(advertisingSet), "Cannot add additional advertising set. There are not enough");
+        throw new ArgumentOutOfRangeException(
+            nameof(advertisingSet),
+            "Cannot add additional advertising set. There are not enough"
+        );
     }
 
     /// <inheritdoc />
-    protected override async Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(AdvertisingParameters? parameters,
+    protected override async Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(
+        AdvertisingParameters? parameters,
         AdvertisingData? data,
         AdvertisingData? scanResponseData,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         parameters ??= AdvertisingParameters.Default;
 
@@ -57,15 +67,18 @@ internal sealed class HciHostBleBroadcaster(
         await RegisterAdvertisingSetAsync(set, cancellationToken).ConfigureAwait(false);
         try
         {
-            await set.SetAdvertisingParametersAsync(parameters, cancellationToken).ConfigureAwait(false);
-            await set.SetRandomAddressAsync(_device.RandomAddress, cancellationToken).ConfigureAwait(false);
+            await set.SetAdvertisingParametersAsync(parameters, cancellationToken)
+                .ConfigureAwait(false);
+            await set.SetRandomAddressAsync(_device.RandomAddress, cancellationToken)
+                .ConfigureAwait(false);
             if (data?.Count > 0)
             {
                 await set.SetAdvertisingDataAsync(data, cancellationToken).ConfigureAwait(false);
             }
             if (scanResponseData is not null)
             {
-                await set.SetAdvertisingParametersAsync(parameters, cancellationToken).ConfigureAwait(false);
+                await set.SetAdvertisingParametersAsync(parameters, cancellationToken)
+                    .ConfigureAwait(false);
             }
         }
         catch (Exception)
@@ -79,24 +92,40 @@ internal sealed class HciHostBleBroadcaster(
 
     /// <inheritdoc />
     protected override async Task<IAsyncDisposable> StartAdvertisingCoreAsync(
-        IReadOnlyCollection<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, byte NumberOfEvents)> advertisingSets,
-        CancellationToken cancellationToken)
+        IReadOnlyCollection<(
+            IAdvertisingSet AdvertisingSet,
+            TimeSpan Duration,
+            byte NumberOfEvents
+        )> advertisingSets,
+        CancellationToken cancellationToken
+    )
     {
         var advertisingHandleArray = new byte[advertisingSets.Count];
         var durationArray = new ushort[advertisingSets.Count];
         var numberOfEventsArray = new byte[advertisingSets.Count];
         var i = 0;
-        foreach ((IAdvertisingSet advertisingSet, TimeSpan duration, byte numberOfEvents) in advertisingSets)
+        foreach (
+            (
+                IAdvertisingSet advertisingSet,
+                TimeSpan duration,
+                byte numberOfEvents
+            ) in advertisingSets
+        )
         {
             if (advertisingSet is not HciAdvertisingSet hciAdvertisingSet)
-                throw new ArgumentException("An advertising set is not of type HciAdvertisingSet. This should not happen", nameof(advertisingSets));
+                throw new ArgumentException(
+                    "An advertising set is not of type HciAdvertisingSet. This should not happen",
+                    nameof(advertisingSets)
+                );
             advertisingHandleArray[i] = hciAdvertisingSet.AdvertisingHandle;
             durationArray[i] = (ushort)(duration.TotalMilliseconds / 10);
             numberOfEventsArray[i] = numberOfEvents;
             i++;
         }
-        await Host
-            .QueryCommandCompletionAsync<HciLeSetExtendedAdvertisingEnableCommand, HciLeSetExtendedAdvertisingEnableResult>(
+        await Host.QueryCommandCompletionAsync<
+            HciLeSetExtendedAdvertisingEnableCommand,
+            HciLeSetExtendedAdvertisingEnableResult
+        >(
                 new HciLeSetExtendedAdvertisingEnableCommand
                 {
                     Enable = 0x01,
@@ -105,12 +134,15 @@ internal sealed class HciHostBleBroadcaster(
                     Duration = durationArray,
                     MaxExtendedAdvertisingEvents = numberOfEventsArray,
                 },
-                cancellationToken: cancellationToken)
+                cancellationToken: cancellationToken
+            )
             .ConfigureAwait(false);
         return AsyncDisposable.Create(async () =>
         {
-            await Host
-                .QueryCommandCompletionAsync<HciLeSetExtendedAdvertisingEnableCommand, HciLeSetExtendedAdvertisingEnableResult>(
+            await Host.QueryCommandCompletionAsync<
+                HciLeSetExtendedAdvertisingEnableCommand,
+                HciLeSetExtendedAdvertisingEnableResult
+            >(
                     new HciLeSetExtendedAdvertisingEnableCommand
                     {
                         Enable = 0x00,
@@ -119,13 +151,15 @@ internal sealed class HciHostBleBroadcaster(
                         Duration = durationArray,
                         MaxExtendedAdvertisingEvents = numberOfEventsArray,
                     },
-                    cancellationToken: cancellationToken)
+                    cancellationToken: cancellationToken
+                )
                 .ConfigureAwait(false);
         });
     }
 }
 
-internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster) : AdvertisingSet(broadcaster)
+internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster)
+    : AdvertisingSet(broadcaster)
 {
     private readonly Hci.HciHost _host = broadcaster.Host;
 
@@ -138,26 +172,39 @@ internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster) : Adv
     }
 
     /// <inheritdoc />
-    public override async Task SetRandomAddressAsync(BleAddress randomAddress, CancellationToken cancellationToken = default)
+    public override async Task SetRandomAddressAsync(
+        BleAddress randomAddress,
+        CancellationToken cancellationToken = default
+    )
     {
         ArgumentNullException.ThrowIfNull(randomAddress);
         await _host
-            .QueryCommandCompletionAsync<HciLeSetAdvertisingSetRandomAddressCommand, HciLeSetAdvertisingSetRandomAddressResult>(
+            .QueryCommandCompletionAsync<
+                HciLeSetAdvertisingSetRandomAddressCommand,
+                HciLeSetAdvertisingSetRandomAddressResult
+            >(
                 new HciLeSetAdvertisingSetRandomAddressCommand
                 {
                     AdvertisingHandle = AdvertisingHandle,
                     RandomAddress = randomAddress.Value.ToUInt64(),
                 },
-                cancellationToken: cancellationToken)
+                cancellationToken: cancellationToken
+            )
             .ConfigureAwait(false);
     }
 
     /// <inheritdoc />
-    public override async Task SetAdvertisingParametersAsync(AdvertisingParameters parameters, CancellationToken cancellationToken = default)
+    public override async Task SetAdvertisingParametersAsync(
+        AdvertisingParameters parameters,
+        CancellationToken cancellationToken = default
+    )
     {
         ArgumentNullException.ThrowIfNull(parameters);
         HciLeSetExtendedAdvertisingParametersResult result = await _host
-            .QueryCommandCompletionAsync<HciLeSetExtendedAdvertisingParametersV1Command, HciLeSetExtendedAdvertisingParametersResult>(
+            .QueryCommandCompletionAsync<
+                HciLeSetExtendedAdvertisingParametersV1Command,
+                HciLeSetExtendedAdvertisingParametersResult
+            >(
                 new HciLeSetExtendedAdvertisingParametersV1Command
                 {
                     AdvertisingHandle = AdvertisingHandle,
@@ -176,23 +223,33 @@ internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster) : Adv
                     AdvertisingSid = (byte)parameters.AdvertisingSId,
                     ScanRequestNotificationEnable = 0,
                 },
-                cancellationToken: cancellationToken)
+                cancellationToken: cancellationToken
+            )
             .ConfigureAwait(false);
         SelectedTxPower = (TxPowerLevel)result.SelectedTxPower;
         Parameters = parameters;
     }
 
     /// <inheritdoc />
-    public override async Task SetAdvertisingDataAsync(AdvertisingData data, CancellationToken cancellationToken = default)
+    public override async Task SetAdvertisingDataAsync(
+        AdvertisingData data,
+        CancellationToken cancellationToken = default
+    )
     {
         ArgumentNullException.ThrowIfNull(data);
         ReadOnlyMemory<byte> memory = data.AsReadOnlyMemory();
         if (memory.Length > 251)
         {
-            throw new ArgumentOutOfRangeException(nameof(data), "Advertising data cannot be > 251 bytes right now");
+            throw new ArgumentOutOfRangeException(
+                nameof(data),
+                "Advertising data cannot be > 251 bytes right now"
+            );
         }
         await _host
-            .QueryCommandCompletionAsync<HciLeSetExtendedAdvertisingDataCommand, HciLeSetExtendedAdvertisingDataResult>(
+            .QueryCommandCompletionAsync<
+                HciLeSetExtendedAdvertisingDataCommand,
+                HciLeSetExtendedAdvertisingDataResult
+            >(
                 new HciLeSetExtendedAdvertisingDataCommand
                 {
                     AdvertisingHandle = AdvertisingHandle,
@@ -201,22 +258,32 @@ internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster) : Adv
                     AdvertisingDataLength = (byte)memory.Length,
                     AdvertisingData = memory,
                 },
-                cancellationToken: cancellationToken)
+                cancellationToken: cancellationToken
+            )
             .ConfigureAwait(false);
         Data = data;
     }
 
     /// <inheritdoc />
-    public override async Task SetScanResponseDataAsync(AdvertisingData scanResponseData, CancellationToken cancellationToken = default)
+    public override async Task SetScanResponseDataAsync(
+        AdvertisingData scanResponseData,
+        CancellationToken cancellationToken = default
+    )
     {
         ArgumentNullException.ThrowIfNull(scanResponseData);
         ReadOnlyMemory<byte> memory = scanResponseData.AsReadOnlyMemory();
         if (memory.Length > 251)
         {
-            throw new ArgumentOutOfRangeException(nameof(scanResponseData), "Scan response data cannot be > 251 bytes right now");
+            throw new ArgumentOutOfRangeException(
+                nameof(scanResponseData),
+                "Scan response data cannot be > 251 bytes right now"
+            );
         }
         await _host
-            .QueryCommandCompletionAsync<HciLeSetExtendedScanResponseDataCommand, HciLeSetExtendedScanResponseDataResult>(
+            .QueryCommandCompletionAsync<
+                HciLeSetExtendedScanResponseDataCommand,
+                HciLeSetExtendedScanResponseDataResult
+            >(
                 new HciLeSetExtendedScanResponseDataCommand
                 {
                     AdvertisingHandle = AdvertisingHandle,
@@ -225,7 +292,8 @@ internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster) : Adv
                     ScanResponseDataLength = (byte)memory.Length,
                     ScanResponseData = memory,
                 },
-                cancellationToken: cancellationToken)
+                cancellationToken: cancellationToken
+            )
             .ConfigureAwait(false);
         ScanResponseData = scanResponseData;
     }
@@ -233,11 +301,10 @@ internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster) : Adv
     protected override async ValueTask DisposeAsyncCore()
     {
         await _host
-            .QueryCommandCompletionAsync<HciLeRemoveAdvertisingSetCommand, HciLeRemoveAdvertisingSetResult>(
-                new HciLeRemoveAdvertisingSetCommand
-                {
-                    AdvertisingHandle = AdvertisingHandle,
-                })
+            .QueryCommandCompletionAsync<
+                HciLeRemoveAdvertisingSetCommand,
+                HciLeRemoveAdvertisingSetResult
+            >(new HciLeRemoveAdvertisingSetCommand { AdvertisingHandle = AdvertisingHandle })
             .ConfigureAwait(false);
     }
 }

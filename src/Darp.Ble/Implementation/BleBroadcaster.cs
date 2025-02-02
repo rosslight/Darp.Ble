@@ -6,12 +6,14 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.Implementation;
 
 /// <summary> The broadcaster view of a ble device </summary>
-public abstract class BleBroadcaster(IBleDevice device, ILogger<BleBroadcaster> logger) : IBleBroadcaster
+public abstract class BleBroadcaster(IBleDevice device, ILogger<BleBroadcaster> logger)
+    : IBleBroadcaster
 {
     private readonly List<IAdvertisingSet> _advertisingSets = [];
 
     /// <summary> The logger </summary>
     protected ILogger<BleBroadcaster> Logger { get; } = logger;
+
     /// <summary> The logger factory </summary>
     protected ILoggerFactory LoggerFactory => Device.LoggerFactory;
 
@@ -21,19 +23,32 @@ public abstract class BleBroadcaster(IBleDevice device, ILogger<BleBroadcaster> 
     public IBleDevice Device { get; } = device;
 
     /// <inheritdoc />
-    public async Task<IAdvertisingSet> CreateAdvertisingSetAsync(AdvertisingParameters? parameters = null,
+    public async Task<IAdvertisingSet> CreateAdvertisingSetAsync(
+        AdvertisingParameters? parameters = null,
         AdvertisingData? data = null,
         AdvertisingData? scanResponseData = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
-        if (parameters is not null && !parameters.Type.HasFlag(BleEventType.Legacy)
-            && parameters.Type.HasFlag(BleEventType.Connectable) &&
-            parameters.Type.HasFlag(BleEventType.Scannable))
+        if (
+            parameters is not null
+            && !parameters.Type.HasFlag(BleEventType.Legacy)
+            && parameters.Type.HasFlag(BleEventType.Connectable)
+            && parameters.Type.HasFlag(BleEventType.Scannable)
+        )
         {
-            throw new ArgumentOutOfRangeException(nameof(parameters),
-                "Non-legacy extended advertising event properties may not be both connectable and scannable");
+            throw new ArgumentOutOfRangeException(
+                nameof(parameters),
+                "Non-legacy extended advertising event properties may not be both connectable and scannable"
+            );
         }
-        IAdvertisingSet advertisingSet = await CreateAdvertisingSetAsyncCore(parameters, data, scanResponseData, cancellationToken).ConfigureAwait(false);
+        IAdvertisingSet advertisingSet = await CreateAdvertisingSetAsyncCore(
+                parameters,
+                data,
+                scanResponseData,
+                cancellationToken
+            )
+            .ConfigureAwait(false);
         _advertisingSets.Add(advertisingSet);
         return advertisingSet;
     }
@@ -47,27 +62,42 @@ public abstract class BleBroadcaster(IBleDevice device, ILogger<BleBroadcaster> 
     }
 
     /// <inheritdoc cref="CreateAdvertisingSetAsync" />
-    protected abstract Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(AdvertisingParameters? parameters,
+    protected abstract Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(
+        AdvertisingParameters? parameters,
         AdvertisingData? data,
         AdvertisingData? scanResponseData,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken
+    );
 
     /// <inheritdoc />
     public Task<IAsyncDisposable> StartAdvertisingAsync(
-        IReadOnlyCollection<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, byte NumberOfEvents)> advertisingSetStartInfo,
-        CancellationToken cancellationToken)
+        IReadOnlyCollection<(
+            IAdvertisingSet AdvertisingSet,
+            TimeSpan Duration,
+            byte NumberOfEvents
+        )> advertisingSetStartInfo,
+        CancellationToken cancellationToken
+    )
     {
         ArgumentNullException.ThrowIfNull(advertisingSetStartInfo);
 
-        foreach ((IAdvertisingSet set, TimeSpan duration, int numberOfEvents) in advertisingSetStartInfo)
+        foreach (
+            (IAdvertisingSet set, TimeSpan duration, int numberOfEvents) in advertisingSetStartInfo
+        )
         {
             if (set.Broadcaster != this)
             {
-                throw new ArgumentOutOfRangeException(nameof(advertisingSetStartInfo), "Cannot start an advertising set for this broadcaster if the set has a different broadcaster configured");
+                throw new ArgumentOutOfRangeException(
+                    nameof(advertisingSetStartInfo),
+                    "Cannot start an advertising set for this broadcaster if the set has a different broadcaster configured"
+                );
             }
             if (duration > TimeSpan.Zero && numberOfEvents > 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(advertisingSetStartInfo), "Cannot have both duration and numberOfEvents > 0");
+                throw new ArgumentOutOfRangeException(
+                    nameof(advertisingSetStartInfo),
+                    "Cannot have both duration and numberOfEvents > 0"
+                );
             }
         }
 
@@ -79,8 +109,13 @@ public abstract class BleBroadcaster(IBleDevice device, ILogger<BleBroadcaster> 
     /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
     /// <returns> An async disposable to stop advertising </returns>
     protected abstract Task<IAsyncDisposable> StartAdvertisingCoreAsync(
-        IReadOnlyCollection<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, byte NumberOfEvents)> advertisingSets,
-        CancellationToken cancellationToken);
+        IReadOnlyCollection<(
+            IAdvertisingSet AdvertisingSet,
+            TimeSpan Duration,
+            byte NumberOfEvents
+        )> advertisingSets,
+        CancellationToken cancellationToken
+    );
 
     /// <summary> A method that can be used to clean up all resources. </summary>
     /// <remarks> This method is not glued to the <see cref="IAsyncDisposable"/> interface. All disposes should be done using the  </remarks>
@@ -89,8 +124,10 @@ public abstract class BleBroadcaster(IBleDevice device, ILogger<BleBroadcaster> 
         await DisposeAsyncCore().ConfigureAwait(false);
         Dispose(disposing: false);
     }
+
     /// <inheritdoc cref="DisposeAsync"/>
     protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
+
     /// <inheritdoc cref="IDisposable.Dispose"/>
     /// <param name="disposing">
     /// True, when this method was called by the synchronous <see cref="IDisposable.Dispose"/> method;

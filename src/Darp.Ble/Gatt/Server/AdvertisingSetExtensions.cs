@@ -17,14 +17,16 @@ public static class AdvertisingSetExtensions
     /// <param name="autoRestart"> If true, advertising will be restarted after a peripheral disconnected </param>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> An async disposable to stop the broadcast </returns>
-    public static async Task<IAsyncDisposable> StartAdvertisingAsync(this IBleBroadcaster broadcaster,
+    public static async Task<IAsyncDisposable> StartAdvertisingAsync(
+        this IBleBroadcaster broadcaster,
         BleEventType type = BleEventType.AdvInd,
         BleAddress? peerAddress = null,
         AdvertisingData? data = null,
         AdvertisingData? scanResponseData = null,
         ScanTiming interval = ScanTiming.Ms1000,
         bool autoRestart = false,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         ArgumentNullException.ThrowIfNull(broadcaster);
         var parameters = new AdvertisingParameters
@@ -34,11 +36,8 @@ public static class AdvertisingSetExtensions
             MinPrimaryAdvertisingInterval = interval,
             MaxPrimaryAdvertisingInterval = interval,
         };
-        IAdvertisingSet set = await broadcaster.CreateAdvertisingSetAsync(
-            parameters,
-            data,
-            scanResponseData,
-            cancellationToken)
+        IAdvertisingSet set = await broadcaster
+            .CreateAdvertisingSetAsync(parameters, data, scanResponseData, cancellationToken)
             .ConfigureAwait(false);
         IDisposable autoRestartDisposable = Disposable.Empty;
         IAsyncDisposable advertisingDisposable;
@@ -46,13 +45,22 @@ public static class AdvertisingSetExtensions
         {
             autoRestartDisposable = broadcaster.Device.Peripheral.WhenDisconnected.Subscribe(__ =>
             {
-                _ = Task.Run(async () =>
-                {
-                    advertisingDisposable = await set.StartAdvertisingAsync(cancellationToken: CancellationToken.None).ConfigureAwait(false);
-                }, CancellationToken.None);
+                _ = Task.Run(
+                    async () =>
+                    {
+                        advertisingDisposable = await set.StartAdvertisingAsync(
+                                cancellationToken: CancellationToken.None
+                            )
+                            .ConfigureAwait(false);
+                    },
+                    CancellationToken.None
+                );
             });
         }
-        advertisingDisposable = await set.StartAdvertisingAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+        advertisingDisposable = await set.StartAdvertisingAsync(
+                cancellationToken: cancellationToken
+            )
+            .ConfigureAwait(false);
         return AsyncDisposable.Create(async () =>
         {
             autoRestartDisposable.Dispose();
@@ -65,14 +73,15 @@ public static class AdvertisingSetExtensions
     /// <param name="set"> The advertising set to broadcast </param>
     /// <param name="sets"> Additional advertising sets </param>
     /// <returns></returns>
-    public static Task<IAsyncDisposable> StartAdvertisingAsync(this IBleBroadcaster broadcaster,
+    public static Task<IAsyncDisposable> StartAdvertisingAsync(
+        this IBleBroadcaster broadcaster,
         IAdvertisingSet set,
-        params IEnumerable<IAdvertisingSet> sets)
+        params IEnumerable<IAdvertisingSet> sets
+    )
     {
         ArgumentNullException.ThrowIfNull(broadcaster);
 
-        (IAdvertisingSet, TimeSpan, byte)[] advertisingSetStartInfo = sets
-            .Prepend(set)
+        (IAdvertisingSet, TimeSpan, byte)[] advertisingSetStartInfo = sets.Prepend(set)
             .Select(x => (x, TimeSpan.Zero, (byte)0))
             .ToArray();
         return broadcaster.StartAdvertisingAsync(advertisingSetStartInfo, CancellationToken.None);
@@ -84,12 +93,17 @@ public static class AdvertisingSetExtensions
     /// <param name="numberOfEvents"> The number of events to advertise for. <c>0</c> skips this constraint </param>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> An async disposable which allows cancellation of the broadcast </returns>
-    public static Task<IAsyncDisposable> StartAdvertisingAsync(this IAdvertisingSet set,
+    public static Task<IAsyncDisposable> StartAdvertisingAsync(
+        this IAdvertisingSet set,
         TimeSpan duration = default,
         byte numberOfEvents = 0,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         ArgumentNullException.ThrowIfNull(set);
-        return set.Broadcaster.StartAdvertisingAsync([(set, duration, numberOfEvents)], cancellationToken);
+        return set.Broadcaster.StartAdvertisingAsync(
+            [(set, duration, numberOfEvents)],
+            cancellationToken
+        );
     }
 }

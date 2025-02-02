@@ -9,19 +9,27 @@ internal sealed class MockGattServerDescriptor(
     BleUuid uuid,
     MockGattClientDescriptor mockDescriptor,
     MockGattClientPeer clientPeer,
-    ILogger<MockGattServerDescriptor> logger) : GattServerDescriptor(characteristic, uuid, logger)
+    ILogger<MockGattServerDescriptor> logger
+) : GattServerDescriptor(characteristic, uuid, logger)
 {
     private readonly MockGattClientDescriptor _mockDescriptor = mockDescriptor;
     private readonly MockGattClientPeer _clientPeer = clientPeer;
 
     public override async Task<byte[]> ReadAsync(CancellationToken cancellationToken = default)
     {
-        return await _mockDescriptor.GetValueAsync(_clientPeer, cancellationToken).ConfigureAwait(false);
+        return await _mockDescriptor
+            .GetValueAsync(_clientPeer, cancellationToken)
+            .ConfigureAwait(false);
     }
 
-    public override async Task<bool> WriteAsync(byte[] bytes, CancellationToken cancellationToken = default)
+    public override async Task<bool> WriteAsync(
+        byte[] bytes,
+        CancellationToken cancellationToken = default
+    )
     {
-        GattProtocolStatus result = await _mockDescriptor.UpdateValueAsync(_clientPeer, bytes, cancellationToken).ConfigureAwait(false);
+        GattProtocolStatus result = await _mockDescriptor
+            .UpdateValueAsync(_clientPeer, bytes, cancellationToken)
+            .ConfigureAwait(false);
         return result is GattProtocolStatus.Success;
     }
 }

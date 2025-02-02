@@ -6,8 +6,10 @@ public interface IGattTypedCharacteristic<T>
 {
     /// <summary> A delegate specifying how to read a value </summary>
     public delegate T ReadValueFunc(ReadOnlySpan<byte> source);
+
     /// <summary> A delegate specifying how to write a value </summary>
     public delegate byte[] WriteValueFunc(T value);
+
     /// <summary> Read the value from a given source of bytes </summary>
     /// <param name="source"> The source to read from </param>
     /// <returns> The value </returns>

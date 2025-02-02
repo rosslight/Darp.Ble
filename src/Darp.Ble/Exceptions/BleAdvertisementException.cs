@@ -13,7 +13,8 @@ public class BleAdvertisementException : Exception
     /// <summary> Initializes the new exception </summary>
     /// <param name="advertisement"> The ble advertisement </param>
     /// <param name="message"> The message </param>
-    public BleAdvertisementException(IGapAdvertisement advertisement, string? message) : base(message)
+    public BleAdvertisementException(IGapAdvertisement advertisement, string? message)
+        : base(message)
     {
         Advertisement = advertisement;
     }

@@ -10,10 +10,15 @@ public static class BatteryServiceContract
 {
     /// <summary> The uuid of the service </summary>
     /// <value> 0x180F </value>
-    public static ServiceDeclaration BatteryService => new (0x180F);
+    public static ServiceDeclaration BatteryService => new(0x180F);
+
     /// <summary> The battery level in percent </summary>
     /// <value> 0x2A19 </value>
-    public static TypedCharacteristicDeclaration<byte, Read, Notify> BatteryLevelCharacteristic { get; } =
+    public static TypedCharacteristicDeclaration<
+        byte,
+        Read,
+        Notify
+    > BatteryLevelCharacteristic { get; } =
         CharacteristicDeclaration.Create<byte, Read, Notify>(0x2A19);
 
     /// <summary> Add a new DeviceInformationService to the peripheral </summary>
@@ -26,15 +31,20 @@ public static class BatteryServiceContract
         this IBlePeripheral peripheral,
         byte initialBatteryLevel = 50,
         string? batteryLevelDescription = "main",
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         ArgumentNullException.ThrowIfNull(peripheral);
-        IGattClientService service = await peripheral.AddServiceAsync(BatteryService, cancellationToken).ConfigureAwait(false);
+        IGattClientService service = await peripheral
+            .AddServiceAsync(BatteryService, cancellationToken)
+            .ConfigureAwait(false);
 
-        GattTypedClientCharacteristic<byte, Read, Notify> batteryLevelCharacteristic = await service.AddCharacteristicAsync(
+        GattTypedClientCharacteristic<byte, Read, Notify> batteryLevelCharacteristic = await service
+            .AddCharacteristicAsync(
                 BatteryLevelCharacteristic,
                 staticValue: initialBatteryLevel,
-                cancellationToken: cancellationToken)
+                cancellationToken: cancellationToken
+            )
             .ConfigureAwait(false);
         if (batteryLevelDescription is not null)
         {
@@ -43,10 +53,7 @@ public static class BatteryServiceContract
                 .ConfigureAwait(false);
         }
 
-        return new GattClientBatteryService(service)
-        {
-            BatteryLevel = batteryLevelCharacteristic,
-        };
+        return new GattClientBatteryService(service) { BatteryLevel = batteryLevelCharacteristic };
     }
 
     /// <summary> Discover the battery service </summary>
@@ -61,26 +68,30 @@ public static class BatteryServiceContract
         ArgumentNullException.ThrowIfNull(serverPeer);
 
         // Discover the service
-        IGattServerService service = await serverPeer.DiscoverServiceAsync(BatteryService, cancellationToken).ConfigureAwait(false);
+        IGattServerService service = await serverPeer
+            .DiscoverServiceAsync(BatteryService, cancellationToken)
+            .ConfigureAwait(false);
 
         // Discover the characteristics
         await service.DiscoverCharacteristicsAsync(cancellationToken).ConfigureAwait(false);
-        TypedGattServerCharacteristic<byte, Read, Notify> batteryLevelCharacteristic = service
-            .GetCharacteristic(BatteryLevelCharacteristic);
+        TypedGattServerCharacteristic<byte, Read, Notify> batteryLevelCharacteristic =
+            service.GetCharacteristic(BatteryLevelCharacteristic);
 
         return new GattServerBatteryService(service) { BatteryLevel = batteryLevelCharacteristic };
     }
 }
 
 /// <summary> The BatteryService wrapper representing the gatt client </summary>
-public sealed class GattClientBatteryService(IGattClientService service) : GattClientServiceProxy(service)
+public sealed class GattClientBatteryService(IGattClientService service)
+    : GattClientServiceProxy(service)
 {
     /// <summary> The battery level characteristic </summary>
     public required GattTypedClientCharacteristic<byte, Read, Notify> BatteryLevel { get; init; }
 }
 
 /// <summary> The BatteryService wrapper representing the gatt server </summary>
-public sealed class GattServerBatteryService(IGattServerService service) : GattServerServiceProxy(service)
+public sealed class GattServerBatteryService(IGattServerService service)
+    : GattServerServiceProxy(service)
 {
     /// <summary> The battery level characteristic </summary>
     public required TypedGattServerCharacteristic<byte, Read, Notify> BatteryLevel { get; init; }

@@ -9,6 +9,7 @@ public sealed class SingleHciHostBleFactory(string portName) : IBleFactory
 {
     /// <summary> A hardcoded serial port </summary>
     public string PortName { get; } = portName;
+
     /// <summary> A hardcoded device name </summary>
     public string? DeviceName { get; set; }
 
@@ -18,6 +19,11 @@ public sealed class SingleHciHostBleFactory(string portName) : IBleFactory
     /// <inheritdoc />
     public IEnumerable<IBleDevice> EnumerateDevices(ILoggerFactory loggerFactory)
     {
-        yield return new HciHostBleDevice(PortName, DeviceName ?? PortName, randomAddress: RandomAddress, loggerFactory);
+        yield return new HciHostBleDevice(
+            PortName,
+            DeviceName ?? PortName,
+            randomAddress: RandomAddress,
+            loggerFactory
+        );
     }
 }

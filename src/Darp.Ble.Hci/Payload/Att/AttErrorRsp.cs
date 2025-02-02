@@ -11,13 +11,16 @@ public readonly partial record struct AttErrorRsp : IAttPdu
 {
     /// <inheritdoc />
     public static AttOpCode ExpectedOpCode => AttOpCode.ATT_ERROR_RSP;
+
     /// <inheritdoc />
     public required AttOpCode OpCode { get; init; }
 
     /// <summary> The request that generated this ATT_ERROR_RSP PDU </summary>
     public required AttOpCode RequestOpCode { get; init; }
+
     /// <summary> The attribute handle that generated this ATT_ERROR_RSP PDU </summary>
     public required ushort Handle { get; init; }
+
     /// <summary> The reason why the request has generated an ATT_ERROR_RSP PDU </summary>
     public required AttErrorCode ErrorCode { get; init; }
 }

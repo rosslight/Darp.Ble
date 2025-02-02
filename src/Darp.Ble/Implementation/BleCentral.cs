@@ -17,6 +17,7 @@ public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) :
 
     /// <summary> The logger </summary>
     protected ILogger<BleCentral> Logger { get; } = logger;
+
     /// <summary> The logger factory </summary>
     protected ILoggerFactory LoggerFactory => Device.LoggerFactory;
 
@@ -27,40 +28,63 @@ public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) :
     public IReadOnlyCollection<IGattServerPeer> PeerDevices => _peerDevices.Values.ToArray();
 
     /// <inheritdoc />
-    public IObservable<IGattServerPeer> ConnectToPeripheral(BleAddress address,
+    public IObservable<IGattServerPeer> ConnectToPeripheral(
+        BleAddress address,
         BleConnectionParameters? connectionParameters = null,
-        BleScanParameters? scanParameters = null)
+        BleScanParameters? scanParameters = null
+    )
     {
         connectionParameters ??= new BleConnectionParameters();
         scanParameters ??= Device.Observer.Parameters;
         return Observable.Create<IGattServerPeer>(observer =>
         {
-            if (connectionParameters.ConnectionInterval is < ConnectionTiming.MinValue or > ConnectionTiming.MaxValue)
+            if (
+                connectionParameters.ConnectionInterval
+                is < ConnectionTiming.MinValue
+                    or > ConnectionTiming.MaxValue
+            )
             {
-                observer.OnError(new BleCentralConnectionFailedException(this, "Supplied invalid connectionInterval"));
+                observer.OnError(
+                    new BleCentralConnectionFailedException(
+                        this,
+                        "Supplied invalid connectionInterval"
+                    )
+                );
                 return Disposable.Empty;
             }
             if (scanParameters.ScanInterval < ScanTiming.MinValue)
             {
-                observer.OnError(new BleCentralConnectionFailedException(this, "Supplied invalid scanInterval"));
+                observer.OnError(
+                    new BleCentralConnectionFailedException(this, "Supplied invalid scanInterval")
+                );
                 return Disposable.Empty;
             }
             if (scanParameters.ScanWindow < ScanTiming.MinValue)
             {
-                observer.OnError(new BleCentralConnectionFailedException(this, "Supplied invalid scanWindow"));
+                observer.OnError(
+                    new BleCentralConnectionFailedException(this, "Supplied invalid scanWindow")
+                );
                 return Disposable.Empty;
             }
             _device.Observer.StopScan();
-            return DoAfterConnection(ConnectToPeripheralCore(address, connectionParameters, scanParameters)
-                    .Do(peer =>
-                    {
-                        peer.WhenConnectionStatusChanged
-                            .Where(x => x is ConnectionStatus.Disconnected)
-                            .Do(_ => Logger.LogTrace("Received disconnection event for Peer {@Peer}", peer))
-                            .FirstAsync()
-                            .Subscribe(__ => _ = peer.DisposeAsync().AsTask());
-                        _peerDevices[peer.Address] = peer;
-                    }))
+            return DoAfterConnection(
+                    ConnectToPeripheralCore(address, connectionParameters, scanParameters)
+                        .Do(peer =>
+                        {
+                            peer.WhenConnectionStatusChanged.Where(x =>
+                                    x is ConnectionStatus.Disconnected
+                                )
+                                .Do(_ =>
+                                    Logger.LogTrace(
+                                        "Received disconnection event for Peer {@Peer}",
+                                        peer
+                                    )
+                                )
+                                .FirstAsync()
+                                .Subscribe(__ => _ = peer.DisposeAsync().AsTask());
+                            _peerDevices[peer.Address] = peer;
+                        })
+                )
                 .Subscribe(observer);
         });
     }
@@ -70,16 +94,20 @@ public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) :
     /// </summary>
     /// <param name="source"> The source </param>
     /// <returns> The resulting peer observable  </returns>
-    protected virtual IObservable<IGattServerPeer> DoAfterConnection(IObservable<IGattServerPeer> source) => source;
+    protected virtual IObservable<IGattServerPeer> DoAfterConnection(
+        IObservable<IGattServerPeer> source
+    ) => source;
 
     /// <summary> The core implementation of connecting to the peripheral </summary>
     /// <param name="address"> The address to be connected to </param>
     /// <param name="connectionParameters"> The connection parameters to be used </param>
     /// <param name="scanParameters"> The scan parameters to be used for initial discovery </param>
     /// <returns> An observable notifying when a gatt server was connected </returns>
-    protected abstract IObservable<GattServerPeer> ConnectToPeripheralCore(BleAddress address,
+    protected abstract IObservable<GattServerPeer> ConnectToPeripheralCore(
+        BleAddress address,
         BleConnectionParameters connectionParameters,
-        BleScanParameters scanParameters);
+        BleScanParameters scanParameters
+    );
 
     /// <summary> Remove a specific peer from the central </summary>
     /// <param name="peer"> The peer to be removed </param>
@@ -97,6 +125,7 @@ public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) :
         await DisposeAsyncCore().ConfigureAwait(false);
         Dispose(disposing: false);
     }
+
     /// <inheritdoc cref="DisposeAsync"/>
     protected virtual async ValueTask DisposeAsyncCore()
     {
@@ -108,6 +137,7 @@ public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) :
             }
         }
     }
+
     /// <inheritdoc cref="IDisposable.Dispose"/>
     /// <param name="disposing">
     /// True, when this method was called by the synchronous <see cref="IDisposable.Dispose"/> method;

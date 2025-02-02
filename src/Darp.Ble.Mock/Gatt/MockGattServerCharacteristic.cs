@@ -6,25 +6,35 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock.Gatt;
 
-internal sealed class MockGattServerCharacteristic(MockGattServerService service,
+internal sealed class MockGattServerCharacteristic(
+    MockGattServerService service,
     BleUuid uuid,
     MockGattClientCharacteristic characteristic,
     MockGattClientPeer gattClient,
-    ILogger<MockGattServerCharacteristic> logger)
-    : GattServerCharacteristic(service, characteristic.AttributeHandle, uuid, characteristic.Properties, logger)
+    ILogger<MockGattServerCharacteristic> logger
+)
+    : GattServerCharacteristic(
+        service,
+        characteristic.AttributeHandle,
+        uuid,
+        characteristic.Properties,
+        logger
+    )
 {
     private readonly MockGattClientCharacteristic _characteristic = characteristic;
     private readonly MockGattClientPeer _gattClient = gattClient;
 
-    protected override IObservable<IGattServerDescriptor> DiscoverDescriptorsCore() => _characteristic
-        .Descriptors
-        .ToObservable()
-        .Where(x => x.Value is MockGattClientDescriptor)
-        .Select(x => new MockGattServerDescriptor(this,
-            x.Key,
-            (MockGattClientDescriptor)x.Value,
-            _gattClient,
-            LoggerFactory.CreateLogger<MockGattServerDescriptor>()));
+    protected override IObservable<IGattServerDescriptor> DiscoverDescriptorsCore() =>
+        _characteristic
+            .Descriptors.ToObservable()
+            .Where(x => x.Value is MockGattClientDescriptor)
+            .Select(x => new MockGattServerDescriptor(
+                this,
+                x.Key,
+                (MockGattClientDescriptor)x.Value,
+                _gattClient,
+                LoggerFactory.CreateLogger<MockGattServerDescriptor>()
+            ));
 
     /// <inheritdoc />
     protected override Task WriteAsyncCore(byte[] bytes, CancellationToken cancellationToken)
@@ -39,15 +49,27 @@ internal sealed class MockGattServerCharacteristic(MockGattServerService service
 
     protected override async Task<byte[]> ReadAsyncCore(CancellationToken cancellationToken)
     {
-        return await _characteristic.GetValueAsync(_gattClient, cancellationToken).ConfigureAwait(false);
+        return await _characteristic
+            .GetValueAsync(_gattClient, cancellationToken)
+            .ConfigureAwait(false);
     }
 
-    protected override async Task<IDisposable> EnableNotificationsAsync<TState>(TState state, Action<TState, byte[]> onNotify, CancellationToken cancellationToken)
+    protected override async Task<IDisposable> EnableNotificationsAsync<TState>(
+        TState state,
+        Action<TState, byte[]> onNotify,
+        CancellationToken cancellationToken
+    )
     {
-        await _characteristic.EnableNotificationsAsync(_gattClient, bytes => onNotify(state, bytes), cancellationToken)
+        await _characteristic
+            .EnableNotificationsAsync(
+                _gattClient,
+                bytes => onNotify(state, bytes),
+                cancellationToken
+            )
             .ConfigureAwait(false);
         return Disposable.Empty;
     }
 
-    protected override Task DisableNotificationsAsync() => _characteristic.DisableNotificationsAsync(_gattClient);
+    protected override Task DisableNotificationsAsync() =>
+        _characteristic.DisableNotificationsAsync(_gattClient);
 }

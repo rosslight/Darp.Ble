@@ -4,22 +4,27 @@ public enum AdvertisingFilterPolicy
 {
     /// <summary> Process scan and connection requests from all devices (i.e., the Filter Accept List is not in use) </summary>
     AcceptAllConnectionsAndScanRequests = 0x00,
+
     /// <summary> Process connection requests from all devices and scan requests only from devices that are in the Filter Accept List. </summary>
     AcceptAllConnectionsAndKnownScanRequests = 0x01,
+
     /// <summary> Process scan requests from all devices and connection requests only from devices that are in the Filter Accept List. </summary>
     AcceptKnownConnectionsAndAllScanRequests = 0x02,
+
     /// <summary> Process scan and connection requests only from devices in the Filter Accept List. </summary>
     AcceptKnownConnectionsAndScanRequests = 0x03,
 }
 
 /// <summary> Advertising channels </summary>
 [Flags]
-public enum AdvertisingChannelMap: byte
+public enum AdvertisingChannelMap : byte
 {
     /// <summary> The advertising channel 37 </summary>
     Channel37 = 1 << 0,
+
     /// <summary> The advertising channel 38 </summary>
     Channel38 = 1 << 1,
+
     /// <summary> The advertising channel 39 </summary>
     Channel39 = 1 << 2,
 }
@@ -36,9 +41,10 @@ public sealed class AdvertisingParameters
     public ScanTiming MinPrimaryAdvertisingInterval { get; init; } = ScanTiming.Ms1000;
     public ScanTiming MaxPrimaryAdvertisingInterval { get; init; } = ScanTiming.Ms1000;
 
-    public AdvertisingChannelMap PrimaryAdvertisingChannelMap { get; init; } = AdvertisingChannelMap.Channel37 |
-                                                             AdvertisingChannelMap.Channel38 |
-                                                             AdvertisingChannelMap.Channel39;
+    public AdvertisingChannelMap PrimaryAdvertisingChannelMap { get; init; } =
+        AdvertisingChannelMap.Channel37
+        | AdvertisingChannelMap.Channel38
+        | AdvertisingChannelMap.Channel39;
 
     /// <summary> The address of the peer device, if <see cref="BleEventType.Directed"/> advertising is selected in the <see cref="Type"/> </summary>
     public BleAddress? PeerAddress { get; init; }
@@ -50,7 +56,8 @@ public sealed class AdvertisingParameters
     public TxPowerLevel AdvertisingTxPower { get; init; } = TxPowerLevel.NotAvailable;
 
     /// <summary> The filter policy </summary>
-    public AdvertisingFilterPolicy FilterPolicy { get; init; } = AdvertisingFilterPolicy.AcceptAllConnectionsAndScanRequests;
+    public AdvertisingFilterPolicy FilterPolicy { get; init; } =
+        AdvertisingFilterPolicy.AcceptAllConnectionsAndScanRequests;
 
     /// <summary> The primary physical </summary>
     /// <value> Only <see cref="Physical.Le1M"/> and <see cref="Physical.LeCoded"/> are allowed </value>

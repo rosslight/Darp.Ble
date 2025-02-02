@@ -10,6 +10,7 @@ public interface IGattClientService
 
     /// <summary> The UUID of the client service </summary>
     BleUuid Uuid { get; }
+
     /// <summary> The type of the service </summary>
     GattServiceType Type { get; }
 
@@ -23,7 +24,8 @@ public interface IGattClientService
     /// <param name="onWrite"> Callback when a write request was received </param>
     /// <param name="cancellationToken"> The CancellationToken to cancel the operation </param>
     /// <returns> An <see cref="IGattClientCharacteristic"/> </returns>
-    Task<IGattClientCharacteristic> AddCharacteristicAsync(BleUuid uuid,
+    Task<IGattClientCharacteristic> AddCharacteristicAsync(
+        BleUuid uuid,
         GattProperty gattProperty,
         IGattClientAttribute.OnReadCallback? onRead,
         IGattClientAttribute.OnWriteCallback? onWrite,

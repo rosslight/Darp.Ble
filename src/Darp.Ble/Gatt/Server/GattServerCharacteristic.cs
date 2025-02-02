@@ -5,11 +5,13 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.Gatt.Server;
 
 /// <inheritdoc />
-public abstract class GattServerCharacteristic(GattServerService service,
+public abstract class GattServerCharacteristic(
+    GattServerService service,
     ushort attributeHandle,
     BleUuid uuid,
     GattProperty property,
-    ILogger<GattServerCharacteristic> logger) : IGattServerCharacteristic
+    ILogger<GattServerCharacteristic> logger
+) : IGattServerCharacteristic
 {
     private readonly SemaphoreSlim _notifySemaphore = new(1, 1);
     private IDisposable? _notifyDisposable;
@@ -18,6 +20,7 @@ public abstract class GattServerCharacteristic(GattServerService service,
 
     /// <summary> The optional logger </summary>
     protected ILogger<GattServerCharacteristic> Logger { get; } = logger;
+
     /// <summary> The logger factory </summary>
     protected ILoggerFactory LoggerFactory => Service.Peer.Central.Device.LoggerFactory;
 
@@ -26,10 +29,13 @@ public abstract class GattServerCharacteristic(GattServerService service,
 
     /// <inheritdoc />
     public ushort AttributeHandle { get; } = attributeHandle;
+
     /// <inheritdoc />
     public BleUuid Uuid { get; } = uuid;
+
     /// <inheritdoc />
     public GattProperty Properties { get; } = property;
+
     /// <inheritdoc />
     public IReadOnlyDictionary<BleUuid, IGattServerDescriptor> Descriptors => _descriptors;
 
@@ -38,10 +44,12 @@ public abstract class GattServerCharacteristic(GattServerService service,
     /// <returns> A task that completes when all descriptors where discovered </returns>
     internal async Task DiscoverDescriptorsAsync(CancellationToken cancellationToken)
     {
-        await foreach (IGattServerDescriptor descriptor in DiscoverDescriptorsCore()
-                           .ToAsyncEnumerable()
-                           .WithCancellation(cancellationToken)
-                           .ConfigureAwait(false))
+        await foreach (
+            IGattServerDescriptor descriptor in DiscoverDescriptorsCore()
+                .ToAsyncEnumerable()
+                .WithCancellation(cancellationToken)
+                .ConfigureAwait(false)
+        )
         {
             _descriptors[descriptor.Uuid] = descriptor;
         }
@@ -76,9 +84,11 @@ public abstract class GattServerCharacteristic(GattServerService service,
     protected abstract void WriteWithoutResponseCore(byte[] bytes);
 
     /// <inheritdoc />
-    public async Task<IAsyncDisposable> OnNotifyAsync<TState>(TState state,
+    public async Task<IAsyncDisposable> OnNotifyAsync<TState>(
+        TState state,
         Action<TState, byte[]> onNotify,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         Action<byte[]> action = bytes => onNotify(state, bytes);
         await _notifySemaphore.WaitAsync(CancellationToken.None).ConfigureAwait(false);
@@ -86,17 +96,22 @@ public abstract class GattServerCharacteristic(GattServerService service,
         {
             if (_notifyDisposable is null)
             {
-                _notifyDisposable = await EnableNotificationsAsync(this, static (characteristic, bytes) =>
-                {
-                    // Reversed for loop. Actions might be removed from list on involke
-                    for (int index = characteristic._actions.Count - 1; index >= 0; index--)
-                    {
-                        if (characteristic._actions.Count is 0)
-                            return;
-                        Action<byte[]> item1Action = characteristic._actions[index];
-                        item1Action(bytes);
-                    }
-                }, cancellationToken).ConfigureAwait(false);
+                _notifyDisposable = await EnableNotificationsAsync(
+                        this,
+                        static (characteristic, bytes) =>
+                        {
+                            // Reversed for loop. Actions might be removed from list on involke
+                            for (int index = characteristic._actions.Count - 1; index >= 0; index--)
+                            {
+                                if (characteristic._actions.Count is 0)
+                                    return;
+                                Action<byte[]> item1Action = characteristic._actions[index];
+                                item1Action(bytes);
+                            }
+                        },
+                        cancellationToken
+                    )
+                    .ConfigureAwait(false);
                 Logger.LogTrace("Enabled notifications on {@Characteristic}", this);
             }
             _actions.Add(action);
@@ -129,7 +144,8 @@ public abstract class GattServerCharacteristic(GattServerService service,
     }
 
     /// <inheritdoc />
-    public Task<byte[]> ReadAsync(CancellationToken cancellationToken) => ReadAsyncCore(cancellationToken);
+    public Task<byte[]> ReadAsync(CancellationToken cancellationToken) =>
+        ReadAsyncCore(cancellationToken);
 
     /// <inheritdoc cref="ReadAsync" />
     protected abstract Task<byte[]> ReadAsyncCore(CancellationToken cancellationToken);
@@ -140,9 +156,11 @@ public abstract class GattServerCharacteristic(GattServerService service,
     /// <param name="cancellationToken"> The CancellationToken to cancel the initial subscription process </param>
     /// <typeparam name="TState"> The type of the <paramref name="state"/> </typeparam>
     /// <returns> A task which completes when notifications are enabled. </returns>
-    protected abstract Task<IDisposable> EnableNotificationsAsync<TState>(TState state,
+    protected abstract Task<IDisposable> EnableNotificationsAsync<TState>(
+        TState state,
         Action<TState, byte[]> onNotify,
-        CancellationToken cancellationToken);
+        CancellationToken cancellationToken
+    );
 
     /// <summary> Core implementation to unsubscribe from notification events of the characteristic </summary>
     /// <returns> A value task </returns>
@@ -152,8 +170,11 @@ public abstract class GattServerCharacteristic(GattServerService service,
 /// <summary> The implementation of a strongly typed characteristic </summary>
 /// <param name="characteristic"> The underlying characteristic </param>
 /// <typeparam name="TProp1"> The first property definition </typeparam>
-[SuppressMessage("Design", "CA1033:Interface methods should be callable by child types",
-    Justification = "Child classes should only be wrappers and should not call any methods")]
+[SuppressMessage(
+    "Design",
+    "CA1033:Interface methods should be callable by child types",
+    Justification = "Child classes should only be wrappers and should not call any methods"
+)]
 public class GattServerCharacteristic<TProp1>(IGattServerCharacteristic characteristic)
     : IGattServerCharacteristic<TProp1>
     where TProp1 : IBleProperty
@@ -163,41 +184,61 @@ public class GattServerCharacteristic<TProp1>(IGattServerCharacteristic characte
 
     /// <inheritdoc />
     public IGattServerService Service => Characteristic.Service;
+
     /// <inheritdoc />
     public ushort AttributeHandle => Characteristic.AttributeHandle;
+
     /// <inheritdoc />
     public BleUuid Uuid => Characteristic.Uuid;
+
     /// <inheritdoc />
     public GattProperty Properties => Characteristic.Properties;
-    /// <inheritdoc />
-    public IReadOnlyDictionary<BleUuid, IGattServerDescriptor> Descriptors => Characteristic.Descriptors;
 
-    Task IGattServerCharacteristic.WriteAsync(byte[] bytes, CancellationToken cancellationToken) => Characteristic.WriteAsync(bytes, cancellationToken);
-    void IGattServerCharacteristic.WriteWithoutResponse(byte[] bytes) => Characteristic.WriteWithoutResponse(bytes);
-    Task<IAsyncDisposable> IGattServerCharacteristic.OnNotifyAsync<TState>(TState state, Action<TState, byte[]> onNotify,
-        CancellationToken cancellationToken)
-        => Characteristic.OnNotifyAsync(state, onNotify, cancellationToken);
-    Task<byte[]> IGattServerCharacteristic.ReadAsync(CancellationToken cancellationToken)
-        => Characteristic.ReadAsync(cancellationToken);
+    /// <inheritdoc />
+    public IReadOnlyDictionary<BleUuid, IGattServerDescriptor> Descriptors =>
+        Characteristic.Descriptors;
+
+    Task IGattServerCharacteristic.WriteAsync(byte[] bytes, CancellationToken cancellationToken) =>
+        Characteristic.WriteAsync(bytes, cancellationToken);
+
+    void IGattServerCharacteristic.WriteWithoutResponse(byte[] bytes) =>
+        Characteristic.WriteWithoutResponse(bytes);
+
+    Task<IAsyncDisposable> IGattServerCharacteristic.OnNotifyAsync<TState>(
+        TState state,
+        Action<TState, byte[]> onNotify,
+        CancellationToken cancellationToken
+    ) => Characteristic.OnNotifyAsync(state, onNotify, cancellationToken);
+
+    Task<byte[]> IGattServerCharacteristic.ReadAsync(CancellationToken cancellationToken) =>
+        Characteristic.ReadAsync(cancellationToken);
 }
 
 /// <summary> The implementation of a strongly typed characteristic </summary>
 /// <param name="serverCharacteristic"> The underlying characteristic </param>
 /// <typeparam name="TProp1"> The first property definition </typeparam>
 /// <typeparam name="TProp2"> The second property definition </typeparam>
-public sealed class GattServerCharacteristic<TProp1, TProp2>(IGattServerCharacteristic serverCharacteristic)
-    : GattServerCharacteristic<TProp1>(serverCharacteristic), IGattServerCharacteristic<TProp2>
+public sealed class GattServerCharacteristic<TProp1, TProp2>(
+    IGattServerCharacteristic serverCharacteristic
+) : GattServerCharacteristic<TProp1>(serverCharacteristic), IGattServerCharacteristic<TProp2>
     where TProp1 : IBleProperty
     where TProp2 : IBleProperty
 {
     /// <summary> Convert implicitly to a different order of type parameters </summary>
     /// <param name="characteristicDeclaration"> The characteristic declaration to convert </param>
     /// <returns> The converted characteristic declaration </returns>
-    [SuppressMessage("Usage", "CA2225:Operator overloads have named alternates", Justification = "Convenience method")]
+    [SuppressMessage(
+        "Usage",
+        "CA2225:Operator overloads have named alternates",
+        Justification = "Convenience method"
+    )]
     public static implicit operator GattServerCharacteristic<TProp2, TProp1>(
-        GattServerCharacteristic<TProp1, TProp2> characteristicDeclaration)
+        GattServerCharacteristic<TProp1, TProp2> characteristicDeclaration
+    )
     {
         ArgumentNullException.ThrowIfNull(characteristicDeclaration);
-        return new GattServerCharacteristic<TProp2, TProp1>(characteristicDeclaration.Characteristic);
+        return new GattServerCharacteristic<TProp2, TProp1>(
+            characteristicDeclaration.Characteristic
+        );
     }
 }

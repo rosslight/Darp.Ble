@@ -11,7 +11,14 @@ namespace Darp.Ble.Hci.Payload.Command;
 /// <param name="byte4"> The firth byte </param>
 /// <param name="byte5"> The sixth byte </param>
 [BinaryObject]
-public readonly partial struct UInt48(byte byte0, byte byte1, byte byte2, byte byte3, byte byte4, byte byte5)
+public readonly partial struct UInt48(
+    byte byte0,
+    byte byte1,
+    byte byte2,
+    byte byte3,
+    byte byte4,
+    byte byte5
+)
 {
     private readonly byte _byte0 = byte0;
     private readonly byte _byte1 = byte1;
@@ -21,8 +28,13 @@ public readonly partial struct UInt48(byte byte0, byte byte1, byte byte2, byte b
     private readonly byte _byte5 = byte5;
 
     /// <summary> The uint48 as a ulong </summary>
-    public ulong ToUInt64() => _byte0 | (ulong)_byte1 << 8 | (ulong)_byte2 << 16
-                            | (ulong)_byte3 << 24 | (ulong)_byte4 << 32 | (ulong)_byte5 << 40;
+    public ulong ToUInt64() =>
+        _byte0
+        | (ulong)_byte1 << 8
+        | (ulong)_byte2 << 16
+        | (ulong)_byte3 << 24
+        | (ulong)_byte4 << 32
+        | (ulong)_byte5 << 40;
 
     /// <summary> Get the uint48 from a ulong </summary>
     /// <param name="value"> The ulong </param>

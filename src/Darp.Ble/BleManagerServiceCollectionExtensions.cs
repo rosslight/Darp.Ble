@@ -9,7 +9,10 @@ public static class BleManagerServiceCollectionExtensions
     /// <param name="serviceCollection"> The service collection to add to </param>
     /// <param name="configure"> The callback to configure the BleManager </param>
     /// <returns> The <see cref="IServiceCollection"/> so that additional calls can be chained. </returns>
-    public static IServiceCollection AddBleManager(this IServiceCollection serviceCollection, Action<BleManagerBuilder> configure)
+    public static IServiceCollection AddBleManager(
+        this IServiceCollection serviceCollection,
+        Action<BleManagerBuilder> configure
+    )
     {
         return serviceCollection.AddBleManager((_, builder) => configure(builder));
     }
@@ -18,8 +21,10 @@ public static class BleManagerServiceCollectionExtensions
     /// <param name="serviceCollection"> The service collection to add to </param>
     /// <param name="configure"> The callback to configure the BleManager </param>
     /// <returns> The <see cref="IServiceCollection"/> so that additional calls can be chained. </returns>
-    public static IServiceCollection AddBleManager(this IServiceCollection serviceCollection,
-        Action<IServiceProvider, BleManagerBuilder> configure)
+    public static IServiceCollection AddBleManager(
+        this IServiceCollection serviceCollection,
+        Action<IServiceProvider, BleManagerBuilder> configure
+    )
     {
         return serviceCollection.AddSingleton(provider =>
         {

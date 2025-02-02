@@ -9,8 +9,11 @@ namespace Darp.Ble.Hci.Package;
 /// <param name="parameterTotalLength"> The Parameter_Total_Length </param>
 /// <param name="dataBytes"> All bytes for the event parameters </param>
 [BinaryObject]
-public partial class HciEventPacket(HciEventCode eventCode, byte parameterTotalLength, byte[] dataBytes)
-    : IHciEventPacket<HciEventPacket>
+public partial class HciEventPacket(
+    HciEventCode eventCode,
+    byte parameterTotalLength,
+    byte[] dataBytes
+) : IHciEventPacket<HciEventPacket>
 {
     /// <inheritdoc />
     public HciEventCode EventCode { get; } = eventCode;
@@ -22,26 +25,39 @@ public partial class HciEventPacket(HciEventCode eventCode, byte parameterTotalL
     public byte[] DataBytes { get; } = dataBytes;
 
     /// <inheritdoc />
-    public override string ToString() => $"{(ushort)EventCode:X2}{ParameterTotalLength:X2}{Convert.ToHexString(DataBytes)}";
+    public override string ToString() =>
+        $"{(ushort)EventCode:X2}{ParameterTotalLength:X2}{Convert.ToHexString(DataBytes)}";
 
     /// <summary> Create a new event packet for the given parameter type </summary>
     /// <param name="hciEventPacket"> The event packet </param>
     /// <param name="result"> The packet with decoded parameters </param>
     /// <typeparam name="TParameters"> The type of the parameters </typeparam>
     /// <returns> True, when decoding was successful </returns>
-    public static bool TryWithData<TParameters>(HciEventPacket hciEventPacket,
-        [NotNullWhen(true)] out HciEventPacket<TParameters>? result)
+    public static bool TryWithData<TParameters>(
+        HciEventPacket hciEventPacket,
+        [NotNullWhen(true)] out HciEventPacket<TParameters>? result
+    )
         where TParameters : IHciEvent<TParameters>
     {
         ArgumentNullException.ThrowIfNull(hciEventPacket);
         result = null;
-        if (hciEventPacket.EventCode != TParameters.EventCode) return false;
-        if (!TParameters.TryReadLittleEndian(hciEventPacket.DataBytes, out TParameters? parameters, out _)) return false;
+        if (hciEventPacket.EventCode != TParameters.EventCode)
+            return false;
+        if (
+            !TParameters.TryReadLittleEndian(
+                hciEventPacket.DataBytes,
+                out TParameters? parameters,
+                out _
+            )
+        )
+            return false;
 
-        result = new HciEventPacket<TParameters>(hciEventPacket.EventCode,
+        result = new HciEventPacket<TParameters>(
+            hciEventPacket.EventCode,
             hciEventPacket.ParameterTotalLength,
             hciEventPacket.DataBytes,
-            parameters);
+            parameters
+        );
         return true;
     }
 }
@@ -52,8 +68,12 @@ public partial class HciEventPacket(HciEventCode eventCode, byte parameterTotalL
 /// <param name="dataBytes"> All bytes for the event parameters </param>
 /// <param name="data"> The event parameters </param>
 /// <typeparam name="TParameters"> The type of the parameters </typeparam>
-public sealed class HciEventPacket<TParameters>(HciEventCode eventCode, byte parameterTotalLength, byte[] dataBytes, TParameters data)
-    : HciEventPacket(eventCode, parameterTotalLength, dataBytes)
+public sealed class HciEventPacket<TParameters>(
+    HciEventCode eventCode,
+    byte parameterTotalLength,
+    byte[] dataBytes,
+    TParameters data
+) : HciEventPacket(eventCode, parameterTotalLength, dataBytes)
     where TParameters : IHciEvent<TParameters>
 {
     /// <summary> The event parameters </summary>

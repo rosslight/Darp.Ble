@@ -8,4 +8,6 @@ namespace Darp.Ble.Hci.Exceptions;
 /// <param name="packet"> The event packet that produced the error </param>
 [SuppressMessage("Design", "CA1032:Implement standard exception constructors")]
 public sealed class HciEventFailedException(HciEventPacket<HciCommandStatusEvent> packet)
-    : HciException($"Got failure response for command {packet.Data.CommandOpCode} with status {packet.Data.Status}");
+    : HciException(
+        $"Got failure response for command {packet.Data.CommandOpCode} with status {packet.Data.Status}"
+    );

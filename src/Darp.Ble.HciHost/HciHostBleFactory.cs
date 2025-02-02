@@ -23,10 +23,21 @@ public sealed class HciHostBleFactory : IBleFactory
         // Using vendorId of NordicSemiconductor and productId self defined
         foreach (UsbPortInfo portInfo in UsbPort.GetPortInfos())
         {
-            if (portInfo.Port is null) continue;
-            if (!DeviceNameMapping.TryGetValue((portInfo.VendorId, portInfo.ProductId), out string? deviceName))
+            if (portInfo.Port is null)
                 continue;
-            yield return new HciHostBleDevice(portInfo.Port, $"{deviceName} ({portInfo.Port})", randomAddress: RandomAddress, loggerFactory);
+            if (
+                !DeviceNameMapping.TryGetValue(
+                    (portInfo.VendorId, portInfo.ProductId),
+                    out string? deviceName
+                )
+            )
+                continue;
+            yield return new HciHostBleDevice(
+                portInfo.Port,
+                $"{deviceName} ({portInfo.Port})",
+                randomAddress: RandomAddress,
+                loggerFactory
+            );
         }
     }
 }

@@ -6,12 +6,15 @@ namespace Darp.Ble.Gatt.Server;
 public abstract class GattServerDescriptor(
     GattServerCharacteristic characteristic,
     BleUuid uuid,
-    ILogger<GattServerDescriptor> logger) : IGattServerDescriptor
+    ILogger<GattServerDescriptor> logger
+) : IGattServerDescriptor
 {
     /// <summary> The optional logger </summary>
     protected ILogger<GattServerDescriptor> Logger { get; } = logger;
+
     /// <summary> The logger factory </summary>
-    protected ILoggerFactory LoggerFactory => Characteristic.Service.Peer.Central.Device.LoggerFactory;
+    protected ILoggerFactory LoggerFactory =>
+        Characteristic.Service.Peer.Central.Device.LoggerFactory;
 
     /// <inheritdoc />
     public IGattServerCharacteristic Characteristic { get; } = characteristic;
@@ -21,8 +24,12 @@ public abstract class GattServerDescriptor(
 
     /// <inheritdoc />
     public abstract Task<byte[]> ReadAsync(CancellationToken cancellationToken = default);
+
     /// <inheritdoc />
-    public abstract Task<bool> WriteAsync(byte[] bytes, CancellationToken cancellationToken = default);
+    public abstract Task<bool> WriteAsync(
+        byte[] bytes,
+        CancellationToken cancellationToken = default
+    );
 }
 
 /// <summary> The interface defining a gatt server characteristic </summary>
@@ -33,10 +40,13 @@ public interface IGattServerCharacteristic
 
     /// <summary> The handle of the characteristic attribute </summary>
     ushort AttributeHandle { get; }
+
     /// <summary> The <see cref="BleUuid"/> of the characteristic </summary>
     BleUuid Uuid { get; }
+
     /// <summary> The Gatt Property </summary>
     GattProperty Properties { get; }
+
     /// <summary> The descriptors associated with this characteristic </summary>
     /// <remarks> The descriptor discovery happened automatically </remarks>
     IReadOnlyDictionary<BleUuid, IGattServerDescriptor> Descriptors { get; }
@@ -63,25 +73,29 @@ public interface IGattServerCharacteristic
     /// A task which completes when notifications are enabled.
     /// Contains an <see cref="IDisposable"/> which can be used to unsubscribe from notifications.
     /// </returns>
-    Task<IAsyncDisposable> OnNotifyAsync<TState>(TState state, Action<TState, byte[]> onNotify, CancellationToken cancellationToken);
+    Task<IAsyncDisposable> OnNotifyAsync<TState>(
+        TState state,
+        Action<TState, byte[]> onNotify,
+        CancellationToken cancellationToken
+    );
 
     /// <summary> Read a specific value from the characteristic </summary>
     /// <param name="cancellationToken"> The CancellationToken to cancel the operation </param>
     /// <returns> A task which completes when the value was read </returns>
     Task<byte[]> ReadAsync(CancellationToken cancellationToken);
 
-/*
-    /// <summary> Subscribe to indication events </summary>
-    /// <param name="state"> The state to be accessible when <paramref name="onIndicate"/> is called </param>
-    /// <param name="onIndicate"> The callback to be called when an indication event was received </param>
-    /// <param name="cancellationToken"> The CancellationToken to cancel the initial subscription process </param>
-    /// <typeparam name="TState"> The type of the <paramref name="state"/> </typeparam>
-    /// <returns>
-    /// A task which completes when indications are enabled.
-    /// Contains an <see cref="IDisposable"/> which can be used to unsubscribe from indications.
-    /// </returns>
-    Task<IDisposable> OnIndicateAsync<TState>(TState state, Func<TState, ReadOnlyMemory<byte>, bool> onIndicate, CancellationToken cancellationToken);
-*/
+    /*
+        /// <summary> Subscribe to indication events </summary>
+        /// <param name="state"> The state to be accessible when <paramref name="onIndicate"/> is called </param>
+        /// <param name="onIndicate"> The callback to be called when an indication event was received </param>
+        /// <param name="cancellationToken"> The CancellationToken to cancel the initial subscription process </param>
+        /// <typeparam name="TState"> The type of the <paramref name="state"/> </typeparam>
+        /// <returns>
+        /// A task which completes when indications are enabled.
+        /// Contains an <see cref="IDisposable"/> which can be used to unsubscribe from indications.
+        /// </returns>
+        Task<IDisposable> OnIndicateAsync<TState>(TState state, Func<TState, ReadOnlyMemory<byte>, bool> onIndicate, CancellationToken cancellationToken);
+    */
 }
 
 /// <summary> The interface defining a strongly typed characteristic </summary>

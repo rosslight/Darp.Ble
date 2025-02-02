@@ -14,6 +14,7 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
 {
     /// <summary> The logger </summary>
     protected ILogger<BleObserver> Logger { get; } = logger;
+
     /// <summary> The logger factory </summary>
     protected ILoggerFactory LoggerFactory => Device.LoggerFactory;
 
@@ -26,20 +27,24 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
 
     /// <inheritdoc />
     public IBleDevice Device { get; } = device;
+
     /// <inheritdoc />
-    public BleScanParameters Parameters { get; private set; } = new()
-    {
-        ScanType = ScanType.Passive,
-        ScanInterval = ScanTiming.Ms100,
-        ScanWindow = ScanTiming.Ms100,
-    };
+    public BleScanParameters Parameters { get; private set; } =
+        new()
+        {
+            ScanType = ScanType.Passive,
+            ScanInterval = ScanTiming.Ms100,
+            ScanWindow = ScanTiming.Ms100,
+        };
+
     /// <inheritdoc />
     public bool IsScanning => _scanDisposable is not null;
 
     /// <inheritdoc />
     public bool Configure(BleScanParameters parameters)
     {
-        if (IsScanning) return false;
+        if (IsScanning)
+            return false;
         Parameters = parameters;
         return true;
     }
@@ -57,13 +62,16 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
         {
             IDisposable? optDisposable = _scanObservable?.Subscribe(observer);
             _observers.Add(observer);
-            return Disposable.Create((This: this, Observer: observer, Disposable: optDisposable), state =>
-            {
-                state.Disposable?.Dispose();
-                state.This._observers.Remove(state.Observer);
-                if (state.This._observers.Count == 0)
-                    state.This.StopScan();
-            });
+            return Disposable.Create(
+                (This: this, Observer: observer, Disposable: optDisposable),
+                state =>
+                {
+                    state.Disposable?.Dispose();
+                    state.This._observers.Remove(state.Observer);
+                    if (state.This._observers.Count == 0)
+                        state.This.StopScan();
+                }
+            );
         }
     }
 
@@ -75,26 +83,34 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
     /// <exception cref="ObjectDisposedException"> Thrown if the <see cref="BleObserver"/> was disposed </exception>
     public IDisposable Connect()
     {
-        if(_isDisposing)
+        if (_isDisposing)
             return Disposable.Empty;
         lock (_lockObject)
         {
-            if (_scanDisposable is not null) return _scanDisposable;
-            bool startScanSuccessful = TryStartScanCore(out IObservable<IGapAdvertisement> observable);
+            if (_scanDisposable is not null)
+                return _scanDisposable;
+            bool startScanSuccessful = TryStartScanCore(
+                out IObservable<IGapAdvertisement> observable
+            );
 
-            observable = observable
-                .Catch((Exception exception) => Observable.Throw<IGapAdvertisement>(exception switch
-                {
-                    BleObservationException e => e,
-                    _ => new BleObservationException(this, message: null, exception),
-                }));
+            observable = observable.Catch(
+                (Exception exception) =>
+                    Observable.Throw<IGapAdvertisement>(
+                        exception switch
+                        {
+                            BleObservationException e => e,
+                            _ => new BleObservationException(this, message: null, exception),
+                        }
+                    )
+            );
             // Use for loop to be resilient to disconnections on first connection
             for (int index = _observers.Count - 1; index >= 0; index--)
             {
                 observable.Subscribe(_observers[index]);
             }
 
-            if (!startScanSuccessful) return Disposable.Empty;
+            if (!startScanSuccessful)
+                return Disposable.Empty;
 
             _scanObservable = observable;
             _scanDisposable = Disposable.Create(this, self => self.StopScan());
@@ -117,7 +133,8 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
     {
         lock (_lockObject)
         {
-            if (_stopping) return;
+            if (_stopping)
+                return;
             _stopping = true;
             try
             {
@@ -148,13 +165,16 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
     /// <remarks> This method is not glued to the <see cref="IAsyncDisposable"/> interface. All disposes should be done using the  </remarks>
     public async ValueTask DisposeAsync()
     {
-        if(_isDisposing) return;
+        if (_isDisposing)
+            return;
         _isDisposing = true;
         await DisposeAsyncCore().ConfigureAwait(false);
         Dispose(disposing: false);
     }
+
     /// <inheritdoc cref="DisposeAsync"/>
     protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
+
     /// <inheritdoc cref="IDisposable.Dispose"/>
     /// <param name="disposing">
     /// True, when this method was called by the synchronous <see cref="IDisposable.Dispose"/> method;

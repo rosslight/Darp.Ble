@@ -13,15 +13,15 @@ public sealed class AttWriteCmdTests
 
     [Theory]
     [InlineData(25, "AABBCCDD", "521900AABBCCDD")]
-    public void TryWriteLittleEndian_ShouldBeValid(ushort handle, string valueHexBytes, string expectedHexBytes)
+    public void TryWriteLittleEndian_ShouldBeValid(
+        ushort handle,
+        string valueHexBytes,
+        string expectedHexBytes
+    )
     {
         var buffer = new byte[7];
         byte[] valueBytes = Convert.FromHexString(valueHexBytes);
-        var value = new AttWriteCmd
-        {
-            Handle = handle,
-            Value = valueBytes,
-        };
+        var value = new AttWriteCmd { Handle = handle, Value = valueBytes };
 
         bool success = value.TryWriteLittleEndian(buffer);
 

@@ -9,6 +9,7 @@ public readonly partial record struct HciReadBdAddrResult
 {
     /// <summary> The <see cref="HciCommandStatus"/> </summary>
     public required HciCommandStatus Status { get; init; }
+
     /// <summary> The BD_ADDR </summary>
     public required UInt48 Address { get; init; }
 }

@@ -11,6 +11,7 @@ public static class Properties
         /// <inheritdoc />
         static GattProperty IBleProperty.GattProperty => GattProperty.Notify;
     }
+
     /// <summary> A class which represents the <see cref="GattProperty.Indicate"/> </summary>
     public sealed class Indicate : IBleProperty
     {

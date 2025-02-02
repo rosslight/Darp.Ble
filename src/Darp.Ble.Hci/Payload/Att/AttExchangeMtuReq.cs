@@ -12,6 +12,7 @@ public readonly partial record struct AttExchangeMtuReq() : IAttPdu
 
     /// <inheritdoc />
     public AttOpCode OpCode { get; init; } = ExpectedOpCode;
+
     /// <summary> Client receive MTU size </summary>
     public required ushort ClientRxMtu { get; init; }
 }

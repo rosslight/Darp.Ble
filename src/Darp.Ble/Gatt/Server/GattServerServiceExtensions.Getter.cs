@@ -11,17 +11,21 @@ public static partial class GattServerServiceExtensions
     /// <param name="characteristic"> The resulting characteristic. Null if not present </param>
     /// <typeparam name="TProp1"> The property of the first characteristic </typeparam>
     /// <returns> True, when the characteristic was found; False, otherwise </returns>
-    public static bool TryGetCharacteristic<TProp1>(this IGattServerService service,
+    public static bool TryGetCharacteristic<TProp1>(
+        this IGattServerService service,
         CharacteristicDeclaration<TProp1> characteristicDeclaration,
-        [NotNullWhen(true)] out GattServerCharacteristic<TProp1>? characteristic)
+        [NotNullWhen(true)] out GattServerCharacteristic<TProp1>? characteristic
+    )
         where TProp1 : IBleProperty
     {
         ArgumentNullException.ThrowIfNull(service);
         ArgumentNullException.ThrowIfNull(characteristicDeclaration);
         foreach (IGattServerCharacteristic serverCharacteristic in service.Characteristics)
         {
-            if (serverCharacteristic.Uuid == characteristicDeclaration.Uuid
-                && characteristicDeclaration.Properties.HasFlag(serverCharacteristic.Properties))
+            if (
+                serverCharacteristic.Uuid == characteristicDeclaration.Uuid
+                && characteristicDeclaration.Properties.HasFlag(serverCharacteristic.Properties)
+            )
             {
                 characteristic = new GattServerCharacteristic<TProp1>(serverCharacteristic);
                 return true;
@@ -37,11 +41,18 @@ public static partial class GattServerServiceExtensions
     /// <typeparam name="TProp1"> The property of the first characteristic </typeparam>
     /// <returns> The gatt server characteristic </returns>
     /// <exception cref="Exception"> Thrown if no characteristic was found </exception>
-    public static GattServerCharacteristic<TProp1> GetCharacteristic<TProp1>(this IGattServerService service,
-        CharacteristicDeclaration<TProp1> characteristicDeclaration)
+    public static GattServerCharacteristic<TProp1> GetCharacteristic<TProp1>(
+        this IGattServerService service,
+        CharacteristicDeclaration<TProp1> characteristicDeclaration
+    )
         where TProp1 : IBleProperty
     {
-        if (!service.TryGetCharacteristic(characteristicDeclaration, out GattServerCharacteristic<TProp1>? characteristic))
+        if (
+            !service.TryGetCharacteristic(
+                characteristicDeclaration,
+                out GattServerCharacteristic<TProp1>? characteristic
+            )
+        )
             throw new Exception($"Characteristic {characteristicDeclaration.Uuid} not found");
         return characteristic;
     }
@@ -53,9 +64,11 @@ public static partial class GattServerServiceExtensions
     /// <typeparam name="TProp1"> The property of the first characteristic </typeparam>
     /// <typeparam name="TProp2"> The property of the first characteristic </typeparam>
     /// <returns> True, when the characteristic was found; False, otherwise </returns>
-    public static bool TryGetCharacteristic<TProp1, TProp2>(this IGattServerService service,
+    public static bool TryGetCharacteristic<TProp1, TProp2>(
+        this IGattServerService service,
         CharacteristicDeclaration<TProp1, TProp2> characteristicDeclaration,
-        [NotNullWhen(true)] out GattServerCharacteristic<TProp1, TProp2>? characteristic)
+        [NotNullWhen(true)] out GattServerCharacteristic<TProp1, TProp2>? characteristic
+    )
         where TProp1 : IBleProperty
         where TProp2 : IBleProperty
     {
@@ -63,8 +76,10 @@ public static partial class GattServerServiceExtensions
         ArgumentNullException.ThrowIfNull(characteristicDeclaration);
         foreach (IGattServerCharacteristic serverCharacteristic in service.Characteristics)
         {
-            if (serverCharacteristic.Uuid == characteristicDeclaration.Uuid
-                && characteristicDeclaration.Properties.HasFlag(serverCharacteristic.Properties))
+            if (
+                serverCharacteristic.Uuid == characteristicDeclaration.Uuid
+                && characteristicDeclaration.Properties.HasFlag(serverCharacteristic.Properties)
+            )
             {
                 characteristic = new GattServerCharacteristic<TProp1, TProp2>(serverCharacteristic);
                 return true;
@@ -81,12 +96,19 @@ public static partial class GattServerServiceExtensions
     /// <typeparam name="TProp2"> The property of the second characteristic </typeparam>
     /// <returns> The gatt server characteristic </returns>
     /// <exception cref="Exception"> Thrown if no characteristic was found </exception>
-    public static GattServerCharacteristic<TProp1, TProp2> GetCharacteristic<TProp1, TProp2>(this IGattServerService service,
-        CharacteristicDeclaration<TProp1, TProp2> characteristicDeclaration)
+    public static GattServerCharacteristic<TProp1, TProp2> GetCharacteristic<TProp1, TProp2>(
+        this IGattServerService service,
+        CharacteristicDeclaration<TProp1, TProp2> characteristicDeclaration
+    )
         where TProp1 : IBleProperty
         where TProp2 : IBleProperty
     {
-        if (!service.TryGetCharacteristic(characteristicDeclaration, out GattServerCharacteristic<TProp1, TProp2>? characteristic))
+        if (
+            !service.TryGetCharacteristic(
+                characteristicDeclaration,
+                out GattServerCharacteristic<TProp1, TProp2>? characteristic
+            )
+        )
             throw new Exception($"Characteristic {characteristicDeclaration.Uuid} not found");
         return characteristic;
     }
@@ -98,21 +120,27 @@ public static partial class GattServerServiceExtensions
     /// <typeparam name="T"> The type of the characteristic value </typeparam>
     /// <typeparam name="TProp1"> The property of the first characteristic </typeparam>
     /// <returns> True, when the characteristic was found; False, otherwise </returns>
-    public static bool TryGetCharacteristic<T, TProp1>(this IGattServerService service,
+    public static bool TryGetCharacteristic<T, TProp1>(
+        this IGattServerService service,
         TypedCharacteristicDeclaration<T, TProp1> characteristicDeclaration,
-        [NotNullWhen(true)] out TypedGattServerCharacteristic<T, TProp1>? characteristic)
+        [NotNullWhen(true)] out TypedGattServerCharacteristic<T, TProp1>? characteristic
+    )
         where TProp1 : IBleProperty
     {
         ArgumentNullException.ThrowIfNull(service);
         ArgumentNullException.ThrowIfNull(characteristicDeclaration);
         foreach (IGattServerCharacteristic serverCharacteristic in service.Characteristics)
         {
-            if (serverCharacteristic.Uuid == characteristicDeclaration.Uuid
-                && characteristicDeclaration.Properties.HasFlag(serverCharacteristic.Properties))
+            if (
+                serverCharacteristic.Uuid == characteristicDeclaration.Uuid
+                && characteristicDeclaration.Properties.HasFlag(serverCharacteristic.Properties)
+            )
             {
-                characteristic = new TypedGattServerCharacteristic<T, TProp1>(serverCharacteristic,
+                characteristic = new TypedGattServerCharacteristic<T, TProp1>(
+                    serverCharacteristic,
                     characteristicDeclaration.ReadValue,
-                    characteristicDeclaration.WriteValue);
+                    characteristicDeclaration.WriteValue
+                );
                 return true;
             }
         }
@@ -127,11 +155,18 @@ public static partial class GattServerServiceExtensions
     /// <typeparam name="TProp1"> The property of the first characteristic </typeparam>
     /// <returns> The gatt server characteristic </returns>
     /// <exception cref="Exception"> Thrown if no characteristic was found </exception>
-    public static TypedGattServerCharacteristic<T, TProp1> GetCharacteristic<T, TProp1>(this IGattServerService service,
-        TypedCharacteristicDeclaration<T, TProp1> characteristicDeclaration)
+    public static TypedGattServerCharacteristic<T, TProp1> GetCharacteristic<T, TProp1>(
+        this IGattServerService service,
+        TypedCharacteristicDeclaration<T, TProp1> characteristicDeclaration
+    )
         where TProp1 : IBleProperty
     {
-        if (!service.TryGetCharacteristic(characteristicDeclaration, out TypedGattServerCharacteristic<T, TProp1>? characteristic))
+        if (
+            !service.TryGetCharacteristic(
+                characteristicDeclaration,
+                out TypedGattServerCharacteristic<T, TProp1>? characteristic
+            )
+        )
             throw new Exception($"Characteristic {characteristicDeclaration.Uuid} not found");
         return characteristic;
     }
@@ -144,9 +179,11 @@ public static partial class GattServerServiceExtensions
     /// <typeparam name="TProp1"> The property of the first characteristic </typeparam>
     /// <typeparam name="TProp2"> The property of the first characteristic </typeparam>
     /// <returns> True, when the characteristic was found; False, otherwise </returns>
-    public static bool TryGetCharacteristic<T, TProp1, TProp2>(this IGattServerService service,
+    public static bool TryGetCharacteristic<T, TProp1, TProp2>(
+        this IGattServerService service,
         TypedCharacteristicDeclaration<T, TProp1, TProp2> characteristicDeclaration,
-        [NotNullWhen(true)] out TypedGattServerCharacteristic<T, TProp1, TProp2>? characteristic)
+        [NotNullWhen(true)] out TypedGattServerCharacteristic<T, TProp1, TProp2>? characteristic
+    )
         where TProp1 : IBleProperty
         where TProp2 : IBleProperty
     {
@@ -154,12 +191,16 @@ public static partial class GattServerServiceExtensions
         ArgumentNullException.ThrowIfNull(characteristicDeclaration);
         foreach (IGattServerCharacteristic serverCharacteristic in service.Characteristics)
         {
-            if (serverCharacteristic.Uuid == characteristicDeclaration.Uuid
-                && characteristicDeclaration.Properties.HasFlag(serverCharacteristic.Properties))
+            if (
+                serverCharacteristic.Uuid == characteristicDeclaration.Uuid
+                && characteristicDeclaration.Properties.HasFlag(serverCharacteristic.Properties)
+            )
             {
-                characteristic = new TypedGattServerCharacteristic<T, TProp1, TProp2>(serverCharacteristic,
+                characteristic = new TypedGattServerCharacteristic<T, TProp1, TProp2>(
+                    serverCharacteristic,
                     characteristicDeclaration.ReadValue,
-                    characteristicDeclaration.WriteValue);
+                    characteristicDeclaration.WriteValue
+                );
                 return true;
             }
         }
@@ -175,12 +216,23 @@ public static partial class GattServerServiceExtensions
     /// <typeparam name="TProp2"> The property of the second characteristic </typeparam>
     /// <returns> The gatt server characteristic </returns>
     /// <exception cref="Exception"> Thrown if no characteristic was found </exception>
-    public static TypedGattServerCharacteristic<T, TProp1, TProp2> GetCharacteristic<T, TProp1, TProp2>(this IGattServerService service,
-        TypedCharacteristicDeclaration<T, TProp1, TProp2> characteristicDeclaration)
+    public static TypedGattServerCharacteristic<T, TProp1, TProp2> GetCharacteristic<
+        T,
+        TProp1,
+        TProp2
+    >(
+        this IGattServerService service,
+        TypedCharacteristicDeclaration<T, TProp1, TProp2> characteristicDeclaration
+    )
         where TProp1 : IBleProperty
         where TProp2 : IBleProperty
     {
-        if (!service.TryGetCharacteristic(characteristicDeclaration, out TypedGattServerCharacteristic<T, TProp1, TProp2>? characteristic))
+        if (
+            !service.TryGetCharacteristic(
+                characteristicDeclaration,
+                out TypedGattServerCharacteristic<T, TProp1, TProp2>? characteristic
+            )
+        )
             throw new Exception($"Characteristic {characteristicDeclaration.Uuid} not found");
         return characteristic;
     }
@@ -190,9 +242,11 @@ public static partial class GattServerServiceExtensions
     /// <param name="descriptorDeclaration"> The descriptor definition </param>
     /// <param name="descriptor"> The descriptor if found </param>
     /// <returns> The gatt server characteristic </returns>
-    public static bool TryGetDescriptor(this IGattServerCharacteristic characteristic,
+    public static bool TryGetDescriptor(
+        this IGattServerCharacteristic characteristic,
         DescriptorDeclaration descriptorDeclaration,
-        [NotNullWhen(true)] out IGattServerDescriptor? descriptor)
+        [NotNullWhen(true)] out IGattServerDescriptor? descriptor
+    )
     {
         ArgumentNullException.ThrowIfNull(characteristic);
         ArgumentNullException.ThrowIfNull(descriptorDeclaration);
@@ -203,10 +257,17 @@ public static partial class GattServerServiceExtensions
     /// <param name="characteristic"> The characteristic the descriptor belongs to </param>
     /// <param name="descriptorDeclaration"> The descriptor definition </param>
     /// <returns> The gatt server characteristic </returns>
-    public static IGattServerDescriptor GetDescriptor(this IGattServerCharacteristic characteristic,
-        DescriptorDeclaration descriptorDeclaration)
+    public static IGattServerDescriptor GetDescriptor(
+        this IGattServerCharacteristic characteristic,
+        DescriptorDeclaration descriptorDeclaration
+    )
     {
-        if (!characteristic.TryGetDescriptor(descriptorDeclaration, out IGattServerDescriptor? descriptor))
+        if (
+            !characteristic.TryGetDescriptor(
+                descriptorDeclaration,
+                out IGattServerDescriptor? descriptor
+            )
+        )
             throw new Exception($"Descriptor {descriptorDeclaration.Uuid} not found");
         return descriptor;
     }
@@ -215,10 +276,14 @@ public static partial class GattServerServiceExtensions
     /// <param name="characteristic"> The characteristic the descriptor belongs to </param>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> The user description </returns>
-    public static async Task<string> ReadUserDescriptionAsync(this IGattServerCharacteristic characteristic,
-        CancellationToken cancellationToken = default)
+    public static async Task<string> ReadUserDescriptionAsync(
+        this IGattServerCharacteristic characteristic,
+        CancellationToken cancellationToken = default
+    )
     {
-        IGattServerDescriptor descriptor = characteristic.GetDescriptor(DescriptorDeclaration.CharacteristicUserDescription);
+        IGattServerDescriptor descriptor = characteristic.GetDescriptor(
+            DescriptorDeclaration.CharacteristicUserDescription
+        );
         byte[] bytes = await descriptor.ReadAsync(cancellationToken).ConfigureAwait(false);
         return Encoding.UTF8.GetString(bytes);
     }

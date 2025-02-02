@@ -14,9 +14,11 @@ public sealed class AttFindInformationReqTests
     [Theory]
     [InlineData(1, 0xFFFF, "040100FFFF")]
     [InlineData(31, 0xFFFF, "041F00FFFF")]
-    public void TryWriteLittleEndian_ShouldBeValid(ushort startingHandle,
+    public void TryWriteLittleEndian_ShouldBeValid(
+        ushort startingHandle,
         ushort endingHandle,
-        string expectedHexBytes)
+        string expectedHexBytes
+    )
     {
         var buffer = new byte[5];
         var value = new AttFindInformationReq
@@ -37,11 +39,7 @@ public sealed class AttFindInformationReqTests
     public void TryWriteLittleEndian_ShouldBeInvalid()
     {
         var buffer = new byte[4];
-        var value = new AttFindInformationReq
-        {
-            StartingHandle = 1,
-            EndingHandle = 0xFFFF,
-        };
+        var value = new AttFindInformationReq { StartingHandle = 1, EndingHandle = 0xFFFF };
 
         bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeFalse();

@@ -9,10 +9,12 @@ namespace Darp.Ble.Implementation;
 /// <inheritdoc />
 /// <param name="logger"> The logger </param>
 /// <param name="loggerFactory"> The logger factory </param>
-public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice> logger) : IBleDevice
+public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice> logger)
+    : IBleDevice
 {
     /// <summary> The logger </summary>
     protected ILogger<BleDevice> Logger { get; } = logger;
+
     /// <summary> The logger factory </summary>
     public ILoggerFactory LoggerFactory { get; } = loggerFactory;
     private bool _isInitializing;
@@ -35,11 +37,12 @@ public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice>
     public abstract string? Name { get; }
 
     /// <inheritdoc />
-    public Capabilities Capabilities => Capabilities.None
-                                        | (_bleObserver is not null ? Capabilities.Observer : Capabilities.None)
-                                        | (_bleCentral is not null ? Capabilities.Central : Capabilities.None)
-                                        | (_bleBroadcaster is not null ? Capabilities.Broadcaster : Capabilities.None)
-                                        | (_blePeripheral is not null ? Capabilities.Peripheral : Capabilities.None);
+    public Capabilities Capabilities =>
+        Capabilities.None
+        | (_bleObserver is not null ? Capabilities.Observer : Capabilities.None)
+        | (_bleCentral is not null ? Capabilities.Central : Capabilities.None)
+        | (_bleBroadcaster is not null ? Capabilities.Broadcaster : Capabilities.None)
+        | (_blePeripheral is not null ? Capabilities.Peripheral : Capabilities.None);
 
     /// <inheritdoc />
     public IBleObserver Observer
@@ -47,18 +50,21 @@ public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice>
         get => ThrowIfNull(_bleObserver);
         protected set => _bleObserver = value;
     }
+
     /// <inheritdoc />
     public IBleCentral Central
     {
         get => ThrowIfNull(_bleCentral);
         protected set => _bleCentral = value;
     }
+
     /// <inheritdoc />
     public IBleBroadcaster Broadcaster
     {
         get => ThrowIfNull(_bleBroadcaster);
         protected set => _bleBroadcaster = value;
     }
+
     /// <inheritdoc />
     public IBlePeripheral Peripheral
     {
@@ -67,14 +73,19 @@ public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice>
     }
 
     /// <inheritdoc />
-    public async Task<InitializeResult> InitializeAsync(CancellationToken cancellationToken = default)
+    public async Task<InitializeResult> InitializeAsync(
+        CancellationToken cancellationToken = default
+    )
     {
-        if (IsInitialized) return InitializeResult.Success;
-        if (_isInitializing) return InitializeResult.AlreadyInitializing;
+        if (IsInitialized)
+            return InitializeResult.Success;
+        if (_isInitializing)
+            return InitializeResult.AlreadyInitializing;
         try
         {
             _isInitializing = true;
-            InitializeResult result = await InitializeAsyncCore(cancellationToken).ConfigureAwait(false);
+            InitializeResult result = await InitializeAsyncCore(cancellationToken)
+                .ConfigureAwait(false);
             if (result is not InitializeResult.Success)
                 return result;
             IsInitialized = true;
@@ -88,27 +99,41 @@ public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice>
     }
 
     /// <inheritdoc />
-    public Task SetRandomAddressAsync(BleAddress randomAddress, CancellationToken cancellationToken = default)
+    public Task SetRandomAddressAsync(
+        BleAddress randomAddress,
+        CancellationToken cancellationToken = default
+    )
     {
         ArgumentNullException.ThrowIfNull(randomAddress);
-        if (randomAddress.Type is not (
-            BleAddressType.RandomStatic
-            or BleAddressType.RandomPrivateResolvable
-            or BleAddressType.RandomPrivateNonResolvable
-            ))
+        if (
+            randomAddress.Type
+            is not (
+                BleAddressType.RandomStatic
+                or BleAddressType.RandomPrivateResolvable
+                or BleAddressType.RandomPrivateNonResolvable
+            )
+        )
         {
-            throw new ArgumentOutOfRangeException(nameof(randomAddress), "The address provided has to be random");
+            throw new ArgumentOutOfRangeException(
+                nameof(randomAddress),
+                "The address provided has to be random"
+            );
         }
         return SetRandomAddressAsyncCore(randomAddress, cancellationToken);
     }
 
     /// <inheritdoc cref="SetRandomAddressAsync" />
-    protected abstract Task SetRandomAddressAsyncCore(BleAddress randomAddress, CancellationToken cancellationToken);
+    protected abstract Task SetRandomAddressAsyncCore(
+        BleAddress randomAddress,
+        CancellationToken cancellationToken
+    );
 
     /// <summary> Initializes the ble device. </summary>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> The status of the initialization. Success or a custom error code. </returns>
-    protected abstract Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken);
+    protected abstract Task<InitializeResult> InitializeAsyncCore(
+        CancellationToken cancellationToken
+    );
 
     /// <summary> Throws if not initialized or null </summary>
     /// <exception cref="NotInitializedException"> Thrown when the device has not been initialized </exception>
@@ -116,8 +141,10 @@ public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice>
     [return: NotNullIfNotNull(nameof(param))]
     private T ThrowIfNull<T>(T? param, [CallerMemberName] string? roleName = null)
     {
-        if(!IsInitialized && !_isInitializing) throw new NotInitializedException(this);
-        if (param is not null) return param;
+        if (!IsInitialized && !_isInitializing)
+            throw new NotInitializedException(this);
+        if (param is not null)
+            return param;
         throw new NotSupportedException($"The device does not support role {roleName}");
     }
 
@@ -148,7 +175,10 @@ public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice>
             await observer.DisposeAsync().ConfigureAwait(false);
         if (Capabilities.HasFlag(Capabilities.Central) && Central is BleCentral central)
             await central.DisposeAsync().ConfigureAwait(false);
-        if (Capabilities.HasFlag(Capabilities.Broadcaster) && Broadcaster is BleBroadcaster broadcaster)
+        if (
+            Capabilities.HasFlag(Capabilities.Broadcaster)
+            && Broadcaster is BleBroadcaster broadcaster
+        )
             await broadcaster.DisposeAsync().ConfigureAwait(false);
         if (Capabilities.HasFlag(Capabilities.Peripheral) && Peripheral is BlePeripheral peripheral)
             await peripheral.DisposeAsync().ConfigureAwait(false);

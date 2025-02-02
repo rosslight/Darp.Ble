@@ -6,6 +6,6 @@ namespace Darp.Ble.Mock.Tests;
 
 public sealed class Startup
 {
-    public void ConfigureServices(IServiceCollection services) => services
-        .AddLogging(lb => lb.AddXunitOutput().SetMinimumLevel(LogLevel.Trace));
+    public void ConfigureServices(IServiceCollection services) =>
+        services.AddLogging(lb => lb.AddXunitOutput().SetMinimumLevel(LogLevel.Trace));
 }

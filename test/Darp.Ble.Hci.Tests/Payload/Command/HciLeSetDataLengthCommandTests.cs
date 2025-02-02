@@ -13,7 +13,12 @@ public sealed class HciLeSetDataLengthCommandTests
 
     [Theory]
     [InlineData(0, 65, 328, "000041004801")]
-    public void TryWriteLittleEndian_ShouldBeValid(ushort handle, ushort txOctets, ushort txTime, string expectedHexBytes)
+    public void TryWriteLittleEndian_ShouldBeValid(
+        ushort handle,
+        ushort txOctets,
+        ushort txTime,
+        string expectedHexBytes
+    )
     {
         var buffer = new byte[6];
         var value = new HciLeSetDataLengthCommand

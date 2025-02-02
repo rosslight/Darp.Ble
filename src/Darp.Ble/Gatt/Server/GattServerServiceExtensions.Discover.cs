@@ -14,14 +14,19 @@ public static partial class GattServerServiceExtensions
     public static async Task<GattServerCharacteristic<TProp1>> DiscoverCharacteristicAsync<TProp1>(
         this IGattServerService service,
         BleUuid uuid,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
         where TProp1 : IBleProperty
     {
         ArgumentNullException.ThrowIfNull(service);
-        IGattServerCharacteristic serverCharacteristic = await service.DiscoverCharacteristicAsync(uuid, cancellationToken).ConfigureAwait(false);
+        IGattServerCharacteristic serverCharacteristic = await service
+            .DiscoverCharacteristicAsync(uuid, cancellationToken)
+            .ConfigureAwait(false);
         if (!serverCharacteristic.Properties.HasFlag(TProp1.GattProperty))
         {
-            throw new Exception($"Discovered characteristic does not support property {TProp1.GattProperty}");
+            throw new Exception(
+                $"Discovered characteristic does not support property {TProp1.GattProperty}"
+            );
         }
         return new GattServerCharacteristic<TProp1>(serverCharacteristic);
     }
@@ -33,18 +38,22 @@ public static partial class GattServerServiceExtensions
     /// <typeparam name="TProp1"> The type of the first characteristic </typeparam>
     /// <typeparam name="TProp2"> The type of the second characteristic </typeparam>
     /// <returns> The discovered gatt server characteristic </returns>
-    public static async Task<GattServerCharacteristic<TProp1, TProp2>> DiscoverCharacteristicAsync<TProp1, TProp2>(
-        this IGattServerService service,
-        BleUuid uuid,
-        CancellationToken cancellationToken = default)
+    public static async Task<GattServerCharacteristic<TProp1, TProp2>> DiscoverCharacteristicAsync<
+        TProp1,
+        TProp2
+    >(this IGattServerService service, BleUuid uuid, CancellationToken cancellationToken = default)
         where TProp1 : IBleProperty
         where TProp2 : IBleProperty
     {
         ArgumentNullException.ThrowIfNull(service);
-        IGattServerCharacteristic serverCharacteristic = await service.DiscoverCharacteristicAsync(uuid, cancellationToken).ConfigureAwait(false);
+        IGattServerCharacteristic serverCharacteristic = await service
+            .DiscoverCharacteristicAsync(uuid, cancellationToken)
+            .ConfigureAwait(false);
         if (!serverCharacteristic.Properties.HasFlag(TProp1.GattProperty | TProp2.GattProperty))
         {
-            throw new Exception($"Discovered characteristic does not support property {TProp1.GattProperty | TProp2.GattProperty}");
+            throw new Exception(
+                $"Discovered characteristic does not support property {TProp1.GattProperty | TProp2.GattProperty}"
+            );
         }
         return new GattServerCharacteristic<TProp1, TProp2>(serverCharacteristic);
     }
@@ -60,7 +69,8 @@ public static partial class GattServerServiceExtensions
     public static Task<GattServerCharacteristic<TProp1>> DiscoverCharacteristicAsync<TProp1>(
         this IGattServerService service,
         CharacteristicDeclaration<TProp1> characteristic,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
         where TProp1 : IBleProperty
     {
         ArgumentNullException.ThrowIfNull(service);
@@ -77,15 +87,22 @@ public static partial class GattServerServiceExtensions
     /// <typeparam name="TProp1"> The type of the first characteristic </typeparam>
     /// <typeparam name="TProp2"> The type of the second characteristic </typeparam>
     /// <returns> The discovered gatt server characteristic </returns>
-    public static Task<GattServerCharacteristic<TProp1, TProp2>> DiscoverCharacteristicAsync<TProp1, TProp2>(
+    public static Task<GattServerCharacteristic<TProp1, TProp2>> DiscoverCharacteristicAsync<
+        TProp1,
+        TProp2
+    >(
         this IGattServerService service,
         CharacteristicDeclaration<TProp1> characteristic,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
         where TProp1 : IBleProperty
         where TProp2 : IBleProperty
     {
         ArgumentNullException.ThrowIfNull(service);
         ArgumentNullException.ThrowIfNull(characteristic);
-        return service.DiscoverCharacteristicAsync<TProp1, TProp2>(characteristic.Uuid, cancellationToken);
+        return service.DiscoverCharacteristicAsync<TProp1, TProp2>(
+            characteristic.Uuid,
+            cancellationToken
+        );
     }
 }

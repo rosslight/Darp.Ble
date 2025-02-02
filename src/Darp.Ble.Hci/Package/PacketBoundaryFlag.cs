@@ -9,8 +9,10 @@ public enum PacketBoundaryFlag
     /// (start of a non-automatically-flushable L2CAP PDU) from Host to Controller.
     /// </summary>
     FirstNonAutoFlushable = 0b00,
+
     /// <summary> Continuing fragment of a higher layer message </summary>
     ContinuingFragment = 0b01,
+
     /// <summary> First automatically flushable packet of a higher layer message (start of an automatically-flushable L2CAP PDU) </summary>
     FirstAutoFlushable = 0b10,
 }

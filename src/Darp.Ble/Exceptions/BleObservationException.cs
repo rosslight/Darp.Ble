@@ -15,7 +15,11 @@ public class BleObservationException : Exception
     /// <param name="bleObserver"> The ble observer </param>
     /// <param name="message"> The message </param>
     /// <param name="innerException"> The inner exception </param>
-    public BleObservationException(BleObserver bleObserver, string? message, Exception? innerException)
+    public BleObservationException(
+        BleObserver bleObserver,
+        string? message,
+        Exception? innerException
+    )
         : base(message, innerException)
     {
         BleObserver = bleObserver;
@@ -27,7 +31,9 @@ public class BleObservationException : Exception
         {
             int? hResult = InnerException?.HResult;
             string reason = string.IsNullOrEmpty(InnerException?.Message)
-                ? hResult is null ? "unknown" : $"{Marshal.GetExceptionForHR(hResult.Value)?.Message}"
+                ? hResult is null
+                    ? "unknown"
+                    : $"{Marshal.GetExceptionForHR(hResult.Value)?.Message}"
                 : InnerException?.Message!;
             Message = $"Error during observation because of: {reason}";
         }

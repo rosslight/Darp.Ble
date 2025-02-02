@@ -13,8 +13,10 @@ public readonly partial record struct HciCommandStatusEvent : IHciEvent<HciComma
 
     /// <summary> The Status </summary>
     public required HciCommandStatus Status { get; init; }
+
     /// <summary> The Number of HCI Command packets which are allowed to be sent to the Controller from the Host. </summary>
     public required byte NumHciCommandPackets { get; init; }
+
     /// <summary> The Command_Opcode </summary>
     public required HciOpCode CommandOpCode { get; init; }
 }

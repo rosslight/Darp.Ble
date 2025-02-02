@@ -12,7 +12,10 @@ internal sealed class Ble : IDisposable
     private IDisposable? m_subscriptionForObserver;
     private AdvGenerator? m_generator;
 
-    public async Task StartScanAsync(IBleDevice adapter, Action<IGapAdvertisement> onNextAdvertisement)
+    public async Task StartScanAsync(
+        IBleDevice adapter,
+        Action<IGapAdvertisement> onNextAdvertisement
+    )
     {
         StopScan();
 
@@ -20,12 +23,14 @@ internal sealed class Ble : IDisposable
 
         await adapter.InitializeAsync();
         m_observer = adapter.Observer;
-        m_observer.Configure(new BleScanParameters()
-        {
-            ScanType = ScanType.Active,
-            ScanWindow = ScanTiming.Ms100,
-            ScanInterval = ScanTiming.Ms100,
-        });
+        m_observer.Configure(
+            new BleScanParameters()
+            {
+                ScanType = ScanType.Active,
+                ScanWindow = ScanTiming.Ms100,
+                ScanInterval = ScanTiming.Ms100,
+            }
+        );
         m_subscriptionForObserver = m_observer.Subscribe(onNextAdvertisement);
 
         m_observer.Connect();
@@ -52,22 +57,29 @@ internal sealed class Ble : IDisposable
     public async Task Initialize(IBleDevice bleDevice, MockDeviceSettings settings)
     {
         // Configure custom tx power to rssi behavior
-        settings.TxPowerToRssi = txPower => (Rssi)((double)txPower/3.0 * -2.0);
+        settings.TxPowerToRssi = txPower => (Rssi)((double)txPower / 3.0 * -2.0);
 
-        IAdvertisingSet set = await bleDevice.Broadcaster.CreateAdvertisingSetAsync().ConfigureAwait(false);
+        IAdvertisingSet set = await bleDevice
+            .Broadcaster.CreateAdvertisingSetAsync()
+            .ConfigureAwait(false);
         await set.StartAdvertisingAsync().ConfigureAwait(false);
-        IObservable<AdvGenerator.DataExt> source = m_generator ?? Observable.Empty<AdvGenerator.DataExt>();
+        IObservable<AdvGenerator.DataExt> source =
+            m_generator ?? Observable.Empty<AdvGenerator.DataExt>();
         source.Subscribe(x =>
         {
             set.SetRandomAddressAsync(x.Address).GetAwaiter().GetResult();
-            set.SetAdvertisingParametersAsync(new AdvertisingParameters
-            {
-                Type = BleEventType.None,
-                PrimaryPhy = Physical.Le1M,
-                AdvertisingSId = AdvertisingSId.NoAdIProvided,
-                AdvertisingTxPower = x.TxPower,
-                PeerAddress = BleAddress.NotAvailable,
-            }).GetAwaiter().GetResult();
+            set.SetAdvertisingParametersAsync(
+                    new AdvertisingParameters
+                    {
+                        Type = BleEventType.None,
+                        PrimaryPhy = Physical.Le1M,
+                        AdvertisingSId = AdvertisingSId.NoAdIProvided,
+                        AdvertisingTxPower = x.TxPower,
+                        PeerAddress = BleAddress.NotAvailable,
+                    }
+                )
+                .GetAwaiter()
+                .GetResult();
             set.SetAdvertisingDataAsync(x.Data).GetAwaiter().GetResult();
         });
     }

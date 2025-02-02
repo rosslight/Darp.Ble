@@ -9,6 +9,7 @@ public readonly partial record struct HciLeSetExtendedAdvertisingParametersResul
 {
     /// <summary> The <see cref="HciCommandStatus"/> </summary>
     public required HciCommandStatus Status { get; init; }
+
     /// <summary> Selected_TX_Power </summary>
     public required sbyte SelectedTxPower { get; init; }
 }

@@ -9,13 +9,13 @@ public sealed class MainActivity : Activity
 {
     private BleManager? _bleManager;
     public BleManager BleManager => _bleManager ?? throw new Exception("Not initialized yet");
+
     protected override void OnCreate(Bundle? savedInstanceState)
     {
-        if (GetSystemService(BluetoothService) is not BluetoothManager manager) return;
+        if (GetSystemService(BluetoothService) is not BluetoothManager manager)
+            return;
 
-        _bleManager = new BleManagerBuilder()
-            .Add(new AndroidBleFactory(manager))
-            .CreateManager();
+        _bleManager = new BleManagerBuilder().Add(new AndroidBleFactory(manager)).CreateManager();
 
         base.OnCreate(savedInstanceState);
 

@@ -34,16 +34,42 @@ namespace Darp.Ble.Hci.Payload.Result;
 /// <param name="Bits6"> Supported Command Bits </param>
 /// <param name="Bits7"> Supported Command Bits </param>
 [BinaryObject]
-public readonly partial record struct HciReadLocalSupportedCommandsResult(HciCommandStatus Status,
-    ulong Bits0, ulong Bits1, ulong Bits2, ulong Bits3, ulong Bits4, ulong Bits5, ulong Bits6, ulong Bits7)
+public readonly partial record struct HciReadLocalSupportedCommandsResult(
+    HciCommandStatus Status,
+    ulong Bits0,
+    ulong Bits1,
+    ulong Bits2,
+    ulong Bits3,
+    ulong Bits4,
+    ulong Bits5,
+    ulong Bits6,
+    ulong Bits7
+)
 {
     /// <summary> The supported commands </summary>
     /// <remarks> <see href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-d5f3af07-8495-3fe6-8afe-c6e6db371233"/> </remarks>
     [BinaryIgnore]
-    private readonly InlineBitField64 _bits = GetBitField(Bits0, Bits1, Bits2, Bits3, Bits4, Bits5, Bits6, Bits7);
+    private readonly InlineBitField64 _bits = GetBitField(
+        Bits0,
+        Bits1,
+        Bits2,
+        Bits3,
+        Bits4,
+        Bits5,
+        Bits6,
+        Bits7
+    );
 
-    private static InlineBitField64 GetBitField(ulong bits0, ulong bits1, ulong bits2, ulong bits3, ulong bits4,
-        ulong bits5, ulong bits6, ulong bits7)
+    private static InlineBitField64 GetBitField(
+        ulong bits0,
+        ulong bits1,
+        ulong bits2,
+        ulong bits3,
+        ulong bits4,
+        ulong bits5,
+        ulong bits6,
+        ulong bits7
+    )
     {
         var bitfield = default(InlineBitField64);
         Span<byte> bitfieldSpan = bitfield;
@@ -57,12 +83,12 @@ public readonly partial record struct HciReadLocalSupportedCommandsResult(HciCom
         BinaryPrimitives.WriteUInt64LittleEndian(bitfieldSpan[56..], bits7);
         return bitfield;
     }
+
     //public byte[] SupportedCommandBytes => ((ReadOnlySpan<byte>)_bits).ToArray();
 
     /// <summary> Get all supported commands </summary>
-    public IEnumerable<HciOpCode> SupportedCommands => Enum
-        .GetValues<HciOpCode>()
-        .Where(IsSupported);
+    public IEnumerable<HciOpCode> SupportedCommands =>
+        Enum.GetValues<HciOpCode>().Where(IsSupported);
 
     /// <summary> Check if a command in a given octet and bit is supported </summary>
     /// <param name="octet"> The octet to look at </param>
@@ -73,46 +99,47 @@ public readonly partial record struct HciReadLocalSupportedCommandsResult(HciCom
     /// <summary> Check if specific command is supported </summary>
     /// <param name="command"> The <see cref="HciOpCode"/> to check for </param>
     /// <returns> True, if supported </returns>
-    public bool IsSupported(HciOpCode command) => command switch
-    {
-        HciOpCode.None => false,
-        HciOpCode.HCI_Disconnect => IsSupported(0, 5),
+    public bool IsSupported(HciOpCode command) =>
+        command switch
+        {
+            HciOpCode.None => false,
+            HciOpCode.HCI_Disconnect => IsSupported(0, 5),
 
-        HciOpCode.HCI_Read_Local_Supported_Commands => true,
+            HciOpCode.HCI_Read_Local_Supported_Commands => true,
 
-        HciOpCode.HCI_Set_Event_Mask => IsSupported(5, 6),
-        HciOpCode.HCI_Reset => IsSupported(5, 7),
+            HciOpCode.HCI_Set_Event_Mask => IsSupported(5, 6),
+            HciOpCode.HCI_Reset => IsSupported(5, 7),
 
-        HciOpCode.HCI_Read_Local_Version_Information => IsSupported(14, 3),
-        HciOpCode.HCI_Read_BD_ADDR => IsSupported(15, 1),
+            HciOpCode.HCI_Read_Local_Version_Information => IsSupported(14, 3),
+            HciOpCode.HCI_Read_BD_ADDR => IsSupported(15, 1),
 
-        HciOpCode.HCI_LE_Set_Event_Mask => IsSupported(25, 0),
-        HciOpCode.HCI_LE_Read_Buffer_Size_V1 => IsSupported(25, 1),
-        HciOpCode.HCI_LE_Read_Local_Supported_Features => IsSupported(25, 2),
-        HciOpCode.HCI_LE_Set_Random_Address => IsSupported(25, 4),
+            HciOpCode.HCI_LE_Set_Event_Mask => IsSupported(25, 0),
+            HciOpCode.HCI_LE_Read_Buffer_Size_V1 => IsSupported(25, 1),
+            HciOpCode.HCI_LE_Read_Local_Supported_Features => IsSupported(25, 2),
+            HciOpCode.HCI_LE_Set_Random_Address => IsSupported(25, 4),
 
-        HciOpCode.HCI_LE_Set_Data_Length => IsSupported(33, 6),
-        HciOpCode.HCI_LE_Read_Suggested_Default_Data_Length => IsSupported(33, 7),
+            HciOpCode.HCI_LE_Set_Data_Length => IsSupported(33, 6),
+            HciOpCode.HCI_LE_Read_Suggested_Default_Data_Length => IsSupported(33, 7),
 
-        HciOpCode.HCI_LE_Write_Suggested_Default_Data_Length => IsSupported(34, 0),
+            HciOpCode.HCI_LE_Write_Suggested_Default_Data_Length => IsSupported(34, 0),
 
-        HciOpCode.HCI_LE_SET_ADVERTISING_SET_RANDOM_ADDRESS => IsSupported(36, 1),
-        HciOpCode.HCI_LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1 => IsSupported(36, 2),
-        HciOpCode.HCI_LE_SET_EXTENDED_ADVERTISING_DATA => IsSupported(36, 3),
-        HciOpCode.HCI_LE_Set_Extended_Scan_Response_Data => IsSupported(36, 4),
-        HciOpCode.HCI_LE_SET_EXTENDED_ADVERTISING_ENABLE => IsSupported(36, 5),
-        HciOpCode.HCI_LE_READ_MAXIMUM_ADVERTISING_DATA_LENGTH => IsSupported(36, 6),
-        HciOpCode.HCI_LE_Read_Number_Of_Supported_Advertising_Sets => IsSupported(36, 7),
+            HciOpCode.HCI_LE_SET_ADVERTISING_SET_RANDOM_ADDRESS => IsSupported(36, 1),
+            HciOpCode.HCI_LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1 => IsSupported(36, 2),
+            HciOpCode.HCI_LE_SET_EXTENDED_ADVERTISING_DATA => IsSupported(36, 3),
+            HciOpCode.HCI_LE_Set_Extended_Scan_Response_Data => IsSupported(36, 4),
+            HciOpCode.HCI_LE_SET_EXTENDED_ADVERTISING_ENABLE => IsSupported(36, 5),
+            HciOpCode.HCI_LE_READ_MAXIMUM_ADVERTISING_DATA_LENGTH => IsSupported(36, 6),
+            HciOpCode.HCI_LE_Read_Number_Of_Supported_Advertising_Sets => IsSupported(36, 7),
 
-        HciOpCode.HCI_LE_Remove_Advertising_Set => IsSupported(37, 0),
-        HciOpCode.HCI_LE_Set_Extended_Scan_Parameters => IsSupported(37, 5),
-        HciOpCode.HCI_LE_Set_Extended_Scan_Enable => IsSupported(37, 6),
-        HciOpCode.HCI_LE_Extended_Create_Connection_V1 => IsSupported(37, 7),
+            HciOpCode.HCI_LE_Remove_Advertising_Set => IsSupported(37, 0),
+            HciOpCode.HCI_LE_Set_Extended_Scan_Parameters => IsSupported(37, 5),
+            HciOpCode.HCI_LE_Set_Extended_Scan_Enable => IsSupported(37, 6),
+            HciOpCode.HCI_LE_Extended_Create_Connection_V1 => IsSupported(37, 7),
 
-        HciOpCode.HCI_LE_Read_Buffer_Size_V2 => IsSupported(41, 5),
+            HciOpCode.HCI_LE_Read_Buffer_Size_V2 => IsSupported(41, 5),
 
-        HciOpCode.HCI_LE_Extended_Create_ConnectionV2 => IsSupported(47, 0),
+            HciOpCode.HCI_LE_Extended_Create_ConnectionV2 => IsSupported(47, 0),
 
-        _ => false,
-    };
+            _ => false,
+        };
 }

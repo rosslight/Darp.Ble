@@ -9,16 +9,22 @@ namespace Darp.Ble.Implementation;
 public abstract class AdvertisingSet(BleBroadcaster broadcaster) : IAdvertisingSet
 {
     private readonly BleBroadcaster _broadcaster = broadcaster;
+
     /// <inheritdoc />
     public IBleBroadcaster Broadcaster => _broadcaster;
+
     /// <inheritdoc />
     public BleAddress RandomAddress { get; protected set; } = BleAddress.NotAvailable;
+
     /// <inheritdoc />
     public AdvertisingParameters Parameters { get; protected set; } = AdvertisingParameters.Default;
+
     /// <inheritdoc />
     public AdvertisingData Data { get; protected set; } = AdvertisingData.Empty;
+
     /// <inheritdoc />
     public AdvertisingData? ScanResponseData { get; protected set; }
+
     /// <inheritdoc />
     public TxPowerLevel SelectedTxPower { get; protected set; } = TxPowerLevel.NotAvailable;
 
@@ -26,28 +32,40 @@ public abstract class AdvertisingSet(BleBroadcaster broadcaster) : IAdvertisingS
     public bool IsAdvertising { get; }
 
     /// <inheritdoc />
-    public virtual Task SetRandomAddressAsync(BleAddress randomAddress, CancellationToken cancellationToken = default)
+    public virtual Task SetRandomAddressAsync(
+        BleAddress randomAddress,
+        CancellationToken cancellationToken = default
+    )
     {
         RandomAddress = randomAddress;
         return Task.CompletedTask;
     }
 
     /// <inheritdoc />
-    public virtual Task SetAdvertisingParametersAsync(AdvertisingParameters parameters, CancellationToken cancellationToken = default)
+    public virtual Task SetAdvertisingParametersAsync(
+        AdvertisingParameters parameters,
+        CancellationToken cancellationToken = default
+    )
     {
         Parameters = parameters;
         return Task.CompletedTask;
     }
 
     /// <inheritdoc />
-    public virtual Task SetAdvertisingDataAsync(AdvertisingData data, CancellationToken cancellationToken = default)
+    public virtual Task SetAdvertisingDataAsync(
+        AdvertisingData data,
+        CancellationToken cancellationToken = default
+    )
     {
         Data = data;
         return Task.CompletedTask;
     }
 
     /// <inheritdoc />
-    public virtual Task SetScanResponseDataAsync(AdvertisingData scanResponseData, CancellationToken cancellationToken = default)
+    public virtual Task SetScanResponseDataAsync(
+        AdvertisingData scanResponseData,
+        CancellationToken cancellationToken = default
+    )
     {
         ScanResponseData = scanResponseData;
         return Task.CompletedTask;

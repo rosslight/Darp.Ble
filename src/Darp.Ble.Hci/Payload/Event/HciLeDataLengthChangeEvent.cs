@@ -9,19 +9,25 @@ public readonly partial record struct HciLeDataLengthChangeEvent
     : IHciLeMetaEvent<HciLeDataLengthChangeEvent>
 {
     /// <inheritdoc />
-    public static HciLeMetaSubEventType SubEventType => HciLeMetaSubEventType.HCI_LE_Data_Length_Change;
+    public static HciLeMetaSubEventType SubEventType =>
+        HciLeMetaSubEventType.HCI_LE_Data_Length_Change;
 
     /// <inheritdoc />
     public required HciLeMetaSubEventType SubEventCode { get; init; }
+
     /// <summary> Connection_Handle </summary>
     /// <remarks> Range: 0x0000 to 0x0EFF </remarks>
     public required ushort ConnectionHandle { get; init; }
+
     /// <summary> The Max_TX_Octets </summary>
     public required ushort MaxTxOctets { get; init; }
+
     /// <summary> The Max_TX_Time </summary>
     public required ushort MaxTxTime { get; init; }
+
     /// <summary> The Max_RX_Octets </summary>
     public required ushort MaxRxOctets { get; init; }
+
     /// <summary> The Max_RX_Time </summary>
     public required ushort MaxRxTime { get; init; }
 }

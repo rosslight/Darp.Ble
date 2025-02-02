@@ -43,8 +43,9 @@ internal sealed class AdvGenerator : IObservable<AdvGenerator.DataExt>, IDisposa
 
             var data = new DataExt(
                 Address: new BleAddress((UInt48)(ulong)nRandom),
-                TxPower: (TxPowerLevel) (nRandom * 3),
-                Data: AdvertisingData.From(BitConverter.GetBytes(nRandom).Reverse().ToArray()));
+                TxPower: (TxPowerLevel)(nRandom * 3),
+                Data: AdvertisingData.From(BitConverter.GetBytes(nRandom).Reverse().ToArray())
+            );
 
             foreach (IObserver<DataExt> observer in m_observers)
             {

@@ -15,9 +15,11 @@ public readonly partial record struct HciLeSetAdvertisingSetRandomAddressCommand
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_LE_SET_ADVERTISING_SET_RANDOM_ADDRESS;
+
     /// <summary> Advertising_Handle Used to identify an advertising set </summary>
     /// <value> 0x00 to 0xEF </value>
     public required byte AdvertisingHandle { get; init; }
+
     /// <summary> Random_Address </summary>
     public required UInt48 RandomAddress { get; init; }
 }

@@ -7,4 +7,5 @@ internal sealed class MockGattClientDescriptor(
     MockGattClientCharacteristic clientCharacteristic,
     BleUuid uuid,
     IGattClientAttribute.OnReadCallback? onRead,
-    IGattClientAttribute.OnWriteCallback? onWrite) : GattClientDescriptor(clientCharacteristic, uuid, onRead, onWrite);
+    IGattClientAttribute.OnWriteCallback? onWrite
+) : GattClientDescriptor(clientCharacteristic, uuid, onRead, onWrite);

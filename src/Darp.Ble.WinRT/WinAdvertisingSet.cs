@@ -9,13 +9,19 @@ namespace Darp.Ble.WinRT;
 public sealed class WinAdvertisingSet(BleBroadcaster broadcaster) : AdvertisingSet(broadcaster)
 {
     /// <inheritdoc />
-    public override Task SetRandomAddressAsync(BleAddress randomAddress, CancellationToken cancellationToken = default)
+    public override Task SetRandomAddressAsync(
+        BleAddress randomAddress,
+        CancellationToken cancellationToken = default
+    )
     {
         throw new NotSupportedException();
     }
 
     /// <inheritdoc />
-    public override Task SetScanResponseDataAsync(AdvertisingData scanResponseData, CancellationToken cancellationToken = default)
+    public override Task SetScanResponseDataAsync(
+        AdvertisingData scanResponseData,
+        CancellationToken cancellationToken = default
+    )
     {
         throw new NotSupportedException();
     }

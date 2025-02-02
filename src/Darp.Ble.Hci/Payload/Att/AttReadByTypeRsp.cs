@@ -12,8 +12,10 @@ public readonly partial record struct AttReadByTypeRsp : IAttPdu, IBinaryReadabl
 
     /// <inheritdoc />
     public required AttOpCode OpCode { get; init; }
+
     /// <summary> The size of each attribute handle-value pair </summary>
     public required byte Length { get; init; }
+
     /// <summary> A list of Attribute Data </summary>
     [BinaryElementCount(nameof(Length))]
     public required AttReadByTypeData[] AttributeDataList { get; init; }
@@ -25,7 +27,11 @@ public readonly partial record struct AttReadByTypeRsp : IAttPdu, IBinaryReadabl
     }
 
     /// <inheritdoc />
-    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out AttReadByTypeRsp value, out int bytesRead)
+    public static bool TryReadLittleEndian(
+        ReadOnlySpan<byte> source,
+        out AttReadByTypeRsp value,
+        out int bytesRead
+    )
     {
         value = default;
         bytesRead = 0;
@@ -50,12 +56,13 @@ public readonly partial record struct AttReadByTypeRsp : IAttPdu, IBinaryReadabl
         }
         int numberOfAttributes = (source.Length - 2) / length;
         var attributeDataList = new AttReadByTypeData[numberOfAttributes];
-        for (var i = 0; i < numberOfAttributes; i ++)
+        for (var i = 0; i < numberOfAttributes; i++)
         {
             int attStart = 2 + i * length;
             attributeDataList[i] = new AttReadByTypeData(
                 BinaryPrimitives.ReadUInt16LittleEndian(source[attStart..]),
-                source.Slice(attStart + 2, length - 2).ToArray());
+                source.Slice(attStart + 2, length - 2).ToArray()
+            );
         }
         value = new AttReadByTypeRsp
         {
@@ -74,7 +81,11 @@ public readonly partial record struct AttReadByTypeRsp : IAttPdu, IBinaryReadabl
     }
 
     /// <inheritdoc />
-    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out AttReadByTypeRsp value, out int bytesRead)
+    public static bool TryReadBigEndian(
+        ReadOnlySpan<byte> source,
+        out AttReadByTypeRsp value,
+        out int bytesRead
+    )
     {
         throw new NotSupportedException();
     }

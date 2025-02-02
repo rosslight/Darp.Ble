@@ -17,16 +17,21 @@ public readonly partial record struct HciLeSetExtendedAdvertisingEnableCommand :
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_LE_SET_EXTENDED_ADVERTISING_ENABLE;
+
     /// <summary> Enable </summary>
     public required byte Enable { get; init; }
+
     /// <summary> Num_Sets </summary>
     public required byte NumSets { get; init; }
+
     /// <summary> Advertising_Handle </summary>
     [BinaryElementCount(nameof(NumSets))]
     public required ReadOnlyMemory<byte> AdvertisingHandle { get; init; }
+
     /// <summary> Duration </summary>
     [BinaryElementCount(nameof(NumSets))]
     public required ReadOnlyMemory<ushort> Duration { get; init; }
+
     /// <summary> Max_Extended_Advertising_Events </summary>
     [BinaryElementCount(nameof(NumSets))]
     public required ReadOnlyMemory<byte> MaxExtendedAdvertisingEvents { get; init; }

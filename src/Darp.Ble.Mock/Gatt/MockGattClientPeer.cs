@@ -7,21 +7,27 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock.Gatt;
 
-internal sealed class MockGattClientPeer(MockedBlePeripheral peripheral, BleAddress address, ILogger<MockGattClientPeer> logger)
-    : GattClientPeer(peripheral, address, logger)
+internal sealed class MockGattClientPeer(
+    MockedBlePeripheral peripheral,
+    BleAddress address,
+    ILogger<MockGattClientPeer> logger
+) : GattClientPeer(peripheral, address, logger)
 {
     /// <inheritdoc />
     public override bool IsConnected => true;
+
     /// <inheritdoc />
     public override IObservable<Unit> WhenDisconnected => Observable.Empty<Unit>();
 
     public IObservable<IGattServerService> GetServices(MockGattServerPeer serverPeer)
     {
-        return Peripheral.Services
-            .Select(clientService => new MockGattServerService(this,
+        return Peripheral
+            .Services.Select(clientService => new MockGattServerService(
+                this,
                 serverPeer,
                 (MockGattClientService)clientService,
-                LoggerFactory.CreateLogger<MockGattServerService>()))
+                LoggerFactory.CreateLogger<MockGattServerService>()
+            ))
             .ToArray()
             .ToObservable();
     }

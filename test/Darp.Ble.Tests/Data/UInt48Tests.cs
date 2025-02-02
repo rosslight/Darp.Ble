@@ -36,7 +36,9 @@ public sealed class UInt48Tests
         var castedValue = (UInt48)originalValue;
 
         // Assert
-        ((ulong)castedValue).Should().Be(originalValue);
+        ((ulong)castedValue)
+            .Should()
+            .Be(originalValue);
     }
 
     [Fact]
@@ -70,7 +72,7 @@ public sealed class UInt48Tests
     public void ReadLittleEndian_With_Enough_Bytes()
     {
         // Arrange
-        ReadOnlySpan<byte> source = stackalloc byte[] {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+        ReadOnlySpan<byte> source = stackalloc byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
 
         // Act
         UInt48 result = UInt48.ReadLittleEndian(source);

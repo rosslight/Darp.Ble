@@ -4,14 +4,13 @@ using System.Security.Cryptography;
 namespace Darp.Ble.Data;
 
 /// <summary> The ble address </summary>
-public sealed record BleAddress : ISpanParsable<BleAddress>,
-    IEquatable<UInt48>,
-    IEquatable<ulong>
+public sealed record BleAddress : ISpanParsable<BleAddress>, IEquatable<UInt48>, IEquatable<ulong>
 {
     /// <summary> Initializes a new ble address </summary>
     /// <param name="value"> The 48bit address </param>
     [SetsRequiredMembers]
-    public BleAddress(UInt48 value) : this(BleAddressType.NotAvailable, value) {}
+    public BleAddress(UInt48 value)
+        : this(BleAddressType.NotAvailable, value) { }
 
     /// <summary> Initializes a new ble address with a given type </summary>
     /// <param name="type"> The type of the address </param>
@@ -25,6 +24,7 @@ public sealed record BleAddress : ISpanParsable<BleAddress>,
 
     /// <summary> The type of the address </summary>
     public required BleAddressType Type { get; init; }
+
     /// <summary> The 48bit address value </summary>
     public UInt48 Value { get; }
 
@@ -32,6 +32,7 @@ public sealed record BleAddress : ISpanParsable<BleAddress>,
     /// <param name="bleAddress"> The ble address </param>
     /// <returns> The 48 bit address </returns>
     public static implicit operator UInt48(BleAddress bleAddress) => bleAddress.Value;
+
     /// <summary> Convert the 48bit value to a ble address </summary>
     /// <param name="value"> The 48 bit address </param>
     /// <returns> A ble address </returns>
@@ -43,9 +44,10 @@ public sealed record BleAddress : ISpanParsable<BleAddress>,
     /// <example>AA:BB:CC:DD:EE:FF</example>
     /// <returns> The parsed BleAddress with type <see cref="BleAddressType.NotAvailable"/> </returns>
     /// <exception cref="FormatException"> Thrown if the format does not comply. </exception>
-    public static BleAddress Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => TryParse(s, provider, out BleAddress? address)
-        ? address
-        : throw new FormatException($"Given input '{s}' could not be parsed");
+    public static BleAddress Parse(ReadOnlySpan<char> s, IFormatProvider? provider) =>
+        TryParse(s, provider, out BleAddress? address)
+            ? address
+            : throw new FormatException($"Given input '{s}' could not be parsed");
 
     /// <summary> Parses a string of suitable format and returns a ble address </summary>
     /// <param name="s">The string to parse.</param>
@@ -53,9 +55,11 @@ public sealed record BleAddress : ISpanParsable<BleAddress>,
     /// <param name="result"> The parsed BleAddress with type <see cref="BleAddressType.NotAvailable"/> or default </param>
     /// <example>AA:BB:CC:DD:EE:FF</example>
     /// <returns> True if the parsing was successful </returns>
-    public static bool TryParse(ReadOnlySpan<char> s,
+    public static bool TryParse(
+        ReadOnlySpan<char> s,
         IFormatProvider? provider,
-        [NotNullWhen(true)] out BleAddress? result)
+        [NotNullWhen(true)] out BleAddress? result
+    )
     {
         if (s.Length < 17)
         {
@@ -67,12 +71,14 @@ public sealed record BleAddress : ISpanParsable<BleAddress>,
             result = null;
             return false;
         }
-        if (!TryGetHexVal(s, out byte b0)
+        if (
+            !TryGetHexVal(s, out byte b0)
             || !TryGetHexVal(s[3..], out byte b1)
             || !TryGetHexVal(s[6..], out byte b2)
             || !TryGetHexVal(s[9..], out byte b3)
             || !TryGetHexVal(s[12..], out byte b4)
-            || !TryGetHexVal(s[15..], out byte b5))
+            || !TryGetHexVal(s[15..], out byte b5)
+        )
         {
             result = null;
             return false;
@@ -103,18 +109,27 @@ public sealed record BleAddress : ISpanParsable<BleAddress>,
         //For lowercase a-f letters:
         //return val - (val < 58 ? 48 : 87);
         //Or the two combined, but a bit slower:
-        return val - (val < 58 ? 48 : val < 97 ? 55 : 87);
+        return val
+            - (
+                val < 58 ? 48
+                : val < 97 ? 55
+                : 87
+            );
     }
 
     /// <inheritdoc cref="Parse(ReadOnlySpan{char},System.IFormatProvider?)"/>
-    public static BleAddress Parse(string s, IFormatProvider? provider) => Parse((ReadOnlySpan<char>)s, provider);
+    public static BleAddress Parse(string s, IFormatProvider? provider) =>
+        Parse((ReadOnlySpan<char>)s, provider);
 
     /// <inheritdoc cref="TryParse(ReadOnlySpan{char},System.IFormatProvider?,out BleAddress?)"/>
-    public static bool TryParse([NotNullWhen(true)] string? s,
+    public static bool TryParse(
+        [NotNullWhen(true)] string? s,
         IFormatProvider? provider,
-        [NotNullWhen(true)] out BleAddress? result)
+        [NotNullWhen(true)] out BleAddress? result
+    )
     {
-        if (s is not null) return TryParse((ReadOnlySpan<char>)s, provider, out result);
+        if (s is not null)
+            return TryParse((ReadOnlySpan<char>)s, provider, out result);
         result = default;
         return false;
     }

@@ -8,14 +8,18 @@ public sealed class HciLeWriteSuggestedDefaultDataLengthCommandTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        HciLeWriteSuggestedDefaultDataLengthCommand.OpCode.Should().HaveValue(0x0024 | (0x08 << 10));
+        HciLeWriteSuggestedDefaultDataLengthCommand
+            .OpCode.Should()
+            .HaveValue(0x0024 | (0x08 << 10));
     }
 
     [Theory]
     [InlineData(65, 328, "41004801")]
-    public void TryWriteLittleEndian_ShouldBeValid(ushort suggestedMaxTxOctets,
+    public void TryWriteLittleEndian_ShouldBeValid(
+        ushort suggestedMaxTxOctets,
         ushort suggestedMaxTxTime,
-        string expectedHexBytes)
+        string expectedHexBytes
+    )
     {
         var buffer = new byte[4];
         var value = new HciLeWriteSuggestedDefaultDataLengthCommand

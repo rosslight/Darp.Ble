@@ -15,7 +15,8 @@ internal sealed class HciHostGattServerCharacteristic(
     BleUuid uuid,
     ushort attHandle,
     GattProperty property,
-    ILogger<HciHostGattServerCharacteristic> logger) : GattServerCharacteristic(service, attHandle, uuid, property, logger)
+    ILogger<HciHostGattServerCharacteristic> logger
+) : GattServerCharacteristic(service, attHandle, uuid, property, logger)
 {
     private readonly HciHostGattServerPeer _peer = service.Peer;
     public new HciHostGattServerService Service { get; } = service;
@@ -26,56 +27,95 @@ internal sealed class HciHostGattServerCharacteristic(
     /// <remarks> BLUETOOTH CORE SPECIFICATION Version 5.4 | Vol 3, Part G, 4.7.1 Discover All Characteristic Descriptors </remarks>
     protected override IObservable<IGattServerDescriptor> DiscoverDescriptorsCore()
     {
-        return Observable.Create<IGattServerDescriptor>(async (observer, token) =>
-        {
-            ushort startingHandle = AttHandle;
-            while (!token.IsCancellationRequested && startingHandle < 0xFFFF)
+        return Observable.Create<IGattServerDescriptor>(
+            async (observer, token) =>
             {
-                AttReadResult response = await _peer.QueryAttPduAsync<AttFindInformationReq, AttFindInformationRsp>(
-                        new AttFindInformationReq
-                        {
-                            StartingHandle = startingHandle,
-                            EndingHandle = EndHandle,
-                        }, cancellationToken: token)
-                    .ConfigureAwait(false);
-                if (response.OpCode is AttOpCode.ATT_ERROR_RSP && AttErrorRsp
-                        .TryReadLittleEndian(response.Pdu, out AttErrorRsp errorRsp, out _))
+                ushort startingHandle = AttHandle;
+                while (!token.IsCancellationRequested && startingHandle < 0xFFFF)
                 {
-                    if (errorRsp.ErrorCode is AttErrorCode.AttributeNotFoundError) break;
-                    observer.OnError(new GattCharacteristicException(this, $"Could not discover descriptors due to error {errorRsp.ErrorCode}"));
-                    return;
-                }
-
-                if (!(response.OpCode is AttOpCode.ATT_FIND_INFORMATION_RSP && AttFindInformationRsp
-                        .TryReadLittleEndian(response.Pdu, out AttFindInformationRsp rsp, out _)))
-                {
-                    observer.OnError(new GattCharacteristicException(this, $"Received unexpected att response {response.OpCode}"));
-                    return;
-                }
-
-                if (rsp.InformationData.Length == 0) break;
-                foreach ((ushort handle, ReadOnlyMemory<byte> uuid) in rsp.InformationData)
-                {
-                    if (handle < startingHandle)
+                    AttReadResult response = await _peer
+                        .QueryAttPduAsync<AttFindInformationReq, AttFindInformationRsp>(
+                            new AttFindInformationReq
+                            {
+                                StartingHandle = startingHandle,
+                                EndingHandle = EndHandle,
+                            },
+                            cancellationToken: token
+                        )
+                        .ConfigureAwait(false);
+                    if (
+                        response.OpCode is AttOpCode.ATT_ERROR_RSP
+                        && AttErrorRsp.TryReadLittleEndian(
+                            response.Pdu,
+                            out AttErrorRsp errorRsp,
+                            out _
+                        )
+                    )
                     {
-                        observer.OnError(new GattCharacteristicException(this, "Handle of discovered characteristic is smaller than starting handle of service"));
+                        if (errorRsp.ErrorCode is AttErrorCode.AttributeNotFoundError)
+                            break;
+                        observer.OnError(
+                            new GattCharacteristicException(
+                                this,
+                                $"Could not discover descriptors due to error {errorRsp.ErrorCode}"
+                            )
+                        );
                         return;
                     }
-                    var bleUuid = new BleUuid(uuid.Span);
-                    var descriptor = new HciHostGattServerDescriptor(this,
-                        bleUuid,
-                        handle,
-                        LoggerFactory.CreateLogger<HciHostGattServerDescriptor>());
-                    observer.OnNext(descriptor);
-                }
 
-                ushort lastHandle = rsp.InformationData[^1].Handle;
-                if (lastHandle == EndHandle) break;
-                startingHandle = (ushort)(lastHandle + 1);
+                    if (
+                        !(
+                            response.OpCode is AttOpCode.ATT_FIND_INFORMATION_RSP
+                            && AttFindInformationRsp.TryReadLittleEndian(
+                                response.Pdu,
+                                out AttFindInformationRsp rsp,
+                                out _
+                            )
+                        )
+                    )
+                    {
+                        observer.OnError(
+                            new GattCharacteristicException(
+                                this,
+                                $"Received unexpected att response {response.OpCode}"
+                            )
+                        );
+                        return;
+                    }
+
+                    if (rsp.InformationData.Length == 0)
+                        break;
+                    foreach ((ushort handle, ReadOnlyMemory<byte> uuid) in rsp.InformationData)
+                    {
+                        if (handle < startingHandle)
+                        {
+                            observer.OnError(
+                                new GattCharacteristicException(
+                                    this,
+                                    "Handle of discovered characteristic is smaller than starting handle of service"
+                                )
+                            );
+                            return;
+                        }
+                        var bleUuid = new BleUuid(uuid.Span);
+                        var descriptor = new HciHostGattServerDescriptor(
+                            this,
+                            bleUuid,
+                            handle,
+                            LoggerFactory.CreateLogger<HciHostGattServerDescriptor>()
+                        );
+                        observer.OnNext(descriptor);
+                    }
+
+                    ushort lastHandle = rsp.InformationData[^1].Handle;
+                    if (lastHandle == EndHandle)
+                        break;
+                    startingHandle = (ushort)(lastHandle + 1);
+                }
+                observer.OnCompleted();
+                //Logger.Verbose("Discovered descriptors for characteristic {@Characteristic}", this);
             }
-            observer.OnCompleted();
-            //Logger.Verbose("Discovered descriptors for characteristic {@Characteristic}", this);
-        });
+        );
     }
 
     /// <inheritdoc />
@@ -100,9 +140,11 @@ internal sealed class HciHostGattServerCharacteristic(
         return await descriptor.ReadAsync(cancellationToken).ConfigureAwait(false);
     }
 
-    protected override async Task<IDisposable> EnableNotificationsAsync<TState>(TState state,
+    protected override async Task<IDisposable> EnableNotificationsAsync<TState>(
+        TState state,
         Action<TState, byte[]> onNotify,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken
+    )
     {
         if (!Descriptors.TryGetValue(0x2902, out IGattServerDescriptor? cccd))
         {
@@ -110,24 +152,38 @@ internal sealed class HciHostGattServerCharacteristic(
         }
         if (!Properties.HasFlag(GattProperty.Notify))
         {
-            throw new GattCharacteristicException(this, "Characteristic does not support notification");
+            throw new GattCharacteristicException(
+                this,
+                "Characteristic does not support notification"
+            );
         }
         if (!await cccd.WriteAsync((byte[])[0x01, 0x00], cancellationToken).ConfigureAwait(false))
         {
-            throw new GattCharacteristicException(this, "Could not write notification status to cccd");
+            throw new GattCharacteristicException(
+                this,
+                "Could not write notification status to cccd"
+            );
         }
-        return _peer.WhenAttPduReceived
-            .Where(x => x.OpCode is AttOpCode.ATT_HANDLE_VALUE_NTF)
-            .SelectWhere(((AttOpCode OpCode, byte[] Pdu) t, [NotNullWhen(true)] out byte[]? result) =>
-            {
-                if (!AttHandleValueNtf.TryReadLittleEndian(t.Pdu, out AttHandleValueNtf notification, out int _))
+        return _peer
+            .WhenAttPduReceived.Where(x => x.OpCode is AttOpCode.ATT_HANDLE_VALUE_NTF)
+            .SelectWhere(
+                ((AttOpCode OpCode, byte[] Pdu) t, [NotNullWhen(true)] out byte[]? result) =>
                 {
-                    result = null;
-                    return false;
+                    if (
+                        !AttHandleValueNtf.TryReadLittleEndian(
+                            t.Pdu,
+                            out AttHandleValueNtf notification,
+                            out int _
+                        )
+                    )
+                    {
+                        result = null;
+                        return false;
+                    }
+                    result = notification.Value.ToArray();
+                    return true;
                 }
-                result = notification.Value.ToArray();
-                return true;
-            })
+            )
             .Subscribe(bytes => onNotify(state, bytes));
     }
 

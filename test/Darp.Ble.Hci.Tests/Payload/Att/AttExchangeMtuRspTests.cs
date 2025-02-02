@@ -17,7 +17,11 @@ public sealed class AttExchangeMtuRspTests
     public void TryReadLittleEndian_ShouldBeValid(string hexBytes, ushort serverRxMtu)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
-        bool success = AttExchangeMtuRsp.TryReadLittleEndian(bytes, out AttExchangeMtuRsp value, out int decoded);
+        bool success = AttExchangeMtuRsp.TryReadLittleEndian(
+            bytes,
+            out AttExchangeMtuRsp value,
+            out int decoded
+        );
 
         success.Should().BeTrue();
         decoded.Should().Be(3);

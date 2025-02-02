@@ -13,11 +13,13 @@ public sealed class HciLeSetExtendedScanEnableCommandTests
 
     [Theory]
     [InlineData(1, 0, 0, 0, "010000000000")]
-    public void TryWriteLittleEndian_ShouldBeValid(byte enable,
+    public void TryWriteLittleEndian_ShouldBeValid(
+        byte enable,
         byte filterDuplicates,
         ushort duration,
         ushort period,
-        string expectedHexBytes)
+        string expectedHexBytes
+    )
     {
         var buffer = new byte[6];
         var value = new HciLeSetExtendedScanEnableCommand

@@ -10,8 +10,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Android;
 
-public sealed class AndroidBleObserver(BleDevice device, BluetoothLeScanner bluetoothLeScanner, ILogger<AndroidBleObserver> logger)
-    : BleObserver(device, logger)
+public sealed class AndroidBleObserver(
+    BleDevice device,
+    BluetoothLeScanner bluetoothLeScanner,
+    ILogger<AndroidBleObserver> logger
+) : BleObserver(device, logger)
 {
     private readonly BluetoothLeScanner _bluetoothLeScanner = bluetoothLeScanner;
     private BleObserverScanCallback? _scanCallback;
@@ -24,8 +27,12 @@ public sealed class AndroidBleObserver(BleDevice device, BluetoothLeScanner blue
         // TODO Best case: We do not throw and just warn the user about possibly inappropriate usage. How to do that in a cross-platform way?
         if (!AreLocationServicesEnabled())
         {
-            observable = Observable.Throw<IGapAdvertisement>(new BleObservationStartException(this,
-                "Location services are not enabled. Please check in the settings"));
+            observable = Observable.Throw<IGapAdvertisement>(
+                new BleObservationStartException(
+                    this,
+                    "Location services are not enabled. Please check in the settings"
+                )
+            );
             return false;
         }
         _scanCallback = new BleObserverScanCallback(this);
@@ -36,8 +43,7 @@ public sealed class AndroidBleObserver(BleDevice device, BluetoothLeScanner blue
             ?.SetReportDelay(0)
             ?.Build();
         _bluetoothLeScanner.StartScan(filters: null, scanSettings, _scanCallback);
-        observable = _scanCallback
-            .Select(x => OnAdvertisementReport(this, x));
+        observable = _scanCallback.Select(x => OnAdvertisementReport(this, x));
         return true;
     }
 
@@ -51,12 +57,17 @@ public sealed class AndroidBleObserver(BleDevice device, BluetoothLeScanner blue
         _scanCallback = null;
     }
 
-    private static GapAdvertisement OnAdvertisementReport(BleObserver bleObserver, ScanResult scanResult)
+    private static GapAdvertisement OnAdvertisementReport(
+        BleObserver bleObserver,
+        ScanResult scanResult
+    )
     {
         // Extract the very little information about the event type we have left
         var advertisementType = BleEventType.None;
-        if (scanResult.IsLegacy) advertisementType |= BleEventType.Legacy;
-        if (scanResult.IsConnectable) advertisementType |= BleEventType.Connectable;
+        if (scanResult.IsLegacy)
+            advertisementType |= BleEventType.Legacy;
+        if (scanResult.IsConnectable)
+            advertisementType |= BleEventType.Connectable;
 
         // Assume address string is hex
         string? addressString = scanResult.Device?.Address;
@@ -66,7 +77,8 @@ public sealed class AndroidBleObserver(BleDevice device, BluetoothLeScanner blue
 
         AdvertisingData advertisingData = AdvertisingData.From(scanResult.ScanRecord?.GetBytes());
 
-        GapAdvertisement advertisement = GapAdvertisement.FromExtendedAdvertisingReport(bleObserver,
+        GapAdvertisement advertisement = GapAdvertisement.FromExtendedAdvertisingReport(
+            bleObserver,
             DateTimeOffset.UtcNow,
             advertisementType,
             address,
@@ -77,14 +89,18 @@ public sealed class AndroidBleObserver(BleDevice device, BluetoothLeScanner blue
             (Rssi)scanResult.Rssi,
             (PeriodicAdvertisingInterval)scanResult.PeriodicAdvertisingInterval,
             new BleAddress(BleAddressType.NotAvailable, (UInt48)0x000000000000),
-            advertisingData);
+            advertisingData
+        );
 
         return advertisement;
     }
 
     private static bool AreLocationServicesEnabled()
     {
-        if (Application.Context.GetSystemService(Context.LocationService) is not LocationManager locationManager)
+        if (
+            Application.Context.GetSystemService(Context.LocationService)
+            is not LocationManager locationManager
+        )
             return false;
         try
         {

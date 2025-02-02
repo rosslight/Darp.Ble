@@ -8,23 +8,36 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock;
 
-internal sealed class MockedBlePeripheral(MockedBleDevice device, ILogger<MockedBlePeripheral> logger)
-    : BlePeripheral(device, logger)
+internal sealed class MockedBlePeripheral(
+    MockedBleDevice device,
+    ILogger<MockedBlePeripheral> logger
+) : BlePeripheral(device, logger)
 {
     private readonly MockedBleDevice _device = device;
 
     public MockGattClientPeer OnCentralConnection(BleAddress address)
     {
-        var clientPeer = new MockGattClientPeer(this, address, LoggerFactory.CreateLogger<MockGattClientPeer>());
+        var clientPeer = new MockGattClientPeer(
+            this,
+            address,
+            LoggerFactory.CreateLogger<MockGattClientPeer>()
+        );
         OnConnectedCentral(clientPeer);
         return clientPeer;
     }
 
     /// <inheritdoc />
-    protected override Task<IGattClientService> AddServiceAsyncCore(BleUuid uuid, bool isPrimary,
-        CancellationToken cancellationToken)
+    protected override Task<IGattClientService> AddServiceAsyncCore(
+        BleUuid uuid,
+        bool isPrimary,
+        CancellationToken cancellationToken
+    )
     {
-        var service = new MockGattClientService(uuid, isPrimary ? GattServiceType.Primary : GattServiceType.Secondary, this);
+        var service = new MockGattClientService(
+            uuid,
+            isPrimary ? GattServiceType.Primary : GattServiceType.Secondary,
+            this
+        );
         return Task.FromResult<IGattClientService>(service);
     }
 }

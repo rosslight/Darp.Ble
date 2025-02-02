@@ -9,8 +9,11 @@ public readonly partial record struct AttFindByTypeValueRsp : IAttPdu
 {
     /// <inheritdoc />
     public static AttOpCode ExpectedOpCode => AttOpCode.ATT_FIND_BY_TYPE_VALUE_RSP;
+
     /// <inheritdoc />
     public required AttOpCode OpCode { get; init; }
+
     /// <summary> A list of 1 or more Handle Information </summary>
-    [BinaryMinElementCount(1)] public required AttFindByTypeHandlesInformation[] HandlesInformationList { get; init; }
+    [BinaryMinElementCount(1)]
+    public required AttFindByTypeHandlesInformation[] HandlesInformationList { get; init; }
 }

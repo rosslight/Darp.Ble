@@ -152,7 +152,9 @@ public sealed class BleUuidTests
 
         success.Should().BeTrue();
         // Convert the written bytes back to a string for comparison
-        string formattedString = System.Text.Encoding.UTF8.GetString(utf8Destination.Slice(0, bytesWritten));
+        string formattedString = System.Text.Encoding.UTF8.GetString(
+            utf8Destination.Slice(0, bytesWritten)
+        );
         formattedString.Should().Be(guid.ToString("D"));
     }
 
@@ -203,7 +205,12 @@ public sealed class BleUuidTests
         BleUuid uuid = BleUuid.FromGuid(guid);
         Span<char> destination = new char[36]; // Length sufficient for "D" format
 
-        bool success = ((ISpanFormattable)uuid).TryFormat(destination, out int charsWritten, format, CultureInfo.InvariantCulture);
+        bool success = ((ISpanFormattable)uuid).TryFormat(
+            destination,
+            out int charsWritten,
+            format,
+            CultureInfo.InvariantCulture
+        );
 
         success.Should().BeTrue();
         charsWritten.Should().Be(guid.ToString(format).Length);
@@ -218,7 +225,12 @@ public sealed class BleUuidTests
         BleUuid uuid = BleUuid.FromGuid(guid);
         Span<byte> utf8Destination = new byte[36 * 3]; // Allocate more space than needed
 
-        bool success = ((IUtf8SpanFormattable)uuid).TryFormat(utf8Destination, out int bytesWritten, format.AsSpan(), CultureInfo.InvariantCulture);
+        bool success = ((IUtf8SpanFormattable)uuid).TryFormat(
+            utf8Destination,
+            out int bytesWritten,
+            format.AsSpan(),
+            CultureInfo.InvariantCulture
+        );
 
         success.Should().BeTrue();
         var expectedString = guid.ToString(format);
@@ -234,7 +246,12 @@ public sealed class BleUuidTests
         BleUuid uuid = BleUuid.FromGuid(guid);
         Span<char> destination = new char[10]; // Deliberately too small
 
-        bool success = ((ISpanFormattable)uuid).TryFormat(destination, out int charsWritten, default, CultureInfo.InvariantCulture);
+        bool success = ((ISpanFormattable)uuid).TryFormat(
+            destination,
+            out int charsWritten,
+            default,
+            CultureInfo.InvariantCulture
+        );
 
         success.Should().BeFalse();
         charsWritten.Should().Be(0);
@@ -247,7 +264,12 @@ public sealed class BleUuidTests
         BleUuid uuid = BleUuid.FromGuid(guid);
         Span<byte> utf8Destination = new byte[10]; // Deliberately too small
 
-        bool success = ((IUtf8SpanFormattable)uuid).TryFormat(utf8Destination, out int bytesWritten, default, CultureInfo.InvariantCulture);
+        bool success = ((IUtf8SpanFormattable)uuid).TryFormat(
+            utf8Destination,
+            out int bytesWritten,
+            default,
+            CultureInfo.InvariantCulture
+        );
 
         success.Should().BeFalse();
         bytesWritten.Should().Be(0);
@@ -273,7 +295,7 @@ public sealed class BleUuidTests
     {
         BleUuid bleUuid = 0xAABB;
 
-        Span<byte> destination = [ 0xFF ];
+        Span<byte> destination = [0xFF];
 
         // Act
         bool result = bleUuid.TryWriteBytes(destination);
@@ -304,65 +326,85 @@ public sealed class BleUuidTests
     {
         BleUuid bleUuid = BleUuid.FromUInt32(0xAABBCCDD);
 
-        Span<byte> destination = [ 0xFF, 0xFF, 0xFF ];
+        Span<byte> destination = [0xFF, 0xFF, 0xFF];
 
         // Act
         bool result = bleUuid.TryWriteBytes(destination);
 
         // Assert
         result.Should().BeFalse();
-        destination.ToArray().Should().BeEquivalentTo([ 0xFF, 0xFF, 0xFF ]);
+        destination.ToArray().Should().BeEquivalentTo([0xFF, 0xFF, 0xFF]);
     }
 
     [Fact]
-        public void TryWriteBytes_WithUuid128AndSufficientDestination_ReturnsTrueAndCopiesAll16Bytes()
-        {
-            // Arrange
-            var testGuid = new Guid("01020304-0506-0708-090a-0b0c0d0e0f10");
-            // [ 04, 03, 02, 01, 06, 05, 08, 07, 09, 0A, 0B, 0C, 0D, 0E, 0F, 10 ]
-            BleUuid bleUuid = BleUuid.FromGuid(testGuid);
+    public void TryWriteBytes_WithUuid128AndSufficientDestination_ReturnsTrueAndCopiesAll16Bytes()
+    {
+        // Arrange
+        var testGuid = new Guid("01020304-0506-0708-090a-0b0c0d0e0f10");
+        // [ 04, 03, 02, 01, 06, 05, 08, 07, 09, 0A, 0B, 0C, 0D, 0E, 0F, 10 ]
+        BleUuid bleUuid = BleUuid.FromGuid(testGuid);
 
-            Span<byte> destination = new byte[16];
+        Span<byte> destination = new byte[16];
 
-            // Act
-            bool result = bleUuid.TryWriteBytes(destination);
+        // Act
+        bool result = bleUuid.TryWriteBytes(destination);
 
-            // Assert
-            result.Should().BeTrue();
-            destination.Length.Should().Be(16);
-            destination.ToArray().Should().BeEquivalentTo(
-                [0x04, 0x03, 0x02, 0x01, 0x06, 0x05, 0x08, 0x07, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10]
+        // Assert
+        result.Should().BeTrue();
+        destination.Length.Should().Be(16);
+        destination
+            .ToArray()
+            .Should()
+            .BeEquivalentTo(
+                [
+                    0x04,
+                    0x03,
+                    0x02,
+                    0x01,
+                    0x06,
+                    0x05,
+                    0x08,
+                    0x07,
+                    0x09,
+                    0x0A,
+                    0x0B,
+                    0x0C,
+                    0x0D,
+                    0x0E,
+                    0x0F,
+                    0x10,
+                ]
             );
-        }
+    }
 
-        [Fact]
-        public void TryWriteBytes_WithUuid128AndInsufficientDestination_ReturnsFalse()
-        {
-            // Arrange
-            var testGuid = new Guid("01020304-0506-0708-090a-0b0c0d0e0f10");
-            BleUuid bleUuid = BleUuid.FromGuid(testGuid);
+    [Fact]
+    public void TryWriteBytes_WithUuid128AndInsufficientDestination_ReturnsFalse()
+    {
+        // Arrange
+        var testGuid = new Guid("01020304-0506-0708-090a-0b0c0d0e0f10");
+        BleUuid bleUuid = BleUuid.FromGuid(testGuid);
 
-            Span<byte> destination = new byte[15];
+        Span<byte> destination = new byte[15];
 
-            // Act
-            bool result = bleUuid.TryWriteBytes(destination);
+        // Act
+        bool result = bleUuid.TryWriteBytes(destination);
 
-            // Assert
-            result.Should().BeFalse();
-        }
+        // Assert
+        result.Should().BeFalse();
+    }
 
-        [Fact]
-        public void TryWriteBytes_WithUnknownType_ReturnsFalse()
-        {
-            // Arrange
-            var bleUuid = new BleUuid((BleUuidType)9999, Guid.NewGuid());
+    [Fact]
+    public void TryWriteBytes_WithUnknownType_ReturnsFalse()
+    {
+        // Arrange
+        var bleUuid = new BleUuid((BleUuidType)9999, Guid.NewGuid());
 
-            Span<byte> destination = new byte[16];
+        Span<byte> destination = new byte[16];
 
-            // Act
-            bool result = bleUuid.TryWriteBytes(destination);
+        // Act
+        bool result = bleUuid.TryWriteBytes(destination);
 
-            // Assert
-            result.Should().BeFalse();
-        }
+        // Assert
+        result.Should().BeFalse();
+    }
 }

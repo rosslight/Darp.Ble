@@ -12,6 +12,7 @@ public readonly partial record struct AttExchangeMtuRsp : IAttPdu
 
     /// <inheritdoc />
     public required AttOpCode OpCode { get; init; }
+
     /// <summary> ATT Server receive MTU size </summary>
     public required ushort ServerRxMtu { get; init; }
 }

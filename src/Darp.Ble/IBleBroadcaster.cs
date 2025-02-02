@@ -1,7 +1,11 @@
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Darp.Ble.Gatt.Server;
-using AdvertisingStartInfo = (Darp.Ble.Gatt.Server.IAdvertisingSet AdvertisingSet, System.TimeSpan Duration, byte NumberOfEvents);
+using AdvertisingStartInfo = (
+    Darp.Ble.Gatt.Server.IAdvertisingSet AdvertisingSet,
+    System.TimeSpan Duration,
+    byte NumberOfEvents
+);
 
 namespace Darp.Ble;
 

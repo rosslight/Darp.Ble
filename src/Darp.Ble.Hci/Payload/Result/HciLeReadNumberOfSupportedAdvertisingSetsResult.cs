@@ -9,6 +9,7 @@ public readonly partial record struct HciLeReadNumberOfSupportedAdvertisingSetsR
 {
     /// <summary> The <see cref="HciCommandStatus"/> </summary>
     public required HciCommandStatus Status { get; init; }
+
     /// <summary> Number of advertising sets supported at the same time </summary>
     public required byte NumSupportedAdvertisingSets { get; init; }
 }

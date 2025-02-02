@@ -7,7 +7,9 @@ using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Android;
 
-public sealed class BleObserverScanCallback(BleObserver bleObserver) : ScanCallback, IObservable<ScanResult>
+public sealed class BleObserverScanCallback(BleObserver bleObserver)
+    : ScanCallback,
+        IObservable<ScanResult>
 {
     private readonly BleObserver _bleObserver = bleObserver;
     private readonly List<IObserver<ScanResult>> _observers = [];
@@ -23,7 +25,8 @@ public sealed class BleObserverScanCallback(BleObserver bleObserver) : ScanCallb
     public override void OnScanResult(ScanCallbackType callbackType, ScanResult? result)
     {
         base.OnScanResult(callbackType, result);
-        if (result is null) return;
+        if (result is null)
+            return;
         foreach (IObserver<ScanResult> observer in _observers)
         {
             observer.OnNext(result);
@@ -33,7 +36,8 @@ public sealed class BleObserverScanCallback(BleObserver bleObserver) : ScanCallb
     public override void OnBatchScanResults(IList<ScanResult>? results)
     {
         base.OnBatchScanResults(results);
-        if (results is null) return;
+        if (results is null)
+            return;
         foreach (ScanResult scanResult in results)
         {
             foreach (IObserver<ScanResult> observer in _observers)
@@ -46,7 +50,10 @@ public sealed class BleObserverScanCallback(BleObserver bleObserver) : ScanCallb
     public override void OnScanFailed(ScanFailure errorCode)
     {
         base.OnScanFailed(errorCode);
-        var scanFailedException = new BleObservationStopException(_bleObserver, $"Scan failed because of {errorCode}");
+        var scanFailedException = new BleObservationStopException(
+            _bleObserver,
+            $"Scan failed because of {errorCode}"
+        );
         foreach (IObserver<ScanResult> observer in _observers)
         {
             observer.OnError(scanFailedException);
@@ -57,12 +64,16 @@ public sealed class BleObserverScanCallback(BleObserver bleObserver) : ScanCallb
     {
         lock (_lockObject)
         {
-            if (_disposed) return Disposable.Empty;
+            if (_disposed)
+                return Disposable.Empty;
             _observers.Add(observer);
-            return Disposable.Create((ObserverList: _observers, Observer: observer), state =>
-            {
-                state.ObserverList.Remove(state.Observer);
-            });
+            return Disposable.Create(
+                (ObserverList: _observers, Observer: observer),
+                state =>
+                {
+                    state.ObserverList.Remove(state.Observer);
+                }
+            );
         }
     }
 

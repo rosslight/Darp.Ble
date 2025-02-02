@@ -10,8 +10,10 @@ public static class HciHostBleFactoryExtensions
     /// <param name="builder"> An optional callback to configure the factory </param>
     /// <param name="configure"> The callback to configure the factory </param>
     /// <returns> The <paramref name="builder"/> </returns>
-    public static BleManagerBuilder AddHciHost(this BleManagerBuilder builder,
-        Action<HciHostBleFactory>? configure = null)
+    public static BleManagerBuilder AddHciHost(
+        this BleManagerBuilder builder,
+        Action<HciHostBleFactory>? configure = null
+    )
     {
         ArgumentNullException.ThrowIfNull(builder);
         return builder.Add(configure);
@@ -25,9 +27,11 @@ public static class HciHostBleFactoryExtensions
     /// <param name="portName"> The port name to be scanned for a hci host </param>
     /// <param name="configure"> The callback to configure the factory </param>
     /// <returns> The <paramref name="builder"/> </returns>
-    public static BleManagerBuilder AddSingleHciHost(this BleManagerBuilder builder,
+    public static BleManagerBuilder AddSingleHciHost(
+        this BleManagerBuilder builder,
         string portName,
-        Action<SingleHciHostBleFactory>? configure = null)
+        Action<SingleHciHostBleFactory>? configure = null
+    )
     {
         ArgumentNullException.ThrowIfNull(builder);
         var factory = new SingleHciHostBleFactory(portName);

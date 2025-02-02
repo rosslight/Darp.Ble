@@ -10,7 +10,10 @@ public static class AdvertisementExtensions
     /// <param name="userData"> The user data to attach </param>
     /// <typeparam name="TUserData"> The type of the user data </typeparam>
     /// <returns> The advertisement with attached data</returns>
-    public static IGapAdvertisement<TUserData> WithUserData<TUserData>(this IGapAdvertisement advertisement, TUserData userData)
+    public static IGapAdvertisement<TUserData> WithUserData<TUserData>(
+        this IGapAdvertisement advertisement,
+        TUserData userData
+    )
     {
         return new GapAdvertisement<TUserData>(advertisement, userData);
     }

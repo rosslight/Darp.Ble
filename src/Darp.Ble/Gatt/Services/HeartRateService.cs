@@ -12,8 +12,10 @@ public readonly record struct HeartRateMeasurement(ushort Value)
 {
     /// <summary> The expended energy in this cycle. A null value indicates that this feature is disabled </summary>
     public ushort? EnergyExpended { get; init; }
+
     /// <summary> The body sensor contact detection flag. A null value indicates that this feature is disabled </summary>
     public bool? IsSensorContactDetected { get; init; }
+
     /// <summary> A list of all RR Interval </summary>
     public ReadOnlyMemory<ushort> RrIntervals { get; init; } = Array.Empty<ushort>();
 
@@ -22,9 +24,7 @@ public readonly record struct HeartRateMeasurement(ushort Value)
     public byte[] ToByteArrayLittleEndian()
     {
         var size = 1; // For the flags byte
-        size += Value < 256
-            ? 1
-            : 2;
+        size += Value < 256 ? 1 : 2;
         if (EnergyExpended.HasValue)
         {
             size += 2;
@@ -53,7 +53,10 @@ public readonly record struct HeartRateMeasurement(ushort Value)
         if (EnergyExpended.HasValue)
         {
             result[0] |= 1 << 3;
-            BinaryPrimitives.WriteUInt16LittleEndian(result.AsSpan(offset, 2), EnergyExpended.Value);
+            BinaryPrimitives.WriteUInt16LittleEndian(
+                result.AsSpan(offset, 2),
+                EnergyExpended.Value
+            );
             offset += 2;
         }
         if (RrIntervals.Length > 0)
@@ -86,11 +89,11 @@ public readonly record struct HeartRateMeasurement(ushort Value)
         bool hasRrIntervalValues = (flags & 0b00010000) == 0b00010000;
         var offset = 1;
         ushort value = isUInt16Format
-            ? BinaryPrimitives.ReadUInt16LittleEndian(source[((offset+=2)-2)..])
+            ? BinaryPrimitives.ReadUInt16LittleEndian(source[((offset += 2) - 2)..])
             : source[offset++];
         bool sensorContactDetected = isSensorContactSupported && hasSensorContact;
         ushort? energyExpended = hasEnergyExpendedField
-            ? BinaryPrimitives.ReadUInt16LittleEndian(source[((offset+=2)-2)..])
+            ? BinaryPrimitives.ReadUInt16LittleEndian(source[((offset += 2) - 2)..])
             : null;
         ushort[] rrIntervalValues = hasRrIntervalValues
             ? MemoryMarshal.Cast<byte, ushort>(source[offset..]).ToArray()
@@ -109,16 +112,22 @@ public enum HeartRateBodySensorLocation : byte
 {
     /// <summary> Unknown location </summary>
     Other = 0,
+
     /// <summary> Chest location </summary>
     Chest = 1,
+
     /// <summary> Wrist location </summary>
     Wrist = 2,
+
     /// <summary> Finger location </summary>
     Finger = 3,
+
     /// <summary> Hand location </summary>
     Hand = 4,
+
     /// <summary> EarLobe location </summary>
     EarLobe = 5,
+
     /// <summary> Foot location </summary>
     Foot = 6,
 }
@@ -131,14 +140,28 @@ public static class HeartRateServiceContract
 
     /// <summary> The 16-bit UUID of the heart rate service </summary>
     public static ServiceDeclaration HeartRateService => new(0x180D);
+
     /// <summary> The 16-bit UUID of the heart rate measurement characteristic </summary>
-    public static TypedCharacteristicDeclaration<HeartRateMeasurement, Properties.Notify> HeartRateMeasurementCharacteristic { get; }
-        = CharacteristicDeclaration.Create<HeartRateMeasurement, Properties.Notify>(0x2A37, HeartRateMeasurement.ReadLittleEndian, measurement => measurement.ToByteArrayLittleEndian());
+    public static TypedCharacteristicDeclaration<
+        HeartRateMeasurement,
+        Properties.Notify
+    > HeartRateMeasurementCharacteristic { get; } =
+        CharacteristicDeclaration.Create<HeartRateMeasurement, Properties.Notify>(
+            0x2A37,
+            HeartRateMeasurement.ReadLittleEndian,
+            measurement => measurement.ToByteArrayLittleEndian()
+        );
+
     /// <summary> The 16-bit UUID of the body sensor location characteristic </summary>
-    public static TypedCharacteristicDeclaration<HeartRateBodySensorLocation, Properties.Read> BodySensorLocationCharacteristic { get; }
-        = CharacteristicDeclaration.Create<HeartRateBodySensorLocation, Properties.Read>(0x2A38);
+    public static TypedCharacteristicDeclaration<
+        HeartRateBodySensorLocation,
+        Properties.Read
+    > BodySensorLocationCharacteristic { get; } =
+        CharacteristicDeclaration.Create<HeartRateBodySensorLocation, Properties.Read>(0x2A38);
+
     /// <summary> The 16-bit UUID of the heart rate control point characteristic </summary>
-    public static CharacteristicDeclaration<Properties.Write> HeartRateControlPointCharacteristic { get; } = new(0x2A39);
+    public static CharacteristicDeclaration<Properties.Write> HeartRateControlPointCharacteristic { get; } =
+        new(0x2A39);
 
     /// <summary> Add a heart rate service to the peripheral </summary>
     /// <param name="peripheral"> The peripheral to add the service to </param>
@@ -154,40 +177,51 @@ public static class HeartRateServiceContract
     )
     {
         ArgumentNullException.ThrowIfNull(peripheral);
-        IGattClientService service = await peripheral.AddServiceAsync(HeartRateService, token).ConfigureAwait(false);
+        IGattClientService service = await peripheral
+            .AddServiceAsync(HeartRateService, token)
+            .ConfigureAwait(false);
 
         // Add the mandatory measurement characteristic
-        GattTypedClientCharacteristic<HeartRateMeasurement, Properties.Notify> measurementCharacteristic = await service.AddCharacteristicAsync(
-            HeartRateMeasurementCharacteristic,
-            cancellationToken: token)
+        GattTypedClientCharacteristic<
+            HeartRateMeasurement,
+            Properties.Notify
+        > measurementCharacteristic = await service
+            .AddCharacteristicAsync(HeartRateMeasurementCharacteristic, cancellationToken: token)
             .ConfigureAwait(false);
 
         // Add the optional body sensor location
-        GattTypedClientCharacteristic<HeartRateBodySensorLocation, Properties.Read>? bodySensorLocationCharacteristic = null;
+        GattTypedClientCharacteristic<
+            HeartRateBodySensorLocation,
+            Properties.Read
+        >? bodySensorLocationCharacteristic = null;
         if (bodySensorLocation is not null)
         {
-            bodySensorLocationCharacteristic = await service.AddCharacteristicAsync(
-                BodySensorLocationCharacteristic,
-                bodySensorLocation.Value,
-                cancellationToken: token
-            ).ConfigureAwait(false);
+            bodySensorLocationCharacteristic = await service
+                .AddCharacteristicAsync(
+                    BodySensorLocationCharacteristic,
+                    bodySensorLocation.Value,
+                    cancellationToken: token
+                )
+                .ConfigureAwait(false);
         }
 
         // Add the optional heart rate control point characteristic
         GattClientCharacteristic<Properties.Write>? heartRateControlPointCharacteristic = null;
         if (onResetExpendedEnergy is not null)
         {
-            heartRateControlPointCharacteristic = await service.AddCharacteristicAsync<Properties.Write>(
-                HeartRateControlPointCharacteristic.Uuid,
-                onWrite: (_, bytes) =>
-                {
-                    if (bytes.Length < 1 || bytes[0] is not ResetEnergyExpended)
-                        return ControlPointNotSupported;
-                    onResetExpendedEnergy();
-                    return GattProtocolStatus.Success;
-                },
-                cancellationToken: token
-            ).ConfigureAwait(false);
+            heartRateControlPointCharacteristic = await service
+                .AddCharacteristicAsync<Properties.Write>(
+                    HeartRateControlPointCharacteristic.Uuid,
+                    onWrite: (_, bytes) =>
+                    {
+                        if (bytes.Length < 1 || bytes[0] is not ResetEnergyExpended)
+                            return ControlPointNotSupported;
+                        onResetExpendedEnergy();
+                        return GattProtocolStatus.Success;
+                    },
+                    cancellationToken: token
+                )
+                .ConfigureAwait(false);
         }
 
         return new GattClientHeartRateService(service)
@@ -210,16 +244,36 @@ public static class HeartRateServiceContract
         ArgumentNullException.ThrowIfNull(serverPeer);
 
         // Discover the service
-        IGattServerService service = await serverPeer.DiscoverServiceAsync(HeartRateService, cancellationToken).ConfigureAwait(false);
-        await service.DiscoverCharacteristicsAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
-        if (!service.TryGetCharacteristic(HeartRateMeasurementCharacteristic,
-                out TypedGattServerCharacteristic<HeartRateMeasurement, Properties.Notify>? measurementCharacteristic))
+        IGattServerService service = await serverPeer
+            .DiscoverServiceAsync(HeartRateService, cancellationToken)
+            .ConfigureAwait(false);
+        await service
+            .DiscoverCharacteristicsAsync(cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        if (
+            !service.TryGetCharacteristic(
+                HeartRateMeasurementCharacteristic,
+                out TypedGattServerCharacteristic<
+                    HeartRateMeasurement,
+                    Properties.Notify
+                >? measurementCharacteristic
+            )
+        )
         {
             throw new Exception("HeartRateMeasurement characteristic is not contained in service");
         }
 
-        service.TryGetCharacteristic(BodySensorLocationCharacteristic, out TypedGattServerCharacteristic<HeartRateBodySensorLocation, Properties.Read>? bodySensorLocationCharacteristic);
-        service.TryGetCharacteristic(HeartRateControlPointCharacteristic, out GattServerCharacteristic<Properties.Write>? heartRateControlPointCharacteristic);
+        service.TryGetCharacteristic(
+            BodySensorLocationCharacteristic,
+            out TypedGattServerCharacteristic<
+                HeartRateBodySensorLocation,
+                Properties.Read
+            >? bodySensorLocationCharacteristic
+        );
+        service.TryGetCharacteristic(
+            HeartRateControlPointCharacteristic,
+            out GattServerCharacteristic<Properties.Write>? heartRateControlPointCharacteristic
+        );
 
         return new GattServerHeartRateService(service)
         {
@@ -231,23 +285,41 @@ public static class HeartRateServiceContract
 }
 
 /// <summary> The wrapper for the heart rate client service </summary>
-public sealed class GattClientHeartRateService(IGattClientService service) : GattClientServiceProxy(service)
+public sealed class GattClientHeartRateService(IGattClientService service)
+    : GattClientServiceProxy(service)
 {
     /// <summary> The mandatory heart rate measurement characteristic </summary>
-    public required GattTypedClientCharacteristic<HeartRateMeasurement, Properties.Notify> HeartRateMeasurement { get; init; }
+    public required GattTypedClientCharacteristic<
+        HeartRateMeasurement,
+        Properties.Notify
+    > HeartRateMeasurement { get; init; }
+
     /// <summary> The optional body sensor location characteristic </summary>
-    public required GattTypedClientCharacteristic<HeartRateBodySensorLocation, Properties.Read>? BodySensorLocation { get; init; }
+    public required GattTypedClientCharacteristic<
+        HeartRateBodySensorLocation,
+        Properties.Read
+    >? BodySensorLocation { get; init; }
+
     /// <summary> The optional heart rate control point characteristic </summary>
     public required GattClientCharacteristic<Properties.Write>? HeartRateControlPoint { get; init; }
 }
 
 /// <summary> The HeartRate wrapper representing the gatt server </summary>
-public sealed class GattServerHeartRateService(IGattServerService service) : GattServerServiceProxy(service)
+public sealed class GattServerHeartRateService(IGattServerService service)
+    : GattServerServiceProxy(service)
 {
     /// <summary> The write characteristic </summary>
-    public required TypedGattServerCharacteristic<HeartRateMeasurement, Properties.Notify> HeartRateMeasurement { get; init; }
+    public required TypedGattServerCharacteristic<
+        HeartRateMeasurement,
+        Properties.Notify
+    > HeartRateMeasurement { get; init; }
+
     /// <summary> The optional body sensor location characteristic </summary>
-    public required TypedGattServerCharacteristic<HeartRateBodySensorLocation, Properties.Read>? BodySensorLocation { get; init; }
+    public required TypedGattServerCharacteristic<
+        HeartRateBodySensorLocation,
+        Properties.Read
+    >? BodySensorLocation { get; init; }
+
     /// <summary> The optional heart rate control point characteristic </summary>
     public required GattServerCharacteristic<Properties.Write>? HeartRateControlPoint { get; init; }
 }

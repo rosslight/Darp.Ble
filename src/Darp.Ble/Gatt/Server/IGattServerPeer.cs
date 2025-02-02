@@ -16,6 +16,7 @@ public interface IGattServerPeer : IAsyncDisposable
 
     /// <summary> True, if the peer is connected </summary>
     bool IsConnected { get; }
+
     /// <summary> Observe changes in the connection status </summary>
     IObservable<ConnectionStatus> WhenConnectionStatusChanged { get; }
 
@@ -23,9 +24,13 @@ public interface IGattServerPeer : IAsyncDisposable
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> A task </returns>
     Task DiscoverServicesAsync(CancellationToken cancellationToken = default);
+
     /// <summary> Discover a service specific to the given <paramref name="uuid"/> of the peer peripheral </summary>
     /// <param name="uuid"> The uuid to discover </param>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> A connection to the remote service </returns>
-    Task<IGattServerService> DiscoverServiceAsync(BleUuid uuid, CancellationToken cancellationToken = default);
+    Task<IGattServerService> DiscoverServiceAsync(
+        BleUuid uuid,
+        CancellationToken cancellationToken = default
+    );
 }

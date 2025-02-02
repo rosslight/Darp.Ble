@@ -13,26 +13,41 @@ public static class AdvertisementExtensions
     /// <param name="advertisement"> The advertisement to connect to </param>
     /// <param name="connectionParameters"> The connection parameters to be used </param>
     /// <returns> An observable of the connection </returns>
-    public static IObservable<IGattServerPeer> ConnectToPeripheral(this IGapAdvertisement advertisement,
-        BleConnectionParameters? connectionParameters = null)
+    public static IObservable<IGattServerPeer> ConnectToPeripheral(
+        this IGapAdvertisement advertisement,
+        BleConnectionParameters? connectionParameters = null
+    )
     {
         return Observable.Create<IGattServerPeer>(observer =>
         {
             if (!advertisement.EventType.HasFlag(BleEventType.Connectable))
             {
-                observer.OnError(new BleAdvertisementException(advertisement,
-                    "Unable to connect to advertisement as it is not connectable"));
+                observer.OnError(
+                    new BleAdvertisementException(
+                        advertisement,
+                        "Unable to connect to advertisement as it is not connectable"
+                    )
+                );
                 return Disposable.Empty;
             }
             IBleDevice device = advertisement.Observer.Device;
             if (!device.Capabilities.HasFlag(Capabilities.Central))
             {
-                observer.OnError(new BleDeviceException(device,
-                    "Unable to connect to advertisement as it was captured by a device which does not support connections"));
+                observer.OnError(
+                    new BleDeviceException(
+                        device,
+                        "Unable to connect to advertisement as it was captured by a device which does not support connections"
+                    )
+                );
                 return Disposable.Empty;
             }
             IBleCentral central = device.Central;
-            return central.ConnectToPeripheral(advertisement.Address, connectionParameters, scanParameters: null)
+            return central
+                .ConnectToPeripheral(
+                    advertisement.Address,
+                    connectionParameters,
+                    scanParameters: null
+                )
                 .Subscribe(observer);
         });
     }
@@ -41,8 +56,10 @@ public static class AdvertisementExtensions
     /// <param name="source"> The source of advertisements to be connected to </param>
     /// <param name="connectionParameters"> The connection parameters to be used </param>
     /// <returns> An observable of the connection </returns>
-    public static IObservable<IGattServerPeer> ConnectToPeripheral(this IObservable<IGapAdvertisement> source,
-        BleConnectionParameters? connectionParameters = null)
+    public static IObservable<IGattServerPeer> ConnectToPeripheral(
+        this IObservable<IGapAdvertisement> source,
+        BleConnectionParameters? connectionParameters = null
+    )
     {
         ArgumentNullException.ThrowIfNull(source);
         return source.SelectMany(x => x.ConnectToPeripheral(connectionParameters));
@@ -56,13 +73,14 @@ public static class AdvertisementExtensions
     /// <param name="address">The address to test each source advertisement against.</param>
     /// <typeparam name="TAdv">The type of the advertisements in the source sequence.</typeparam>
     /// <returns>An observable sequence of advertisements that contains elements from the input sequence that match the address.</returns>
-    public static IObservable<TAdv> WhereAddress<TAdv>(this IObservable<TAdv> source, BleAddress? address)
+    public static IObservable<TAdv> WhereAddress<TAdv>(
+        this IObservable<TAdv> source,
+        BleAddress? address
+    )
         where TAdv : IGapAdvertisement
     {
         ArgumentNullException.ThrowIfNull(source);
-        return address is null
-            ? source
-            : source.Where(adv => adv.Address.Equals(address));
+        return address is null ? source : source.Where(adv => adv.Address.Equals(address));
     }
 
     /// <summary>
@@ -73,13 +91,14 @@ public static class AdvertisementExtensions
     /// <param name="address">The address to test each source advertisement against.</param>
     /// <typeparam name="TAdv">The type of the advertisements in the source sequence.</typeparam>
     /// <returns>An observable sequence of advertisements that contains elements from the input sequence that match the address value.</returns>
-    public static IObservable<TAdv> WhereAddress<TAdv>(this IObservable<TAdv> source, ulong? address)
+    public static IObservable<TAdv> WhereAddress<TAdv>(
+        this IObservable<TAdv> source,
+        ulong? address
+    )
         where TAdv : IGapAdvertisement
     {
         ArgumentNullException.ThrowIfNull(source);
-        return address is null
-            ? source
-            : source.Where(adv => adv.Address.Equals(address.Value));
+        return address is null ? source : source.Where(adv => adv.Address.Equals(address.Value));
     }
 
     /// <summary> Filters the elements of an observable sequence of advertisements based on a given advertisement type. </summary>
@@ -87,7 +106,10 @@ public static class AdvertisementExtensions
     /// <param name="type">The pdu type to test each source advertisement against.</param>
     /// <typeparam name="TAdv">The type of the advertisements in the source sequence.</typeparam>
     /// <returns>An observable sequence of advertisements that contains elements from the input sequence that match the advertisement type.</returns>
-    public static IObservable<TAdv> WhereType<TAdv>(this IObservable<TAdv> source, BleEventType type)
+    public static IObservable<TAdv> WhereType<TAdv>(
+        this IObservable<TAdv> source,
+        BleEventType type
+    )
         where TAdv : IGapAdvertisement
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -159,7 +181,8 @@ public static class AdvertisementExtensions
     /// <returns>An observable sequence of advertisements that contains elements from the input sequence that contains the service uuid.</returns>
     public static IObservable<TAdv> WhereService<TAdv>(
         this IObservable<TAdv> source,
-        BleUuid? service)
+        BleUuid? service
+    )
         where TAdv : IGapAdvertisement
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -178,7 +201,8 @@ public static class AdvertisementExtensions
     /// <returns>An observable sequence of advertisements that contains elements from the input sequence that contains the service uuid.</returns>
     public static IObservable<TAdv> WhereService<TAdv>(
         this IObservable<TAdv> source,
-        ushort? service)
+        ushort? service
+    )
         where TAdv : IGapAdvertisement
     {
         ArgumentNullException.ThrowIfNull(source);

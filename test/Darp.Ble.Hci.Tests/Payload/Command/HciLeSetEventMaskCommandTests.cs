@@ -16,10 +16,7 @@ public sealed class HciLeSetEventMaskCommandTests
     public void TryWriteLittleEndian_ShouldBeValid(LeEventMask mask, string expectedHexBytes)
     {
         var buffer = new byte[8];
-        var value = new HciLeSetEventMaskCommand
-        {
-            Mask = mask,
-        };
+        var value = new HciLeSetEventMaskCommand { Mask = mask };
 
         bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeTrue();

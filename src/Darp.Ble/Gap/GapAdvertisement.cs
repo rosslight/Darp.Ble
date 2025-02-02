@@ -17,28 +17,39 @@ public sealed class GapAdvertisement : IGapAdvertisement
 
     /// <inheritdoc />
     public IBleObserver Observer { get; }
+
     /// <inheritdoc />
     public required DateTimeOffset Timestamp { get; init; }
+
     /// <inheritdoc />
-    public required BleEventType EventType { get;  init; }
+    public required BleEventType EventType { get; init; }
+
     /// <inheritdoc />
-    public required BleAddress Address { get;  init; }
+    public required BleAddress Address { get; init; }
+
     /// <inheritdoc />
-    public required Physical PrimaryPhy { get;  init; }
+    public required Physical PrimaryPhy { get; init; }
+
     /// <inheritdoc />
-    public required Physical SecondaryPhy { get;  init; }
+    public required Physical SecondaryPhy { get; init; }
+
     /// <inheritdoc />
-    public required AdvertisingSId AdvertisingSId { get;  init; }
+    public required AdvertisingSId AdvertisingSId { get; init; }
+
     /// <inheritdoc />
-    public required TxPowerLevel TxPower { get;  init; }
+    public required TxPowerLevel TxPower { get; init; }
+
     /// <inheritdoc />
-    public required Rssi Rssi { get;  init; }
+    public required Rssi Rssi { get; init; }
+
     /// <inheritdoc />
-    public required PeriodicAdvertisingInterval PeriodicAdvertisingInterval { get;  init; }
+    public required PeriodicAdvertisingInterval PeriodicAdvertisingInterval { get; init; }
+
     /// <inheritdoc />
-    public required BleAddress DirectAddress { get;  init; }
+    public required BleAddress DirectAddress { get; init; }
+
     /// <inheritdoc />
-    public required AdvertisingData Data { get;  init; }
+    public required AdvertisingData Data { get; init; }
 
     /// <summary> Create an advertisement wrapper from bytes of an extended advertising report </summary>
     /// <remarks> BLUETOOTH CORE SPECIFICATION Version 5.4 | Vol 4, Part E, 7.7.65.13 LE Extended Advertising Report event </remarks>
@@ -46,9 +57,11 @@ public sealed class GapAdvertisement : IGapAdvertisement
     /// <param name="timestamp"> The timestamp the record was recorded </param>
     /// <param name="bytes"> The bytes of a single extended advertising report </param>
     /// <returns> The advertisement </returns>
-    public static GapAdvertisement FromExtendedAdvertisingReport(BleObserver bleObserver,
+    public static GapAdvertisement FromExtendedAdvertisingReport(
+        BleObserver bleObserver,
         DateTimeOffset timestamp,
-        byte[] bytes)
+        byte[] bytes
+    )
     {
         ReadOnlySpan<byte> byteBuffer = bytes;
         ushort eventType = BinaryPrimitives.ReadUInt16LittleEndian(byteBuffer);
@@ -59,11 +72,13 @@ public sealed class GapAdvertisement : IGapAdvertisement
         byte advertisingSId = byteBuffer[11];
         byte txPower = byteBuffer[12];
         byte rssi = byteBuffer[13];
-        ushort periodicAdvertisingInterval = BinaryPrimitives.ReadUInt16LittleEndian(byteBuffer[14..]);
+        ushort periodicAdvertisingInterval = BinaryPrimitives.ReadUInt16LittleEndian(
+            byteBuffer[14..]
+        );
         byte directAddressType = byteBuffer[16];
         UInt48 directAddress = UInt48.ReadLittleEndian(byteBuffer[17..]);
         byte dataLength = byteBuffer[23];
-        ReadOnlyMemory<byte> data = bytes.AsMemory()[24..(24+dataLength)];
+        ReadOnlyMemory<byte> data = bytes.AsMemory()[24..(24 + dataLength)];
 
         return new GapAdvertisement(bytes, bleObserver)
         {
@@ -95,7 +110,8 @@ public sealed class GapAdvertisement : IGapAdvertisement
     /// <param name="directAddress"> The address of the device the advertisement is directed to </param>
     /// <param name="advertisingData"> The data sections </param>
     /// <returns> The GapAdvertisement </returns>
-    public static GapAdvertisement FromExtendedAdvertisingReport(IBleObserver bleObserver,
+    public static GapAdvertisement FromExtendedAdvertisingReport(
+        IBleObserver bleObserver,
         DateTimeOffset timestamp,
         BleEventType eventType,
         BleAddress address,
@@ -106,7 +122,8 @@ public sealed class GapAdvertisement : IGapAdvertisement
         Rssi rssi,
         PeriodicAdvertisingInterval periodicAdvertisingInterval,
         BleAddress directAddress,
-        AdvertisingData advertisingData)
+        AdvertisingData advertisingData
+    )
     {
         ArgumentNullException.ThrowIfNull(address);
         ArgumentNullException.ThrowIfNull(directAddress);
@@ -149,7 +166,9 @@ public sealed class GapAdvertisement : IGapAdvertisement
 
 /// <summary> An advertisement with additional data attached </summary>
 /// <typeparam name="TUserData"> The type of the attached data </typeparam>
-public sealed class GapAdvertisement<TUserData> : IGapAdvertisement<TUserData>, IGapAdvertisementWithUserData
+public sealed class GapAdvertisement<TUserData>
+    : IGapAdvertisement<TUserData>,
+        IGapAdvertisementWithUserData
 {
     private readonly IGapAdvertisement _advertisement;
 
@@ -164,28 +183,41 @@ public sealed class GapAdvertisement<TUserData> : IGapAdvertisement<TUserData>, 
 
     /// <inheritdoc />
     public IBleObserver Observer => _advertisement.Observer;
+
     /// <inheritdoc />
     public DateTimeOffset Timestamp => _advertisement.Timestamp;
+
     /// <inheritdoc />
     public BleEventType EventType => _advertisement.EventType;
+
     /// <inheritdoc />
     public BleAddress Address => _advertisement.Address;
+
     /// <inheritdoc />
     public Physical PrimaryPhy => _advertisement.PrimaryPhy;
+
     /// <inheritdoc />
     public Physical SecondaryPhy => _advertisement.SecondaryPhy;
+
     /// <inheritdoc />
     public AdvertisingSId AdvertisingSId => _advertisement.AdvertisingSId;
+
     /// <inheritdoc />
     public TxPowerLevel TxPower => _advertisement.TxPower;
+
     /// <inheritdoc />
     public Rssi Rssi => _advertisement.Rssi;
+
     /// <inheritdoc />
-    public PeriodicAdvertisingInterval PeriodicAdvertisingInterval => _advertisement.PeriodicAdvertisingInterval;
+    public PeriodicAdvertisingInterval PeriodicAdvertisingInterval =>
+        _advertisement.PeriodicAdvertisingInterval;
+
     /// <inheritdoc />
     public BleAddress DirectAddress => _advertisement.DirectAddress;
+
     /// <inheritdoc />
     public AdvertisingData Data => _advertisement.Data;
+
     /// <inheritdoc />
     public TUserData UserData { get; }
     object? IGapAdvertisementWithUserData.UserData => UserData;

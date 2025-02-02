@@ -10,7 +10,8 @@ namespace Darp.Ble.Tests;
 
 public sealed class BleTests(ILoggerFactory loggerFactory)
 {
-    private static readonly byte[] AdvBytes = "130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB".ToByteArray();
+    private static readonly byte[] AdvBytes =
+        "130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB".ToByteArray();
     private readonly BleManager _manager = new BleManagerBuilder()
         .SetLogger(loggerFactory)
         .Add<BleMockFactory>()
@@ -36,7 +37,8 @@ public sealed class BleTests(ILoggerFactory loggerFactory)
 
         IBleObserver observer = device.Observer;
 
-        IGapAdvertisement<string> adv = await observer.RefCount()
+        IGapAdvertisement<string> adv = await observer
+            .RefCount()
             .Select(x => x.WithUserData(""))
             .Where(x => x.UserData.Length == 0)
             .Timeout(TimeSpan.FromSeconds(1))

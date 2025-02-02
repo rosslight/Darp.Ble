@@ -15,15 +15,20 @@ public readonly partial record struct HciLeSetExtendedAdvertisingDataCommand : I
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_LE_SET_EXTENDED_ADVERTISING_DATA;
+
     /// <summary> Advertising_Handle Used to identify an advertising set </summary>
     /// <value> 0x00 to 0xEF </value>
     public required byte AdvertisingHandle { get; init; }
+
     /// <summary> Operation </summary>
     public required byte Operation { get; init; }
+
     /// <summary> Fragment_Preference </summary>
     public required byte FragmentPreference { get; init; }
+
     /// <summary> Advertising_Data_Length </summary>
     public required byte AdvertisingDataLength { get; init; }
+
     /// <summary> Advertising_Data </summary>
     [BinaryElementCount(nameof(AdvertisingDataLength))]
     public required ReadOnlyMemory<byte> AdvertisingData { get; init; }

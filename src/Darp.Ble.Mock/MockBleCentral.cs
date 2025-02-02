@@ -14,18 +14,29 @@ internal sealed class MockBleCentral(MockBleDevice device, ILogger<MockBleCentra
     private readonly MockBleDevice _device = device;
 
     /// <inheritdoc />
-    protected override IObservable<GattServerPeer> ConnectToPeripheralCore(BleAddress address,
+    protected override IObservable<GattServerPeer> ConnectToPeripheralCore(
+        BleAddress address,
         BleConnectionParameters connectionParameters,
-        BleScanParameters scanParameters)
+        BleScanParameters scanParameters
+    )
     {
-        MockedBleDevice? peerDevice = _device.MockedDevices.FirstOrDefault(x => x.RandomAddress == address);
+        MockedBleDevice? peerDevice = _device.MockedDevices.FirstOrDefault(x =>
+            x.RandomAddress == address
+        );
         if (peerDevice is null)
-            return Observable.Throw<GattServerPeer>(new Exception($"Mock does not contain a device with address {address}"));
+            return Observable.Throw<GattServerPeer>(
+                new Exception($"Mock does not contain a device with address {address}")
+            );
         return Observable.Create<GattServerPeer>(observer =>
         {
             MockGattClientPeer clientPeer = peerDevice.Peripheral.OnCentralConnection(address);
             // TODO _peripheralMock.StopAll();
-            var mockDevice = new MockGattServerPeer(this, address, clientPeer, LoggerFactory.CreateLogger<MockGattServerPeer>());
+            var mockDevice = new MockGattServerPeer(
+                this,
+                address,
+                clientPeer,
+                LoggerFactory.CreateLogger<MockGattServerPeer>()
+            );
             observer.OnNext(mockDevice);
             return Disposable.Empty;
         });

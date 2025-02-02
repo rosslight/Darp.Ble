@@ -12,13 +12,38 @@ public sealed class HciLeExtendedCreateConnectionV1CommandTests
     }
 
     [Theory]
-    [InlineData(0, 1, 1, 0xB335EFF8406A, 1, 160, 160, 24, 24, 0, 72, 0, 0,
-        "0001016A40F8EF35B301A000A000180018000000480000000000")]
-    public void TryWriteLittleEndian_ShouldBeValid(byte initiatorFilterPolicy, byte ownAddressType,
-        byte peerAddressType, ulong peerAddress, byte initiatingPhys,
-        ushort scanInterval, ushort scanWindow, ushort connectionIntervalMin, ushort connectionIntervalMax,
-        ushort maxLatency, ushort supervisionTimeout, ushort minCeLength, ushort maxCeLength,
-        string expectedHexBytes)
+    [InlineData(
+        0,
+        1,
+        1,
+        0xB335EFF8406A,
+        1,
+        160,
+        160,
+        24,
+        24,
+        0,
+        72,
+        0,
+        0,
+        "0001016A40F8EF35B301A000A000180018000000480000000000"
+    )]
+    public void TryWriteLittleEndian_ShouldBeValid(
+        byte initiatorFilterPolicy,
+        byte ownAddressType,
+        byte peerAddressType,
+        ulong peerAddress,
+        byte initiatingPhys,
+        ushort scanInterval,
+        ushort scanWindow,
+        ushort connectionIntervalMin,
+        ushort connectionIntervalMax,
+        ushort maxLatency,
+        ushort supervisionTimeout,
+        ushort minCeLength,
+        ushort maxCeLength,
+        string expectedHexBytes
+    )
     {
         var buffer = new byte[26];
         var value = new HciLeExtendedCreateConnectionV1Command

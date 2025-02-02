@@ -20,9 +20,13 @@ namespace Darp.Ble.Tests.Implementation;
 public sealed class BleObserverTests(ILoggerFactory loggerFactory)
 {
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
-    private const string AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName = "0201010908546573744E616D65";
+    private const string AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName =
+        "0201010908546573744E616D65";
 
-    private async Task<IBleDevice> GetMockDeviceAsync(BleMockFactory.InitializeSimpleAsync configure, IScheduler scheduler)
+    private async Task<IBleDevice> GetMockDeviceAsync(
+        BleMockFactory.InitializeSimpleAsync configure,
+        IScheduler scheduler
+    )
     {
         BleManager bleManager = new BleManagerBuilder()
             .SetLogger(_loggerFactory)
@@ -40,15 +44,14 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
 
     private async Task<IBleDevice> Get1000MsAdvertisementMockDeviceAsync(IScheduler scheduler)
     {
-        AdvertisingData adData = AdvertisingData.From(AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName.ToByteArray());
+        AdvertisingData adData = AdvertisingData.From(
+            AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName.ToByteArray()
+        );
         return await GetMockDeviceAsync(Configure, scheduler);
 
         async Task Configure(IBleDevice d)
         {
-            await d.Broadcaster.StartAdvertisingAsync(
-                data: adData,
-                interval: ScanTiming.Ms1000
-                );
+            await d.Broadcaster.StartAdvertisingAsync(data: adData, interval: ScanTiming.Ms1000);
         }
     }
 
@@ -100,7 +103,8 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
     public void Observer_WhenFailedWithAnyException_ShouldReturnException()
     {
         var observer = Substitute.For<BleObserver>(null, null);
-        observer.InvokeNonPublicMethod("TryStartScanCore", Observable.Empty<IGapAdvertisement>())
+        observer
+            .InvokeNonPublicMethod("TryStartScanCore", Observable.Empty<IGapAdvertisement>())
             .ReturnsForAnyArgs(info =>
             {
                 info[0] = Observable.Throw<IGapAdvertisement>(new DummyException("Dummy"));
@@ -109,7 +113,8 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
 
         Action act = () => _ = observer.RefCount().FirstAsync().Subscribe();
 
-        act.Should().Throw<BleObservationException>()
+        act.Should()
+            .Throw<BleObservationException>()
             .Where(x => typeof(DummyException).IsAssignableTo(x.InnerException!.GetType()));
     }
 
@@ -119,10 +124,13 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
     public void Observer_WhenFailedWithBleObservationException_ShouldReturnException()
     {
         var observer = Substitute.For<BleObserver>(null, null);
-        observer.InvokeNonPublicMethod("TryStartScanCore", Observable.Empty<IGapAdvertisement>())
+        observer
+            .InvokeNonPublicMethod("TryStartScanCore", Observable.Empty<IGapAdvertisement>())
             .ReturnsForAnyArgs(info =>
             {
-                info[0] = Observable.Throw<IGapAdvertisement>(new BleObservationException(observer!, message: null, innerException: null));
+                info[0] = Observable.Throw<IGapAdvertisement>(
+                    new BleObservationException(observer!, message: null, innerException: null)
+                );
                 return false;
             });
 
@@ -137,7 +145,8 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
     public void Connect_WhenFailed_ShouldFaultAndReturnEmptyDisposable()
     {
         var observer = Substitute.For<BleObserver>(null, null);
-        observer.InvokeNonPublicMethod("TryStartScanCore", Observable.Empty<IGapAdvertisement>())
+        observer
+            .InvokeNonPublicMethod("TryStartScanCore", Observable.Empty<IGapAdvertisement>())
             .ReturnsForAnyArgs(info =>
             {
                 info[0] = Observable.Throw<IGapAdvertisement>(new DummyException("Dummy"));
@@ -155,10 +164,7 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
     [Fact]
     public async Task Configure_WhenCalled_ShouldSetParameters()
     {
-        var targetParameters = new BleScanParameters
-        {
-            ScanType = ScanType.Active,
-        };
+        var targetParameters = new BleScanParameters { ScanType = ScanType.Active };
         IBleDevice device = await GetMockDeviceAsync();
 
         device.Observer.Parameters.Should().NotBe(targetParameters);

@@ -17,7 +17,9 @@ public interface IBleCentral
     /// <param name="connectionParameters"> The connection parameters to be used </param>
     /// <param name="scanParameters"> The scan parameters to be used for initial discovery </param>
     /// <returns> An observable notifying when a gatt server was connected </returns>
-    IObservable<IGattServerPeer> ConnectToPeripheral(BleAddress address,
+    IObservable<IGattServerPeer> ConnectToPeripheral(
+        BleAddress address,
         BleConnectionParameters? connectionParameters = null,
-        BleScanParameters? scanParameters = null);
+        BleScanParameters? scanParameters = null
+    );
 }

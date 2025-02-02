@@ -15,6 +15,7 @@ public readonly partial record struct HciLeRemoveAdvertisingSetCommand : IHciCom
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_LE_Remove_Advertising_Set;
+
     /// <summary> The Advertising_Handle </summary>
     /// <value> 0x00 to 0xEF </value>
     public required byte AdvertisingHandle { get; init; }

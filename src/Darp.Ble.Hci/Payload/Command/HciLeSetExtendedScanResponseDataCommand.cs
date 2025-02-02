@@ -15,15 +15,20 @@ public readonly partial record struct HciLeSetExtendedScanResponseDataCommand : 
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_LE_Set_Extended_Scan_Response_Data;
+
     /// <summary> Advertising_Handle Used to identify an advertising set </summary>
     /// <value> 0x00 to 0xEF </value>
     public required byte AdvertisingHandle { get; init; }
+
     /// <summary> Operation </summary>
     public required byte Operation { get; init; }
+
     /// <summary> Fragment_Preference </summary>
     public required byte FragmentPreference { get; init; }
+
     /// <summary> Scan_Response_Data_Length </summary>
     public required byte ScanResponseDataLength { get; init; }
+
     /// <summary> Scan_Response_Data </summary>
     [BinaryElementCount(nameof(ScanResponseDataLength))]
     public required ReadOnlyMemory<byte> ScanResponseData { get; init; }

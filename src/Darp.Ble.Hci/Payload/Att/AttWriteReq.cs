@@ -12,8 +12,10 @@ public readonly partial record struct AttWriteReq() : IAttPdu
 
     /// <inheritdoc />
     public AttOpCode OpCode { get; init; } = ExpectedOpCode;
+
     /// <summary> The handle of the attribute to be written </summary>
     public required ushort Handle { get; init; }
+
     /// <summary> The value to be written to the attribute </summary>
     public required ReadOnlyMemory<byte> Value { get; init; }
 }

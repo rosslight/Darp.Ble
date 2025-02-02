@@ -4,15 +4,17 @@ using System.Diagnostics.CodeAnalysis;
 namespace Darp.Ble.Data;
 
 /// <summary> The Ble Uuid </summary>
-public sealed record BleUuid : ISpanParsable<BleUuid>,
-    ISpanFormattable,
-    IUtf8SpanFormattable,
-    IEquatable<Guid?>,
-    IEquatable<uint?>,
-    IEquatable<ushort?>
+public sealed record BleUuid
+    : ISpanParsable<BleUuid>,
+        ISpanFormattable,
+        IUtf8SpanFormattable,
+        IEquatable<Guid?>,
+        IEquatable<uint?>,
+        IEquatable<ushort?>
 {
     /// <summary> The type of the uuid </summary>
     public required BleUuidType Type { get; init; }
+
     /// <summary> The underlying <see cref="Guid"/> value </summary>
     public Guid Value { get; }
 
@@ -30,18 +32,22 @@ public sealed record BleUuid : ISpanParsable<BleUuid>,
     {
         Span<byte> bytes = stackalloc byte[16];
         value.TryWriteBytes(bytes);
-        if (!(bytes[4] is 0x00
-              && bytes[5] is 0x00
-              && bytes[6] is 0x00
-              && bytes[7] is 0x10
-              && bytes[8] is 0x80
-              && bytes[9] is 0x00
-              && bytes[10] is 0x00
-              && bytes[11] is 0x80
-              && bytes[12] is 0x5F
-              && bytes[13] is 0x9B
-              && bytes[14] is 0x34
-              && bytes[15] is 0xFB))
+        if (
+            !(
+                bytes[4] is 0x00
+                && bytes[5] is 0x00
+                && bytes[6] is 0x00
+                && bytes[7] is 0x10
+                && bytes[8] is 0x80
+                && bytes[9] is 0x00
+                && bytes[10] is 0x00
+                && bytes[11] is 0x80
+                && bytes[12] is 0x5F
+                && bytes[13] is 0x9B
+                && bytes[14] is 0x34
+                && bytes[15] is 0xFB
+            )
+        )
         {
             return BleUuidType.Uuid128;
         }
@@ -50,22 +56,25 @@ public sealed record BleUuid : ISpanParsable<BleUuid>,
         return BleUuidType.Uuid32;
     }
 
-    private static Guid CreateGuid(uint a) => new(a, 0x0000, 0x1000, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB);
+    private static Guid CreateGuid(uint a) =>
+        new(a, 0x0000, 0x1000, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB);
 
     /// <summary> Initializes a BleUuid from a readonly span of bytes </summary>
     /// <param name="source"> The source to be decoded. </param>
     /// <returns> The bleUuid with type depending on length of source </returns>
     /// <exception cref="ArgumentOutOfRangeException"> The source is not of length 2,4,16 </exception>
     [SetsRequiredMembers]
-    public BleUuid (ReadOnlySpan<byte> source)
+    public BleUuid(ReadOnlySpan<byte> source)
     {
         (BleUuidType Type, Guid Guid) tuple = source.Length switch
         {
             2 => (BleUuidType.Uuid16, CreateGuid(BinaryPrimitives.ReadUInt16LittleEndian(source))),
             4 => (BleUuidType.Uuid32, CreateGuid(BinaryPrimitives.ReadUInt32LittleEndian(source))),
             16 => (BleUuidType.Uuid128, new Guid(source)),
-            _ => throw new ArgumentOutOfRangeException(nameof(source),
-                $"Provided invalid number of bytes for uuid: {source.Length}"),
+            _ => throw new ArgumentOutOfRangeException(
+                nameof(source),
+                $"Provided invalid number of bytes for uuid: {source.Length}"
+            ),
         };
         Type = tuple.Type;
         Value = tuple.Guid;
@@ -88,7 +97,11 @@ public sealed record BleUuid : ISpanParsable<BleUuid>,
     /// <param name="result"> The parsed BleUuid with type <see cref="BleUuidType.Uuid128"/> or default </param>
     /// <example> 00002902-0000-1000-8000–00805f9b34fb </example>
     /// <returns> True if the parsing was successful </returns>
-    public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, [NotNullWhen(true)] out BleUuid? result)
+    public static bool TryParse(
+        ReadOnlySpan<char> s,
+        IFormatProvider? provider,
+        [NotNullWhen(true)] out BleUuid? result
+    )
     {
         if (!Guid.TryParse(s, provider, out Guid guid))
         {
@@ -100,12 +113,18 @@ public sealed record BleUuid : ISpanParsable<BleUuid>,
     }
 
     /// <inheritdoc cref="Parse(ReadOnlySpan{char},System.IFormatProvider?)"/>
-    public static BleUuid Parse(string s, IFormatProvider? provider) => Parse((ReadOnlySpan<char>)s, provider);
+    public static BleUuid Parse(string s, IFormatProvider? provider) =>
+        Parse((ReadOnlySpan<char>)s, provider);
 
     /// <inheritdoc cref="TryParse(ReadOnlySpan{char},System.IFormatProvider?,out BleUuid?)"/>
-    public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, [NotNullWhen(true)] out BleUuid? result)
+    public static bool TryParse(
+        [NotNullWhen(true)] string? s,
+        IFormatProvider? provider,
+        [NotNullWhen(true)] out BleUuid? result
+    )
     {
-        if (s is not null) return TryParse((ReadOnlySpan<char>)s, provider, out result);
+        if (s is not null)
+            return TryParse((ReadOnlySpan<char>)s, provider, out result);
         result = null;
         return false;
     }
@@ -119,11 +138,13 @@ public sealed record BleUuid : ISpanParsable<BleUuid>,
 
     /// <inheritdoc />
     /// <remarks> Expects guid to be <see cref="BleUuidType.Uuid32"/> </remarks>
-    public bool Equals(uint? other) => other is not null && Type == BleUuidType.Uuid32 && Value == CreateGuid(other.Value);
+    public bool Equals(uint? other) =>
+        other is not null && Type == BleUuidType.Uuid32 && Value == CreateGuid(other.Value);
 
     /// <inheritdoc />
     /// <remarks> Expects guid to be <see cref="BleUuidType.Uuid16"/> </remarks>
-    public bool Equals(ushort? other) => other is not null && Type == BleUuidType.Uuid16 && Value == CreateGuid(other.Value);
+    public bool Equals(ushort? other) =>
+        other is not null && Type == BleUuidType.Uuid16 && Value == CreateGuid(other.Value);
 
     /// <inheritdoc />
     public override int GetHashCode() => Type.GetHashCode() ^ Value.GetHashCode();
@@ -132,26 +153,45 @@ public sealed record BleUuid : ISpanParsable<BleUuid>,
     public override string ToString() => Value.ToString();
 
     /// <inheritdoc />
-    public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format, formatProvider);
+    public string ToString(string? format, IFormatProvider? formatProvider) =>
+        Value.ToString(format, formatProvider);
 
     /// <inheritdoc cref="Guid.TryFormat(System.Span{char},out int,System.ReadOnlySpan{char})"/>/>
-    public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax("GuidFormat")] ReadOnlySpan<char> format = default)
+    public bool TryFormat(
+        Span<char> destination,
+        out int charsWritten,
+        [StringSyntax("GuidFormat")] ReadOnlySpan<char> format = default
+    )
     {
         return Value.TryFormat(destination, out charsWritten, format);
     }
 
     /// <inheritdoc cref="Guid.TryFormat(System.Span{byte},out int,System.ReadOnlySpan{char})"/>/>
-    public bool TryFormat(Span<byte> utf8Destination, out int bytesWritten, [StringSyntax("GuidFormat")] ReadOnlySpan<char> format = default)
+    public bool TryFormat(
+        Span<byte> utf8Destination,
+        out int bytesWritten,
+        [StringSyntax("GuidFormat")] ReadOnlySpan<char> format = default
+    )
     {
         return Value.TryFormat(utf8Destination, out bytesWritten, format);
     }
 
-    bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+    bool ISpanFormattable.TryFormat(
+        Span<char> destination,
+        out int charsWritten,
+        ReadOnlySpan<char> format,
+        IFormatProvider? provider
+    )
     {
         return TryFormat(destination, out charsWritten, format);
     }
 
-    bool IUtf8SpanFormattable.TryFormat(Span<byte> utf8Destination, out int bytesWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+    bool IUtf8SpanFormattable.TryFormat(
+        Span<byte> utf8Destination,
+        out int bytesWritten,
+        ReadOnlySpan<char> format,
+        IFormatProvider? provider
+    )
     {
         return TryFormat(utf8Destination, out bytesWritten, format);
     }
@@ -201,5 +241,6 @@ public sealed record BleUuid : ISpanParsable<BleUuid>,
     /// <param name="value"> The uuid </param>
     /// <param name="inferType"> If true, the <see cref="BleUuidType"/> will be inferred from the given <paramref name="value"/>; <see cref="BleUuidType.Uuid128"/> otherwise </param>
     /// <returns> The bleUuid with type <see cref="BleUuidType.Uuid128"/> or inferred type </returns>
-    public static BleUuid FromGuid(Guid value, bool inferType = false) => new(inferType ? InferType(value) : BleUuidType.Uuid128, value);
+    public static BleUuid FromGuid(Guid value, bool inferType = false) =>
+        new(inferType ? InferType(value) : BleUuidType.Uuid128, value);
 }

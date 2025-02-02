@@ -14,18 +14,19 @@ public interface IGattCharacteristicDeclaration : IGattAttributeDeclaration
 
 /// <summary> The characteristic declaration with specified properties </summary>
 /// <typeparam name="TProp1"> The type of the first property </typeparam>
-public interface IGattCharacteristicDeclaration<TProp1>
-    : IGattCharacteristicDeclaration
+public interface IGattCharacteristicDeclaration<TProp1> : IGattCharacteristicDeclaration
     where TProp1 : IBleProperty;
 
 /// <summary> The characteristic declaration </summary>
 /// <param name="uuid"> The uuid of the characteristic </param>
 /// <typeparam name="TProp1"> The type of the first property </typeparam>
-public class CharacteristicDeclaration<TProp1>(BleUuid uuid) : IGattCharacteristicDeclaration<TProp1>
+public class CharacteristicDeclaration<TProp1>(BleUuid uuid)
+    : IGattCharacteristicDeclaration<TProp1>
     where TProp1 : IBleProperty
 {
     /// <inheritdoc />
     public virtual GattProperty Properties => TProp1.GattProperty;
+
     /// <inheritdoc />
     public BleUuid Uuid { get; } = uuid;
 }
@@ -35,7 +36,8 @@ public class CharacteristicDeclaration<TProp1>(BleUuid uuid) : IGattCharacterist
 /// <typeparam name="TProp1"> The type of the first property </typeparam>
 /// <typeparam name="TProp2"> The type of the second property </typeparam>
 public sealed class CharacteristicDeclaration<TProp1, TProp2>(BleUuid uuid)
-    : CharacteristicDeclaration<TProp1>(uuid), IGattCharacteristicDeclaration<TProp2>
+    : CharacteristicDeclaration<TProp1>(uuid),
+        IGattCharacteristicDeclaration<TProp2>
     where TProp1 : IBleProperty
     where TProp2 : IBleProperty
 {
@@ -45,9 +47,14 @@ public sealed class CharacteristicDeclaration<TProp1, TProp2>(BleUuid uuid)
     /// <summary> Convert implicitly to a different order of type parameters </summary>
     /// <param name="characteristicDeclaration"> The characteristic declaration to convert </param>
     /// <returns> The converted characteristic declaration </returns>
-    [SuppressMessage("Usage", "CA2225:Operator overloads have named alternates", Justification = "Convenience method")]
+    [SuppressMessage(
+        "Usage",
+        "CA2225:Operator overloads have named alternates",
+        Justification = "Convenience method"
+    )]
     public static implicit operator CharacteristicDeclaration<TProp2, TProp1>(
-        CharacteristicDeclaration<TProp1, TProp2> characteristicDeclaration)
+        CharacteristicDeclaration<TProp1, TProp2> characteristicDeclaration
+    )
     {
         ArgumentNullException.ThrowIfNull(characteristicDeclaration);
         return new CharacteristicDeclaration<TProp2, TProp1>(characteristicDeclaration.Uuid);
@@ -64,9 +71,11 @@ public static class CharacteristicDeclaration
     /// <typeparam name="T"> The type of the value </typeparam>
     /// <typeparam name="TProp1"> The type of the first property </typeparam>
     /// <returns> A typed characteristic declaration </returns>
-    public static TypedCharacteristicDeclaration<T, TProp1> Create<T, TProp1>(BleUuid uuid,
+    public static TypedCharacteristicDeclaration<T, TProp1> Create<T, TProp1>(
+        BleUuid uuid,
         IGattTypedCharacteristic<T>.ReadValueFunc onRead,
-        IGattTypedCharacteristic<T>.WriteValueFunc onWrite)
+        IGattTypedCharacteristic<T>.WriteValueFunc onWrite
+    )
         where TProp1 : IBleProperty
     {
         return new TypedCharacteristicDeclaration<T, TProp1>(uuid, onRead, onWrite);
@@ -80,9 +89,11 @@ public static class CharacteristicDeclaration
     /// <typeparam name="TProp1"> The type of the first property </typeparam>
     /// <typeparam name="TProp2"> The type of the second property </typeparam>
     /// <returns> A typed characteristic declaration </returns>
-    public static TypedCharacteristicDeclaration<T, TProp1, TProp2> Create<T, TProp1, TProp2>(BleUuid uuid,
+    public static TypedCharacteristicDeclaration<T, TProp1, TProp2> Create<T, TProp1, TProp2>(
+        BleUuid uuid,
         IGattTypedCharacteristic<T>.ReadValueFunc onRead,
-        IGattTypedCharacteristic<T>.WriteValueFunc onWrite)
+        IGattTypedCharacteristic<T>.WriteValueFunc onWrite
+    )
         where TProp1 : IBleProperty
         where TProp2 : IBleProperty
     {
@@ -98,7 +109,11 @@ public static class CharacteristicDeclaration
         where T : unmanaged
         where TProp1 : IBleProperty
     {
-        return new TypedCharacteristicDeclaration<T, TProp1>(uuid, bytes => bytes.ToStruct<T>(), value => value.ToByteArray());
+        return new TypedCharacteristicDeclaration<T, TProp1>(
+            uuid,
+            bytes => bytes.ToStruct<T>(),
+            value => value.ToByteArray()
+        );
     }
 
     /// <summary> Create a new typed characteristic declaration for an unmanaged value </summary>
@@ -107,12 +122,18 @@ public static class CharacteristicDeclaration
     /// <typeparam name="TProp1"> The type of the first property </typeparam>
     /// <typeparam name="TProp2"> The type of the second property </typeparam>
     /// <returns> A typed characteristic declaration </returns>
-    public static TypedCharacteristicDeclaration<T, TProp1, TProp2> Create<T, TProp1, TProp2>(BleUuid uuid)
+    public static TypedCharacteristicDeclaration<T, TProp1, TProp2> Create<T, TProp1, TProp2>(
+        BleUuid uuid
+    )
         where T : unmanaged
         where TProp1 : IBleProperty
         where TProp2 : IBleProperty
     {
-        return new TypedCharacteristicDeclaration<T, TProp1, TProp2>(uuid, bytes => bytes.ToStruct<T>(), value => value.ToByteArray());
+        return new TypedCharacteristicDeclaration<T, TProp1, TProp2>(
+            uuid,
+            bytes => bytes.ToStruct<T>(),
+            value => value.ToByteArray()
+        );
     }
 
     /// <summary> Create a new typed characteristic declaration for a string value </summary>
@@ -120,7 +141,10 @@ public static class CharacteristicDeclaration
     /// <param name="encoding"> The encoding to be used when transforming the string </param>
     /// <typeparam name="TProp1"> The type of the first property </typeparam>
     /// <returns> A typed characteristic declaration </returns>
-    public static TypedCharacteristicDeclaration<string, TProp1> Create<TProp1>(BleUuid uuid, Encoding encoding)
+    public static TypedCharacteristicDeclaration<string, TProp1> Create<TProp1>(
+        BleUuid uuid,
+        Encoding encoding
+    )
         where TProp1 : IBleProperty
     {
         ArgumentNullException.ThrowIfNull(encoding);
@@ -133,14 +157,20 @@ public static class CharacteristicDeclaration
     /// <typeparam name="TProp1"> The type of the first property </typeparam>
     /// <typeparam name="TProp2"> The type of the second property </typeparam>
     /// <returns> A typed characteristic declaration </returns>
-    public static TypedCharacteristicDeclaration<string, TProp1, TProp2> Create<TProp1, TProp2>(BleUuid uuid, Encoding encoding)
-        where TProp1 : IBleProperty where TProp2 : IBleProperty
+    public static TypedCharacteristicDeclaration<string, TProp1, TProp2> Create<TProp1, TProp2>(
+        BleUuid uuid,
+        Encoding encoding
+    )
+        where TProp1 : IBleProperty
+        where TProp2 : IBleProperty
     {
         ArgumentNullException.ThrowIfNull(encoding);
         return Create<string, TProp1, TProp2>(uuid, encoding.GetString, encoding.GetBytes);
     }
 
-    private static T ToStruct<T>(this in ReadOnlySpan<byte> bytes) where T : unmanaged => MemoryMarshal.Read<T>(bytes);
+    private static T ToStruct<T>(this in ReadOnlySpan<byte> bytes)
+        where T : unmanaged => MemoryMarshal.Read<T>(bytes);
+
     private static byte[] ToByteArray<T>(this T value)
         where T : unmanaged
     {

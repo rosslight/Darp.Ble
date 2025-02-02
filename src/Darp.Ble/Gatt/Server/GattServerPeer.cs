@@ -15,7 +15,8 @@ public abstract class GattServerPeer : IGattServerPeer
     private bool _isDisposing;
 
     /// <summary> The behavior subject where the implementation can write to </summary>
-    protected BehaviorSubject<ConnectionStatus> ConnectionSubject { get; } = new(ConnectionStatus.Connected);
+    protected BehaviorSubject<ConnectionStatus> ConnectionSubject { get; } =
+        new(ConnectionStatus.Connected);
 
     /// <summary> The gatt server peer </summary>
     /// <param name="central"> The central that initiated the connection </param>
@@ -31,52 +32,67 @@ public abstract class GattServerPeer : IGattServerPeer
 
     /// <inheritdoc />
     public IBleCentral Central => _central;
+
     /// <summary> The logger </summary>
     protected ILogger<GattServerPeer> Logger { get; }
+
     /// <summary> The logger factory </summary>
     protected ILoggerFactory LoggerFactory => Central.Device.LoggerFactory;
 
     /// <inheritdoc />
     public BleAddress Address { get; }
+
     /// <inheritdoc />
     public IReadOnlyCollection<IGattServerService> Services => _services;
+
     /// <inheritdoc />
     public bool IsConnected => ConnectionSubject.Value is ConnectionStatus.Connected;
+
     /// <inheritdoc />
-    public IObservable<ConnectionStatus> WhenConnectionStatusChanged => ConnectionSubject.AsObservable();
+    public IObservable<ConnectionStatus> WhenConnectionStatusChanged =>
+        ConnectionSubject.AsObservable();
 
     /// <inheritdoc />
     public async Task DiscoverServicesAsync(CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_isDisposing, this);
-        await foreach (IGattServerService service in DiscoverServicesCore()
-                           .ToAsyncEnumerable()
-                           .WithCancellation(cancellationToken)
-                           .ConfigureAwait(false))
+        await foreach (
+            IGattServerService service in DiscoverServicesCore()
+                .ToAsyncEnumerable()
+                .WithCancellation(cancellationToken)
+                .ConfigureAwait(false)
+        )
         {
             _services.Add(service);
         }
     }
 
     /// <inheritdoc />
-    public async Task<IGattServerService> DiscoverServiceAsync(BleUuid uuid, CancellationToken cancellationToken = default)
+    public async Task<IGattServerService> DiscoverServiceAsync(
+        BleUuid uuid,
+        CancellationToken cancellationToken = default
+    )
     {
         ObjectDisposedException.ThrowIf(_isDisposing, this);
         IGattServerService? serviceToReturn = null;
-        await foreach (IGattServerService service in DiscoverServiceCore(uuid)
-                           .ToAsyncEnumerable()
-                           .WithCancellation(cancellationToken)
-                           .ConfigureAwait(false))
+        await foreach (
+            IGattServerService service in DiscoverServiceCore(uuid)
+                .ToAsyncEnumerable()
+                .WithCancellation(cancellationToken)
+                .ConfigureAwait(false)
+        )
         {
             serviceToReturn ??= service;
             _services.Add(service);
         }
-        return serviceToReturn ?? throw new Exception($"No service with Uuid {uuid} was discovered");
+        return serviceToReturn
+            ?? throw new Exception($"No service with Uuid {uuid} was discovered");
     }
 
     /// <summary> Core implementation to discover services </summary>
     /// <returns> An observable with all discovered services </returns>
     protected internal abstract IObservable<IGattServerService> DiscoverServicesCore();
+
     /// <summary> Core implementation to discover a specific service </summary>
     /// <param name="uuid"> The uuid of the service </param>
     /// <returns> An observable with the discovered service </returns>
@@ -94,13 +110,17 @@ public abstract class GattServerPeer : IGattServerPeer
         await DisposeAsyncCore().ConfigureAwait(false);
         Logger.LogBleServerPeerDisposed(Address);
         _central.RemovePeer(this);
-        Debug.Assert(ConnectionSubject.Value is ConnectionStatus.Disconnected, "Disposing of connection subject even though it is not in completed state");
+        Debug.Assert(
+            ConnectionSubject.Value is ConnectionStatus.Disconnected,
+            "Disposing of connection subject even though it is not in completed state"
+        );
         ConnectionSubject.OnCompleted();
         GC.SuppressFinalize(this);
     }
 
     /// <inheritdoc cref="DisposeAsync"/>
     protected internal virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
+
     /// <inheritdoc cref="IDisposable.Dispose"/>
     protected internal virtual void DisposeCore() { }
 }

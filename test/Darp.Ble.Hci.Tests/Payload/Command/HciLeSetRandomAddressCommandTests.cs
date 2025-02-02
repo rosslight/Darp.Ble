@@ -13,14 +13,10 @@ public sealed class HciLeSetRandomAddressCommandTests
 
     [Theory]
     [InlineData(0xF5F4F3F2F1F0, "F0F1F2F3F4F5")]
-    public void TryWriteLittleEndian_ShouldBeValid(ulong address,
-        string expectedHexBytes)
+    public void TryWriteLittleEndian_ShouldBeValid(ulong address, string expectedHexBytes)
     {
         var buffer = new byte[6];
-        var value = new HciLeSetRandomAddressCommand
-        {
-            RandomAddress = address,
-        };
+        var value = new HciLeSetRandomAddressCommand { RandomAddress = address };
 
         bool success = value.TryWriteLittleEndian(buffer);
         success.Should().BeTrue();

@@ -16,7 +16,8 @@ public class HciAclPacket(
     PacketBoundaryFlag packetBoundaryFlag,
     BroadcastFlag broadcastFlag,
     ushort dataTotalLength,
-    byte[] dataBytes) : IHciPacket<HciAclPacket>, IBinaryReadable<HciAclPacket>
+    byte[] dataBytes
+) : IHciPacket<HciAclPacket>, IBinaryReadable<HciAclPacket>
 {
     /// <inheritdoc />
     public static HciPacketType Type => HciPacketType.HciAclData;
@@ -30,10 +31,13 @@ public class HciAclPacket(
     /// <summary> Connection_Handle to be used for transmitting a data packet over a Controller </summary>
     /// <value> Range: 0x0000 to 0x0EFF </value>
     public ushort ConnectionHandle { get; } = connectionHandle;
+
     /// <summary> The Packet_Boundary_Flag </summary>
     public PacketBoundaryFlag PacketBoundaryFlag { get; } = packetBoundaryFlag;
+
     /// <summary> The Broadcast_Flag </summary>
     public BroadcastFlag BroadcastFlag { get; } = broadcastFlag;
+
     /// <summary> The Data_Total_Length </summary>
     public ushort DataTotalLength { get; } = dataTotalLength;
 
@@ -47,14 +51,18 @@ public class HciAclPacket(
     }
 
     /// <inheritdoc />
-    public bool TryWriteLittleEndian(Span<byte> destination) => TryWriteLittleEndian(destination, out _);
+    public bool TryWriteLittleEndian(Span<byte> destination) =>
+        TryWriteLittleEndian(destination, out _);
 
     /// <inheritdoc />
     public bool TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
     {
         bytesWritten = 0;
-        if (destination.Length < GetByteCount()) return false;
-        var firstBytes = (ushort)(ConnectionHandle | (byte)PacketBoundaryFlag << 12 | (byte)BroadcastFlag << 14);
+        if (destination.Length < GetByteCount())
+            return false;
+        var firstBytes = (ushort)(
+            ConnectionHandle | (byte)PacketBoundaryFlag << 12 | (byte)BroadcastFlag << 14
+        );
         BinaryPrimitives.WriteUInt16LittleEndian(destination, firstBytes);
         BinaryPrimitives.WriteUInt16LittleEndian(destination[2..], DataTotalLength);
         bytesWritten += 4;
@@ -68,36 +76,55 @@ public class HciAclPacket(
     public bool TryWriteBigEndian(Span<byte> destination) => TryWriteBigEndian(destination, out _);
 
     /// <inheritdoc />
-    public bool TryWriteBigEndian(Span<byte> destination, out int bytesWritten) => throw new NotSupportedException();
+    public bool TryWriteBigEndian(Span<byte> destination, out int bytesWritten) =>
+        throw new NotSupportedException();
 
     /// <inheritdoc />
-    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, [NotNullWhen(true)] out HciAclPacket? value) => TryReadLittleEndian(source, out value, out _);
+    public static bool TryReadLittleEndian(
+        ReadOnlySpan<byte> source,
+        [NotNullWhen(true)] out HciAclPacket? value
+    ) => TryReadLittleEndian(source, out value, out _);
 
     /// <inheritdoc />
-    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, [NotNullWhen(true)] out HciAclPacket? value, out int bytesRead)
+    public static bool TryReadLittleEndian(
+        ReadOnlySpan<byte> source,
+        [NotNullWhen(true)] out HciAclPacket? value,
+        out int bytesRead
+    )
     {
         value = null;
         bytesRead = 0;
-        if (source.Length < 4) return false;
+        if (source.Length < 4)
+            return false;
         ushort firstBytes = BinaryPrimitives.ReadUInt16LittleEndian(source);
         var connectionHandle = (ushort)(firstBytes & 0xFFF);
         var packetBoundaryFlag = (PacketBoundaryFlag)((firstBytes & 0b11000000000000) >> 12);
         var broadcastFlag = (BroadcastFlag)((firstBytes & 0b1100000000000000) >> 14);
         ushort totalLength = BinaryPrimitives.ReadUInt16LittleEndian(source[2..]);
-        if (source.Length != 4 + totalLength) return false;
-        value = new HciAclPacket(connectionHandle,
+        if (source.Length != 4 + totalLength)
+            return false;
+        value = new HciAclPacket(
+            connectionHandle,
             packetBoundaryFlag,
             broadcastFlag,
             totalLength,
-            source[4..(4 + totalLength)].ToArray());
+            source[4..(4 + totalLength)].ToArray()
+        );
         return true;
     }
 
     /// <inheritdoc />
-    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, [NotNullWhen(true)] out HciAclPacket? value) => TryReadBigEndian(source, out value, out _);
+    public static bool TryReadBigEndian(
+        ReadOnlySpan<byte> source,
+        [NotNullWhen(true)] out HciAclPacket? value
+    ) => TryReadBigEndian(source, out value, out _);
 
     /// <inheritdoc />
-    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, [NotNullWhen(true)] out HciAclPacket? value, out int bytesRead)
+    public static bool TryReadBigEndian(
+        ReadOnlySpan<byte> source,
+        [NotNullWhen(true)] out HciAclPacket? value,
+        out int bytesRead
+    )
     {
         throw new NotSupportedException();
     }
@@ -110,12 +137,20 @@ public class HciAclPacket(
 /// <param name="dataTotalLength"> The Data_Total_Length </param>
 /// <param name="data"> The actual data </param>
 /// <typeparam name="TData"> The type of the data </typeparam>
-public sealed class HciAclPacket<TData>(ushort connectionHandle,
+public sealed class HciAclPacket<TData>(
+    ushort connectionHandle,
     PacketBoundaryFlag packetBoundaryFlag,
     BroadcastFlag broadcastFlag,
     ushort dataTotalLength,
-    TData data)
-    : HciAclPacket(connectionHandle, packetBoundaryFlag, broadcastFlag, dataTotalLength, data.ToArrayLittleEndian()),
+    TData data
+)
+    : HciAclPacket(
+        connectionHandle,
+        packetBoundaryFlag,
+        broadcastFlag,
+        dataTotalLength,
+        data.ToArrayLittleEndian()
+    ),
         IHciPacket<HciAclPacket<TData>, TData>
     where TData : IBinaryWritable
 {

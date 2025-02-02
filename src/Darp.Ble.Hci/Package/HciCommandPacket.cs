@@ -11,10 +11,13 @@ public sealed class HciCommandPacket<TParameters>(TParameters commandParameters)
 {
     /// <inheritdoc />
     public static int HeaderLength => 3;
+
     /// <inheritdoc />
     public static HciPacketType Type => HciPacketType.HciCommand;
+
     /// <inheritdoc />
     public HciPacketType PacketType => HciPacketType.HciCommand;
+
     /// <inheritdoc />
     public int GetByteCount() => HeaderLength + Data.GetByteCount();
 
@@ -31,7 +34,8 @@ public sealed class HciCommandPacket<TParameters>(TParameters commandParameters)
     public bool TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
     {
         bytesWritten = 0;
-        if (destination.Length < HeaderLength) return false;
+        if (destination.Length < HeaderLength)
+            return false;
         var opCode = (ushort)TParameters.OpCode;
         destination[0] = (byte)(opCode & 0xFF);
         destination[1] = (byte)((opCode >> 8) & 0xFF);

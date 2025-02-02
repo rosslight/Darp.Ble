@@ -17,7 +17,11 @@ public static partial class AdvertisingDataExtensions
     /// <returns> The newly created advertising data </returns>
     /// <remarks> In case the section already exists, it will be replaced. If not, the new section will be added in the end </remarks>
     [Pure]
-    public static AdvertisingData With(this AdvertisingData advertisingData, AdTypes sectionType, byte[] sectionBytes)
+    public static AdvertisingData With(
+        this AdvertisingData advertisingData,
+        AdTypes sectionType,
+        byte[] sectionBytes
+    )
     {
         ArgumentNullException.ThrowIfNull(advertisingData);
         return advertisingData.With(sectionType, sectionBytes);
@@ -28,7 +32,10 @@ public static partial class AdvertisingDataExtensions
     /// <param name="flags"> The flags to set </param>
     /// <returns> The new advertising data </returns>
     [Pure]
-    public static AdvertisingData WithFlags(this AdvertisingData advertisingData, AdvertisingDataFlags flags)
+    public static AdvertisingData WithFlags(
+        this AdvertisingData advertisingData,
+        AdvertisingDataFlags flags
+    )
     {
         ArgumentNullException.ThrowIfNull(advertisingData);
         return advertisingData.With(AdTypes.Flags, [(byte)flags]);
@@ -39,11 +46,17 @@ public static partial class AdvertisingDataExtensions
     /// <param name="completeLocalName"> The complete local name to set </param>
     /// <returns> The new advertising data </returns>
     [Pure]
-    public static AdvertisingData WithCompleteLocalName(this AdvertisingData advertisingData, string completeLocalName)
+    public static AdvertisingData WithCompleteLocalName(
+        this AdvertisingData advertisingData,
+        string completeLocalName
+    )
     {
         ArgumentNullException.ThrowIfNull(advertisingData);
         ArgumentNullException.ThrowIfNull(completeLocalName);
-        return advertisingData.With(AdTypes.CompleteLocalName, Encoding.UTF8.GetBytes(completeLocalName));
+        return advertisingData.With(
+            AdTypes.CompleteLocalName,
+            Encoding.UTF8.GetBytes(completeLocalName)
+        );
     }
 
     /// <summary> Create a new <see cref="AdvertisingData"/> object with the <see cref="AdTypes.ShortenedLocalName"/> section created or updated </summary>
@@ -51,12 +64,17 @@ public static partial class AdvertisingDataExtensions
     /// <param name="shortenedLocalName"> The shortened local name to set </param>
     /// <returns> The new advertising data </returns>
     [Pure]
-    public static AdvertisingData WithShortenedLocalName(this AdvertisingData advertisingData,
-        string shortenedLocalName)
+    public static AdvertisingData WithShortenedLocalName(
+        this AdvertisingData advertisingData,
+        string shortenedLocalName
+    )
     {
         ArgumentNullException.ThrowIfNull(advertisingData);
         ArgumentNullException.ThrowIfNull(shortenedLocalName);
-        return advertisingData.With(AdTypes.ShortenedLocalName, Encoding.UTF8.GetBytes(shortenedLocalName));
+        return advertisingData.With(
+            AdTypes.ShortenedLocalName,
+            Encoding.UTF8.GetBytes(shortenedLocalName)
+        );
     }
 
     /// <summary>
@@ -72,7 +90,9 @@ public static partial class AdvertisingDataExtensions
     )
     {
         ArgumentNullException.ThrowIfNull(peripheral);
-        return advertisingData.WithCompleteListOfServiceUuids(peripheral.Services.Select(x => x.Uuid).ToArray());
+        return advertisingData.WithCompleteListOfServiceUuids(
+            peripheral.Services.Select(x => x.Uuid).ToArray()
+        );
     }
 
     /// <summary>
@@ -90,7 +110,7 @@ public static partial class AdvertisingDataExtensions
         params IReadOnlyCollection<BleUuid> bleUuids
     )
     {
-        return advertisingData.WithCompleteListOfServiceUuids([bleUuid, ..bleUuids]);
+        return advertisingData.WithCompleteListOfServiceUuids([bleUuid, .. bleUuids]);
     }
 
     /// <summary>
@@ -106,10 +126,12 @@ public static partial class AdvertisingDataExtensions
         IReadOnlyCollection<BleUuid> bleUuids
     )
     {
-        return advertisingData.WithListOfServiceUuids(bleUuids,
+        return advertisingData.WithListOfServiceUuids(
+            bleUuids,
             AdTypes.CompleteListOf16BitServiceOrServiceClassUuids,
             AdTypes.CompleteListOf32BitServiceOrServiceClassUuids,
-            AdTypes.CompleteListOf128BitServiceOrServiceClassUuids);
+            AdTypes.CompleteListOf128BitServiceOrServiceClassUuids
+        );
     }
 
     /// <summary>
@@ -127,7 +149,7 @@ public static partial class AdvertisingDataExtensions
         params IReadOnlyCollection<BleUuid> bleUuids
     )
     {
-        return advertisingData.WithIncompleteListOfServiceUuids([bleUuid, ..bleUuids]);
+        return advertisingData.WithIncompleteListOfServiceUuids([bleUuid, .. bleUuids]);
     }
 
     /// <summary>
@@ -143,10 +165,12 @@ public static partial class AdvertisingDataExtensions
         IReadOnlyCollection<BleUuid> bleUuids
     )
     {
-        return advertisingData.WithListOfServiceUuids(bleUuids,
+        return advertisingData.WithListOfServiceUuids(
+            bleUuids,
             AdTypes.IncompleteListOf16BitServiceOrServiceClassUuids,
             AdTypes.IncompleteListOf32BitServiceOrServiceClassUuids,
-            AdTypes.IncompleteListOf128BitServiceOrServiceClassUuids);
+            AdTypes.IncompleteListOf128BitServiceOrServiceClassUuids
+        );
     }
 
     private static AdvertisingData WithListOfServiceUuids(
@@ -176,7 +200,10 @@ public static partial class AdvertisingDataExtensions
                     numberOf128BitUuids++;
                     break;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(bleUuids), "Uuid of invalid type. Has to be 16, 32 or 128 bit");
+                    throw new ArgumentOutOfRangeException(
+                        nameof(bleUuids),
+                        "Uuid of invalid type. Has to be 16, 32 or 128 bit"
+                    );
             }
         }
 
@@ -201,16 +228,19 @@ public static partial class AdvertisingDataExtensions
         return advertisingData;
     }
 
-    private static byte[] GetServiceUuidBytes(IReadOnlyCollection<BleUuid> additionalUuids,
+    private static byte[] GetServiceUuidBytes(
+        IReadOnlyCollection<BleUuid> additionalUuids,
         int numberOfUuids,
-        BleUuidType targetType)
+        BleUuidType targetType
+    )
     {
         var numberOfBytes = (int)targetType;
         var bytes = new byte[numberOfUuids * numberOfBytes];
         Span<byte> byteSpan = bytes;
         foreach (BleUuid additionalUuid in additionalUuids)
         {
-            if (additionalUuid.Type != targetType) continue;
+            if (additionalUuid.Type != targetType)
+                continue;
             additionalUuid.TryWriteBytes(byteSpan[..numberOfBytes]);
             byteSpan = byteSpan[numberOfBytes..];
         }
@@ -230,9 +260,13 @@ public static partial class AdvertisingDataExtensions
     public static AdvertisingData WithManufacturerSpecificData(
         this AdvertisingData advertisingData,
         CompanyIdentifiers companyIdentifier,
-        byte[] manufacturerSpecificData)
+        byte[] manufacturerSpecificData
+    )
     {
-        return advertisingData.WithManufacturerSpecificData(companyIdentifier, manufacturerSpecificData);
+        return advertisingData.WithManufacturerSpecificData(
+            companyIdentifier,
+            manufacturerSpecificData
+        );
     }
 
     /// <summary>
@@ -246,7 +280,8 @@ public static partial class AdvertisingDataExtensions
     public static AdvertisingData WithManufacturerSpecificData(
         this AdvertisingData advertisingData,
         CompanyIdentifiers companyIdentifier,
-        ReadOnlyMemory<byte> manufacturerSpecificData)
+        ReadOnlyMemory<byte> manufacturerSpecificData
+    )
     {
         ArgumentNullException.ThrowIfNull(advertisingData);
         Memory<byte> sectionData = new byte[manufacturerSpecificData.Length + 2];

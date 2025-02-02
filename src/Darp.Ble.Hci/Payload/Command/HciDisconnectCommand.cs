@@ -18,6 +18,7 @@ public readonly partial record struct HciDisconnectCommand : IHciCommand
     /// <summary> Connection_Handle </summary>
     /// <remarks> Range: 0x0000 to 0x0EFF </remarks>
     public required ushort ConnectionHandle { get; init; }
+
     /// <summary> Indicates the reason for ending the connection </summary>
     /// <remarks> <see cref="HciCommandStatus.AuthenticationFailure"/>
     /// or <see cref="HciCommandStatus.RemoteUserTerminatedConnection"/>

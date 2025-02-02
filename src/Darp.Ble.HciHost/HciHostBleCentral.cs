@@ -13,13 +13,17 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost;
 
-internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger<HciHostBleCentral> logger) : BleCentral(device, logger)
+internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger<HciHostBleCentral> logger)
+    : BleCentral(device, logger)
 {
     private readonly Hci.HciHost _host = device.Host;
 
     /// <inheritdoc />
-    protected override IObservable<GattServerPeer> ConnectToPeripheralCore(BleAddress address, BleConnectionParameters connectionParameters,
-        BleScanParameters scanParameters)
+    protected override IObservable<GattServerPeer> ConnectToPeripheralCore(
+        BleAddress address,
+        BleConnectionParameters connectionParameters,
+        BleScanParameters scanParameters
+    )
     {
         var scanInterval = (ushort)scanParameters.ScanInterval;
         var scanWindow = (ushort)scanParameters.ScanWindow;
@@ -43,26 +47,42 @@ internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger<HciHost
                 MinCeLength = 0,
                 MaxCeLength = 0,
             };
-            return _host.QueryCommandStatus(packet)
+            return _host
+                .QueryCommandStatus(packet)
                 .SelectMany(status =>
                 {
-                    if (status.Data.Status is not (HciCommandStatus.PageTimeout or HciCommandStatus.Success))
+                    if (
+                        status.Data.Status
+                        is not (HciCommandStatus.PageTimeout or HciCommandStatus.Success)
+                    )
                     {
-                        throw new BleCentralConnectionFailedException(this, $"Started connection but is not pending but {status}");
+                        throw new BleCentralConnectionFailedException(
+                            this,
+                            $"Started connection but is not pending but {status}"
+                        );
                     }
                     return _host.WhenHciLeMetaEventPackageReceived;
                 })
                 .Timeout(timeout)
                 .SelectWhereLeMetaEvent<HciLeEnhancedConnectionCompleteV1Event>()
-                .Select(x => new HciHostGattServerPeer(this, _host, x.Data, address, LoggerFactory.CreateLogger<HciHostGattServerPeer>()))
+                .Select(x => new HciHostGattServerPeer(
+                    this,
+                    _host,
+                    x.Data,
+                    address,
+                    LoggerFactory.CreateLogger<HciHostGattServerPeer>()
+                ))
                 .Subscribe(observer.OnNext, observer.OnError, observer.OnCompleted);
         });
     }
 
     /// <inheritdoc />
-    protected override IObservable<IGattServerPeer> DoAfterConnection(IObservable<IGattServerPeer> source) => source
-        .Select(x => ((HciHostGattServerPeer)x).RequestExchangeMtu(65))
-        .Concat()
-        .Select(x => x.SetDataLength(65, 328))
-        .Concat();
+    protected override IObservable<IGattServerPeer> DoAfterConnection(
+        IObservable<IGattServerPeer> source
+    ) =>
+        source
+            .Select(x => ((HciHostGattServerPeer)x).RequestExchangeMtu(65))
+            .Concat()
+            .Select(x => x.SetDataLength(65, 328))
+            .Concat();
 }

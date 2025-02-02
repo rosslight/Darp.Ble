@@ -32,30 +32,42 @@ public static class EchoServiceContract
         handleRequest ??= Observable.Return;
 
         // Add the client service
-        IGattClientService service = await peripheral.AddServiceAsync(serviceUuid, isPrimary: true, cancellationToken).ConfigureAwait(false);
+        IGattClientService service = await peripheral
+            .AddServiceAsync(serviceUuid, isPrimary: true, cancellationToken)
+            .ConfigureAwait(false);
 
         // Add the mandatory write characteristic
         IGattClientCharacteristic<Properties.Notify> notifyCharacteristic = null!;
-        IGattClientCharacteristic<Properties.Write> writeCharacteristic = await service.AddCharacteristicAsync<Properties.Write>(
-            writeUuid,
-            onWrite: (peer, bytes) =>
-            {
-                IObservable<byte[]> responseObservable = handleRequest(bytes);
-                // ReSharper disable once AccessToModifiedClosure
-                // We expect onWrite to not execute before the notify characteristic was added
-                _ = responseObservable.Subscribe(responseBytes => notifyCharacteristic.Notify(peer, responseBytes));
-                return GattProtocolStatus.Success;
-            },
-            cancellationToken: cancellationToken
-        ).ConfigureAwait(false);
+        IGattClientCharacteristic<Properties.Write> writeCharacteristic = await service
+            .AddCharacteristicAsync<Properties.Write>(
+                writeUuid,
+                onWrite: (peer, bytes) =>
+                {
+                    IObservable<byte[]> responseObservable = handleRequest(bytes);
+                    // ReSharper disable once AccessToModifiedClosure
+                    // We expect onWrite to not execute before the notify characteristic was added
+                    _ = responseObservable.Subscribe(responseBytes =>
+                        notifyCharacteristic.Notify(peer, responseBytes)
+                    );
+                    return GattProtocolStatus.Success;
+                },
+                cancellationToken: cancellationToken
+            )
+            .ConfigureAwait(false);
 
         // Add the mandatory notify characteristic
-        notifyCharacteristic = await service.AddCharacteristicAsync<Properties.Notify>(
-            notifyUuid,
-            cancellationToken: cancellationToken
-        ).ConfigureAwait(false);
+        notifyCharacteristic = await service
+            .AddCharacteristicAsync<Properties.Notify>(
+                notifyUuid,
+                cancellationToken: cancellationToken
+            )
+            .ConfigureAwait(false);
 
-        return new GattClientEchoService(service) { Write = writeCharacteristic, Notify = notifyCharacteristic };
+        return new GattClientEchoService(service)
+        {
+            Write = writeCharacteristic,
+            Notify = notifyCharacteristic,
+        };
     }
 
     /// <summary> Discover the echo server </summary>
@@ -76,49 +88,66 @@ public static class EchoServiceContract
         ArgumentNullException.ThrowIfNull(serverPeer);
 
         // Discover the service
-        IGattServerService service = await serverPeer.DiscoverServiceAsync(serviceUuid, cancellationToken).ConfigureAwait(false);
+        IGattServerService service = await serverPeer
+            .DiscoverServiceAsync(serviceUuid, cancellationToken)
+            .ConfigureAwait(false);
 
         // Discover the write characteristic
-        IGattServerCharacteristic<Properties.Write> char1 = await service.DiscoverCharacteristicAsync<Properties.Write>(
-            writeUuid,
-            cancellationToken: cancellationToken
-        ).ConfigureAwait(false);
+        IGattServerCharacteristic<Properties.Write> char1 = await service
+            .DiscoverCharacteristicAsync<Properties.Write>(
+                writeUuid,
+                cancellationToken: cancellationToken
+            )
+            .ConfigureAwait(false);
 
         // Discover the notify characteristic
-        IGattServerCharacteristic<Properties.Notify> char2 = await service.DiscoverCharacteristicAsync<Properties.Notify>(
-            notifyUuid,
-            cancellationToken: cancellationToken
-        ).ConfigureAwait(false);
+        IGattServerCharacteristic<Properties.Notify> char2 = await service
+            .DiscoverCharacteristicAsync<Properties.Notify>(
+                notifyUuid,
+                cancellationToken: cancellationToken
+            )
+            .ConfigureAwait(false);
         return new GattServerEchoService(service) { Write = char1, Notify = char2 };
     }
 }
 
 /// <summary> The EchoService wrapper representing the gatt client </summary>
-public sealed class GattClientEchoService(IGattClientService service) : GattClientServiceProxy(service)
+public sealed class GattClientEchoService(IGattClientService service)
+    : GattClientServiceProxy(service)
 {
     /// <summary> The write characteristic </summary>
     public required IGattClientCharacteristic<Properties.Write> Write { get; init; }
+
     /// <summary> The notify characteristic </summary>
     public required IGattClientCharacteristic<Properties.Notify> Notify { get; init; }
 }
 
 /// <summary> The EchoService wrapper representing the gatt server </summary>
-public sealed class GattServerEchoService(IGattServerService service) : GattServerServiceProxy(service)
+public sealed class GattServerEchoService(IGattServerService service)
+    : GattServerServiceProxy(service)
 {
     /// <summary> The write characteristic </summary>
     public required IGattServerCharacteristic<Properties.Write> Write { get; init; }
+
     /// <summary> The notify characteristic </summary>
     public required IGattServerCharacteristic<Properties.Notify> Notify { get; init; }
 
     /// <summary> Subscribe to all notifications </summary>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> A disposable to unsubscribe from notifications </returns>
-    public async Task<IAsyncDisposable> EnableNotificationsAsync(CancellationToken cancellationToken = default)
+    public async Task<IAsyncDisposable> EnableNotificationsAsync(
+        CancellationToken cancellationToken = default
+    )
     {
-        return await Notify.OnNotifyAsync(_ =>
-        {
-            // Do not do anything but subscribe
-        }, cancellationToken: cancellationToken).ConfigureAwait(false);
+        return await Notify
+            .OnNotifyAsync(
+                _ =>
+                {
+                    // Do not do anything but subscribe
+                },
+                cancellationToken: cancellationToken
+            )
+            .ConfigureAwait(false);
     }
 
     /// <summary> Query one request from the echo service </summary>
@@ -126,12 +155,16 @@ public sealed class GattServerEchoService(IGattServerService service) : GattServ
     /// <param name="timeout"> The timeout. Default is 10 seconds </param>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> The bytes returned by the echo service </returns>
-    public async Task<byte[]> QueryOneAsync(byte[] requestBytes,
+    public async Task<byte[]> QueryOneAsync(
+        byte[] requestBytes,
         TimeSpan? timeout = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         timeout ??= TimeSpan.FromSeconds(10);
-        IDisposableObservable<byte[]> disposableObs = await Notify.OnNotifyAsync(cancellationToken).ConfigureAwait(false);
+        IDisposableObservable<byte[]> disposableObs = await Notify
+            .OnNotifyAsync(cancellationToken)
+            .ConfigureAwait(false);
         await using (disposableObs.ConfigureAwait(false))
         {
             Task<byte[]> notifyConnected = disposableObs
