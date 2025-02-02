@@ -13,11 +13,7 @@ public sealed class AttWriteReqTests
 
     [Theory]
     [InlineData(25, "AABBCCDD", "121900AABBCCDD")]
-    public void TryWriteLittleEndian_ShouldBeValid(
-        ushort handle,
-        string valueHexBytes,
-        string expectedHexBytes
-    )
+    public void TryWriteLittleEndian_ShouldBeValid(ushort handle, string valueHexBytes, string expectedHexBytes)
     {
         var buffer = new byte[7];
         byte[] valueBytes = Convert.FromHexString(valueHexBytes);

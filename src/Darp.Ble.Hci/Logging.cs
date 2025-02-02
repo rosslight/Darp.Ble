@@ -31,20 +31,10 @@ internal static partial class Logging
         Level = LogLevel.Warning,
         Message = "H4Transport: Could not send packet {@Packet} due to error while encoding"
     )]
-    public static partial void LogPacketSendingErrorEncoding(
-        this ILogger logger,
-        IHciPacket packet
-    );
+    public static partial void LogPacketSendingErrorEncoding(this ILogger logger, IHciPacket packet);
 
-    [LoggerMessage(
-        Level = LogLevel.Trace,
-        Message = "H4Transport: Sending packet {@Packet} with bytes 0x{@Bytes}"
-    )]
-    public static partial void LogPacketSending(
-        this ILogger logger,
-        IHciPacket packet,
-        byte[] bytes
-    );
+    [LoggerMessage(Level = LogLevel.Trace, Message = "H4Transport: Sending packet {@Packet} with bytes 0x{@Bytes}")]
+    public static partial void LogPacketSending(this ILogger logger, IHciPacket packet, byte[] bytes);
 
     [LoggerMessage(
         Level = LogLevel.Warning,

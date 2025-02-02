@@ -9,8 +9,7 @@ namespace Darp.Ble.Implementation;
 /// <inheritdoc />
 /// <param name="logger"> The logger </param>
 /// <param name="loggerFactory"> The logger factory </param>
-public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice> logger)
-    : IBleDevice
+public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice> logger) : IBleDevice
 {
     /// <summary> The logger </summary>
     protected ILogger<BleDevice> Logger { get; } = logger;
@@ -73,9 +72,7 @@ public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice>
     }
 
     /// <inheritdoc />
-    public async Task<InitializeResult> InitializeAsync(
-        CancellationToken cancellationToken = default
-    )
+    public async Task<InitializeResult> InitializeAsync(CancellationToken cancellationToken = default)
     {
         if (IsInitialized)
             return InitializeResult.Success;
@@ -84,8 +81,7 @@ public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice>
         try
         {
             _isInitializing = true;
-            InitializeResult result = await InitializeAsyncCore(cancellationToken)
-                .ConfigureAwait(false);
+            InitializeResult result = await InitializeAsyncCore(cancellationToken).ConfigureAwait(false);
             if (result is not InitializeResult.Success)
                 return result;
             IsInitialized = true;
@@ -99,10 +95,7 @@ public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice>
     }
 
     /// <inheritdoc />
-    public Task SetRandomAddressAsync(
-        BleAddress randomAddress,
-        CancellationToken cancellationToken = default
-    )
+    public Task SetRandomAddressAsync(BleAddress randomAddress, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(randomAddress);
         if (
@@ -114,26 +107,18 @@ public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice>
             )
         )
         {
-            throw new ArgumentOutOfRangeException(
-                nameof(randomAddress),
-                "The address provided has to be random"
-            );
+            throw new ArgumentOutOfRangeException(nameof(randomAddress), "The address provided has to be random");
         }
         return SetRandomAddressAsyncCore(randomAddress, cancellationToken);
     }
 
     /// <inheritdoc cref="SetRandomAddressAsync" />
-    protected abstract Task SetRandomAddressAsyncCore(
-        BleAddress randomAddress,
-        CancellationToken cancellationToken
-    );
+    protected abstract Task SetRandomAddressAsyncCore(BleAddress randomAddress, CancellationToken cancellationToken);
 
     /// <summary> Initializes the ble device. </summary>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> The status of the initialization. Success or a custom error code. </returns>
-    protected abstract Task<InitializeResult> InitializeAsyncCore(
-        CancellationToken cancellationToken
-    );
+    protected abstract Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken);
 
     /// <summary> Throws if not initialized or null </summary>
     /// <exception cref="NotInitializedException"> Thrown when the device has not been initialized </exception>
@@ -175,10 +160,7 @@ public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice>
             await observer.DisposeAsync().ConfigureAwait(false);
         if (Capabilities.HasFlag(Capabilities.Central) && Central is BleCentral central)
             await central.DisposeAsync().ConfigureAwait(false);
-        if (
-            Capabilities.HasFlag(Capabilities.Broadcaster)
-            && Broadcaster is BleBroadcaster broadcaster
-        )
+        if (Capabilities.HasFlag(Capabilities.Broadcaster) && Broadcaster is BleBroadcaster broadcaster)
             await broadcaster.DisposeAsync().ConfigureAwait(false);
         if (Capabilities.HasFlag(Capabilities.Peripheral) && Peripheral is BlePeripheral peripheral)
             await peripheral.DisposeAsync().ConfigureAwait(false);

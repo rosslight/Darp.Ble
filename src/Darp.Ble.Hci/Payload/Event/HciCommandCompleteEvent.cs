@@ -6,8 +6,7 @@ namespace Darp.Ble.Hci.Payload.Event;
 
 /// <summary> The HCI_Command_Complete event is used by the Controller for most commands to transmit return status of a command and the other event parameters that are specified for the issued HCI command </summary>
 /// <typeparam name="TParameters"></typeparam>
-public readonly record struct HciCommandCompleteEvent<TParameters>
-    : IHciEvent<HciCommandCompleteEvent<TParameters>>
+public readonly record struct HciCommandCompleteEvent<TParameters> : IHciEvent<HciCommandCompleteEvent<TParameters>>
     where TParameters : IBinaryReadable<TParameters>
 {
     /// <inheritdoc />
@@ -23,10 +22,7 @@ public readonly record struct HciCommandCompleteEvent<TParameters>
     public required TParameters ReturnParameters { get; init; }
 
     /// <inheritdoc />
-    public static bool TryReadLittleEndian(
-        ReadOnlySpan<byte> source,
-        out HciCommandCompleteEvent<TParameters> value
-    )
+    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out HciCommandCompleteEvent<TParameters> value)
     {
         return TryReadLittleEndian(source, out value, out _);
     }
@@ -45,11 +41,7 @@ public readonly record struct HciCommandCompleteEvent<TParameters>
         byte numHciCommandPackets = source[0];
         ushort commandOpCode = BinaryPrimitives.ReadUInt16LittleEndian(source[1..]);
         if (
-            !TParameters.TryReadLittleEndian(
-                source[3..],
-                out TParameters? returnParameters,
-                out int parameterBytesRead
-            )
+            !TParameters.TryReadLittleEndian(source[3..], out TParameters? returnParameters, out int parameterBytesRead)
         )
             return false;
         bytesRead = 3 + parameterBytesRead;
@@ -63,10 +55,7 @@ public readonly record struct HciCommandCompleteEvent<TParameters>
     }
 
     /// <inheritdoc />
-    public static bool TryReadBigEndian(
-        ReadOnlySpan<byte> source,
-        out HciCommandCompleteEvent<TParameters> value
-    )
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out HciCommandCompleteEvent<TParameters> value)
     {
         throw new NotSupportedException();
     }

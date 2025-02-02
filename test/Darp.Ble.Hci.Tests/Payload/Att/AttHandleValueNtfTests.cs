@@ -14,20 +14,12 @@ public sealed class AttHandleValueNtfTests
     [Theory]
     [InlineData("1B2100", 0x0021, "")]
     [InlineData("1B2100AABBCCDDEEFF", 0x0021, "AABBCCDDEEFF")]
-    public void TryReadLittleEndian_ShouldBeValid(
-        string hexBytes,
-        ushort handle,
-        string valueHexBytes
-    )
+    public void TryReadLittleEndian_ShouldBeValid(string hexBytes, ushort handle, string valueHexBytes)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
         byte[] valueBytes = Convert.FromHexString(valueHexBytes);
 
-        bool success = AttHandleValueNtf.TryReadLittleEndian(
-            bytes,
-            out AttHandleValueNtf value,
-            out int decoded
-        );
+        bool success = AttHandleValueNtf.TryReadLittleEndian(bytes, out AttHandleValueNtf value, out int decoded);
 
         success.Should().BeTrue();
         decoded.Should().Be(3 + valueBytes.Length);

@@ -11,14 +11,7 @@ namespace Darp.Ble.Hci.Payload.Command;
 /// <param name="byte4"> The firth byte </param>
 /// <param name="byte5"> The sixth byte </param>
 [BinaryObject]
-public readonly partial struct UInt48(
-    byte byte0,
-    byte byte1,
-    byte byte2,
-    byte byte3,
-    byte byte4,
-    byte byte5
-)
+public readonly partial struct UInt48(byte byte0, byte byte1, byte byte2, byte byte3, byte byte4, byte byte5)
 {
     private readonly byte _byte0 = byte0;
     private readonly byte _byte1 = byte1;

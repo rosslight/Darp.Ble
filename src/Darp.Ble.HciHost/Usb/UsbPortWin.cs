@@ -25,12 +25,7 @@ internal static partial class UsbPortWin
             Match vendorMatch = GetDeviceVendorIdRegex().Match(pnpDeviceId); // 1915
             Match productMatch = GetDeviceProductIdRegex().Match(pnpDeviceId); // C00A
             Match parentIdPrefixMatch = GetDeviceParentIdPrefixRegex().Match(pnpDeviceId); // 6&3116A719&0
-            if (
-                !typeMatch.Success
-                || !vendorMatch.Success
-                || !productMatch.Success
-                || !parentIdPrefixMatch.Success
-            )
+            if (!typeMatch.Success || !vendorMatch.Success || !productMatch.Success || !parentIdPrefixMatch.Success)
             {
                 continue;
             }
@@ -67,9 +62,7 @@ internal static partial class UsbPortWin
         string s1 = input[..(input.Length / 2)];
         string s2 = input[(input.Length / 2)..];
 
-        ulong x =
-            (ulong)StringComparer.Ordinal.GetHashCode(s1) << 0x20
-            | (uint)StringComparer.Ordinal.GetHashCode(s2);
+        ulong x = (ulong)StringComparer.Ordinal.GetHashCode(s1) << 0x20 | (uint)StringComparer.Ordinal.GetHashCode(s2);
 
         return x;
     }

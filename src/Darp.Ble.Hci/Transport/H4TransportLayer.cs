@@ -38,11 +38,7 @@ public sealed class H4TransportLayer : ITransportLayer
         {
             while (!_cancelToken.IsCancellationRequested)
             {
-                if (
-                    !_serialPort.IsOpen
-                    || _txQueue.IsEmpty
-                    || !_txQueue.TryDequeue(out IHciPacket? packet)
-                )
+                if (!_serialPort.IsOpen || _txQueue.IsEmpty || !_txQueue.TryDequeue(out IHciPacket? packet))
                 {
                     await Task.Delay(1, _cancelToken).ConfigureAwait(false);
                     continue;
@@ -81,12 +77,8 @@ public sealed class H4TransportLayer : ITransportLayer
             .ConfigureAwait(false);
         byte payloadLength = buffer.Span[payloadLengthIndex];
         // Read Payload
-        Memory<byte> payloadBuffer = buffer[
-            TPacket.HeaderLength..(TPacket.HeaderLength + payloadLength)
-        ];
-        await _serialPort
-            .BaseStream.ReadExactlyAsync(payloadBuffer, _cancelToken)
-            .ConfigureAwait(false);
+        Memory<byte> payloadBuffer = buffer[TPacket.HeaderLength..(TPacket.HeaderLength + payloadLength)];
+        await _serialPort.BaseStream.ReadExactlyAsync(payloadBuffer, _cancelToken).ConfigureAwait(false);
         if (
             !TPacket.TryReadLittleEndian(
                 buffer[..(TPacket.HeaderLength + payloadLength)].Span,

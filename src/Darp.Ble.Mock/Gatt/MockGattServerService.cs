@@ -29,9 +29,7 @@ internal sealed class MockGattServerService(
             ));
 
     /// <inheritdoc />
-    protected override IObservable<GattServerCharacteristic> DiscoverCharacteristicsCore(
-        BleUuid uuid
-    )
+    protected override IObservable<GattServerCharacteristic> DiscoverCharacteristicsCore(BleUuid uuid)
     {
         return DiscoverCharacteristicsCore().Where(x => x.Uuid == uuid);
     }

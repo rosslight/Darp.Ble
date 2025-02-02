@@ -27,11 +27,7 @@ public sealed class HciDisconnectionCompleteEventTests
             Reason = expectedReason,
         };
 
-        bool success = Extensions.TryReadLittleEndian(
-            bytes,
-            out HciDisconnectionCompleteEvent value,
-            out int decoded
-        );
+        bool success = Extensions.TryReadLittleEndian(bytes, out HciDisconnectionCompleteEvent value, out int decoded);
 
         success.Should().BeTrue();
         decoded.Should().Be(3);
@@ -45,11 +41,7 @@ public sealed class HciDisconnectionCompleteEventTests
     public void TryReadLittleEndian_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
-        bool success = Extensions.TryReadLittleEndian(
-            bytes,
-            out HciCommandStatusEvent _,
-            out int decoded
-        );
+        bool success = Extensions.TryReadLittleEndian(bytes, out HciCommandStatusEvent _, out int decoded);
 
         success.Should().BeFalse();
         decoded.Should().Be(expectedBytesDecoded);

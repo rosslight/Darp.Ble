@@ -23,14 +23,7 @@ public sealed class BleCharacteristicTests
             BleAddress.NotAvailable,
             NullLogger<MockGattClientPeer>.Instance
         );
-        var mockClientChar = new MockGattClientCharacteristic(
-            null!,
-            0,
-            0x1234,
-            TProperty.GattProperty,
-            null,
-            null
-        );
+        var mockClientChar = new MockGattClientCharacteristic(null!, 0, 0x1234, TProperty.GattProperty, null, null);
         var characteristic = new MockGattServerCharacteristic(
             null!,
             0x1234,
@@ -48,11 +41,10 @@ public sealed class BleCharacteristicTests
     {
         byte[] bytes = Convert.FromHexString("1234");
 
-        GattServerCharacteristic<Properties.Notify> newChar =
-            CreateCharacteristic<Properties.Notify>(
-                out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
-                out IGattClientPeer? clientPeer
-            );
+        GattServerCharacteristic<Properties.Notify> newChar = CreateCharacteristic<Properties.Notify>(
+            out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
+            out IGattClientPeer? clientPeer
+        );
         await using IDisposableObservable<byte[]> observable = await newChar.OnNotifyAsync();
         Task<byte[]> resultTask = observable.FirstAsync().ToTask();
         clientCharacteristic.Notify(clientPeer, bytes);
@@ -67,11 +59,10 @@ public sealed class BleCharacteristicTests
     {
         byte[] bytes = Convert.FromHexString("1234");
 
-        GattServerCharacteristic<Properties.Notify> newChar =
-            CreateCharacteristic<Properties.Notify>(
-                out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
-                out IGattClientPeer? clientPeer
-            );
+        GattServerCharacteristic<Properties.Notify> newChar = CreateCharacteristic<Properties.Notify>(
+            out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
+            out IGattClientPeer? clientPeer
+        );
         IDisposableObservable<byte[]> observable = await newChar.OnNotifyAsync();
         Task<byte[]> resultTask = observable.FirstAsync().ToTask();
         await observable.DisposeAsync();
@@ -84,11 +75,10 @@ public sealed class BleCharacteristicTests
     {
         byte[] bytes = Convert.FromHexString("1234");
 
-        GattServerCharacteristic<Properties.Notify> newChar =
-            CreateCharacteristic<Properties.Notify>(
-                out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
-                out IGattClientPeer? clientPeer
-            );
+        GattServerCharacteristic<Properties.Notify> newChar = CreateCharacteristic<Properties.Notify>(
+            out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
+            out IGattClientPeer? clientPeer
+        );
         IDisposableObservable<byte[]> observable1 = await newChar.OnNotifyAsync();
         IDisposableObservable<byte[]> observable2 = await newChar.OnNotifyAsync();
         Task<byte[]> resultTask1 = observable1.FirstAsync().ToTask();
@@ -105,11 +95,10 @@ public sealed class BleCharacteristicTests
     {
         byte[] bytes = Convert.FromHexString("1234");
 
-        GattServerCharacteristic<Properties.Notify> newChar =
-            CreateCharacteristic<Properties.Notify>(
-                out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
-                out IGattClientPeer? clientPeer
-            );
+        GattServerCharacteristic<Properties.Notify> newChar = CreateCharacteristic<Properties.Notify>(
+            out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
+            out IGattClientPeer? clientPeer
+        );
         IDisposableObservable<byte[]> observable1 = await newChar.OnNotifyAsync();
         IDisposableObservable<byte[]> observable2 = await newChar.OnNotifyAsync();
         Task<byte[]> resultTask1 = observable1.FirstAsync().ToTask();
@@ -129,11 +118,10 @@ public sealed class BleCharacteristicTests
     {
         byte[] bytes = Convert.FromHexString("1234");
 
-        GattServerCharacteristic<Properties.Notify> newChar =
-            CreateCharacteristic<Properties.Notify>(
-                out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
-                out IGattClientPeer? clientPeer
-            );
+        GattServerCharacteristic<Properties.Notify> newChar = CreateCharacteristic<Properties.Notify>(
+            out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
+            out IGattClientPeer? clientPeer
+        );
         IDisposableObservable<byte[]> notifyObservable = await newChar.OnNotifyAsync();
         Task<byte[]> resultTask = notifyObservable.FirstAsync().ToTask();
         clientCharacteristic.Notify(clientPeer, bytes);

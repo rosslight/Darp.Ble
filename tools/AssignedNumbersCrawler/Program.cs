@@ -167,11 +167,7 @@ string ToPascalCase(string original)
         RegexOptions.None,
         TimeSpan.FromSeconds(1)
     );
-    var lowerCaseNextToNumber = new Regex(
-        "(?<=[0-9])[a-z]",
-        RegexOptions.None,
-        TimeSpan.FromSeconds(1)
-    );
+    var lowerCaseNextToNumber = new Regex("(?<=[0-9])[a-z]", RegexOptions.None, TimeSpan.FromSeconds(1));
     var upperCaseInside = new Regex(
         "(?<=[A-Z])[A-Z]+?((?=[A-Z][a-z])|(?=[0-9]))",
         RegexOptions.ExplicitCapture,

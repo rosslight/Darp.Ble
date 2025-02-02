@@ -51,8 +51,7 @@ public class HciAclPacket(
     }
 
     /// <inheritdoc />
-    public bool TryWriteLittleEndian(Span<byte> destination) =>
-        TryWriteLittleEndian(destination, out _);
+    public bool TryWriteLittleEndian(Span<byte> destination) => TryWriteLittleEndian(destination, out _);
 
     /// <inheritdoc />
     public bool TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
@@ -60,9 +59,7 @@ public class HciAclPacket(
         bytesWritten = 0;
         if (destination.Length < GetByteCount())
             return false;
-        var firstBytes = (ushort)(
-            ConnectionHandle | (byte)PacketBoundaryFlag << 12 | (byte)BroadcastFlag << 14
-        );
+        var firstBytes = (ushort)(ConnectionHandle | (byte)PacketBoundaryFlag << 12 | (byte)BroadcastFlag << 14);
         BinaryPrimitives.WriteUInt16LittleEndian(destination, firstBytes);
         BinaryPrimitives.WriteUInt16LittleEndian(destination[2..], DataTotalLength);
         bytesWritten += 4;
@@ -76,14 +73,11 @@ public class HciAclPacket(
     public bool TryWriteBigEndian(Span<byte> destination) => TryWriteBigEndian(destination, out _);
 
     /// <inheritdoc />
-    public bool TryWriteBigEndian(Span<byte> destination, out int bytesWritten) =>
-        throw new NotSupportedException();
+    public bool TryWriteBigEndian(Span<byte> destination, out int bytesWritten) => throw new NotSupportedException();
 
     /// <inheritdoc />
-    public static bool TryReadLittleEndian(
-        ReadOnlySpan<byte> source,
-        [NotNullWhen(true)] out HciAclPacket? value
-    ) => TryReadLittleEndian(source, out value, out _);
+    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, [NotNullWhen(true)] out HciAclPacket? value) =>
+        TryReadLittleEndian(source, out value, out _);
 
     /// <inheritdoc />
     public static bool TryReadLittleEndian(
@@ -114,10 +108,8 @@ public class HciAclPacket(
     }
 
     /// <inheritdoc />
-    public static bool TryReadBigEndian(
-        ReadOnlySpan<byte> source,
-        [NotNullWhen(true)] out HciAclPacket? value
-    ) => TryReadBigEndian(source, out value, out _);
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, [NotNullWhen(true)] out HciAclPacket? value) =>
+        TryReadBigEndian(source, out value, out _);
 
     /// <inheritdoc />
     public static bool TryReadBigEndian(
@@ -144,13 +136,7 @@ public sealed class HciAclPacket<TData>(
     ushort dataTotalLength,
     TData data
 )
-    : HciAclPacket(
-        connectionHandle,
-        packetBoundaryFlag,
-        broadcastFlag,
-        dataTotalLength,
-        data.ToArrayLittleEndian()
-    ),
+    : HciAclPacket(connectionHandle, packetBoundaryFlag, broadcastFlag, dataTotalLength, data.ToArrayLittleEndian()),
         IHciPacket<HciAclPacket<TData>, TData>
     where TData : IBinaryWritable
 {

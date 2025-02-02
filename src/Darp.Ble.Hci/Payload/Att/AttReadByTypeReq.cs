@@ -45,9 +45,7 @@ public readonly partial record struct AttReadByTypeReq<TAttributeType> : IAttPdu
         Span<TAttributeType> attributeTypeSpan = stackalloc TAttributeType[1];
         attributeTypeSpan[0] = AttributeType;
         bytesWritten = GetByteCount();
-        return MemoryMarshal
-            .Cast<TAttributeType, byte>(attributeTypeSpan)
-            .TryCopyTo(destination[5..]);
+        return MemoryMarshal.Cast<TAttributeType, byte>(attributeTypeSpan).TryCopyTo(destination[5..]);
     }
 
     /// <inheritdoc />

@@ -19,24 +19,20 @@ public sealed class GattServerPeerTests
     [InlineData(0x1234)]
     [InlineData(0x1234, 0x1235)]
     [InlineData(0x1234, 0x1235, 0x1236)]
-    public async Task DiscoverServicesAsync_AnyAmountOfServices_ShouldBeDiscovered(
-        params int[] serviceUuids
-    )
+    public async Task DiscoverServicesAsync_AnyAmountOfServices_ShouldBeDiscovered(params int[] serviceUuids)
     {
         BleUuid[] bleUuids = serviceUuids.Select(i => BleUuid.FromUInt16((ushort)i)).ToArray();
-        IObservable<IGattServerService> observable = Observable.Create<IGattServerService>(
-            observer =>
+        IObservable<IGattServerService> observable = Observable.Create<IGattServerService>(observer =>
+        {
+            foreach (BleUuid bleUuid in bleUuids)
             {
-                foreach (BleUuid bleUuid in bleUuids)
-                {
-                    var substituteService = Substitute.For<IGattServerService>();
-                    substituteService.Uuid.Returns(bleUuid);
-                    observer.OnNext(substituteService);
-                }
-                observer.OnCompleted();
-                return Disposable.Empty;
+                var substituteService = Substitute.For<IGattServerService>();
+                substituteService.Uuid.Returns(bleUuid);
+                observer.OnNext(substituteService);
             }
-        );
+            observer.OnCompleted();
+            return Disposable.Empty;
+        });
         var serverPeer = Substitute.For<GattServerPeer>(
             null!,
             BleAddress.NotAvailable,
@@ -68,9 +64,7 @@ public sealed class GattServerPeerTests
             .Returns(_ =>
 #pragma warning restore CA2012
             {
-                var subject = device.GetNonPublicProperty<BehaviorSubject<ConnectionStatus>>(
-                    "ConnectionSubject"
-                );
+                var subject = device.GetNonPublicProperty<BehaviorSubject<ConnectionStatus>>("ConnectionSubject");
                 subject.OnNext(ConnectionStatus.Disconnected);
                 return ValueTask.CompletedTask;
             });

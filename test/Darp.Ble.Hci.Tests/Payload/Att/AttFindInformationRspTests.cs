@@ -29,10 +29,7 @@ public sealed class AttFindInformationRspTests
         0x001E,
         0x2901
     )]
-    public void TryReadLittleEndian_16BitData_ShouldBeValid(
-        string hexBytes,
-        params int[] informationData
-    )
+    public void TryReadLittleEndian_16BitData_ShouldBeValid(string hexBytes, params int[] informationData)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
         AttFindInformationData[] findInformationData = informationData
@@ -66,16 +63,8 @@ public sealed class AttFindInformationRspTests
     }
 
     [Theory]
-    [InlineData(
-        "050219000000FFE000001000800000805F9B34FB",
-        0x0019,
-        "0000FFE000001000800000805F9B34FB"
-    )]
-    public void TryReadLittleEndian_128BitData_ShouldBeValid(
-        string hexBytes,
-        ushort handle,
-        string guidHexString
-    )
+    [InlineData("050219000000FFE000001000800000805F9B34FB", 0x0019, "0000FFE000001000800000805F9B34FB")]
+    public void TryReadLittleEndian_128BitData_ShouldBeValid(string hexBytes, ushort handle, string guidHexString)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
         byte[] uuidBytes = Convert.FromHexString(guidHexString);

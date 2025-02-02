@@ -5,8 +5,7 @@ namespace Darp.Ble.Hci.Payload.Event;
 
 /// <summary> The HCI_Number_Of_Completed_Packets event is used by the Controller to indicate to the Host how many HCI Data packets or HCI ISO Data packets have been completed for each Handle since the previous HCI_Number_Of_Completed_Packets event was sent to the Host </summary>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-ca477bbf-f878-bda9-4eab-174c458d7a94"/>
-public readonly record struct HciNumberOfCompletedPacketsEvent
-    : IHciEvent<HciNumberOfCompletedPacketsEvent>
+public readonly record struct HciNumberOfCompletedPacketsEvent : IHciEvent<HciNumberOfCompletedPacketsEvent>
 {
     /// <inheritdoc />
     public static HciEventCode EventCode => HciEventCode.HCI_Number_Of_Completed_Packets;
@@ -19,10 +18,7 @@ public readonly record struct HciNumberOfCompletedPacketsEvent
     public required HciNumberOfCompletedPackets[] Handles { get; init; }
 
     /// <inheritdoc />
-    public static bool TryReadLittleEndian(
-        ReadOnlySpan<byte> source,
-        out HciNumberOfCompletedPacketsEvent value
-    )
+    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out HciNumberOfCompletedPacketsEvent value)
     {
         return TryReadLittleEndian(source, out value, out _);
     }
@@ -45,12 +41,8 @@ public readonly record struct HciNumberOfCompletedPacketsEvent
         for (var i = 0; i < numHandles; i++)
         {
             int startingIndex = 1 + (i * 4);
-            ushort connectionHandle = BinaryPrimitives.ReadUInt16LittleEndian(
-                source[startingIndex..]
-            );
-            ushort numCompletedPackets = BinaryPrimitives.ReadUInt16LittleEndian(
-                source[(startingIndex + 2)..]
-            );
+            ushort connectionHandle = BinaryPrimitives.ReadUInt16LittleEndian(source[startingIndex..]);
+            ushort numCompletedPackets = BinaryPrimitives.ReadUInt16LittleEndian(source[(startingIndex + 2)..]);
             handles[i] = new HciNumberOfCompletedPackets
             {
                 ConnectionHandle = connectionHandle,
@@ -63,10 +55,7 @@ public readonly record struct HciNumberOfCompletedPacketsEvent
     }
 
     /// <inheritdoc />
-    public static bool TryReadBigEndian(
-        ReadOnlySpan<byte> source,
-        out HciNumberOfCompletedPacketsEvent value
-    )
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out HciNumberOfCompletedPacketsEvent value)
     {
         throw new NotSupportedException();
     }

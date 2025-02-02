@@ -35,21 +35,13 @@ internal sealed class HciHostGattServerCharacteristic(
                 {
                     AttReadResult response = await _peer
                         .QueryAttPduAsync<AttFindInformationReq, AttFindInformationRsp>(
-                            new AttFindInformationReq
-                            {
-                                StartingHandle = startingHandle,
-                                EndingHandle = EndHandle,
-                            },
+                            new AttFindInformationReq { StartingHandle = startingHandle, EndingHandle = EndHandle },
                             cancellationToken: token
                         )
                         .ConfigureAwait(false);
                     if (
                         response.OpCode is AttOpCode.ATT_ERROR_RSP
-                        && AttErrorRsp.TryReadLittleEndian(
-                            response.Pdu,
-                            out AttErrorRsp errorRsp,
-                            out _
-                        )
+                        && AttErrorRsp.TryReadLittleEndian(response.Pdu, out AttErrorRsp errorRsp, out _)
                     )
                     {
                         if (errorRsp.ErrorCode is AttErrorCode.AttributeNotFoundError)
@@ -75,10 +67,7 @@ internal sealed class HciHostGattServerCharacteristic(
                     )
                     {
                         observer.OnError(
-                            new GattCharacteristicException(
-                                this,
-                                $"Received unexpected att response {response.OpCode}"
-                            )
+                            new GattCharacteristicException(this, $"Received unexpected att response {response.OpCode}")
                         );
                         return;
                     }
@@ -152,30 +141,18 @@ internal sealed class HciHostGattServerCharacteristic(
         }
         if (!Properties.HasFlag(GattProperty.Notify))
         {
-            throw new GattCharacteristicException(
-                this,
-                "Characteristic does not support notification"
-            );
+            throw new GattCharacteristicException(this, "Characteristic does not support notification");
         }
         if (!await cccd.WriteAsync((byte[])[0x01, 0x00], cancellationToken).ConfigureAwait(false))
         {
-            throw new GattCharacteristicException(
-                this,
-                "Could not write notification status to cccd"
-            );
+            throw new GattCharacteristicException(this, "Could not write notification status to cccd");
         }
         return _peer
             .WhenAttPduReceived.Where(x => x.OpCode is AttOpCode.ATT_HANDLE_VALUE_NTF)
             .SelectWhere(
                 ((AttOpCode OpCode, byte[] Pdu) t, [NotNullWhen(true)] out byte[]? result) =>
                 {
-                    if (
-                        !AttHandleValueNtf.TryReadLittleEndian(
-                            t.Pdu,
-                            out AttHandleValueNtf notification,
-                            out int _
-                        )
-                    )
+                    if (!AttHandleValueNtf.TryReadLittleEndian(t.Pdu, out AttHandleValueNtf notification, out int _))
                     {
                         result = null;
                         return false;

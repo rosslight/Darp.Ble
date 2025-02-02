@@ -15,8 +15,7 @@ public abstract class GattServerPeer : IGattServerPeer
     private bool _isDisposing;
 
     /// <summary> The behavior subject where the implementation can write to </summary>
-    protected BehaviorSubject<ConnectionStatus> ConnectionSubject { get; } =
-        new(ConnectionStatus.Connected);
+    protected BehaviorSubject<ConnectionStatus> ConnectionSubject { get; } = new(ConnectionStatus.Connected);
 
     /// <summary> The gatt server peer </summary>
     /// <param name="central"> The central that initiated the connection </param>
@@ -49,8 +48,7 @@ public abstract class GattServerPeer : IGattServerPeer
     public bool IsConnected => ConnectionSubject.Value is ConnectionStatus.Connected;
 
     /// <inheritdoc />
-    public IObservable<ConnectionStatus> WhenConnectionStatusChanged =>
-        ConnectionSubject.AsObservable();
+    public IObservable<ConnectionStatus> WhenConnectionStatusChanged => ConnectionSubject.AsObservable();
 
     /// <inheritdoc />
     public async Task DiscoverServicesAsync(CancellationToken cancellationToken = default)
@@ -85,8 +83,7 @@ public abstract class GattServerPeer : IGattServerPeer
             serviceToReturn ??= service;
             _services.Add(service);
         }
-        return serviceToReturn
-            ?? throw new Exception($"No service with Uuid {uuid} was discovered");
+        return serviceToReturn ?? throw new Exception($"No service with Uuid {uuid} was discovered");
     }
 
     /// <summary> Core implementation to discover services </summary>

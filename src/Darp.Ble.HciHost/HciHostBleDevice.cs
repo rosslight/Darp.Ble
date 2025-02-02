@@ -24,13 +24,10 @@ internal sealed class HciHostBleDevice(
 
     public override string Name { get; } = name;
 
-    public BleAddress RandomAddress { get; private set; } =
-        randomAddress ?? BleAddress.NewRandomStaticAddress();
+    public BleAddress RandomAddress { get; private set; } = randomAddress ?? BleAddress.NewRandomStaticAddress();
 
     /// <inheritdoc />
-    protected override async Task<InitializeResult> InitializeAsyncCore(
-        CancellationToken cancellationToken
-    )
+    protected override async Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
     {
         await Host.InitializeAsync(cancellationToken).ConfigureAwait(false);
         await SetRandomAddressAsync(RandomAddress, cancellationToken).ConfigureAwait(false);
@@ -57,10 +54,10 @@ internal sealed class HciHostBleDevice(
     )
     {
         var addressValue = randomAddress.Value.ToUInt64();
-        await Host.QueryCommandCompletionAsync<
-            HciLeSetRandomAddressCommand,
-            HciLeSetRandomAddressResult
-        >(new HciLeSetRandomAddressCommand(addressValue), cancellationToken: cancellationToken)
+        await Host.QueryCommandCompletionAsync<HciLeSetRandomAddressCommand, HciLeSetRandomAddressResult>(
+                new HciLeSetRandomAddressCommand(addressValue),
+                cancellationToken: cancellationToken
+            )
             .ConfigureAwait(false);
         RandomAddress = randomAddress;
     }

@@ -31,12 +31,11 @@ internal sealed class HciHostBleBroadcaster(
         CancellationToken cancellationToken
     )
     {
-        HciLeReadNumberOfSupportedAdvertisingSetsResult result =
-            await Host.QueryCommandCompletionAsync<
-                HciLeReadNumberOfSupportedAdvertisingSetsCommand,
-                HciLeReadNumberOfSupportedAdvertisingSetsResult
-            >(cancellationToken: cancellationToken)
-                .ConfigureAwait(false);
+        HciLeReadNumberOfSupportedAdvertisingSetsResult result = await Host.QueryCommandCompletionAsync<
+            HciLeReadNumberOfSupportedAdvertisingSetsCommand,
+            HciLeReadNumberOfSupportedAdvertisingSetsResult
+        >(cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
         for (byte handle = 0; handle < result.NumSupportedAdvertisingSets; handle++)
         {
             if (!_advertisingSets.TryAdd(handle, advertisingSet))
@@ -67,18 +66,15 @@ internal sealed class HciHostBleBroadcaster(
         await RegisterAdvertisingSetAsync(set, cancellationToken).ConfigureAwait(false);
         try
         {
-            await set.SetAdvertisingParametersAsync(parameters, cancellationToken)
-                .ConfigureAwait(false);
-            await set.SetRandomAddressAsync(_device.RandomAddress, cancellationToken)
-                .ConfigureAwait(false);
+            await set.SetAdvertisingParametersAsync(parameters, cancellationToken).ConfigureAwait(false);
+            await set.SetRandomAddressAsync(_device.RandomAddress, cancellationToken).ConfigureAwait(false);
             if (data?.Count > 0)
             {
                 await set.SetAdvertisingDataAsync(data, cancellationToken).ConfigureAwait(false);
             }
             if (scanResponseData is not null)
             {
-                await set.SetAdvertisingParametersAsync(parameters, cancellationToken)
-                    .ConfigureAwait(false);
+                await set.SetAdvertisingParametersAsync(parameters, cancellationToken).ConfigureAwait(false);
             }
         }
         catch (Exception)
@@ -92,11 +88,7 @@ internal sealed class HciHostBleBroadcaster(
 
     /// <inheritdoc />
     protected override async Task<IAsyncDisposable> StartAdvertisingCoreAsync(
-        IReadOnlyCollection<(
-            IAdvertisingSet AdvertisingSet,
-            TimeSpan Duration,
-            byte NumberOfEvents
-        )> advertisingSets,
+        IReadOnlyCollection<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, byte NumberOfEvents)> advertisingSets,
         CancellationToken cancellationToken
     )
     {
@@ -104,13 +96,7 @@ internal sealed class HciHostBleBroadcaster(
         var durationArray = new ushort[advertisingSets.Count];
         var numberOfEventsArray = new byte[advertisingSets.Count];
         var i = 0;
-        foreach (
-            (
-                IAdvertisingSet advertisingSet,
-                TimeSpan duration,
-                byte numberOfEvents
-            ) in advertisingSets
-        )
+        foreach ((IAdvertisingSet advertisingSet, TimeSpan duration, byte numberOfEvents) in advertisingSets)
         {
             if (advertisingSet is not HciAdvertisingSet hciAdvertisingSet)
                 throw new ArgumentException(
@@ -158,8 +144,7 @@ internal sealed class HciHostBleBroadcaster(
     }
 }
 
-internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster)
-    : AdvertisingSet(broadcaster)
+internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster) : AdvertisingSet(broadcaster)
 {
     private readonly Hci.HciHost _host = broadcaster.Host;
 
@@ -240,16 +225,10 @@ internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster)
         ReadOnlyMemory<byte> memory = data.AsReadOnlyMemory();
         if (memory.Length > 251)
         {
-            throw new ArgumentOutOfRangeException(
-                nameof(data),
-                "Advertising data cannot be > 251 bytes right now"
-            );
+            throw new ArgumentOutOfRangeException(nameof(data), "Advertising data cannot be > 251 bytes right now");
         }
         await _host
-            .QueryCommandCompletionAsync<
-                HciLeSetExtendedAdvertisingDataCommand,
-                HciLeSetExtendedAdvertisingDataResult
-            >(
+            .QueryCommandCompletionAsync<HciLeSetExtendedAdvertisingDataCommand, HciLeSetExtendedAdvertisingDataResult>(
                 new HciLeSetExtendedAdvertisingDataCommand
                 {
                     AdvertisingHandle = AdvertisingHandle,
@@ -301,10 +280,9 @@ internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster)
     protected override async ValueTask DisposeAsyncCore()
     {
         await _host
-            .QueryCommandCompletionAsync<
-                HciLeRemoveAdvertisingSetCommand,
-                HciLeRemoveAdvertisingSetResult
-            >(new HciLeRemoveAdvertisingSetCommand { AdvertisingHandle = AdvertisingHandle })
+            .QueryCommandCompletionAsync<HciLeRemoveAdvertisingSetCommand, HciLeRemoveAdvertisingSetResult>(
+                new HciLeRemoveAdvertisingSetCommand { AdvertisingHandle = AdvertisingHandle }
+            )
             .ConfigureAwait(false);
     }
 }

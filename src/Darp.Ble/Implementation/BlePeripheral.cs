@@ -7,8 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.Implementation;
 
 /// <summary> The central view of a ble device </summary>
-public abstract class BlePeripheral(BleDevice device, ILogger<BlePeripheral> logger)
-    : IBlePeripheral
+public abstract class BlePeripheral(BleDevice device, ILogger<BlePeripheral> logger) : IBlePeripheral
 {
     /// <summary> The logger </summary>
     protected ILogger<BlePeripheral> Logger { get; } = logger;

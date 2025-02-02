@@ -8,8 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock;
 
-internal sealed class MockBleCentral(MockBleDevice device, ILogger<MockBleCentral> logger)
-    : BleCentral(device, logger)
+internal sealed class MockBleCentral(MockBleDevice device, ILogger<MockBleCentral> logger) : BleCentral(device, logger)
 {
     private readonly MockBleDevice _device = device;
 
@@ -20,9 +19,7 @@ internal sealed class MockBleCentral(MockBleDevice device, ILogger<MockBleCentra
         BleScanParameters scanParameters
     )
     {
-        MockedBleDevice? peerDevice = _device.MockedDevices.FirstOrDefault(x =>
-            x.RandomAddress == address
-        );
+        MockedBleDevice? peerDevice = _device.MockedDevices.FirstOrDefault(x => x.RandomAddress == address);
         if (peerDevice is null)
             return Observable.Throw<GattServerPeer>(
                 new Exception($"Mock does not contain a device with address {address}")

@@ -18,11 +18,7 @@ public sealed class AttWriteRspTests
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
 
-        bool success = AttWriteRsp.TryReadLittleEndian(
-            bytes,
-            out AttWriteRsp value,
-            out int decoded
-        );
+        bool success = AttWriteRsp.TryReadLittleEndian(bytes, out AttWriteRsp value, out int decoded);
 
         success.Should().BeTrue();
         decoded.Should().Be(1);

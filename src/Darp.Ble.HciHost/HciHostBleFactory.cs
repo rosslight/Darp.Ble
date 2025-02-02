@@ -12,10 +12,7 @@ public sealed class HciHostBleFactory : IBleFactory
 
     /// <summary> A simple mapping of vendorId and productId to the name of the device </summary>
     public IDictionary<(ushort VendorId, ushort ProductId), string> DeviceNameMapping { get; } =
-        new Dictionary<(ushort VendorId, ushort ProductId), string>
-        {
-            [(0x2FE3, 0x0004)] = "nrf52840 dongle",
-        };
+        new Dictionary<(ushort VendorId, ushort ProductId), string> { [(0x2FE3, 0x0004)] = "nrf52840 dongle" };
 
     /// <inheritdoc />
     public IEnumerable<IBleDevice> EnumerateDevices(ILoggerFactory loggerFactory)
@@ -25,12 +22,7 @@ public sealed class HciHostBleFactory : IBleFactory
         {
             if (portInfo.Port is null)
                 continue;
-            if (
-                !DeviceNameMapping.TryGetValue(
-                    (portInfo.VendorId, portInfo.ProductId),
-                    out string? deviceName
-                )
-            )
+            if (!DeviceNameMapping.TryGetValue((portInfo.VendorId, portInfo.ProductId), out string? deviceName))
                 continue;
             yield return new HciHostBleDevice(
                 portInfo.Port,

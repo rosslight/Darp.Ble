@@ -57,10 +57,7 @@ public sealed class AndroidBleObserver(
         _scanCallback = null;
     }
 
-    private static GapAdvertisement OnAdvertisementReport(
-        BleObserver bleObserver,
-        ScanResult scanResult
-    )
+    private static GapAdvertisement OnAdvertisementReport(BleObserver bleObserver, ScanResult scanResult)
     {
         // Extract the very little information about the event type we have left
         var advertisementType = BleEventType.None;
@@ -97,10 +94,7 @@ public sealed class AndroidBleObserver(
 
     private static bool AreLocationServicesEnabled()
     {
-        if (
-            Application.Context.GetSystemService(Context.LocationService)
-            is not LocationManager locationManager
-        )
+        if (Application.Context.GetSystemService(Context.LocationService) is not LocationManager locationManager)
             return false;
         try
         {

@@ -17,11 +17,7 @@ public static partial class AdvertisingDataExtensions
     /// <returns> The newly created advertising data </returns>
     /// <remarks> In case the section already exists, it will be replaced. If not, the new section will be added in the end </remarks>
     [Pure]
-    public static AdvertisingData With(
-        this AdvertisingData advertisingData,
-        AdTypes sectionType,
-        byte[] sectionBytes
-    )
+    public static AdvertisingData With(this AdvertisingData advertisingData, AdTypes sectionType, byte[] sectionBytes)
     {
         ArgumentNullException.ThrowIfNull(advertisingData);
         return advertisingData.With(sectionType, sectionBytes);
@@ -32,10 +28,7 @@ public static partial class AdvertisingDataExtensions
     /// <param name="flags"> The flags to set </param>
     /// <returns> The new advertising data </returns>
     [Pure]
-    public static AdvertisingData WithFlags(
-        this AdvertisingData advertisingData,
-        AdvertisingDataFlags flags
-    )
+    public static AdvertisingData WithFlags(this AdvertisingData advertisingData, AdvertisingDataFlags flags)
     {
         ArgumentNullException.ThrowIfNull(advertisingData);
         return advertisingData.With(AdTypes.Flags, [(byte)flags]);
@@ -46,17 +39,11 @@ public static partial class AdvertisingDataExtensions
     /// <param name="completeLocalName"> The complete local name to set </param>
     /// <returns> The new advertising data </returns>
     [Pure]
-    public static AdvertisingData WithCompleteLocalName(
-        this AdvertisingData advertisingData,
-        string completeLocalName
-    )
+    public static AdvertisingData WithCompleteLocalName(this AdvertisingData advertisingData, string completeLocalName)
     {
         ArgumentNullException.ThrowIfNull(advertisingData);
         ArgumentNullException.ThrowIfNull(completeLocalName);
-        return advertisingData.With(
-            AdTypes.CompleteLocalName,
-            Encoding.UTF8.GetBytes(completeLocalName)
-        );
+        return advertisingData.With(AdTypes.CompleteLocalName, Encoding.UTF8.GetBytes(completeLocalName));
     }
 
     /// <summary> Create a new <see cref="AdvertisingData"/> object with the <see cref="AdTypes.ShortenedLocalName"/> section created or updated </summary>
@@ -71,10 +58,7 @@ public static partial class AdvertisingDataExtensions
     {
         ArgumentNullException.ThrowIfNull(advertisingData);
         ArgumentNullException.ThrowIfNull(shortenedLocalName);
-        return advertisingData.With(
-            AdTypes.ShortenedLocalName,
-            Encoding.UTF8.GetBytes(shortenedLocalName)
-        );
+        return advertisingData.With(AdTypes.ShortenedLocalName, Encoding.UTF8.GetBytes(shortenedLocalName));
     }
 
     /// <summary>
@@ -90,9 +74,7 @@ public static partial class AdvertisingDataExtensions
     )
     {
         ArgumentNullException.ThrowIfNull(peripheral);
-        return advertisingData.WithCompleteListOfServiceUuids(
-            peripheral.Services.Select(x => x.Uuid).ToArray()
-        );
+        return advertisingData.WithCompleteListOfServiceUuids(peripheral.Services.Select(x => x.Uuid).ToArray());
     }
 
     /// <summary>
@@ -263,10 +245,7 @@ public static partial class AdvertisingDataExtensions
         byte[] manufacturerSpecificData
     )
     {
-        return advertisingData.WithManufacturerSpecificData(
-            companyIdentifier,
-            manufacturerSpecificData
-        );
+        return advertisingData.WithManufacturerSpecificData(companyIdentifier, manufacturerSpecificData);
     }
 
     /// <summary>

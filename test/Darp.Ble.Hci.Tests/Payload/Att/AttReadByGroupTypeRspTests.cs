@@ -29,10 +29,7 @@ public sealed class AttReadByGroupTypeRspTests
         0xFFFF,
         0xAA4C
     )]
-    public void TryReadLittleEndian_16Bit_ShouldBeValid(
-        string hexBytes,
-        params int[] informationData
-    )
+    public void TryReadLittleEndian_16Bit_ShouldBeValid(string hexBytes, params int[] informationData)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
         AttGroupTypeData<ushort>[] attributeDataList = informationData
@@ -60,12 +57,7 @@ public sealed class AttReadByGroupTypeRspTests
     }
 
     [Theory]
-    [InlineData(
-        "111401000B000000FFE000001000800000805F9B34FB",
-        0x0001,
-        0x000B,
-        "0000FFE000001000800000805F9B34FB"
-    )]
+    [InlineData("111401000B000000FFE000001000800000805F9B34FB", 0x0001, 0x000B, "0000FFE000001000800000805F9B34FB")]
     public void TryReadLittleEndian_128Bit_ShouldBeValid(
         string hexBytes,
         ushort startHandle,
@@ -102,11 +94,7 @@ public sealed class AttReadByGroupTypeRspTests
     public void TryReadLittleEndian_16Bit_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
-        bool success = AttReadByGroupTypeRsp<ushort>.TryReadLittleEndian(
-            bytes,
-            out _,
-            out int decoded
-        );
+        bool success = AttReadByGroupTypeRsp<ushort>.TryReadLittleEndian(bytes, out _, out int decoded);
 
         success.Should().BeFalse();
         decoded.Should().Be(expectedBytesDecoded);

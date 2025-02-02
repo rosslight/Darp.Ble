@@ -38,32 +38,19 @@ public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) :
         scanParameters ??= Device.Observer.Parameters;
         return Observable.Create<IGattServerPeer>(observer =>
         {
-            if (
-                connectionParameters.ConnectionInterval
-                is < ConnectionTiming.MinValue
-                    or > ConnectionTiming.MaxValue
-            )
+            if (connectionParameters.ConnectionInterval is < ConnectionTiming.MinValue or > ConnectionTiming.MaxValue)
             {
-                observer.OnError(
-                    new BleCentralConnectionFailedException(
-                        this,
-                        "Supplied invalid connectionInterval"
-                    )
-                );
+                observer.OnError(new BleCentralConnectionFailedException(this, "Supplied invalid connectionInterval"));
                 return Disposable.Empty;
             }
             if (scanParameters.ScanInterval < ScanTiming.MinValue)
             {
-                observer.OnError(
-                    new BleCentralConnectionFailedException(this, "Supplied invalid scanInterval")
-                );
+                observer.OnError(new BleCentralConnectionFailedException(this, "Supplied invalid scanInterval"));
                 return Disposable.Empty;
             }
             if (scanParameters.ScanWindow < ScanTiming.MinValue)
             {
-                observer.OnError(
-                    new BleCentralConnectionFailedException(this, "Supplied invalid scanWindow")
-                );
+                observer.OnError(new BleCentralConnectionFailedException(this, "Supplied invalid scanWindow"));
                 return Disposable.Empty;
             }
             _device.Observer.StopScan();
@@ -71,15 +58,8 @@ public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) :
                     ConnectToPeripheralCore(address, connectionParameters, scanParameters)
                         .Do(peer =>
                         {
-                            peer.WhenConnectionStatusChanged.Where(x =>
-                                    x is ConnectionStatus.Disconnected
-                                )
-                                .Do(_ =>
-                                    Logger.LogTrace(
-                                        "Received disconnection event for Peer {@Peer}",
-                                        peer
-                                    )
-                                )
+                            peer.WhenConnectionStatusChanged.Where(x => x is ConnectionStatus.Disconnected)
+                                .Do(_ => Logger.LogTrace("Received disconnection event for Peer {@Peer}", peer))
                                 .FirstAsync()
                                 .Subscribe(__ => _ = peer.DisposeAsync().AsTask());
                             _peerDevices[peer.Address] = peer;
@@ -94,9 +74,7 @@ public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) :
     /// </summary>
     /// <param name="source"> The source </param>
     /// <returns> The resulting peer observable  </returns>
-    protected virtual IObservable<IGattServerPeer> DoAfterConnection(
-        IObservable<IGattServerPeer> source
-    ) => source;
+    protected virtual IObservable<IGattServerPeer> DoAfterConnection(IObservable<IGattServerPeer> source) => source;
 
     /// <summary> The core implementation of connecting to the peripheral </summary>
     /// <param name="address"> The address to be connected to </param>

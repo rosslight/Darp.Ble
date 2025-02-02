@@ -19,10 +19,7 @@ public sealed class BleAddressTests
 
     [Theory]
     [InlineData(BleAddressType.Public, 0xAABBCCDDEEFF)]
-    public void Constructor_WithAddressType_CorrectProperties(
-        BleAddressType addressType,
-        ulong rawValue
-    )
+    public void Constructor_WithAddressType_CorrectProperties(BleAddressType addressType, ulong rawValue)
     {
         var value = (UInt48)rawValue;
         var address = new BleAddress(addressType, value);

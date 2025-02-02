@@ -16,13 +16,7 @@ internal sealed class WinGattServerService(
     GattServerPeer peer,
     GattDeviceService winService,
     ILogger<WinGattServerService> logger
-)
-    : GattServerService(
-        peer,
-        BleUuid.FromGuid(winService.Uuid, inferType: true),
-        GattServiceType.Undefined,
-        logger
-    )
+) : GattServerService(peer, BleUuid.FromGuid(winService.Uuid, inferType: true), GattServiceType.Undefined, logger)
 {
     private readonly GattDeviceService _winService = winService;
 
@@ -39,9 +33,7 @@ internal sealed class WinGattServerService(
                     .ConfigureAwait(false);
                 if (accessStatus is not DeviceAccessStatus.Allowed)
                 {
-                    observer.OnError(
-                        new Exception($"Access request disallowed: {accessStatus}...")
-                    );
+                    observer.OnError(new Exception($"Access request disallowed: {accessStatus}..."));
                     return Disposable.Empty;
                 }
                 return getServices()
@@ -59,9 +51,7 @@ internal sealed class WinGattServerService(
                                 return;
                             }
 
-                            foreach (
-                                GattCharacteristic gattCharacteristic in result.Characteristics
-                            )
+                            foreach (GattCharacteristic gattCharacteristic in result.Characteristics)
                             {
                                 observer.OnNext(
                                     new WinGattServerCharacteristic(
@@ -86,9 +76,7 @@ internal sealed class WinGattServerService(
     }
 
     /// <inheritdoc />
-    protected override IObservable<GattServerCharacteristic> DiscoverCharacteristicsCore(
-        BleUuid uuid
-    )
+    protected override IObservable<GattServerCharacteristic> DiscoverCharacteristicsCore(BleUuid uuid)
     {
         return DiscoverCharacteristic(() => _winService.GetCharacteristicsForUuidAsync(uuid.Value));
     }

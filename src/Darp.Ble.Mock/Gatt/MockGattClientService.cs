@@ -5,11 +5,8 @@ using Darp.Ble.Gatt.Services;
 
 namespace Darp.Ble.Mock.Gatt;
 
-internal sealed class MockGattClientService(
-    BleUuid uuid,
-    GattServiceType type,
-    MockedBlePeripheral blePeripheral
-) : GattClientService(blePeripheral, uuid, type)
+internal sealed class MockGattClientService(BleUuid uuid, GattServiceType type, MockedBlePeripheral blePeripheral)
+    : GattClientService(blePeripheral, uuid, type)
 {
     private ushort _handle;
     public MockedBlePeripheral BlePeripheral { get; } = blePeripheral;

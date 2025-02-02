@@ -57,9 +57,7 @@ public static class AdvertisingSetExtensions
                 );
             });
         }
-        advertisingDisposable = await set.StartAdvertisingAsync(
-                cancellationToken: cancellationToken
-            )
+        advertisingDisposable = await set.StartAdvertisingAsync(cancellationToken: cancellationToken)
             .ConfigureAwait(false);
         return AsyncDisposable.Create(async () =>
         {
@@ -101,9 +99,6 @@ public static class AdvertisingSetExtensions
     )
     {
         ArgumentNullException.ThrowIfNull(set);
-        return set.Broadcaster.StartAdvertisingAsync(
-            [(set, duration, numberOfEvents)],
-            cancellationToken
-        );
+        return set.Broadcaster.StartAdvertisingAsync([(set, duration, numberOfEvents)], cancellationToken);
     }
 }

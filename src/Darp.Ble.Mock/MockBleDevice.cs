@@ -13,10 +13,8 @@ internal sealed class MockBleDevice(
     ILoggerFactory loggerFactory
 ) : BleDevice(loggerFactory, loggerFactory.CreateLogger<MockBleDevice>())
 {
-    private readonly IReadOnlyList<(
-        BleMockFactory.InitializeAsync OnInitialize,
-        string? Name
-    )> _deviceConfigurations = deviceConfigurations;
+    private readonly IReadOnlyList<(BleMockFactory.InitializeAsync OnInitialize, string? Name)> _deviceConfigurations =
+        deviceConfigurations;
     private readonly List<MockedBleDevice> _mockedDevices = [];
 
     public IReadOnlyCollection<MockedBleDevice> MockedDevices => _mockedDevices;
@@ -29,32 +27,17 @@ internal sealed class MockBleDevice(
     /// <inheritdoc />
     public override string Identifier => BleDeviceIdentifiers.Mock;
 
-    protected override Task SetRandomAddressAsyncCore(
-        BleAddress randomAddress,
-        CancellationToken cancellationToken
-    )
+    protected override Task SetRandomAddressAsyncCore(BleAddress randomAddress, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }
 
     /// <inheritdoc />
-    protected override async Task<InitializeResult> InitializeAsyncCore(
-        CancellationToken cancellationToken
-    )
+    protected override async Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
     {
-        foreach (
-            (
-                BleMockFactory.InitializeAsync onInitialize,
-                string? peripheralName
-            ) in _deviceConfigurations
-        )
+        foreach ((BleMockFactory.InitializeAsync onInitialize, string? peripheralName) in _deviceConfigurations)
         {
-            var device = new MockedBleDevice(
-                peripheralName,
-                onInitialize,
-                Scheduler,
-                LoggerFactory
-            );
+            var device = new MockedBleDevice(peripheralName, onInitialize, Scheduler, LoggerFactory);
             await device.InitializeAsync(cancellationToken).ConfigureAwait(false);
             _mockedDevices.Add(device);
         }

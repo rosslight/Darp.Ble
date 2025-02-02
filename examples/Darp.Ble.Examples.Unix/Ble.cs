@@ -12,10 +12,7 @@ internal sealed class Ble : IDisposable
     private IDisposable? m_subscriptionForObserver;
     private AdvGenerator? m_generator;
 
-    public async Task StartScanAsync(
-        IBleDevice adapter,
-        Action<IGapAdvertisement> onNextAdvertisement
-    )
+    public async Task StartScanAsync(IBleDevice adapter, Action<IGapAdvertisement> onNextAdvertisement)
     {
         StopScan();
 
@@ -59,12 +56,9 @@ internal sealed class Ble : IDisposable
         // Configure custom tx power to rssi behavior
         settings.TxPowerToRssi = txPower => (Rssi)((double)txPower / 3.0 * -2.0);
 
-        IAdvertisingSet set = await bleDevice
-            .Broadcaster.CreateAdvertisingSetAsync()
-            .ConfigureAwait(false);
+        IAdvertisingSet set = await bleDevice.Broadcaster.CreateAdvertisingSetAsync().ConfigureAwait(false);
         await set.StartAdvertisingAsync().ConfigureAwait(false);
-        IObservable<AdvGenerator.DataExt> source =
-            m_generator ?? Observable.Empty<AdvGenerator.DataExt>();
+        IObservable<AdvGenerator.DataExt> source = m_generator ?? Observable.Empty<AdvGenerator.DataExt>();
         source.Subscribe(x =>
         {
             set.SetRandomAddressAsync(x.Address).GetAwaiter().GetResult();

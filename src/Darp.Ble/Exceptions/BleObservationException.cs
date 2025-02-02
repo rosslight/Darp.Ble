@@ -15,11 +15,7 @@ public class BleObservationException : Exception
     /// <param name="bleObserver"> The ble observer </param>
     /// <param name="message"> The message </param>
     /// <param name="innerException"> The inner exception </param>
-    public BleObservationException(
-        BleObserver bleObserver,
-        string? message,
-        Exception? innerException
-    )
+    public BleObservationException(BleObserver bleObserver, string? message, Exception? innerException)
         : base(message, innerException)
     {
         BleObserver = bleObserver;

@@ -20,8 +20,7 @@ namespace Darp.Ble.Tests.Implementation;
 public sealed class BleObserverTests(ILoggerFactory loggerFactory)
 {
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
-    private const string AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName =
-        "0201010908546573744E616D65";
+    private const string AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName = "0201010908546573744E616D65";
 
     private async Task<IBleDevice> GetMockDeviceAsync(
         BleMockFactory.InitializeSimpleAsync configure,

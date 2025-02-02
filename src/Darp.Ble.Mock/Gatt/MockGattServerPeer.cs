@@ -15,8 +15,7 @@ internal sealed class MockGattServerPeer(
     private readonly MockGattClientPeer _clientPeer = clientPeer;
 
     /// <inheritdoc />
-    protected override IObservable<IGattServerService> DiscoverServicesCore() =>
-        _clientPeer.GetServices(this);
+    protected override IObservable<IGattServerService> DiscoverServicesCore() => _clientPeer.GetServices(this);
 
     /// <inheritdoc />
     protected override IObservable<IGattServerService> DiscoverServiceCore(BleUuid uuid) =>

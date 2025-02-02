@@ -17,12 +17,10 @@ public static class ByteArrayExtensions
     /// <summary> Create a hex string from a given array of bytes </summary>
     /// <param name="bytes"> The bytes to be converted </param>
     /// <returns> The hex string with two chars byte </returns>
-    public static string ToHexString(this byte[] bytes) =>
-        ((ReadOnlySpan<byte>)bytes).ToHexString();
+    public static string ToHexString(this byte[] bytes) => ((ReadOnlySpan<byte>)bytes).ToHexString();
 
     /// <summary> Create a hex string from a given array of bytes </summary>
     /// <param name="memory"> The bytes to be converted </param>
     /// <returns> The hex string with two chars byte </returns>
-    public static string ToHexString(this in ReadOnlyMemory<byte> memory) =>
-        memory.Span.ToHexString();
+    public static string ToHexString(this in ReadOnlyMemory<byte> memory) => memory.Span.ToHexString();
 }

@@ -72,9 +72,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
         byte advertisingSId = byteBuffer[11];
         byte txPower = byteBuffer[12];
         byte rssi = byteBuffer[13];
-        ushort periodicAdvertisingInterval = BinaryPrimitives.ReadUInt16LittleEndian(
-            byteBuffer[14..]
-        );
+        ushort periodicAdvertisingInterval = BinaryPrimitives.ReadUInt16LittleEndian(byteBuffer[14..]);
         byte directAddressType = byteBuffer[16];
         UInt48 directAddress = UInt48.ReadLittleEndian(byteBuffer[17..]);
         byte dataLength = byteBuffer[23];
@@ -166,9 +164,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
 
 /// <summary> An advertisement with additional data attached </summary>
 /// <typeparam name="TUserData"> The type of the attached data </typeparam>
-public sealed class GapAdvertisement<TUserData>
-    : IGapAdvertisement<TUserData>,
-        IGapAdvertisementWithUserData
+public sealed class GapAdvertisement<TUserData> : IGapAdvertisement<TUserData>, IGapAdvertisementWithUserData
 {
     private readonly IGapAdvertisement _advertisement;
 
@@ -209,8 +205,7 @@ public sealed class GapAdvertisement<TUserData>
     public Rssi Rssi => _advertisement.Rssi;
 
     /// <inheritdoc />
-    public PeriodicAdvertisingInterval PeriodicAdvertisingInterval =>
-        _advertisement.PeriodicAdvertisingInterval;
+    public PeriodicAdvertisingInterval PeriodicAdvertisingInterval => _advertisement.PeriodicAdvertisingInterval;
 
     /// <inheritdoc />
     public BleAddress DirectAddress => _advertisement.DirectAddress;

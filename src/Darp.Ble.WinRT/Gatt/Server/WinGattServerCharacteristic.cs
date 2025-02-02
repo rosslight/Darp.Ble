@@ -78,13 +78,7 @@ internal sealed class WinGattServerCharacteristic(
 
     protected override void WriteWithoutResponseCore(byte[] bytes)
     {
-        _ = Task.Run(
-            () =>
-                _gattCharacteristic.WriteValueAsync(
-                    bytes.AsBuffer(),
-                    GattWriteOption.WriteWithoutResponse
-                )
-        );
+        _ = Task.Run(() => _gattCharacteristic.WriteValueAsync(bytes.AsBuffer(), GattWriteOption.WriteWithoutResponse));
     }
 
     protected override async Task<byte[]> ReadAsyncCore(CancellationToken cancellationToken)
@@ -94,9 +88,7 @@ internal sealed class WinGattServerCharacteristic(
             .AsTask(cancellationToken)
             .ConfigureAwait(false);
         if (result.Status is not GattCommunicationStatus.Success)
-            throw new Exception(
-                $"Could not read value because of {result.Status} ({result.ProtocolError})"
-            );
+            throw new Exception($"Could not read value because of {result.Status} ({result.ProtocolError})");
         return result.Value.ToArray();
     }
 
@@ -106,16 +98,9 @@ internal sealed class WinGattServerCharacteristic(
         CancellationToken cancellationToken
     )
     {
-        if (
-            !_gattCharacteristic.CharacteristicProperties.HasFlag(
-                GattCharacteristicProperties.Notify
-            )
-        )
+        if (!_gattCharacteristic.CharacteristicProperties.HasFlag(GattCharacteristicProperties.Notify))
         {
-            throw new GattCharacteristicException(
-                this,
-                "Characteristic does not support notification"
-            );
+            throw new GattCharacteristicException(this, "Characteristic does not support notification");
         }
         GattCommunicationStatus res = await _gattCharacteristic
             .WriteClientCharacteristicConfigurationDescriptorAsync(
@@ -125,10 +110,7 @@ internal sealed class WinGattServerCharacteristic(
             .ConfigureAwait(false);
         if (res is not GattCommunicationStatus.Success)
         {
-            throw new GattCharacteristicException(
-                this,
-                "Could not write notification status to cccd"
-            );
+            throw new GattCharacteristicException(this, "Could not write notification status to cccd");
         }
 
         return Observable

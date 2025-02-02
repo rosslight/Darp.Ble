@@ -11,20 +11,14 @@ public sealed class AndroidBleFactory(BluetoothManager manager) : IBleFactory
 {
     private readonly BluetoothManager _bluetoothManager =
         manager
-        ?? throw new ArgumentNullException(
-            nameof(manager),
-            "The android bluetooth manager provided cannot be null."
-        );
+        ?? throw new ArgumentNullException(nameof(manager), "The android bluetooth manager provided cannot be null.");
 
     /// <inheritdoc />
     public IEnumerable<IBleDevice> EnumerateDevices(ILoggerFactory loggerFactory)
     {
         if (_bluetoothManager.Adapter is null)
             yield break;
-        if (
-            Application.Context.PackageManager?.HasSystemFeature(PackageManager.FeatureBluetoothLe)
-            == false
-        )
+        if (Application.Context.PackageManager?.HasSystemFeature(PackageManager.FeatureBluetoothLe) == false)
             yield break;
 
         yield return new AndroidBleDevice(_bluetoothManager, loggerFactory);

@@ -7,15 +7,9 @@ namespace Darp.Ble.Gatt;
 
 public static partial class GattCharacteristicExtensions
 {
-    private static byte[] GetValue(
-        this IGattClientCharacteristic characteristic,
-        IGattClientPeer? clientPeer
-    )
+    private static byte[] GetValue(this IGattClientCharacteristic characteristic, IGattClientPeer? clientPeer)
     {
-        ValueTask<byte[]> getTask = characteristic.GetValueAsync(
-            clientPeer,
-            CancellationToken.None
-        );
+        ValueTask<byte[]> getTask = characteristic.GetValueAsync(clientPeer, CancellationToken.None);
         return getTask.IsCompleted ? getTask.Result : getTask.AsTask().GetAwaiter().GetResult();
     }
 
@@ -30,9 +24,7 @@ public static partial class GattCharacteristicExtensions
             value,
             CancellationToken.None
         );
-        return updateTask.IsCompleted
-            ? updateTask.Result
-            : updateTask.AsTask().GetAwaiter().GetResult();
+        return updateTask.IsCompleted ? updateTask.Result : updateTask.AsTask().GetAwaiter().GetResult();
     }
 
     private static void StartUpdateValue(
@@ -73,12 +65,7 @@ public static partial class GattCharacteristicExtensions
         IGattClientAttribute.OnWriteCallback? onAsyncWrite = onWrite is null
             ? null
             : (peer, bytes, _) => ValueTask.FromResult(onWrite(peer, bytes));
-        return characteristic.AddDescriptorAsync(
-            uuid,
-            onAsyncRead,
-            onAsyncWrite,
-            cancellationToken
-        );
+        return characteristic.AddDescriptorAsync(uuid, onAsyncRead, onAsyncWrite, cancellationToken);
     }
 
     /// <summary> Add a descriptor to the characteristic </summary>
@@ -99,12 +86,7 @@ public static partial class GattCharacteristicExtensions
     {
         ArgumentNullException.ThrowIfNull(characteristic);
         ArgumentNullException.ThrowIfNull(descriptorDeclaration);
-        return characteristic.AddDescriptorAsync(
-            descriptorDeclaration.Uuid,
-            onRead,
-            onWrite,
-            cancellationToken
-        );
+        return characteristic.AddDescriptorAsync(descriptorDeclaration.Uuid, onRead, onWrite, cancellationToken);
     }
 
     /// <summary> Add a descriptor to the characteristic </summary>
@@ -124,12 +106,7 @@ public static partial class GattCharacteristicExtensions
     {
         ArgumentNullException.ThrowIfNull(characteristic);
         ArgumentNullException.ThrowIfNull(descriptorDeclaration);
-        return characteristic.AddDescriptorAsync(
-            descriptorDeclaration.Uuid,
-            onRead,
-            onWrite,
-            cancellationToken
-        );
+        return characteristic.AddDescriptorAsync(descriptorDeclaration.Uuid, onRead, onWrite, cancellationToken);
     }
 
     /// <summary> Add a descriptor to the characteristic </summary>
@@ -147,11 +124,7 @@ public static partial class GattCharacteristicExtensions
     {
         ArgumentNullException.ThrowIfNull(characteristic);
         ArgumentNullException.ThrowIfNull(descriptorDeclaration);
-        return characteristic.AddDescriptorAsync(
-            descriptorDeclaration.Uuid,
-            staticValue,
-            cancellationToken
-        );
+        return characteristic.AddDescriptorAsync(descriptorDeclaration.Uuid, staticValue, cancellationToken);
     }
 
     /// <summary> Add a descriptor to the characteristic </summary>

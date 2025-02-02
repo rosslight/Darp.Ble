@@ -32,9 +32,7 @@ BleManager manager = new BleManagerBuilder()
         factory.AddPeripheral(
             async device =>
             {
-                await device.SetRandomAddressAsync(
-                    new BleAddress(BleAddressType.RandomStatic, (UInt48)0xF1F2F3F4F5F6)
-                );
+                await device.SetRandomAddressAsync(new BleAddress(BleAddressType.RandomStatic, (UInt48)0xF1F2F3F4F5F6));
                 await device.Peripheral.AddDeviceInformationServiceAsync(
                     manufacturerName: "rosslight GmbH",
                     modelNumber: "ABC-123",
@@ -48,9 +46,7 @@ BleManager manager = new BleManagerBuilder()
                     type: BleEventType.AdvInd,
                     data: AdvertisingData
                         .Empty.WithCompleteLocalName(device.Name!)
-                        .WithCompleteListOfServiceUuids(
-                            device.Peripheral.Services.Select(x => x.Uuid).ToArray()
-                        ),
+                        .WithCompleteListOfServiceUuids(device.Peripheral.Services.Select(x => x.Uuid).ToArray()),
                     interval: ScanTiming.Ms1000
                 );
             },
@@ -102,12 +98,7 @@ async Task Observe(IBleDevice device)
     var advertisement = await device
         .Observer.RefCount()
         .WhereConnectable()
-        .Where(a =>
-            a.Data.TryGetManufacturerSpecificData(
-                CompanyIdentifiers.AampOfAmerica,
-                out ReadOnlyMemory<byte> _
-            )
-        )
+        .Where(a => a.Data.TryGetManufacturerSpecificData(CompanyIdentifiers.AampOfAmerica, out ReadOnlyMemory<byte> _))
         .FirstAsync();
     await using IGattServerPeer peer = await advertisement.ConnectToPeripheral().FirstAsync();
     var service = await peer.DiscoverEchoServiceAsync(0x1234, 0x1235, 0x1236);
@@ -141,8 +132,7 @@ async Task AdvertiseApi(IBleDevice device)
         .Interval(TimeSpan.FromSeconds(1))
         .Select(i => new HeartRateMeasurement((byte)(i % 0xFF))
         {
-            EnergyExpended = (ushort)
-                Math.Min((DateTimeOffset.UtcNow - resetPoint).TotalSeconds, 0xFFFF),
+            EnergyExpended = (ushort)Math.Min((DateTimeOffset.UtcNow - resetPoint).TotalSeconds, 0xFFFF),
             IsSensorContactDetected = i % 2 is 0,
         });
     var xx = await device.Peripheral.AddDeviceInformationServiceAsync(
@@ -160,11 +150,7 @@ async Task AdvertiseApi(IBleDevice device)
     );
     heartRateService.BodySensorLocation?.UpdateValue(HeartRateBodySensorLocation.Chest);
 
-    await device.Peripheral.AddEchoServiceAsync(
-        serviceUuid: 0x1234,
-        writeUuid: 0x1234,
-        notifyUuid: 0x1234
-    );
+    await device.Peripheral.AddEchoServiceAsync(serviceUuid: 0x1234, writeUuid: 0x1234, notifyUuid: 0x1234);
 
     await device.Broadcaster.StartAdvertisingAsync(
         BleEventType.Connectable,
@@ -182,10 +168,7 @@ async Task AdvertiseApi(IBleDevice device)
 
     IAsyncDisposable disp = await advertisingSet.StartAdvertisingAsync();
 
-    IAsyncDisposable disposable = await x.Broadcaster.StartAdvertisingAsync(
-        advertisingSet,
-        advertisingSet2
-    );
+    IAsyncDisposable disposable = await x.Broadcaster.StartAdvertisingAsync(advertisingSet, advertisingSet2);
     await device.Broadcaster.StartAdvertisingAsync(
         type: BleEventType.AdvInd,
         peerAddress: new BleAddress((UInt48)0x1234),

@@ -17,15 +17,10 @@ internal sealed class MockGattServerDescriptor(
 
     public override async Task<byte[]> ReadAsync(CancellationToken cancellationToken = default)
     {
-        return await _mockDescriptor
-            .GetValueAsync(_clientPeer, cancellationToken)
-            .ConfigureAwait(false);
+        return await _mockDescriptor.GetValueAsync(_clientPeer, cancellationToken).ConfigureAwait(false);
     }
 
-    public override async Task<bool> WriteAsync(
-        byte[] bytes,
-        CancellationToken cancellationToken = default
-    )
+    public override async Task<bool> WriteAsync(byte[] bytes, CancellationToken cancellationToken = default)
     {
         GattProtocolStatus result = await _mockDescriptor
             .UpdateValueAsync(_clientPeer, bytes, cancellationToken)

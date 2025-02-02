@@ -16,24 +16,12 @@ internal sealed class WinGattServerPeer : GattServerPeer
 {
     private readonly BluetoothLEDevice _winDev;
 
-    internal WinGattServerPeer(
-        WinBleCentral central,
-        BluetoothLEDevice winDev,
-        ILogger<WinGattServerPeer> logger
-    )
-        : base(
-            central,
-            BleHelper.GetBleAddress(winDev.BluetoothAddress, winDev.BluetoothAddressType),
-            logger
-        )
+    internal WinGattServerPeer(WinBleCentral central, BluetoothLEDevice winDev, ILogger<WinGattServerPeer> logger)
+        : base(central, BleHelper.GetBleAddress(winDev.BluetoothAddress, winDev.BluetoothAddressType), logger)
     {
         _winDev = winDev;
         Observable
-            .FromEventPattern<
-                TypedEventHandler<BluetoothLEDevice, object>,
-                BluetoothLEDevice,
-                object
-            >(
+            .FromEventPattern<TypedEventHandler<BluetoothLEDevice, object>, BluetoothLEDevice, object>(
                 addHandler => winDev.ConnectionStatusChanged += addHandler,
                 removeHandler => winDev.ConnectionStatusChanged -= removeHandler
             )
@@ -46,9 +34,7 @@ internal sealed class WinGattServerPeer : GattServerPeer
             .Subscribe(ConnectionSubject);
     }
 
-    private IObservable<IGattServerService> DiscoverService(
-        Func<IAsyncOperation<GattDeviceServicesResult>> getServices
-    )
+    private IObservable<IGattServerService> DiscoverService(Func<IAsyncOperation<GattDeviceServicesResult>> getServices)
     {
         return Observable.Create<IGattServerService>(
             async (observer, cancellationToken) =>
@@ -59,9 +45,7 @@ internal sealed class WinGattServerPeer : GattServerPeer
                     .ConfigureAwait(false);
                 if (accessStatus is not DeviceAccessStatus.Allowed)
                 {
-                    observer.OnError(
-                        new Exception($"Access request disallowed: {accessStatus}...")
-                    );
+                    observer.OnError(new Exception($"Access request disallowed: {accessStatus}..."));
                     return Disposable.Empty;
                 }
                 return getServices()
@@ -106,9 +90,7 @@ internal sealed class WinGattServerPeer : GattServerPeer
     /// <inheritdoc />
     protected override IObservable<IGattServerService> DiscoverServiceCore(BleUuid uuid)
     {
-        return DiscoverService(
-            () => _winDev.GetGattServicesForUuidAsync(uuid.Value, BluetoothCacheMode.Uncached)
-        );
+        return DiscoverService(() => _winDev.GetGattServicesForUuidAsync(uuid.Value, BluetoothCacheMode.Uncached));
     }
 
     protected override void DisposeCore()

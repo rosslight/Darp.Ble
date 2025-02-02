@@ -31,10 +31,7 @@ public interface IAdvertisingSet : IAsyncDisposable
     /// <param name="randomAddress"> The random address to be used </param>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> A task which completes when the address change was requested </returns>
-    public Task SetRandomAddressAsync(
-        BleAddress randomAddress,
-        CancellationToken cancellationToken = default
-    );
+    public Task SetRandomAddressAsync(BleAddress randomAddress, CancellationToken cancellationToken = default);
 
     /// <summary> Sets new advertising parameters </summary>
     /// <param name="parameters"> The parameters to be set </param>
@@ -49,10 +46,7 @@ public interface IAdvertisingSet : IAsyncDisposable
     /// <param name="data"> The data to be set </param>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> A task which completes when the data was updated </returns>
-    public Task SetAdvertisingDataAsync(
-        AdvertisingData data,
-        CancellationToken cancellationToken = default
-    );
+    public Task SetAdvertisingDataAsync(AdvertisingData data, CancellationToken cancellationToken = default);
 
     /// <summary> Sets new scan response data </summary>
     /// <param name="scanResponseData"> The scan response data to be set </param>

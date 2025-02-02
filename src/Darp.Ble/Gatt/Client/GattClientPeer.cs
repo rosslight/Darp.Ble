@@ -6,11 +6,8 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.Gatt.Client;
 
 /// <summary> The gatt client peer </summary>
-public abstract class GattClientPeer(
-    BlePeripheral peripheral,
-    BleAddress address,
-    ILogger<GattClientPeer> logger
-) : IGattClientPeer
+public abstract class GattClientPeer(BlePeripheral peripheral, BleAddress address, ILogger<GattClientPeer> logger)
+    : IGattClientPeer
 {
     /// <inheritdoc />
     public IBlePeripheral Peripheral { get; } = peripheral;

@@ -56,8 +56,7 @@ public sealed record BleUuid
         return BleUuidType.Uuid32;
     }
 
-    private static Guid CreateGuid(uint a) =>
-        new(a, 0x0000, 0x1000, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB);
+    private static Guid CreateGuid(uint a) => new(a, 0x0000, 0x1000, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB);
 
     /// <summary> Initializes a BleUuid from a readonly span of bytes </summary>
     /// <param name="source"> The source to be decoded. </param>
@@ -113,8 +112,7 @@ public sealed record BleUuid
     }
 
     /// <inheritdoc cref="Parse(ReadOnlySpan{char},System.IFormatProvider?)"/>
-    public static BleUuid Parse(string s, IFormatProvider? provider) =>
-        Parse((ReadOnlySpan<char>)s, provider);
+    public static BleUuid Parse(string s, IFormatProvider? provider) => Parse((ReadOnlySpan<char>)s, provider);
 
     /// <inheritdoc cref="TryParse(ReadOnlySpan{char},System.IFormatProvider?,out BleUuid?)"/>
     public static bool TryParse(
@@ -153,8 +151,7 @@ public sealed record BleUuid
     public override string ToString() => Value.ToString();
 
     /// <inheritdoc />
-    public string ToString(string? format, IFormatProvider? formatProvider) =>
-        Value.ToString(format, formatProvider);
+    public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format, formatProvider);
 
     /// <inheritdoc cref="Guid.TryFormat(System.Span{char},out int,System.ReadOnlySpan{char})"/>/>
     public bool TryFormat(

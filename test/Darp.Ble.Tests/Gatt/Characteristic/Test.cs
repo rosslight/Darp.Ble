@@ -12,9 +12,7 @@ public sealed class Test
 {
     public static BleUuid SomeUuid = 0x1234;
     public static byte[] SomeBytes = [];
-    public static IObservable<byte[]> SomeByteObservable = Observable.Return(
-        Convert.FromHexString("")
-    );
+    public static IObservable<byte[]> SomeByteObservable = Observable.Return(Convert.FromHexString(""));
     public static IObservable<int> SomeIntObservable = Observable.Return(1);
     public static CharacteristicDeclaration<Properties.Read> Char1 { get; } = new(SomeUuid);
     public static TypedCharacteristicDeclaration<int, Properties.Read> ReadChar { get; } =
@@ -23,21 +21,14 @@ public sealed class Test
         Create<int, Properties.Write>(SomeUuid);
     public static TypedCharacteristicDeclaration<int, Properties.Notify> NotifyChar { get; } =
         Create<int, Properties.Notify>(SomeUuid);
-    public static TypedCharacteristicDeclaration<
-        int,
-        Properties.Read,
-        Properties.Notify
-    > ReadNotifyChar { get; } = Create<int, Properties.Read, Properties.Notify>(SomeUuid);
-    public static TypedCharacteristicDeclaration<
-        int,
-        Properties.Read,
-        Properties.Write
-    > ReadWriteChar { get; } = Create<int, Properties.Read, Properties.Write>(SomeUuid);
+    public static TypedCharacteristicDeclaration<int, Properties.Read, Properties.Notify> ReadNotifyChar { get; } =
+        Create<int, Properties.Read, Properties.Notify>(SomeUuid);
+    public static TypedCharacteristicDeclaration<int, Properties.Read, Properties.Write> ReadWriteChar { get; } =
+        Create<int, Properties.Read, Properties.Write>(SomeUuid);
     public static CharacteristicDeclaration<Properties.Write> Char2 { get; } = new(SomeUuid);
     public static CharacteristicDeclaration<Properties.Notify> Char3 { get; } = new(SomeUuid);
     public static CharacteristicDeclaration<Properties.Indicate> Char4 { get; } = new(SomeUuid);
-    public static CharacteristicDeclaration<Properties.Read, Properties.Write> Char5 { get; } =
-        new(SomeUuid);
+    public static CharacteristicDeclaration<Properties.Read, Properties.Write> Char5 { get; } = new(SomeUuid);
 
     /*
     public static Characteristic<int, Properties.Read> Char11 { get; } = new(SomeUuid);
@@ -65,17 +56,11 @@ public sealed class Test
             onWrite: (peer, bytes, token) => ValueTask.FromResult(GattProtocolStatus.Success)
         );
         await service.AddCharacteristicAsync(WriteChar);
-        await service.AddCharacteristicAsync(
-            WriteChar,
-            onWrite: (peer, number) => GattProtocolStatus.Success
-        );
+        await service.AddCharacteristicAsync(WriteChar, onWrite: (peer, number) => GattProtocolStatus.Success);
 
         IGattClientPeer? peer = null;
         var cn1 = await service.AddCharacteristicAsync<Properties.Notify>(SomeUuid);
-        var cn11 = await service.AddCharacteristicAsync<Properties.Notify, Properties.Read>(
-            SomeUuid,
-            SomeBytes
-        );
+        var cn11 = await service.AddCharacteristicAsync<Properties.Notify, Properties.Read>(SomeUuid, SomeBytes);
         cn1.NotifyAll(SomeBytes);
         cn11.UpdateValue(SomeBytes);
         cn11.Notify(peer, SomeBytes);
@@ -86,10 +71,7 @@ public sealed class Test
         var cn3 = await service.AddCharacteristicAsync(ReadNotifyChar, 3);
         //cn3.UpdateValue(SomeBytes);
         cn3.UpdateValue(32);
-        var cn4 = await service.AddCharacteristicAsync<int, Properties.Write, Properties.Read>(
-            ReadWriteChar,
-            123123
-        );
+        var cn4 = await service.AddCharacteristicAsync<int, Properties.Write, Properties.Read>(ReadWriteChar, 123123);
         cn4.UpdateValue(3);
         int value = cn4.GetValue<int>();
     }

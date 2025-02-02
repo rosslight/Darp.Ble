@@ -89,9 +89,7 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
         {
             if (_scanDisposable is not null)
                 return _scanDisposable;
-            bool startScanSuccessful = TryStartScanCore(
-                out IObservable<IGapAdvertisement> observable
-            );
+            bool startScanSuccessful = TryStartScanCore(out IObservable<IGapAdvertisement> observable);
 
             observable = observable.Catch(
                 (Exception exception) =>

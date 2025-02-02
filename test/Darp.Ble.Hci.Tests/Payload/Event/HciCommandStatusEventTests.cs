@@ -30,11 +30,7 @@ public sealed class HciCommandStatusEventTests
             CommandOpCode = expectedCommandOpCode,
         };
 
-        bool success = Extensions.TryReadLittleEndian(
-            bytes,
-            out HciCommandStatusEvent value,
-            out int decoded
-        );
+        bool success = Extensions.TryReadLittleEndian(bytes, out HciCommandStatusEvent value, out int decoded);
 
         success.Should().BeTrue();
         decoded.Should().Be(4);
@@ -49,11 +45,7 @@ public sealed class HciCommandStatusEventTests
     public void TryReadLittleEndian_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
-        bool success = Extensions.TryReadLittleEndian(
-            bytes,
-            out HciCommandStatusEvent _,
-            out int decoded
-        );
+        bool success = Extensions.TryReadLittleEndian(bytes, out HciCommandStatusEvent _, out int decoded);
 
         success.Should().BeFalse();
         decoded.Should().Be(expectedBytesDecoded);

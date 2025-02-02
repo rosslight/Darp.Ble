@@ -71,10 +71,7 @@ public static partial class GattCharacteristicExtensions
     /// <typeparam name="TProp2"> The type of the second property of the characteristic </typeparam>
     /// <returns> A gatt client characteristic </returns>
     [OverloadResolutionPriority(1)]
-    public static async Task<GattClientCharacteristic<TProp1, TProp2>> AddCharacteristicAsync<
-        TProp1,
-        TProp2
-    >(
+    public static async Task<GattClientCharacteristic<TProp1, TProp2>> AddCharacteristicAsync<TProp1, TProp2>(
         this IGattClientService service,
         BleUuid uuid,
         IGattClientAttribute.OnReadCallback? onRead = null,
@@ -86,13 +83,7 @@ public static partial class GattCharacteristicExtensions
     {
         ArgumentNullException.ThrowIfNull(service);
         IGattClientCharacteristic clientCharacteristic = await service
-            .AddCharacteristicAsync(
-                uuid,
-                TProp1.GattProperty | TProp2.GattProperty,
-                onRead,
-                onWrite,
-                cancellationToken
-            )
+            .AddCharacteristicAsync(uuid, TProp1.GattProperty | TProp2.GattProperty, onRead, onWrite, cancellationToken)
             .ConfigureAwait(false);
         return new GattClientCharacteristic<TProp1, TProp2>(clientCharacteristic);
     }
@@ -133,10 +124,7 @@ public static partial class GattCharacteristicExtensions
     /// <typeparam name="TProp1"> The type of the first property </typeparam>
     /// <typeparam name="TProp2"> The type of the second property </typeparam>
     /// <returns> A gatt client characteristic </returns>
-    public static Task<GattClientCharacteristic<TProp1, TProp2>> AddCharacteristicAsync<
-        TProp1,
-        TProp2
-    >(
+    public static Task<GattClientCharacteristic<TProp1, TProp2>> AddCharacteristicAsync<TProp1, TProp2>(
         this IGattClientService service,
         BleUuid uuid,
         byte[] staticValue,

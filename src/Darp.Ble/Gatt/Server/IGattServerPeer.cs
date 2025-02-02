@@ -29,8 +29,5 @@ public interface IGattServerPeer : IAsyncDisposable
     /// <param name="uuid"> The uuid to discover </param>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> A connection to the remote service </returns>
-    Task<IGattServerService> DiscoverServiceAsync(
-        BleUuid uuid,
-        CancellationToken cancellationToken = default
-    );
+    Task<IGattServerService> DiscoverServiceAsync(BleUuid uuid, CancellationToken cancellationToken = default);
 }

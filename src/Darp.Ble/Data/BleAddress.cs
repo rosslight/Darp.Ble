@@ -118,8 +118,7 @@ public sealed record BleAddress : ISpanParsable<BleAddress>, IEquatable<UInt48>,
     }
 
     /// <inheritdoc cref="Parse(ReadOnlySpan{char},System.IFormatProvider?)"/>
-    public static BleAddress Parse(string s, IFormatProvider? provider) =>
-        Parse((ReadOnlySpan<char>)s, provider);
+    public static BleAddress Parse(string s, IFormatProvider? provider) => Parse((ReadOnlySpan<char>)s, provider);
 
     /// <inheritdoc cref="TryParse(ReadOnlySpan{char},System.IFormatProvider?,out BleAddress?)"/>
     public static bool TryParse(

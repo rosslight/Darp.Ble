@@ -6,9 +6,7 @@ namespace Darp.Ble.Gatt.Server;
 /// <summary> The interface defining a strongly typed characteristic with a value </summary>
 /// <typeparam name="T"> The type of the characteristic value </typeparam>
 /// <typeparam name="TProp1"> The first property definition </typeparam>
-public interface ITypedGattServerCharacteristic<T, TProp1>
-    : IGattTypedCharacteristic<T>,
-        IGattServerCharacteristic
+public interface ITypedGattServerCharacteristic<T, TProp1> : IGattTypedCharacteristic<T>, IGattServerCharacteristic
     where TProp1 : IBleProperty;
 
 /// <summary> The implementation of a strongly typed characteristic </summary>
@@ -47,8 +45,7 @@ public class TypedGattServerCharacteristic<T, TProp1>(
     public GattProperty Properties => Characteristic.Properties;
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<BleUuid, IGattServerDescriptor> Descriptors =>
-        Characteristic.Descriptors;
+    public IReadOnlyDictionary<BleUuid, IGattServerDescriptor> Descriptors => Characteristic.Descriptors;
 
     /// <inheritdoc cref="IGattTypedCharacteristic{T}.ReadValue(System.ReadOnlySpan{byte})" />
     protected T ReadValue(ReadOnlySpan<byte> source) => _onRead(source);
@@ -63,8 +60,7 @@ public class TypedGattServerCharacteristic<T, TProp1>(
     Task IGattServerCharacteristic.WriteAsync(byte[] bytes, CancellationToken cancellationToken) =>
         Characteristic.WriteAsync(bytes, cancellationToken);
 
-    void IGattServerCharacteristic.WriteWithoutResponse(byte[] bytes) =>
-        Characteristic.WriteWithoutResponse(bytes);
+    void IGattServerCharacteristic.WriteWithoutResponse(byte[] bytes) => Characteristic.WriteWithoutResponse(bytes);
 
     Task<IAsyncDisposable> IGattServerCharacteristic.OnNotifyAsync<TState>(
         TState state,
@@ -87,20 +83,14 @@ public sealed class TypedGattServerCharacteristic<T, TProp1, TProp2>(
     IGattServerCharacteristic characteristic,
     IGattTypedCharacteristic<T>.ReadValueFunc onRead,
     IGattTypedCharacteristic<T>.WriteValueFunc onWrite
-)
-    : TypedGattServerCharacteristic<T, TProp1>(characteristic, onRead, onWrite),
-        ITypedGattServerCharacteristic<T, TProp2>
+) : TypedGattServerCharacteristic<T, TProp1>(characteristic, onRead, onWrite), ITypedGattServerCharacteristic<T, TProp2>
     where TProp1 : IBleProperty
     where TProp2 : IBleProperty
 {
     /// <summary> Convert implicitly to a different order of type parameters </summary>
     /// <param name="characteristicDeclaration"> The characteristic declaration to convert </param>
     /// <returns> The converted characteristic declaration </returns>
-    [SuppressMessage(
-        "Usage",
-        "CA2225:Operator overloads have named alternates",
-        Justification = "Convenience method"
-    )]
+    [SuppressMessage("Usage", "CA2225:Operator overloads have named alternates", Justification = "Convenience method")]
     public static implicit operator TypedGattServerCharacteristic<T, TProp2, TProp1>(
         TypedGattServerCharacteristic<T, TProp1, TProp2> characteristicDeclaration
     )

@@ -9,11 +9,8 @@ namespace Darp.Ble.Hci.Package;
 /// <param name="parameterTotalLength"> The Parameter_Total_Length </param>
 /// <param name="dataBytes"> All bytes for the event parameters </param>
 [BinaryObject]
-public partial class HciEventPacket(
-    HciEventCode eventCode,
-    byte parameterTotalLength,
-    byte[] dataBytes
-) : IHciEventPacket<HciEventPacket>
+public partial class HciEventPacket(HciEventCode eventCode, byte parameterTotalLength, byte[] dataBytes)
+    : IHciEventPacket<HciEventPacket>
 {
     /// <inheritdoc />
     public HciEventCode EventCode { get; } = eventCode;
@@ -43,13 +40,7 @@ public partial class HciEventPacket(
         result = null;
         if (hciEventPacket.EventCode != TParameters.EventCode)
             return false;
-        if (
-            !TParameters.TryReadLittleEndian(
-                hciEventPacket.DataBytes,
-                out TParameters? parameters,
-                out _
-            )
-        )
+        if (!TParameters.TryReadLittleEndian(hciEventPacket.DataBytes, out TParameters? parameters, out _))
             return false;
 
         result = new HciEventPacket<TParameters>(

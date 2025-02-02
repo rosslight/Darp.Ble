@@ -18,8 +18,7 @@ public abstract class GattServerService(
     private readonly SortedDictionary<ushort, IGattServerCharacteristic> _characteristics = [];
 
     /// <inheritdoc />
-    public IReadOnlyCollection<IGattServerCharacteristic> Characteristics =>
-        _characteristics.Values;
+    public IReadOnlyCollection<IGattServerCharacteristic> Characteristics => _characteristics.Values;
 
     /// <inheritdoc />
     public IGattServerPeer Peer { get; } = peer;
@@ -78,14 +77,11 @@ public abstract class GattServerService(
             characteristicToReturn ??= characteristic;
             _characteristics[characteristic.AttributeHandle] = characteristic;
         }
-        return characteristicToReturn
-            ?? throw new Exception($"No characteristic with Uuid {uuid} was discovered");
+        return characteristicToReturn ?? throw new Exception($"No characteristic with Uuid {uuid} was discovered");
     }
 
     /// <summary> Core implementation to discover a characteristic with a given <paramref name="uuid"/> </summary>
     /// <param name="uuid"> The characteristic uuid to be discovered </param>
     /// <returns> An observable with all characteristics </returns>
-    protected abstract IObservable<GattServerCharacteristic> DiscoverCharacteristicsCore(
-        BleUuid uuid
-    );
+    protected abstract IObservable<GattServerCharacteristic> DiscoverCharacteristicsCore(BleUuid uuid);
 }

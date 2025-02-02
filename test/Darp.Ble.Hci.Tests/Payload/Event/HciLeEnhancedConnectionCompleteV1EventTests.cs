@@ -74,9 +74,7 @@ public sealed class HciLeEnhancedConnectionCompleteV1EventTests
         value.Role.Should().Be(expectedValue.Role);
         value.PeerAddressType.Should().Be(expectedValue.PeerAddressType);
         value.PeerAddress.Should().Be(expectedValue.PeerAddress);
-        value
-            .LocalResolvablePrivateAddress.Should()
-            .Be(expectedValue.LocalResolvablePrivateAddress);
+        value.LocalResolvablePrivateAddress.Should().Be(expectedValue.LocalResolvablePrivateAddress);
         value.PeerResolvablePrivateAddress.Should().Be(expectedValue.PeerResolvablePrivateAddress);
         value.ConnectionInterval.Should().Be(expectedValue.ConnectionInterval);
         value.PeripheralLatency.Should().Be(expectedValue.PeripheralLatency);

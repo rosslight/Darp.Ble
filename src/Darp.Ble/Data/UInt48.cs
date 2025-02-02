@@ -66,10 +66,7 @@ public readonly struct UInt48
     public static void WriteLittleEndian(Span<byte> destination, UInt48 uint48)
     {
         if (destination.Length < 6)
-            throw new ArgumentOutOfRangeException(
-                nameof(destination),
-                "Source has to be 6 bytes long"
-            );
+            throw new ArgumentOutOfRangeException(nameof(destination), "Source has to be 6 bytes long");
         UInt48 valueToWrite = BitConverter.IsLittleEndian ? uint48 : ReverseEndianness(uint48);
         MemoryMarshal.Write(destination, in valueToWrite);
     }

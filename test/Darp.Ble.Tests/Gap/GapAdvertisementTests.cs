@@ -70,9 +70,7 @@ public sealed class GapAdvertisementTests(ILoggerFactory loggerFactory)
             (Rssi)rssi,
             periodicAdvertisingInterval,
             new BleAddress(directAddressType, (UInt48)directAddress),
-            AdvertisingData.From(
-                [(advertisingDataType1, sectionData1), (advertisingDataType2, sectionData2)]
-            )
+            AdvertisingData.From([(advertisingDataType1, sectionData1), (advertisingDataType2, sectionData2)])
         );
         string byteString = Convert.ToHexString(adv.AsByteArray());
 

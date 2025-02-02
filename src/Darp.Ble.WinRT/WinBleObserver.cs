@@ -15,8 +15,7 @@ using Windows.Foundation;
 namespace Darp.Ble.WinRT;
 
 /// <inheritdoc />
-internal sealed class WinBleObserver(BleDevice device, ILogger<WinBleObserver> logger)
-    : BleObserver(device, logger)
+internal sealed class WinBleObserver(BleDevice device, ILogger<WinBleObserver> logger) : BleObserver(device, logger)
 {
     private BluetoothLEAdvertisementWatcher? _watcher;
 
@@ -63,24 +62,15 @@ internal sealed class WinBleObserver(BleDevice device, ILogger<WinBleObserver> l
         {
             if (args.Error is BluetoothError.Success)
                 return;
-            var exception = new BleObservationStopException(
-                this,
-                $"Watcher stopped with error {args.Error}"
-            );
+            var exception = new BleObservationStopException(this, $"Watcher stopped with error {args.Error}");
             StopScan(exception);
         };
         observable = Observable
             .FromEventPattern<
-                TypedEventHandler<
-                    BluetoothLEAdvertisementWatcher,
-                    BluetoothLEAdvertisementReceivedEventArgs
-                >,
+                TypedEventHandler<BluetoothLEAdvertisementWatcher, BluetoothLEAdvertisementReceivedEventArgs>,
                 BluetoothLEAdvertisementWatcher,
                 BluetoothLEAdvertisementReceivedEventArgs
-            >(
-                addHandler => _watcher.Received += addHandler,
-                removeHandler => _watcher.Received -= removeHandler
-            )
+            >(addHandler => _watcher.Received += addHandler, removeHandler => _watcher.Received -= removeHandler)
             .Select(adv => OnAdvertisementReport(this, adv));
         return true;
     }
@@ -94,10 +84,7 @@ internal sealed class WinBleObserver(BleDevice device, ILogger<WinBleObserver> l
 
     private static GapAdvertisement OnAdvertisementReport(
         BleObserver bleObserver,
-        IEventPattern<
-            BluetoothLEAdvertisementWatcher,
-            BluetoothLEAdvertisementReceivedEventArgs
-        > gapEvt
+        IEventPattern<BluetoothLEAdvertisementWatcher, BluetoothLEAdvertisementReceivedEventArgs> gapEvt
     )
     {
         BluetoothLEAdvertisementReceivedEventArgs eventArgs = gapEvt.EventArgs;

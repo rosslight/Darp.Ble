@@ -43,11 +43,7 @@ public static class AdvertisementExtensions
             }
             IBleCentral central = device.Central;
             return central
-                .ConnectToPeripheral(
-                    advertisement.Address,
-                    connectionParameters,
-                    scanParameters: null
-                )
+                .ConnectToPeripheral(advertisement.Address, connectionParameters, scanParameters: null)
                 .Subscribe(observer);
         });
     }
@@ -73,10 +69,7 @@ public static class AdvertisementExtensions
     /// <param name="address">The address to test each source advertisement against.</param>
     /// <typeparam name="TAdv">The type of the advertisements in the source sequence.</typeparam>
     /// <returns>An observable sequence of advertisements that contains elements from the input sequence that match the address.</returns>
-    public static IObservable<TAdv> WhereAddress<TAdv>(
-        this IObservable<TAdv> source,
-        BleAddress? address
-    )
+    public static IObservable<TAdv> WhereAddress<TAdv>(this IObservable<TAdv> source, BleAddress? address)
         where TAdv : IGapAdvertisement
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -91,10 +84,7 @@ public static class AdvertisementExtensions
     /// <param name="address">The address to test each source advertisement against.</param>
     /// <typeparam name="TAdv">The type of the advertisements in the source sequence.</typeparam>
     /// <returns>An observable sequence of advertisements that contains elements from the input sequence that match the address value.</returns>
-    public static IObservable<TAdv> WhereAddress<TAdv>(
-        this IObservable<TAdv> source,
-        ulong? address
-    )
+    public static IObservable<TAdv> WhereAddress<TAdv>(this IObservable<TAdv> source, ulong? address)
         where TAdv : IGapAdvertisement
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -106,10 +96,7 @@ public static class AdvertisementExtensions
     /// <param name="type">The pdu type to test each source advertisement against.</param>
     /// <typeparam name="TAdv">The type of the advertisements in the source sequence.</typeparam>
     /// <returns>An observable sequence of advertisements that contains elements from the input sequence that match the advertisement type.</returns>
-    public static IObservable<TAdv> WhereType<TAdv>(
-        this IObservable<TAdv> source,
-        BleEventType type
-    )
+    public static IObservable<TAdv> WhereType<TAdv>(this IObservable<TAdv> source, BleEventType type)
         where TAdv : IGapAdvertisement
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -179,10 +166,7 @@ public static class AdvertisementExtensions
     /// <param name="service">The service <see cref="Guid"/> to test each source advertisement against.</param>
     /// <typeparam name="TAdv">The type of the advertisements in the source sequence.</typeparam>
     /// <returns>An observable sequence of advertisements that contains elements from the input sequence that contains the service uuid.</returns>
-    public static IObservable<TAdv> WhereService<TAdv>(
-        this IObservable<TAdv> source,
-        BleUuid? service
-    )
+    public static IObservable<TAdv> WhereService<TAdv>(this IObservable<TAdv> source, BleUuid? service)
         where TAdv : IGapAdvertisement
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -199,10 +183,7 @@ public static class AdvertisementExtensions
     /// <param name="service">The service ushort uuid to test each source advertisement against.</param>
     /// <typeparam name="TAdv">The type of the advertisements in the source sequence.</typeparam>
     /// <returns>An observable sequence of advertisements that contains elements from the input sequence that contains the service uuid.</returns>
-    public static IObservable<TAdv> WhereService<TAdv>(
-        this IObservable<TAdv> source,
-        ushort? service
-    )
+    public static IObservable<TAdv> WhereService<TAdv>(this IObservable<TAdv> source, ushort? service)
         where TAdv : IGapAdvertisement
     {
         ArgumentNullException.ThrowIfNull(source);

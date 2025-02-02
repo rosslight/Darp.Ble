@@ -42,9 +42,7 @@ public sealed class AdvertisingParameters
     public ScanTiming MaxPrimaryAdvertisingInterval { get; init; } = ScanTiming.Ms1000;
 
     public AdvertisingChannelMap PrimaryAdvertisingChannelMap { get; init; } =
-        AdvertisingChannelMap.Channel37
-        | AdvertisingChannelMap.Channel38
-        | AdvertisingChannelMap.Channel39;
+        AdvertisingChannelMap.Channel37 | AdvertisingChannelMap.Channel38 | AdvertisingChannelMap.Channel39;
 
     /// <summary> The address of the peer device, if <see cref="BleEventType.Directed"/> advertising is selected in the <see cref="Type"/> </summary>
     public BleAddress? PeerAddress { get; init; }

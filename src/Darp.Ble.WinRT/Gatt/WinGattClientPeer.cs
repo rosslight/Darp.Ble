@@ -7,11 +7,8 @@ using Windows.Foundation;
 
 namespace Darp.Ble.WinRT.Gatt;
 
-internal sealed class WinGattClientPeer(
-    WinBlePeripheral peripheral,
-    GattSession session,
-    BleAddress address
-) : IGattClientPeer
+internal sealed class WinGattClientPeer(WinBlePeripheral peripheral, GattSession session, BleAddress address)
+    : IGattClientPeer
 {
     private readonly GattSession _session = session;
     public BleAddress Address { get; } = address;

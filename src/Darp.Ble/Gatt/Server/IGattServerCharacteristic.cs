@@ -13,8 +13,7 @@ public abstract class GattServerDescriptor(
     protected ILogger<GattServerDescriptor> Logger { get; } = logger;
 
     /// <summary> The logger factory </summary>
-    protected ILoggerFactory LoggerFactory =>
-        Characteristic.Service.Peer.Central.Device.LoggerFactory;
+    protected ILoggerFactory LoggerFactory => Characteristic.Service.Peer.Central.Device.LoggerFactory;
 
     /// <inheritdoc />
     public IGattServerCharacteristic Characteristic { get; } = characteristic;
@@ -26,10 +25,7 @@ public abstract class GattServerDescriptor(
     public abstract Task<byte[]> ReadAsync(CancellationToken cancellationToken = default);
 
     /// <inheritdoc />
-    public abstract Task<bool> WriteAsync(
-        byte[] bytes,
-        CancellationToken cancellationToken = default
-    );
+    public abstract Task<bool> WriteAsync(byte[] bytes, CancellationToken cancellationToken = default);
 }
 
 /// <summary> The interface defining a gatt server characteristic </summary>

@@ -7,10 +7,7 @@ public static class MockBleFactoryExtensions
     /// <param name="builder"> An optional callback to configure the factory </param>
     /// <param name="configure"> The callback to configure the factory </param>
     /// <returns> The <paramref name="builder"/> </returns>
-    public static BleManagerBuilder AddMock(
-        this BleManagerBuilder builder,
-        Action<BleMockFactory>? configure = null
-    )
+    public static BleManagerBuilder AddMock(this BleManagerBuilder builder, Action<BleMockFactory>? configure = null)
     {
         ArgumentNullException.ThrowIfNull(builder);
         return builder.Add(configure);

@@ -8,9 +8,7 @@ public sealed class HciLeWriteSuggestedDefaultDataLengthCommandTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        HciLeWriteSuggestedDefaultDataLengthCommand
-            .OpCode.Should()
-            .HaveValue(0x0024 | (0x08 << 10));
+        HciLeWriteSuggestedDefaultDataLengthCommand.OpCode.Should().HaveValue(0x0024 | (0x08 << 10));
     }
 
     [Theory]

@@ -59,8 +59,7 @@ public enum HciOpCode : ushort
     HCI_LE_SET_ADVERTISING_SET_RANDOM_ADDRESS = 0x0035 | (HciOpCodeGroupField.LeController << 10),
 
     /// <summary> The <see cref="HciLeSetExtendedAdvertisingParametersV1Command"/> </summary>
-    HCI_LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1 =
-        0x0036 | (HciOpCodeGroupField.LeController << 10),
+    HCI_LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1 = 0x0036 | (HciOpCodeGroupField.LeController << 10),
 
     /// <summary> The <see cref="HciLeSetExtendedAdvertisingDataCommand"/> </summary>
     HCI_LE_SET_EXTENDED_ADVERTISING_DATA = 0x0037 | (HciOpCodeGroupField.LeController << 10),
@@ -75,8 +74,7 @@ public enum HciOpCode : ushort
     HCI_LE_READ_MAXIMUM_ADVERTISING_DATA_LENGTH = 0x003A | (HciOpCodeGroupField.LeController << 10),
 
     /// <summary> The <see cref="HciLeReadNumberOfSupportedAdvertisingSetsCommand"/> </summary>
-    HCI_LE_Read_Number_Of_Supported_Advertising_Sets =
-        0x003B | (HciOpCodeGroupField.LeController << 10),
+    HCI_LE_Read_Number_Of_Supported_Advertising_Sets = 0x003B | (HciOpCodeGroupField.LeController << 10),
 
     /// <summary> The <see cref="HciLeRemoveAdvertisingSetCommand"/> </summary>
     HCI_LE_Remove_Advertising_Set = 0x003C | (HciOpCodeGroupField.LeController << 10),

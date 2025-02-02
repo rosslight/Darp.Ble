@@ -19,15 +19,9 @@ public static class GattServiceExtensions
     {
         ArgumentNullException.ThrowIfNull(peer);
         ArgumentNullException.ThrowIfNull(serviceDeclaration);
-        IGattServerService service = await peer.DiscoverServiceAsync(
-                serviceDeclaration.Uuid,
-                cancellationToken
-            )
+        IGattServerService service = await peer.DiscoverServiceAsync(serviceDeclaration.Uuid, cancellationToken)
             .ConfigureAwait(false);
-        if (
-            serviceDeclaration.Type is not GattServiceType.Undefined
-            && service.Type != serviceDeclaration.Type
-        )
+        if (serviceDeclaration.Type is not GattServiceType.Undefined && service.Type != serviceDeclaration.Type)
             throw new Exception(
                 $"Discovered service is of type {service.Type} and does not match declaration {serviceDeclaration.Type}"
             );

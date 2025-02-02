@@ -5,9 +5,7 @@ namespace Darp.Ble.Hci.Payload.Att;
 
 /// <summary> The ATT_FIND_INFORMATION_RSP PDU is sent in reply to a received ATT_FIND_INFORMATION_REQ PDU and contains information about this server </summary>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/attribute-protocol--att-.html#UUID-06819664-297a-8234-c748-a326bbfab199"/>
-public readonly record struct AttFindInformationRsp
-    : IAttPdu,
-        IBinaryReadable<AttFindInformationRsp>
+public readonly record struct AttFindInformationRsp : IAttPdu, IBinaryReadable<AttFindInformationRsp>
 {
     /// <inheritdoc />
     public static AttOpCode ExpectedOpCode => AttOpCode.ATT_FIND_INFORMATION_RSP;
@@ -22,10 +20,7 @@ public readonly record struct AttFindInformationRsp
     public required AttFindInformationData[] InformationData { get; init; }
 
     /// <inheritdoc />
-    public static bool TryReadLittleEndian(
-        ReadOnlySpan<byte> source,
-        out AttFindInformationRsp value
-    )
+    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out AttFindInformationRsp value)
     {
         return TryReadLittleEndian(source, out value, out _);
     }
@@ -85,11 +80,7 @@ public readonly record struct AttFindInformationRsp
     }
 
     /// <inheritdoc />
-    public static bool TryReadBigEndian(
-        ReadOnlySpan<byte> source,
-        out AttFindInformationRsp value,
-        out int bytesRead
-    )
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out AttFindInformationRsp value, out int bytesRead)
     {
         throw new NotSupportedException();
     }

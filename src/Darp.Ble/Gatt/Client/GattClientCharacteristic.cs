@@ -48,12 +48,7 @@ public abstract class GattClientCharacteristic(
     {
         if (Descriptors.TryGetValue(uuid, out IGattClientDescriptor? foundDescriptor))
             return foundDescriptor;
-        IGattClientDescriptor descriptor = await AddDescriptorAsyncCore(
-                uuid,
-                onRead,
-                onWrite,
-                cancellationToken
-            )
+        IGattClientDescriptor descriptor = await AddDescriptorAsyncCore(uuid, onRead, onWrite, cancellationToken)
             .ConfigureAwait(false);
         _descriptors[uuid] = descriptor;
         return descriptor;
@@ -68,10 +63,7 @@ public abstract class GattClientCharacteristic(
     );
 
     /// <inheritdoc />
-    public ValueTask<byte[]> GetValueAsync(
-        IGattClientPeer? clientPeer,
-        CancellationToken cancellationToken
-    )
+    public ValueTask<byte[]> GetValueAsync(IGattClientPeer? clientPeer, CancellationToken cancellationToken)
     {
         if (_onRead is null)
             throw new NotSupportedException("Reading is not supported by this characteristic");
@@ -95,11 +87,7 @@ public abstract class GattClientCharacteristic(
     {
         if (_onWrite is not null)
         {
-            ValueTask<GattProtocolStatus> writeTask = _onWrite(
-                clientPeer,
-                value,
-                CancellationToken.None
-            );
+            ValueTask<GattProtocolStatus> writeTask = _onWrite(clientPeer, value, CancellationToken.None);
             if (!writeTask.IsCompleted)
             {
                 writeTask.AsTask().GetAwaiter().GetResult();
@@ -119,11 +107,7 @@ public abstract class GattClientCharacteristic(
     }
 
     /// <inheritdoc />
-    public async Task IndicateAsync(
-        IGattClientPeer? clientPeer,
-        byte[] value,
-        CancellationToken cancellationToken
-    )
+    public async Task IndicateAsync(IGattClientPeer? clientPeer, byte[] value, CancellationToken cancellationToken)
     {
         if (_onWrite is not null)
         {
@@ -187,8 +171,7 @@ public class GattClientCharacteristic<TProp1>(IGattClientCharacteristic characte
     public GattProperty Properties => Characteristic.Properties;
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<BleUuid, IGattClientDescriptor> Descriptors =>
-        Characteristic.Descriptors;
+    public IReadOnlyDictionary<BleUuid, IGattClientDescriptor> Descriptors => Characteristic.Descriptors;
 
     /// <inheritdoc />
     public Task<IGattClientDescriptor> AddDescriptorAsync(
@@ -223,27 +206,21 @@ public class GattClientCharacteristic<TProp1>(IGattClientCharacteristic characte
 /// <param name="characteristic"> The actual characteristic </param>
 /// <typeparam name="TProp1"> The first property </typeparam>
 /// <typeparam name="TProp2"> The second property </typeparam>
-public sealed class GattClientCharacteristic<TProp1, TProp2>(
-    IGattClientCharacteristic characteristic
-) : GattClientCharacteristic<TProp1>(characteristic), IGattClientCharacteristic<TProp2>
+public sealed class GattClientCharacteristic<TProp1, TProp2>(IGattClientCharacteristic characteristic)
+    : GattClientCharacteristic<TProp1>(characteristic),
+        IGattClientCharacteristic<TProp2>
     where TProp1 : IBleProperty
     where TProp2 : IBleProperty
 {
     /// <summary> Convert implicitly to a different order of type parameters </summary>
     /// <param name="characteristicDeclaration"> The characteristic declaration to convert </param>
     /// <returns> The converted characteristic declaration </returns>
-    [SuppressMessage(
-        "Usage",
-        "CA2225:Operator overloads have named alternates",
-        Justification = "Convenience method"
-    )]
+    [SuppressMessage("Usage", "CA2225:Operator overloads have named alternates", Justification = "Convenience method")]
     public static implicit operator GattClientCharacteristic<TProp2, TProp1>(
         GattClientCharacteristic<TProp1, TProp2> characteristicDeclaration
     )
     {
         ArgumentNullException.ThrowIfNull(characteristicDeclaration);
-        return new GattClientCharacteristic<TProp2, TProp1>(
-            characteristicDeclaration.Characteristic
-        );
+        return new GattClientCharacteristic<TProp2, TProp1>(characteristicDeclaration.Characteristic);
     }
 }

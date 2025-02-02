@@ -12,15 +12,8 @@ using Windows.Devices.Bluetooth.GenericAttributeProfile;
 
 namespace Darp.Ble.WinRT.Gatt;
 
-internal sealed class WinGattClientService(
-    WinBlePeripheral peripheral,
-    GattServiceProvider provider
-)
-    : GattClientService(
-        peripheral,
-        BleUuid.FromGuid(provider.Service.Uuid, inferType: true),
-        GattServiceType.Undefined
-    )
+internal sealed class WinGattClientService(WinBlePeripheral peripheral, GattServiceProvider provider)
+    : GattClientService(peripheral, BleUuid.FromGuid(provider.Service.Uuid, inferType: true), GattServiceType.Undefined)
 {
     private readonly GattServiceProvider _serviceProvider = provider;
     private readonly GattLocalService _winService = provider.Service;
@@ -63,12 +56,7 @@ internal sealed class WinGattClientService(
         if (parameters.Type.HasFlag(BleEventType.Connectable))
             winParameters.IsConnectable = true;
         winParameters.IsDiscoverable = true;
-        if (
-            advertisingSet.Data.TryGetFirstType(
-                AdTypes.ServiceData16BitUuid,
-                out ReadOnlyMemory<byte> memory
-            )
-        )
+        if (advertisingSet.Data.TryGetFirstType(AdTypes.ServiceData16BitUuid, out ReadOnlyMemory<byte> memory))
         {
             winParameters.ServiceData = memory.ToArray().AsBuffer();
         }

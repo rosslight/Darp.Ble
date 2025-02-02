@@ -11,10 +11,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock;
 
-internal sealed class MockedBleBroadcaster(
-    MockedBleDevice bleDevice,
-    ILogger<MockedBleBroadcaster> logger
-) : BleBroadcaster(bleDevice, logger)
+internal sealed class MockedBleBroadcaster(MockedBleDevice bleDevice, ILogger<MockedBleBroadcaster> logger)
+    : BleBroadcaster(bleDevice, logger)
 {
     private readonly MockedBleDevice _device = bleDevice;
     private readonly Subject<IAdvertisingSet> _advertisingSetPublishedSubject = new();
@@ -47,36 +45,24 @@ internal sealed class MockedBleBroadcaster(
     )
     {
         var advertisingSet = new MockAdvertisingSet(this);
-        await advertisingSet
-            .SetRandomAddressAsync(_device.RandomAddress, cancellationToken)
-            .ConfigureAwait(false);
+        await advertisingSet.SetRandomAddressAsync(_device.RandomAddress, cancellationToken).ConfigureAwait(false);
         if (parameters is not null)
         {
-            await advertisingSet
-                .SetAdvertisingParametersAsync(parameters, cancellationToken)
-                .ConfigureAwait(false);
+            await advertisingSet.SetAdvertisingParametersAsync(parameters, cancellationToken).ConfigureAwait(false);
         }
         if (data is not null)
         {
-            await advertisingSet
-                .SetAdvertisingDataAsync(data, cancellationToken)
-                .ConfigureAwait(false);
+            await advertisingSet.SetAdvertisingDataAsync(data, cancellationToken).ConfigureAwait(false);
         }
         if (scanResponseData is not null)
         {
-            await advertisingSet
-                .SetAdvertisingDataAsync(scanResponseData, cancellationToken)
-                .ConfigureAwait(false);
+            await advertisingSet.SetAdvertisingDataAsync(scanResponseData, cancellationToken).ConfigureAwait(false);
         }
         return advertisingSet;
     }
 
     protected override Task<IAsyncDisposable> StartAdvertisingCoreAsync(
-        IReadOnlyCollection<(
-            IAdvertisingSet AdvertisingSet,
-            TimeSpan Duration,
-            byte NumberOfEvents
-        )> advertisingSets,
+        IReadOnlyCollection<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, byte NumberOfEvents)> advertisingSets,
         CancellationToken cancellationToken
     )
     {
@@ -95,13 +81,10 @@ internal sealed class MockedBleBroadcaster(
             disposables.Add(observable.Subscribe(_advertisingSetPublishedSubject));
         }
 #pragma warning disable CA2000 // Will be disposed when async disposable is disposed
-        IAsyncDisposable asyncDisposable = AsyncDisposable.Create(
-            new CompositeDisposable(disposables)
-        );
+        IAsyncDisposable asyncDisposable = AsyncDisposable.Create(new CompositeDisposable(disposables));
 #pragma warning restore CA2000
         return Task.FromResult(asyncDisposable);
     }
 }
 
-internal sealed class MockAdvertisingSet(MockedBleBroadcaster broadcaster)
-    : AdvertisingSet(broadcaster) { }
+internal sealed class MockAdvertisingSet(MockedBleBroadcaster broadcaster) : AdvertisingSet(broadcaster) { }

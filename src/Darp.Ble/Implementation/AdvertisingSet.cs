@@ -32,10 +32,7 @@ public abstract class AdvertisingSet(BleBroadcaster broadcaster) : IAdvertisingS
     public bool IsAdvertising { get; }
 
     /// <inheritdoc />
-    public virtual Task SetRandomAddressAsync(
-        BleAddress randomAddress,
-        CancellationToken cancellationToken = default
-    )
+    public virtual Task SetRandomAddressAsync(BleAddress randomAddress, CancellationToken cancellationToken = default)
     {
         RandomAddress = randomAddress;
         return Task.CompletedTask;
@@ -52,10 +49,7 @@ public abstract class AdvertisingSet(BleBroadcaster broadcaster) : IAdvertisingS
     }
 
     /// <inheritdoc />
-    public virtual Task SetAdvertisingDataAsync(
-        AdvertisingData data,
-        CancellationToken cancellationToken = default
-    )
+    public virtual Task SetAdvertisingDataAsync(AdvertisingData data, CancellationToken cancellationToken = default)
     {
         Data = data;
         return Task.CompletedTask;

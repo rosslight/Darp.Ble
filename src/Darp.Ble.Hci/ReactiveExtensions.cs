@@ -9,10 +9,7 @@ namespace Darp.Ble.Hci;
 /// <summary> Class holding different reactive extensions </summary>
 public static class ReactiveExtensions
 {
-    private static IObservable<T> TakeUntil<T>(
-        this IObservable<T> source,
-        CancellationToken cancellationToken
-    )
+    private static IObservable<T> TakeUntil<T>(this IObservable<T> source, CancellationToken cancellationToken)
     {
         IObservable<T> cancelObservable = Observable.Create<T>(observer =>
             cancellationToken.Register(() =>
@@ -26,10 +23,7 @@ public static class ReactiveExtensions
     /// <summary> The selector </summary>
     /// <typeparam name="T"> The type of the source </typeparam>
     /// <typeparam name="TResult"> The type of the result </typeparam>
-    public delegate bool TrySelector<in T, TResult>(
-        T value,
-        [NotNullWhen(true)] out TResult? result
-    );
+    public delegate bool TrySelector<in T, TResult>(T value, [NotNullWhen(true)] out TResult? result);
 
     /// <summary> Select everything, where the <paramref name="trySelector"/> returned true </summary>
     /// <param name="source"> The source to operate on </param>
@@ -69,9 +63,7 @@ public static class ReactiveExtensions
     /// <param name="source"> The source to operate on </param>
     /// <typeparam name="TEvent"> The type of the event data </typeparam>
     /// <returns> An observable with the event data </returns>
-    public static IObservable<HciEventPacket<TEvent>> SelectWhereEvent<TEvent>(
-        this IObservable<HciEventPacket> source
-    )
+    public static IObservable<HciEventPacket<TEvent>> SelectWhereEvent<TEvent>(this IObservable<HciEventPacket> source)
         where TEvent : IHciEvent<TEvent> =>
         source.SelectWhere<HciEventPacket, HciEventPacket<TEvent>>(HciEventPacket.TryWithData);
 
@@ -91,12 +83,7 @@ public static class ReactiveExtensions
                 .Subscribe(
                     next =>
                     {
-                        if (
-                            HciEventPacket.TryWithData(
-                                next,
-                                out HciEventPacket<TLeMetaEvent>? result
-                            )
-                        )
+                        if (HciEventPacket.TryWithData(next, out HciEventPacket<TLeMetaEvent>? result))
                             observer.OnNext(result);
                     },
                     observer.OnError,

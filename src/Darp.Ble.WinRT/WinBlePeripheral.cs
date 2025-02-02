@@ -32,10 +32,7 @@ internal sealed class WinBlePeripheral(WinBleDevice device, ILogger<WinBlePeriph
     internal IGattClientPeer GetOrRegisterSession(GattSession gattSession)
     {
         BleAddress address = BleAddress.Parse(gattSession.DeviceId.Id[^17..], provider: null);
-        if (
-            PeerDevices.TryGetValue(address, out IGattClientPeer? clientPeer)
-            && clientPeer.IsConnected
-        )
+        if (PeerDevices.TryGetValue(address, out IGattClientPeer? clientPeer) && clientPeer.IsConnected)
         {
             return clientPeer;
         }

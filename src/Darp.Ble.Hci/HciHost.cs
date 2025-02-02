@@ -10,11 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci;
 
-public sealed class AclPacketQueue(
-    ITransportLayer transportLayer,
-    int maxPacketSize,
-    int maxPacketsInFlight
-)
+public sealed class AclPacketQueue(ITransportLayer transportLayer, int maxPacketSize, int maxPacketsInFlight)
 {
     private readonly ITransportLayer _transportLayer = transportLayer;
     private readonly int _maxPacketSize = maxPacketSize;
@@ -35,10 +31,7 @@ public sealed class AclPacketQueue(
     /// <summary> Checks the number of packets in flight and send as many as possible </summary>
     private void CheckQueue()
     {
-        while (
-            _packetsInFlight < _maxPacketsInFlight
-            && _packetQueue.TryDequeue(out IHciPacket? packet)
-        )
+        while (_packetsInFlight < _maxPacketsInFlight && _packetQueue.TryDequeue(out IHciPacket? packet))
         {
             _transportLayer.Enqueue(packet);
             _packetsInFlight++;
@@ -62,8 +55,7 @@ public sealed class HciHost : IDisposable
         Logger = logger;
         WhenHciPacketReceived = _transportLayer.WhenReceived();
         WhenHciEventPackageReceived = WhenHciPacketReceived.OfType<HciEventPacket>();
-        WhenHciLeMetaEventPackageReceived =
-            WhenHciEventPackageReceived.SelectWhereEvent<HciLeMetaEvent>();
+        WhenHciLeMetaEventPackageReceived = WhenHciEventPackageReceived.SelectWhereEvent<HciLeMetaEvent>();
     }
 
     /// <summary> Observable sequence of <see cref="IHciPacket"/> emitted when an HCI packet is received. </summary>
@@ -89,9 +81,7 @@ public sealed class HciHost : IDisposable
     {
         _transportLayer.Initialize();
         // Reset the controller
-        await this.QueryCommandCompletionAsync<HciResetCommand, HciResetResult>(
-                cancellationToken: cancellationToken
-            )
+        await this.QueryCommandCompletionAsync<HciResetCommand, HciResetResult>(cancellationToken: cancellationToken)
             .ConfigureAwait(false);
         // await Host.QueryCommandCompletionAsync<HciReadLocalSupportedCommandsCommand, HciReadLocalSupportedCommandsResult>();
         HciReadLocalVersionInformationResult version = await this.QueryCommandCompletionAsync<

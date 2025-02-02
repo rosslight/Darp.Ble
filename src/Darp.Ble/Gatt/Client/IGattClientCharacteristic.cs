@@ -43,11 +43,7 @@ public interface IGattClientCharacteristic : IGattClientAttribute
     /// <param name="value"> The value to update with </param>
     /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
     /// <returns> A task completing when indication was acknowledged </returns>
-    Task IndicateAsync(
-        IGattClientPeer? clientPeer,
-        byte[] value,
-        CancellationToken cancellationToken
-    );
+    Task IndicateAsync(IGattClientPeer? clientPeer, byte[] value, CancellationToken cancellationToken);
 }
 
 /// <summary> A gatt client characteristic with a single property </summary>

@@ -51,9 +51,7 @@ public sealed class TypedCharacteristicDeclaration<T, TProp1, TProp2>(
     BleUuid uuid,
     IGattTypedCharacteristic<T>.ReadValueFunc onRead,
     IGattTypedCharacteristic<T>.WriteValueFunc onWrite
-)
-    : TypedCharacteristicDeclaration<T, TProp1>(uuid, onRead, onWrite),
-        IGattTypedCharacteristicDeclaration<T, TProp2>
+) : TypedCharacteristicDeclaration<T, TProp1>(uuid, onRead, onWrite), IGattTypedCharacteristicDeclaration<T, TProp2>
     where TProp1 : IBleProperty
     where TProp2 : IBleProperty
 {
@@ -63,11 +61,7 @@ public sealed class TypedCharacteristicDeclaration<T, TProp1, TProp2>(
     /// <summary> Convert implicitly to a different order of type parameters </summary>
     /// <param name="characteristicDeclaration"> The characteristic declaration to convert </param>
     /// <returns> The converted characteristic declaration </returns>
-    [SuppressMessage(
-        "Usage",
-        "CA2225:Operator overloads have named alternates",
-        Justification = "Convenience method"
-    )]
+    [SuppressMessage("Usage", "CA2225:Operator overloads have named alternates", Justification = "Convenience method")]
     public static implicit operator TypedCharacteristicDeclaration<T, TProp2, TProp1>(
         TypedCharacteristicDeclaration<T, TProp1, TProp2> characteristicDeclaration
     )

@@ -38,12 +38,7 @@ public sealed class AttReadByGroupTypeReqTests
     }
 
     [Theory]
-    [InlineData(
-        1,
-        0xFFFF,
-        "0000FFE000001000800000805F9B34FB",
-        "100100FFFF0000FFE000001000800000805F9B34FB"
-    )]
+    [InlineData(1, 0xFFFF, "0000FFE000001000800000805F9B34FB", "100100FFFF0000FFE000001000800000805F9B34FB")]
     public void TryWriteLittleEndian_128Bit_ShouldBeValid(
         ushort startingHandle,
         ushort endingHandle,

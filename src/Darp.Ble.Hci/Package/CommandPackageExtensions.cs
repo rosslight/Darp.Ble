@@ -12,20 +12,12 @@ namespace Darp.Ble.Hci.Package;
 public static class CommandPackageExtensions
 {
     [SuppressMessage("Design", "CA1031:Do not catch general exception types")]
-    private static void OnNextEventPacket<TCommand>(
-        this IObserver<HciEventPacket> observer,
-        HciEventPacket package
-    )
+    private static void OnNextEventPacket<TCommand>(this IObserver<HciEventPacket> observer, HciEventPacket package)
         where TCommand : IHciCommand
     {
         try
         {
-            if (
-                HciEventPacket.TryWithData(
-                    package,
-                    out HciEventPacket<HciCommandStatusEvent>? statusPackage
-                )
-            )
+            if (HciEventPacket.TryWithData(package, out HciEventPacket<HciCommandStatusEvent>? statusPackage))
             {
                 if (
                     statusPackage.Data.CommandOpCode == TCommand.OpCode
@@ -44,10 +36,7 @@ public static class CommandPackageExtensions
         }
     }
 
-    private static IObservable<HciEventPacket> QueryCommand<TCommand>(
-        this HciHost hciHost,
-        TCommand command
-    )
+    private static IObservable<HciEventPacket> QueryCommand<TCommand>(this HciHost hciHost, TCommand command)
         where TCommand : IHciCommand
     {
         return Observable.Create<HciEventPacket>(observer =>
@@ -79,11 +68,7 @@ public static class CommandPackageExtensions
         where TCommand : unmanaged, IHciCommand
         where TResponse : unmanaged, IBinaryReadable<TResponse>
     {
-        return hciHost.QueryCommandCompletionAsync<TCommand, TResponse>(
-            default,
-            timeout,
-            cancellationToken
-        );
+        return hciHost.QueryCommandCompletionAsync<TCommand, TResponse>(default, timeout, cancellationToken);
     }
 
     /// <summary> Query a command expecting a <see cref="HciCommandCompleteEvent{TParameters}"/> </summary>
@@ -122,9 +107,7 @@ public static class CommandPackageExtensions
                             )
                             {
                                 observer.OnError(
-                                    new HciException(
-                                        $"Command failed with status {statusResult.Data.Status}"
-                                    )
+                                    new HciException($"Command failed with status {statusResult.Data.Status}")
                                 );
                                 return;
                             }
@@ -137,14 +120,8 @@ public static class CommandPackageExtensions
             .SelectWhereEvent<HciCommandCompleteEvent<TParameters>>()
             .Where(x => x.Data.CommandOpCode == TCommand.OpCode)
             .Do(
-                completePacket =>
-                    hciHost.Logger?.LogQueryCompleted(
-                        command,
-                        completePacket.EventCode,
-                        completePacket
-                    ),
-                exception =>
-                    hciHost.Logger?.LogQueryWithException(exception, command, exception.Message)
+                completePacket => hciHost.Logger?.LogQueryCompleted(command, completePacket.EventCode, completePacket),
+                exception => hciHost.Logger?.LogQueryWithException(exception, command, exception.Message)
             )
             .FirstAsync()
             .Timeout(timeout.Value)
@@ -201,8 +178,7 @@ public static class CommandPackageExtensions
                             statusPacket.EventCode,
                             statusPacket
                         ),
-                    exception =>
-                        hciHost.Logger?.LogQueryWithException(exception, command, exception.Message)
+                    exception => hciHost.Logger?.LogQueryWithException(exception, command, exception.Message)
                 )
                 .FirstAsync()
                 .Timeout(timeout.Value);

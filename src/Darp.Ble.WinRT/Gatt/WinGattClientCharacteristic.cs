@@ -37,8 +37,7 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
             try
             {
                 IGattClientPeer peerClient = Service.Peripheral.GetOrRegisterSession(args.Session);
-                byte[] value = await GetValueAsync(peerClient, CancellationToken.None)
-                    .ConfigureAwait(false);
+                byte[] value = await GetValueAsync(peerClient, CancellationToken.None).ConfigureAwait(false);
                 request.RespondWithValue(value.AsBuffer());
             }
             catch
@@ -55,11 +54,7 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
                 IGattClientPeer peerClient = Service.Peripheral.GetOrRegisterSession(args.Session);
                 DataReader reader = DataReader.FromBuffer(request.Value);
                 byte[] bytes = reader.DetachBuffer().ToArray();
-                GattProtocolStatus status = await UpdateValueAsync(
-                        peerClient,
-                        bytes,
-                        CancellationToken.None
-                    )
+                GattProtocolStatus status = await UpdateValueAsync(peerClient, bytes, CancellationToken.None)
                     .ConfigureAwait(false);
                 if (request.Option == GattWriteOption.WriteWithResponse)
                 {
@@ -94,18 +89,15 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
 
     protected override void NotifyCore(IGattClientPeer clientPeer, byte[] value)
     {
-        GattSubscribedClient? subscribedClient =
-            _winCharacteristic.SubscribedClients.FirstOrDefault(x =>
-            {
-                BleAddress address = BleAddress.Parse(x.Session.DeviceId.Id[^17..], provider: null);
-                return address == clientPeer.Address;
-            });
+        GattSubscribedClient? subscribedClient = _winCharacteristic.SubscribedClients.FirstOrDefault(x =>
+        {
+            BleAddress address = BleAddress.Parse(x.Session.DeviceId.Id[^17..], provider: null);
+            return address == clientPeer.Address;
+        });
         if (subscribedClient is null)
             return;
 
-        _ = _winCharacteristic
-            .NotifyValueAsync(value.AsBuffer(), subscribedClient)
-            .AsTask(CancellationToken.None);
+        _ = _winCharacteristic.NotifyValueAsync(value.AsBuffer(), subscribedClient).AsTask(CancellationToken.None);
     }
 
     protected override async Task IndicateAsyncCore(
@@ -114,12 +106,11 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
         CancellationToken cancellationToken
     )
     {
-        GattSubscribedClient? subscribedClient =
-            _winCharacteristic.SubscribedClients.FirstOrDefault(x =>
-            {
-                BleAddress address = BleAddress.Parse(x.Session.DeviceId.Id[^17..], provider: null);
-                return address == clientPeer.Address;
-            });
+        GattSubscribedClient? subscribedClient = _winCharacteristic.SubscribedClients.FirstOrDefault(x =>
+        {
+            BleAddress address = BleAddress.Parse(x.Session.DeviceId.Id[^17..], provider: null);
+            return address == clientPeer.Address;
+        });
         if (subscribedClient is null)
             return;
 

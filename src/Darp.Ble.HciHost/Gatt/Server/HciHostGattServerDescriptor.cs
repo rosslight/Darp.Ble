@@ -22,10 +22,7 @@ internal sealed class HciHostGattServerDescriptor(
         _peer.SendAttMtuCommand(new AttWriteCmd { Handle = AttHandle, Value = bytes });
     }
 
-    public override async Task<bool> WriteAsync(
-        byte[] bytes,
-        CancellationToken cancellationToken = default
-    )
+    public override async Task<bool> WriteAsync(byte[] bytes, CancellationToken cancellationToken = default)
     {
         AttReadResult response = await _peer
             .QueryAttPduAsync<AttWriteReq, AttWriteRsp>(

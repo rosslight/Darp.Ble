@@ -33,10 +33,7 @@ internal sealed class HciHostGattServerService(
                 List<HciHostGattServerCharacteristic> discoveredCharacteristics = [];
                 while (!token.IsCancellationRequested && startingHandle < 0xFFFF)
                 {
-                    AttReadResult response = await Peer.QueryAttPduAsync<
-                        AttReadByTypeReq<ushort>,
-                        AttReadByTypeRsp
-                    >(
+                    AttReadResult response = await Peer.QueryAttPduAsync<AttReadByTypeReq<ushort>, AttReadByTypeRsp>(
                             new AttReadByTypeReq<ushort>
                             {
                                 StartingHandle = startingHandle,
@@ -48,27 +45,17 @@ internal sealed class HciHostGattServerService(
                         .ConfigureAwait(false);
                     if (
                         response.OpCode is AttOpCode.ATT_ERROR_RSP
-                        && AttErrorRsp.TryReadLittleEndian(
-                            response.Pdu,
-                            out AttErrorRsp errorRsp,
-                            out _
-                        )
+                        && AttErrorRsp.TryReadLittleEndian(response.Pdu, out AttErrorRsp errorRsp, out _)
                     )
                     {
                         if (errorRsp.ErrorCode is AttErrorCode.AttributeNotFoundError)
                             break;
-                        throw new Exception(
-                            $"Could not discover characteristics due to error {errorRsp.ErrorCode}"
-                        );
+                        throw new Exception($"Could not discover characteristics due to error {errorRsp.ErrorCode}");
                     }
                     if (
                         !(
                             response.OpCode is AttOpCode.ATT_READ_BY_TYPE_RSP
-                            && AttReadByTypeRsp.TryReadLittleEndian(
-                                response.Pdu,
-                                out AttReadByTypeRsp rsp,
-                                out _
-                            )
+                            && AttReadByTypeRsp.TryReadLittleEndian(response.Pdu, out AttReadByTypeRsp rsp, out _)
                         )
                     )
                     {
@@ -83,9 +70,7 @@ internal sealed class HciHostGattServerService(
                                 "Handle of discovered characteristic is smaller than starting handle of service"
                             );
                         var properties = (GattProperty)memory.Span[0];
-                        ushort characteristicHandle = BinaryPrimitives.ReadUInt16LittleEndian(
-                            memory.Span[1..]
-                        );
+                        ushort characteristicHandle = BinaryPrimitives.ReadUInt16LittleEndian(memory.Span[1..]);
                         var characteristicUuid = new BleUuid(memory.Span[3..]);
                         var characteristic = new HciHostGattServerCharacteristic(
                             this,
@@ -103,9 +88,7 @@ internal sealed class HciHostGattServerService(
                 }
                 if (lastCharacteristic is not null)
                     lastCharacteristic.EndHandle = _endGroupHandle;
-                foreach (
-                    HciHostGattServerCharacteristic characteristic in discoveredCharacteristics
-                )
+                foreach (HciHostGattServerCharacteristic characteristic in discoveredCharacteristics)
                 {
                     observer.OnNext(characteristic);
                 }
@@ -113,9 +96,7 @@ internal sealed class HciHostGattServerService(
         );
     }
 
-    protected override IObservable<GattServerCharacteristic> DiscoverCharacteristicsCore(
-        BleUuid uuid
-    )
+    protected override IObservable<GattServerCharacteristic> DiscoverCharacteristicsCore(BleUuid uuid)
     {
         return DiscoverCharacteristicsCore().Where(x => x.Uuid == uuid);
     }

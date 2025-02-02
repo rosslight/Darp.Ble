@@ -8,10 +8,8 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Android;
 
-public sealed class AndroidBleDevice(
-    BluetoothManager bluetoothManager,
-    ILoggerFactory loggerFactory
-) : BleDevice(loggerFactory, loggerFactory.CreateLogger<AndroidBleDevice>())
+public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, ILoggerFactory loggerFactory)
+    : BleDevice(loggerFactory, loggerFactory.CreateLogger<AndroidBleDevice>())
 {
     private readonly BluetoothManager _bluetoothManager = bluetoothManager;
     private BluetoothAdapter? BluetoothAdapter => _bluetoothManager.Adapter;
@@ -21,17 +19,12 @@ public sealed class AndroidBleDevice(
 
     public override string? Name => BluetoothAdapter?.Name;
 
-    protected override Task SetRandomAddressAsyncCore(
-        BleAddress randomAddress,
-        CancellationToken cancellationToken
-    )
+    protected override Task SetRandomAddressAsyncCore(BleAddress randomAddress, CancellationToken cancellationToken)
     {
         throw new NotSupportedException();
     }
 
-    protected override Task<InitializeResult> InitializeAsyncCore(
-        CancellationToken cancellationToken
-    )
+    protected override Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
     {
         if (BluetoothAdapter is null)
             return Task.FromResult(InitializeResult.DeviceNotAvailable);
@@ -53,10 +46,8 @@ public sealed class AndroidBleDevice(
 
     private static bool HasScanPermissions() =>
         OperatingSystem.IsAndroidVersionAtLeast(31)
-            ? Application.Context.CheckSelfPermission(Manifest.Permission.BluetoothScan)
-                is Permission.Granted
-            : Application.Context.CheckSelfPermission(Manifest.Permission.AccessCoarseLocation)
-                is Permission.Granted
+            ? Application.Context.CheckSelfPermission(Manifest.Permission.BluetoothScan) is Permission.Granted
+            : Application.Context.CheckSelfPermission(Manifest.Permission.AccessCoarseLocation) is Permission.Granted
                 && Application.Context.CheckSelfPermission(Manifest.Permission.AccessFineLocation)
                     is Permission.Granted;
 

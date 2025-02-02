@@ -20,8 +20,7 @@ public interface IGattCharacteristicDeclaration<TProp1> : IGattCharacteristicDec
 /// <summary> The characteristic declaration </summary>
 /// <param name="uuid"> The uuid of the characteristic </param>
 /// <typeparam name="TProp1"> The type of the first property </typeparam>
-public class CharacteristicDeclaration<TProp1>(BleUuid uuid)
-    : IGattCharacteristicDeclaration<TProp1>
+public class CharacteristicDeclaration<TProp1>(BleUuid uuid) : IGattCharacteristicDeclaration<TProp1>
     where TProp1 : IBleProperty
 {
     /// <inheritdoc />
@@ -47,11 +46,7 @@ public sealed class CharacteristicDeclaration<TProp1, TProp2>(BleUuid uuid)
     /// <summary> Convert implicitly to a different order of type parameters </summary>
     /// <param name="characteristicDeclaration"> The characteristic declaration to convert </param>
     /// <returns> The converted characteristic declaration </returns>
-    [SuppressMessage(
-        "Usage",
-        "CA2225:Operator overloads have named alternates",
-        Justification = "Convenience method"
-    )]
+    [SuppressMessage("Usage", "CA2225:Operator overloads have named alternates", Justification = "Convenience method")]
     public static implicit operator CharacteristicDeclaration<TProp2, TProp1>(
         CharacteristicDeclaration<TProp1, TProp2> characteristicDeclaration
     )
@@ -122,9 +117,7 @@ public static class CharacteristicDeclaration
     /// <typeparam name="TProp1"> The type of the first property </typeparam>
     /// <typeparam name="TProp2"> The type of the second property </typeparam>
     /// <returns> A typed characteristic declaration </returns>
-    public static TypedCharacteristicDeclaration<T, TProp1, TProp2> Create<T, TProp1, TProp2>(
-        BleUuid uuid
-    )
+    public static TypedCharacteristicDeclaration<T, TProp1, TProp2> Create<T, TProp1, TProp2>(BleUuid uuid)
         where T : unmanaged
         where TProp1 : IBleProperty
         where TProp2 : IBleProperty
@@ -141,10 +134,7 @@ public static class CharacteristicDeclaration
     /// <param name="encoding"> The encoding to be used when transforming the string </param>
     /// <typeparam name="TProp1"> The type of the first property </typeparam>
     /// <returns> A typed characteristic declaration </returns>
-    public static TypedCharacteristicDeclaration<string, TProp1> Create<TProp1>(
-        BleUuid uuid,
-        Encoding encoding
-    )
+    public static TypedCharacteristicDeclaration<string, TProp1> Create<TProp1>(BleUuid uuid, Encoding encoding)
         where TProp1 : IBleProperty
     {
         ArgumentNullException.ThrowIfNull(encoding);
@@ -174,9 +164,7 @@ public static class CharacteristicDeclaration
     private static byte[] ToByteArray<T>(this T value)
         where T : unmanaged
     {
-        int size = typeof(T).IsEnum
-            ? Marshal.SizeOf(Enum.GetUnderlyingType(typeof(T)))
-            : Marshal.SizeOf<T>();
+        int size = typeof(T).IsEnum ? Marshal.SizeOf(Enum.GetUnderlyingType(typeof(T))) : Marshal.SizeOf<T>();
         var buffer = new byte[size];
         MemoryMarshal.Write(buffer, value);
         return buffer;

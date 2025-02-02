@@ -33,11 +33,7 @@ public static partial class AdvertisingDataExtensions
     /// <param name="type"> The advertising data type </param>
     /// <param name="buffer"> The bytes representing the section </param>
     /// <returns> True, if the type was found </returns>
-    public static bool TryGetFirstType(
-        this AdvertisingData data,
-        AdTypes type,
-        out ReadOnlyMemory<byte> buffer
-    )
+    public static bool TryGetFirstType(this AdvertisingData data, AdTypes type, out ReadOnlyMemory<byte> buffer)
     {
         ArgumentNullException.ThrowIfNull(data);
         foreach ((AdTypes adTypes, ReadOnlyMemory<byte> bytes) in data)
@@ -58,10 +54,7 @@ public static partial class AdvertisingDataExtensions
     /// <param name="data"> The data to be looked at </param>
     /// <param name="name"> The resulting name if the return is true </param>
     /// <returns> True, if the data type was present </returns>
-    public static bool TryGetCompleteLocalName(
-        this AdvertisingData data,
-        [NotNullWhen(true)] out string? name
-    )
+    public static bool TryGetCompleteLocalName(this AdvertisingData data, [NotNullWhen(true)] out string? name)
     {
         ArgumentNullException.ThrowIfNull(data);
         if (data.TryGetFirstType(AdTypes.CompleteLocalName, out ReadOnlyMemory<byte> buffer))
@@ -80,10 +73,7 @@ public static partial class AdvertisingDataExtensions
     /// <param name="data"> The data to be looked at </param>
     /// <param name="name"> The resulting name if the return is true </param>
     /// <returns> True, if the data type was present </returns>
-    public static bool TryGetShortenedLocalName(
-        this AdvertisingData data,
-        [NotNullWhen(true)] out string? name
-    )
+    public static bool TryGetShortenedLocalName(this AdvertisingData data, [NotNullWhen(true)] out string? name)
     {
         ArgumentNullException.ThrowIfNull(data);
         if (data.TryGetFirstType(AdTypes.ShortenedLocalName, out ReadOnlyMemory<byte> buffer))
@@ -102,10 +92,7 @@ public static partial class AdvertisingDataExtensions
     /// <param name="data"> The data to be looked at </param>
     /// <param name="name"> The resulting name if the return is true </param>
     /// <returns> True, if the data type was present </returns>
-    public static bool TryGetLocalName(
-        this AdvertisingData data,
-        [NotNullWhen(true)] out string? name
-    )
+    public static bool TryGetLocalName(this AdvertisingData data, [NotNullWhen(true)] out string? name)
     {
         if (data.TryGetCompleteLocalName(out name))
             return true;
@@ -195,10 +182,7 @@ public static partial class AdvertisingDataExtensions
     )
     {
         ArgumentNullException.ThrowIfNull(data);
-        if (
-            !data.TryGetFirstType(AdTypes.ManufacturerSpecificData, out ReadOnlyMemory<byte> bytes)
-            || bytes.Length < 2
-        )
+        if (!data.TryGetFirstType(AdTypes.ManufacturerSpecificData, out ReadOnlyMemory<byte> bytes) || bytes.Length < 2)
         {
             companyUuid = default;
             manufacturerData = default;

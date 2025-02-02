@@ -14,11 +14,7 @@ public static class BatteryServiceContract
 
     /// <summary> The battery level in percent </summary>
     /// <value> 0x2A19 </value>
-    public static TypedCharacteristicDeclaration<
-        byte,
-        Read,
-        Notify
-    > BatteryLevelCharacteristic { get; } =
+    public static TypedCharacteristicDeclaration<byte, Read, Notify> BatteryLevelCharacteristic { get; } =
         CharacteristicDeclaration.Create<byte, Read, Notify>(0x2A19);
 
     /// <summary> Add a new DeviceInformationService to the peripheral </summary>
@@ -74,24 +70,23 @@ public static class BatteryServiceContract
 
         // Discover the characteristics
         await service.DiscoverCharacteristicsAsync(cancellationToken).ConfigureAwait(false);
-        TypedGattServerCharacteristic<byte, Read, Notify> batteryLevelCharacteristic =
-            service.GetCharacteristic(BatteryLevelCharacteristic);
+        TypedGattServerCharacteristic<byte, Read, Notify> batteryLevelCharacteristic = service.GetCharacteristic(
+            BatteryLevelCharacteristic
+        );
 
         return new GattServerBatteryService(service) { BatteryLevel = batteryLevelCharacteristic };
     }
 }
 
 /// <summary> The BatteryService wrapper representing the gatt client </summary>
-public sealed class GattClientBatteryService(IGattClientService service)
-    : GattClientServiceProxy(service)
+public sealed class GattClientBatteryService(IGattClientService service) : GattClientServiceProxy(service)
 {
     /// <summary> The battery level characteristic </summary>
     public required GattTypedClientCharacteristic<byte, Read, Notify> BatteryLevel { get; init; }
 }
 
 /// <summary> The BatteryService wrapper representing the gatt server </summary>
-public sealed class GattServerBatteryService(IGattServerService service)
-    : GattServerServiceProxy(service)
+public sealed class GattServerBatteryService(IGattServerService service) : GattServerServiceProxy(service)
 {
     /// <summary> The battery level characteristic </summary>
     public required TypedGattServerCharacteristic<byte, Read, Notify> BatteryLevel { get; init; }

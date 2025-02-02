@@ -34,8 +34,7 @@ internal sealed class AsyncDisposable : IAsyncDisposable
     /// <inheritdoc />
     public ValueTask DisposeAsync() => _onDispose();
 
-    public static IAsyncDisposable Create(Func<ValueTask> onDispose) =>
-        new AsyncDisposable(onDispose);
+    public static IAsyncDisposable Create(Func<ValueTask> onDispose) => new AsyncDisposable(onDispose);
 }
 
 /// <summary> Extensions for <see cref="IGattServerCharacteristic"/> </summary>
@@ -50,11 +49,7 @@ public static class GattServerCharacteristicExtensions
     )
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        return characteristic.OnNotifyAsync(
-            callback,
-            (action, memory) => action(memory),
-            cancellationToken
-        );
+        return characteristic.OnNotifyAsync(callback, (action, memory) => action(memory), cancellationToken);
     }
 
     /// <summary>

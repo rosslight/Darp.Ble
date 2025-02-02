@@ -53,10 +53,7 @@ public readonly record struct HeartRateMeasurement(ushort Value)
         if (EnergyExpended.HasValue)
         {
             result[0] |= 1 << 3;
-            BinaryPrimitives.WriteUInt16LittleEndian(
-                result.AsSpan(offset, 2),
-                EnergyExpended.Value
-            );
+            BinaryPrimitives.WriteUInt16LittleEndian(result.AsSpan(offset, 2), EnergyExpended.Value);
             offset += 2;
         }
         if (RrIntervals.Length > 0)
@@ -177,23 +174,16 @@ public static class HeartRateServiceContract
     )
     {
         ArgumentNullException.ThrowIfNull(peripheral);
-        IGattClientService service = await peripheral
-            .AddServiceAsync(HeartRateService, token)
-            .ConfigureAwait(false);
+        IGattClientService service = await peripheral.AddServiceAsync(HeartRateService, token).ConfigureAwait(false);
 
         // Add the mandatory measurement characteristic
-        GattTypedClientCharacteristic<
-            HeartRateMeasurement,
-            Properties.Notify
-        > measurementCharacteristic = await service
+        GattTypedClientCharacteristic<HeartRateMeasurement, Properties.Notify> measurementCharacteristic = await service
             .AddCharacteristicAsync(HeartRateMeasurementCharacteristic, cancellationToken: token)
             .ConfigureAwait(false);
 
         // Add the optional body sensor location
-        GattTypedClientCharacteristic<
-            HeartRateBodySensorLocation,
-            Properties.Read
-        >? bodySensorLocationCharacteristic = null;
+        GattTypedClientCharacteristic<HeartRateBodySensorLocation, Properties.Read>? bodySensorLocationCharacteristic =
+            null;
         if (bodySensorLocation is not null)
         {
             bodySensorLocationCharacteristic = await service
@@ -247,16 +237,11 @@ public static class HeartRateServiceContract
         IGattServerService service = await serverPeer
             .DiscoverServiceAsync(HeartRateService, cancellationToken)
             .ConfigureAwait(false);
-        await service
-            .DiscoverCharacteristicsAsync(cancellationToken: cancellationToken)
-            .ConfigureAwait(false);
+        await service.DiscoverCharacteristicsAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
         if (
             !service.TryGetCharacteristic(
                 HeartRateMeasurementCharacteristic,
-                out TypedGattServerCharacteristic<
-                    HeartRateMeasurement,
-                    Properties.Notify
-                >? measurementCharacteristic
+                out TypedGattServerCharacteristic<HeartRateMeasurement, Properties.Notify>? measurementCharacteristic
             )
         )
         {
@@ -285,8 +270,7 @@ public static class HeartRateServiceContract
 }
 
 /// <summary> The wrapper for the heart rate client service </summary>
-public sealed class GattClientHeartRateService(IGattClientService service)
-    : GattClientServiceProxy(service)
+public sealed class GattClientHeartRateService(IGattClientService service) : GattClientServiceProxy(service)
 {
     /// <summary> The mandatory heart rate measurement characteristic </summary>
     public required GattTypedClientCharacteristic<
@@ -305,8 +289,7 @@ public sealed class GattClientHeartRateService(IGattClientService service)
 }
 
 /// <summary> The HeartRate wrapper representing the gatt server </summary>
-public sealed class GattServerHeartRateService(IGattServerService service)
-    : GattServerServiceProxy(service)
+public sealed class GattServerHeartRateService(IGattServerService service) : GattServerServiceProxy(service)
 {
     /// <summary> The write characteristic </summary>
     public required TypedGattServerCharacteristic<

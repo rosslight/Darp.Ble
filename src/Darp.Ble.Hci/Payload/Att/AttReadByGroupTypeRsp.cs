@@ -26,10 +26,7 @@ public readonly record struct AttReadByGroupTypeRsp<TAttributeValue>
     public required AttGroupTypeData<TAttributeValue>[] AttributeDataList { get; init; }
 
     /// <inheritdoc />
-    public static bool TryReadLittleEndian(
-        ReadOnlySpan<byte> source,
-        out AttReadByGroupTypeRsp<TAttributeValue> value
-    )
+    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out AttReadByGroupTypeRsp<TAttributeValue> value)
     {
         return TryReadLittleEndian(source, out value, out _);
     }
@@ -57,19 +54,14 @@ public readonly record struct AttReadByGroupTypeRsp<TAttributeValue>
         {
             OpCode = opCode,
             Length = length,
-            AttributeDataList = MemoryMarshal
-                .Cast<byte, AttGroupTypeData<TAttributeValue>>(source[2..])
-                .ToArray(),
+            AttributeDataList = MemoryMarshal.Cast<byte, AttGroupTypeData<TAttributeValue>>(source[2..]).ToArray(),
         };
         bytesRead = source.Length;
         return true;
     }
 
     /// <inheritdoc />
-    public static bool TryReadBigEndian(
-        ReadOnlySpan<byte> source,
-        out AttReadByGroupTypeRsp<TAttributeValue> value
-    )
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out AttReadByGroupTypeRsp<TAttributeValue> value)
     {
         throw new NotSupportedException();
     }

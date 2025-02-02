@@ -2,10 +2,7 @@ using System.Collections;
 using System.Diagnostics.Contracts;
 using System.Runtime.CompilerServices;
 using Darp.Ble.Data.AssignedNumbers;
-using AdvertisingTypeWithData = (
-    Darp.Ble.Data.AssignedNumbers.AdTypes Type,
-    System.ReadOnlyMemory<byte> Bytes
-);
+using AdvertisingTypeWithData = (Darp.Ble.Data.AssignedNumbers.AdTypes Type, System.ReadOnlyMemory<byte> Bytes);
 
 namespace Darp.Ble.Gap;
 
@@ -15,10 +12,7 @@ public sealed class AdvertisingData : IReadOnlyList<AdvertisingTypeWithData>
     private readonly AdvertisingTypeWithData[] _dataSections;
     private readonly ReadOnlyMemory<byte> _advertisingDataMemory;
 
-    private AdvertisingData(
-        ReadOnlyMemory<byte> advertisingDataMemory,
-        (AdTypes, ReadOnlyMemory<byte>)[] dataSections
-    )
+    private AdvertisingData(ReadOnlyMemory<byte> advertisingDataMemory, (AdTypes, ReadOnlyMemory<byte>)[] dataSections)
     {
         _advertisingDataMemory = advertisingDataMemory;
         _dataSections = dataSections;
@@ -43,9 +37,7 @@ public sealed class AdvertisingData : IReadOnlyList<AdvertisingTypeWithData>
     /// <returns> The advertising data </returns>
     [OverloadResolutionPriority(1)]
     [Pure]
-    public static AdvertisingData From(
-        IReadOnlyList<(AdTypes Section, ReadOnlyMemory<byte> Bytes)> sections
-    )
+    public static AdvertisingData From(IReadOnlyList<(AdTypes Section, ReadOnlyMemory<byte> Bytes)> sections)
     {
         ArgumentNullException.ThrowIfNull(sections);
 
@@ -106,9 +98,7 @@ public sealed class AdvertisingData : IReadOnlyList<AdvertisingTypeWithData>
                 break;
             var fieldType = (AdTypes)advertisingDataSpan[index + 1];
 
-            ReadOnlyMemory<byte> sectionMemory = advertisingData[
-                (index + 2)..(index + 2 + fieldLength - 1)
-            ];
+            ReadOnlyMemory<byte> sectionMemory = advertisingData[(index + 2)..(index + 2 + fieldLength - 1)];
             advertisementReports.Add((fieldType, sectionMemory));
 
             index += (byte)(fieldLength + 1);
@@ -153,8 +143,7 @@ public sealed class AdvertisingData : IReadOnlyList<AdvertisingTypeWithData>
     public AdvertisingTypeWithData this[int index] => _dataSections[index];
 
     /// <inheritdoc />
-    public IEnumerator<AdvertisingTypeWithData> GetEnumerator() =>
-        _dataSections.AsEnumerable().GetEnumerator();
+    public IEnumerator<AdvertisingTypeWithData> GetEnumerator() => _dataSections.AsEnumerable().GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
@@ -176,8 +165,7 @@ public sealed class AdvertisingData : IReadOnlyList<AdvertisingTypeWithData>
     public int Count => _dataSections.Length;
 }
 
-file sealed class ListWrapper(IReadOnlyList<(AdTypes Type, byte[] Bytes)> list)
-    : IReadOnlyList<AdvertisingTypeWithData>
+file sealed class ListWrapper(IReadOnlyList<(AdTypes Type, byte[] Bytes)> list) : IReadOnlyList<AdvertisingTypeWithData>
 {
     private readonly IReadOnlyList<(AdTypes Type, byte[] Bytes)> _list = list;
 

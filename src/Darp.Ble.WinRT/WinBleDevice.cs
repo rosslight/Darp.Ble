@@ -9,18 +9,13 @@ namespace Darp.Ble.WinRT;
 internal sealed class WinBleDevice(ILoggerFactory loggerFactory)
     : BleDevice(loggerFactory, loggerFactory.CreateLogger<WinBleDevice>())
 {
-    protected override Task SetRandomAddressAsyncCore(
-        BleAddress randomAddress,
-        CancellationToken cancellationToken
-    )
+    protected override Task SetRandomAddressAsyncCore(BleAddress randomAddress, CancellationToken cancellationToken)
     {
         throw new NotSupportedException();
     }
 
     /// <inheritdoc />
-    protected override async Task<InitializeResult> InitializeAsyncCore(
-        CancellationToken cancellationToken
-    )
+    protected override async Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
     {
         BluetoothAdapter adapter = await BluetoothAdapter.GetDefaultAsync();
         if (!adapter.IsLowEnergySupported)
@@ -29,10 +24,7 @@ internal sealed class WinBleDevice(ILoggerFactory loggerFactory)
         if (adapter.IsCentralRoleSupported)
             Central = new WinBleCentral(this, LoggerFactory.CreateLogger<WinBleCentral>());
         if (adapter.IsAdvertisementOffloadSupported)
-            Broadcaster = new WinBleBroadcaster(
-                this,
-                LoggerFactory.CreateLogger<WinBleBroadcaster>()
-            );
+            Broadcaster = new WinBleBroadcaster(this, LoggerFactory.CreateLogger<WinBleBroadcaster>());
         if (adapter.IsPeripheralRoleSupported)
             Peripheral = new WinBlePeripheral(this, LoggerFactory.CreateLogger<WinBlePeripheral>());
         return InitializeResult.Success;

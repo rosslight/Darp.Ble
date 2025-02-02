@@ -9,8 +9,7 @@ using Windows.Devices.Bluetooth;
 namespace Darp.Ble.WinRT;
 
 /// <inheritdoc />
-internal sealed class WinBleCentral(BleDevice device, ILogger<WinBleCentral> logger)
-    : BleCentral(device, logger)
+internal sealed class WinBleCentral(BleDevice device, ILogger<WinBleCentral> logger) : BleCentral(device, logger)
 {
     /// <inheritdoc />
     protected override IObservable<GattServerPeer> ConnectToPeripheralCore(
@@ -38,13 +37,7 @@ internal sealed class WinBleCentral(BleDevice device, ILogger<WinBleCentral> log
                     observer.OnError(new Exception("PeripheralConnection: Failed!"));
                     return;
                 }
-                observer.OnNext(
-                    new WinGattServerPeer(
-                        this,
-                        winDev,
-                        LoggerFactory.CreateLogger<WinGattServerPeer>()
-                    )
-                );
+                observer.OnNext(new WinGattServerPeer(this, winDev, LoggerFactory.CreateLogger<WinGattServerPeer>()));
             }
         );
     }

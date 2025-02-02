@@ -216,11 +216,7 @@ public static partial class GattServerServiceExtensions
     /// <typeparam name="TProp2"> The property of the second characteristic </typeparam>
     /// <returns> The gatt server characteristic </returns>
     /// <exception cref="Exception"> Thrown if no characteristic was found </exception>
-    public static TypedGattServerCharacteristic<T, TProp1, TProp2> GetCharacteristic<
-        T,
-        TProp1,
-        TProp2
-    >(
+    public static TypedGattServerCharacteristic<T, TProp1, TProp2> GetCharacteristic<T, TProp1, TProp2>(
         this IGattServerService service,
         TypedCharacteristicDeclaration<T, TProp1, TProp2> characteristicDeclaration
     )
@@ -262,12 +258,7 @@ public static partial class GattServerServiceExtensions
         DescriptorDeclaration descriptorDeclaration
     )
     {
-        if (
-            !characteristic.TryGetDescriptor(
-                descriptorDeclaration,
-                out IGattServerDescriptor? descriptor
-            )
-        )
+        if (!characteristic.TryGetDescriptor(descriptorDeclaration, out IGattServerDescriptor? descriptor))
             throw new Exception($"Descriptor {descriptorDeclaration.Uuid} not found");
         return descriptor;
     }

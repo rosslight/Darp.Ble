@@ -14,11 +14,7 @@ public sealed class HciDisconnectCommandTests
 
     [Theory]
     [InlineData(0, HciCommandStatus.RemoteUserTerminatedConnection, "000013")]
-    public void TryWriteLittleEndian_ShouldBeValid(
-        ushort handle,
-        HciCommandStatus reason,
-        string expectedHexBytes
-    )
+    public void TryWriteLittleEndian_ShouldBeValid(ushort handle, HciCommandStatus reason, string expectedHexBytes)
     {
         var buffer = new byte[3];
         var value = new HciDisconnectCommand { ConnectionHandle = handle, Reason = reason };

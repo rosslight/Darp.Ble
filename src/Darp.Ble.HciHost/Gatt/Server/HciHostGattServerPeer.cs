@@ -47,9 +47,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
         _host = host;
         ConnectionHandle = connectionCompleteEvent.ConnectionHandle;
         _host
-            .WhenHciEventPackageReceived.Where(x =>
-                x.EventCode is HciEventCode.HCI_Disconnection_Complete
-            )
+            .WhenHciEventPackageReceived.Where(x => x.EventCode is HciEventCode.HCI_Disconnection_Complete)
             .SelectWhereEvent<HciDisconnectionCompleteEvent>()
             .Where(x => x.Data.ConnectionHandle == ConnectionHandle)
             .Select(_ => ConnectionStatus.Disconnected)
@@ -61,10 +59,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
                 .WhenHciLeMetaEventPackageReceived.SelectWhereLeMetaEvent<HciLeDataLengthChangeEvent>()
                 .Subscribe(changeEventPacket =>
                 {
-                    Logger?.LogTrace(
-                        "Received event about changed data length: {@Event}",
-                        changeEventPacket
-                    );
+                    Logger?.LogTrace("Received event about changed data length: {@Event}", changeEventPacket);
                 })
         );
         var subject = new Subject<(AttOpCode OpCode, byte[] Pdu)>();
@@ -111,18 +106,12 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
                         .ConfigureAwait(false);
                     if (
                         response.OpCode is AttOpCode.ATT_ERROR_RSP
-                        && AttErrorRsp.TryReadLittleEndian(
-                            response.Pdu,
-                            out AttErrorRsp errorRsp,
-                            out _
-                        )
+                        && AttErrorRsp.TryReadLittleEndian(response.Pdu, out AttErrorRsp errorRsp, out _)
                     )
                     {
                         if (errorRsp.ErrorCode is AttErrorCode.AttributeNotFoundError)
                             break;
-                        throw new Exception(
-                            $"Could not discover services due to error {errorRsp.ErrorCode}"
-                        );
+                        throw new Exception($"Could not discover services due to error {errorRsp.ErrorCode}");
                     }
                     if (
                         !(
@@ -139,9 +128,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
                     }
                     if (rsp.AttributeDataList.Length == 0)
                         break;
-                    foreach (
-                        (ushort handle, ushort endGroup, ushort value) in rsp.AttributeDataList
-                    )
+                    foreach ((ushort handle, ushort endGroup, ushort value) in rsp.AttributeDataList)
                     {
                         observer.OnNext(
                             new HciHostGattServerService(
@@ -167,10 +154,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
             ushort startingHandle = 0x0001;
             while (!token.IsCancellationRequested && startingHandle < 0xFFFF)
             {
-                AttReadResult response = await this.QueryAttPduAsync<
-                    AttFindByTypeValueReq,
-                    AttFindByTypeValueRsp
-                >(
+                AttReadResult response = await this.QueryAttPduAsync<AttFindByTypeValueReq, AttFindByTypeValueRsp>(
                         new AttFindByTypeValueReq
                         {
                             StartingHandle = startingHandle,
@@ -183,27 +167,17 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
                     .ConfigureAwait(false);
                 if (
                     response.OpCode is AttOpCode.ATT_ERROR_RSP
-                    && AttErrorRsp.TryReadLittleEndian(
-                        response.Pdu,
-                        out AttErrorRsp errorRsp,
-                        out _
-                    )
+                    && AttErrorRsp.TryReadLittleEndian(response.Pdu, out AttErrorRsp errorRsp, out _)
                 )
                 {
                     if (errorRsp.ErrorCode is AttErrorCode.AttributeNotFoundError)
                         break;
-                    throw new Exception(
-                        $"Could not discover services due to error {errorRsp.ErrorCode}"
-                    );
+                    throw new Exception($"Could not discover services due to error {errorRsp.ErrorCode}");
                 }
                 if (
                     !(
                         response.OpCode is AttOpCode.ATT_FIND_BY_TYPE_VALUE_RSP
-                        && AttFindByTypeValueRsp.TryReadLittleEndian(
-                            response.Pdu,
-                            out AttFindByTypeValueRsp rsp,
-                            out _
-                        )
+                        && AttFindByTypeValueRsp.TryReadLittleEndian(response.Pdu, out AttFindByTypeValueRsp rsp, out _)
                     )
                 )
                 {
@@ -231,13 +205,9 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
     public IObservable<HciHostGattServerPeer> SetDataLength(ushort txOctets, ushort txTime)
     {
         if (txOctets is < 0x001B or > 0x00FB)
-            return Observable.Throw<HciHostGattServerPeer>(
-                new ArgumentOutOfRangeException(nameof(txOctets))
-            );
+            return Observable.Throw<HciHostGattServerPeer>(new ArgumentOutOfRangeException(nameof(txOctets)));
         if (txTime is < 0x0148 or > 0x4290)
-            return Observable.Throw<HciHostGattServerPeer>(
-                new ArgumentOutOfRangeException(nameof(txOctets))
-            );
+            return Observable.Throw<HciHostGattServerPeer>(new ArgumentOutOfRangeException(nameof(txOctets)));
 
         return Observable.FromAsync<HciHostGattServerPeer>(async token =>
         {
@@ -260,10 +230,10 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
     {
         return Observable.FromAsync<HciHostGattServerPeer>(async token =>
         {
-            AttReadResult response = await this.QueryAttPduAsync<
-                AttExchangeMtuReq,
-                AttExchangeMtuRsp
-            >(new AttExchangeMtuReq { ClientRxMtu = mtu }, cancellationToken: token)
+            AttReadResult response = await this.QueryAttPduAsync<AttExchangeMtuReq, AttExchangeMtuRsp>(
+                    new AttExchangeMtuReq { ClientRxMtu = mtu },
+                    cancellationToken: token
+                )
                 .ConfigureAwait(false);
             if (
                 response.OpCode is AttOpCode.ATT_ERROR_RSP
@@ -276,11 +246,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
             if (
                 !(
                     response.OpCode is AttOpCode.ATT_EXCHANGE_MTU_RSP
-                    && AttExchangeMtuRsp.TryReadLittleEndian(
-                        response.Pdu,
-                        out AttExchangeMtuRsp rsp,
-                        out _
-                    )
+                    && AttExchangeMtuRsp.TryReadLittleEndian(response.Pdu, out AttExchangeMtuRsp rsp, out _)
                 )
             )
             {
@@ -334,9 +300,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
         }
     }
 
-    public IObservable<AttReadResult> QueryAttPduRequest<TAttRequest, TAttResponse>(
-        TAttRequest request
-    )
+    public IObservable<AttReadResult> QueryAttPduRequest<TAttRequest, TAttResponse>(TAttRequest request)
         where TAttRequest : IAttPdu, IBinaryWritable
         where TAttResponse : IAttPdu
     {
@@ -344,9 +308,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
         return Observable.Create<AttReadResult>(observer =>
         {
             IDisposable disposable = WhenAttPduReceived
-                .Where(x =>
-                    x.OpCode == TAttResponse.ExpectedOpCode || x.OpCode is AttOpCode.ATT_ERROR_RSP
-                )
+                .Where(x => x.OpCode == TAttResponse.ExpectedOpCode || x.OpCode is AttOpCode.ATT_ERROR_RSP)
                 .Select(x => new AttReadResult(x.OpCode, x.Pdu))
                 .Subscribe(observer);
             EnqueueL2CapBasic(cId, request.ToArrayLittleEndian());
@@ -428,9 +390,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
                                 );
                                 return;
                             }
-                            targetLength = BinaryPrimitives.ReadUInt16LittleEndian(
-                                packet.DataBytes
-                            );
+                            targetLength = BinaryPrimitives.ReadUInt16LittleEndian(packet.DataBytes);
                             dataBytes.AddRange(packet.DataBytes);
                         }
                         else if (packet.PacketBoundaryFlag is PacketBoundaryFlag.ContinuingFragment)
@@ -449,10 +409,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
                         }
                         else
                         {
-                            Logger?.LogWarning(
-                                "Got unsupported packet boundary flag for packet {@Packet}",
-                                packet
-                            );
+                            Logger?.LogWarning("Got unsupported packet boundary flag for packet {@Packet}", packet);
                             return;
                         }
 
@@ -469,9 +426,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
                             return;
                         observer.OnNext(
                             (
-                                BinaryPrimitives.ReadUInt16LittleEndian(
-                                    dataBytes.ToArray().AsSpan()[2..4]
-                                ),
+                                BinaryPrimitives.ReadUInt16LittleEndian(dataBytes.ToArray().AsSpan()[2..4]),
                                 dataBytes.ToArray()[4..]
                             )
                         );
@@ -486,10 +441,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer
 
 internal static class Extensions2
 {
-    public static void SendAttMtuCommand<TAttCommand>(
-        this HciHostGattServerPeer server,
-        TAttCommand request
-    )
+    public static void SendAttMtuCommand<TAttCommand>(this HciHostGattServerPeer server, TAttCommand request)
         where TAttCommand : IAttPdu, IBinaryWritable
     {
         const ushort cId = 0x04;
@@ -505,17 +457,12 @@ internal static class Extensions2
         where TAttRequest : IAttPdu, IBinaryWritable
         where TResponse : IAttPdu
     {
-        IObservable<AttReadResult> observable = client.QueryAttPduRequest<TAttRequest, TResponse>(
-            request
-        );
+        IObservable<AttReadResult> observable = client.QueryAttPduRequest<TAttRequest, TResponse>(request);
         if (timeout.TotalNanoseconds > 0)
             observable = observable.Timeout(timeout);
         try
         {
-            AttReadResult result = await observable
-                .FirstAsync()
-                .ToTask(cancellationToken)
-                .ConfigureAwait(false);
+            AttReadResult result = await observable.FirstAsync().ToTask(cancellationToken).ConfigureAwait(false);
             client.Logger?.LogTrace(
                 "HciClient: Finished att request {@Request} with result {@Result}",
                 request,

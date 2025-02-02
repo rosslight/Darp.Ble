@@ -10,8 +10,7 @@ public readonly partial record struct HciLeEnhancedConnectionCompleteV1Event
     : IHciLeMetaEvent<HciLeEnhancedConnectionCompleteV1Event>
 {
     /// <inheritdoc />
-    public static HciLeMetaSubEventType SubEventType =>
-        HciLeMetaSubEventType.HCI_LE_Enhanced_Connection_Complete_V1;
+    public static HciLeMetaSubEventType SubEventType => HciLeMetaSubEventType.HCI_LE_Enhanced_Connection_Complete_V1;
 
     /// <inheritdoc />
     public required HciLeMetaSubEventType SubEventCode { get; init; }

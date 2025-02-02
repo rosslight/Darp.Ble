@@ -6,9 +6,7 @@ namespace Darp.Ble.Gatt.Client;
 /// <summary> A gatt client characteristic with a single property and a specified type for the value </summary>
 /// <typeparam name="T"> The type of the value </typeparam>
 /// <typeparam name="TProp1"> The type of the first property </typeparam>
-public interface IGattTypedClientCharacteristic<T, TProp1>
-    : IGattTypedCharacteristic<T>,
-        IGattClientCharacteristic
+public interface IGattTypedClientCharacteristic<T, TProp1> : IGattTypedCharacteristic<T>, IGattClientCharacteristic
     where TProp1 : IBleProperty;
 
 /// <summary> The implementation of a gatt client characteristic with a single property </summary>
@@ -45,8 +43,7 @@ public class GattTypedClientCharacteristic<T, TProp1>(
     public GattProperty Properties => Characteristic.Properties;
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<BleUuid, IGattClientDescriptor> Descriptors =>
-        Characteristic.Descriptors;
+    public IReadOnlyDictionary<BleUuid, IGattClientDescriptor> Descriptors => Characteristic.Descriptors;
 
     /// <inheritdoc />
     public Task<IGattClientDescriptor> AddDescriptorAsync(
@@ -96,20 +93,14 @@ public sealed class GattTypedClientCharacteristic<T, TProp1, TProp2>(
     IGattClientCharacteristic characteristic,
     IGattTypedCharacteristic<T>.ReadValueFunc onRead,
     IGattTypedCharacteristic<T>.WriteValueFunc onWrite
-)
-    : GattTypedClientCharacteristic<T, TProp1>(characteristic, onRead, onWrite),
-        IGattTypedClientCharacteristic<T, TProp2>
+) : GattTypedClientCharacteristic<T, TProp1>(characteristic, onRead, onWrite), IGattTypedClientCharacteristic<T, TProp2>
     where TProp1 : IBleProperty
     where TProp2 : IBleProperty
 {
     /// <summary> Convert implicitly to a different order of type parameters </summary>
     /// <param name="characteristicDeclaration"> The characteristic declaration to convert </param>
     /// <returns> The converted characteristic declaration </returns>
-    [SuppressMessage(
-        "Usage",
-        "CA2225:Operator overloads have named alternates",
-        Justification = "Convenience method"
-    )]
+    [SuppressMessage("Usage", "CA2225:Operator overloads have named alternates", Justification = "Convenience method")]
     public static implicit operator GattTypedClientCharacteristic<T, TProp2, TProp1>(
         GattTypedClientCharacteristic<T, TProp1, TProp2> characteristicDeclaration
     )

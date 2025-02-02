@@ -33,27 +33,16 @@ internal sealed class MockedBleDevice(
 
     public BleAddress RandomAddress { get; private set; } = BleAddress.NewRandomStaticAddress();
 
-    protected override Task SetRandomAddressAsyncCore(
-        BleAddress randomAddress,
-        CancellationToken cancellationToken
-    )
+    protected override Task SetRandomAddressAsyncCore(BleAddress randomAddress, CancellationToken cancellationToken)
     {
         RandomAddress = randomAddress;
         return Task.CompletedTask;
     }
 
-    protected override async Task<InitializeResult> InitializeAsyncCore(
-        CancellationToken cancellationToken
-    )
+    protected override async Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
     {
-        Broadcaster = new MockedBleBroadcaster(
-            this,
-            LoggerFactory.CreateLogger<MockedBleBroadcaster>()
-        );
-        Peripheral = new MockedBlePeripheral(
-            this,
-            LoggerFactory.CreateLogger<MockedBlePeripheral>()
-        );
+        Broadcaster = new MockedBleBroadcaster(this, LoggerFactory.CreateLogger<MockedBleBroadcaster>());
+        Peripheral = new MockedBlePeripheral(this, LoggerFactory.CreateLogger<MockedBlePeripheral>());
         await _onInitialize(this, Settings).ConfigureAwait(false);
         return InitializeResult.Success;
     }

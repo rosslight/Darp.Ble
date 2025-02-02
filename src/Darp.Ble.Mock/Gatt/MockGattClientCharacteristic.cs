@@ -16,26 +16,15 @@ internal sealed class MockGattClientCharacteristic(
 {
     private readonly ConcurrentDictionary<IGattClientPeer, Action<byte[]>> _notifyActions = [];
 
-    public async Task WriteAsync(
-        IGattClientPeer? clientPeer,
-        byte[] bytes,
-        CancellationToken cancellationToken
-    )
+    public async Task WriteAsync(IGattClientPeer? clientPeer, byte[] bytes, CancellationToken cancellationToken)
     {
         await UpdateValueAsync(clientPeer, bytes, cancellationToken).ConfigureAwait(false);
     }
 
-    public Task EnableNotificationsAsync(
-        IGattClientPeer clientPeer,
-        Action<byte[]> onNotify,
-        CancellationToken _
-    )
+    public Task EnableNotificationsAsync(IGattClientPeer clientPeer, Action<byte[]> onNotify, CancellationToken _)
     {
         bool newlyAdded = _notifyActions.TryAdd(clientPeer, onNotify);
-        Debug.Assert(
-            newlyAdded,
-            "This method should not be called if a callback was added for this peer already"
-        );
+        Debug.Assert(newlyAdded, "This method should not be called if a callback was added for this peer already");
         return Task.CompletedTask;
     }
 
@@ -56,9 +45,7 @@ internal sealed class MockGattClientCharacteristic(
         CancellationToken cancellationToken
     )
     {
-        return Task.FromResult<IGattClientDescriptor>(
-            new MockGattClientDescriptor(this, uuid, onRead, onWrite)
-        );
+        return Task.FromResult<IGattClientDescriptor>(new MockGattClientDescriptor(this, uuid, onRead, onWrite));
     }
 
     protected override void NotifyCore(IGattClientPeer clientPeer, byte[] value)

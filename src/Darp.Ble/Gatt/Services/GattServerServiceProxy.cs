@@ -24,8 +24,7 @@ public abstract class GattServerServiceProxy(IGattServerService service) : IGatt
     /// <inheritdoc />
     public GattServiceType Type => _service.Type;
 
-    IReadOnlyCollection<IGattServerCharacteristic> IGattServerService.Characteristics =>
-        _service.Characteristics;
+    IReadOnlyCollection<IGattServerCharacteristic> IGattServerService.Characteristics => _service.Characteristics;
 
     Task IGattServerService.DiscoverCharacteristicsAsync(CancellationToken cancellationToken) =>
         _service.DiscoverCharacteristicsAsync(cancellationToken);

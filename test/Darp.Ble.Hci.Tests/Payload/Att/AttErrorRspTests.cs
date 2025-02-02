@@ -14,24 +14,9 @@ public sealed class AttErrorRspTests
     }
 
     [Theory]
-    [InlineData(
-        "01081C000A",
-        AttOpCode.ATT_READ_BY_TYPE_REQ,
-        0x001C,
-        AttErrorCode.AttributeNotFoundError
-    )]
-    [InlineData(
-        "01042B000A",
-        AttOpCode.ATT_FIND_INFORMATION_REQ,
-        0x002B,
-        AttErrorCode.AttributeNotFoundError
-    )]
-    [InlineData(
-        "010828000A00",
-        AttOpCode.ATT_READ_BY_TYPE_REQ,
-        0x0028,
-        AttErrorCode.AttributeNotFoundError
-    )]
+    [InlineData("01081C000A", AttOpCode.ATT_READ_BY_TYPE_REQ, 0x001C, AttErrorCode.AttributeNotFoundError)]
+    [InlineData("01042B000A", AttOpCode.ATT_FIND_INFORMATION_REQ, 0x002B, AttErrorCode.AttributeNotFoundError)]
+    [InlineData("010828000A00", AttOpCode.ATT_READ_BY_TYPE_REQ, 0x0028, AttErrorCode.AttributeNotFoundError)]
     public void TryReadLittleEndian_ShouldBeValid(
         string hexBytes,
         AttOpCode expectedRequestOpCode,
@@ -40,11 +25,7 @@ public sealed class AttErrorRspTests
     )
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
-        bool success = AttErrorRsp.TryReadLittleEndian(
-            bytes,
-            out AttErrorRsp value,
-            out int decoded
-        );
+        bool success = AttErrorRsp.TryReadLittleEndian(bytes, out AttErrorRsp value, out int decoded);
 
         success.Should().BeTrue();
         decoded.Should().Be(5);

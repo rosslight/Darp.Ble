@@ -49,16 +49,7 @@ public readonly partial record struct HciReadLocalSupportedCommandsResult(
     /// <summary> The supported commands </summary>
     /// <remarks> <see href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-d5f3af07-8495-3fe6-8afe-c6e6db371233"/> </remarks>
     [BinaryIgnore]
-    private readonly InlineBitField64 _bits = GetBitField(
-        Bits0,
-        Bits1,
-        Bits2,
-        Bits3,
-        Bits4,
-        Bits5,
-        Bits6,
-        Bits7
-    );
+    private readonly InlineBitField64 _bits = GetBitField(Bits0, Bits1, Bits2, Bits3, Bits4, Bits5, Bits6, Bits7);
 
     private static InlineBitField64 GetBitField(
         ulong bits0,
@@ -87,8 +78,7 @@ public readonly partial record struct HciReadLocalSupportedCommandsResult(
     //public byte[] SupportedCommandBytes => ((ReadOnlySpan<byte>)_bits).ToArray();
 
     /// <summary> Get all supported commands </summary>
-    public IEnumerable<HciOpCode> SupportedCommands =>
-        Enum.GetValues<HciOpCode>().Where(IsSupported);
+    public IEnumerable<HciOpCode> SupportedCommands => Enum.GetValues<HciOpCode>().Where(IsSupported);
 
     /// <summary> Check if a command in a given octet and bit is supported </summary>
     /// <param name="octet"> The octet to look at </param>

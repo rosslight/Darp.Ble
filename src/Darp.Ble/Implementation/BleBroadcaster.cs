@@ -6,8 +6,7 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.Implementation;
 
 /// <summary> The broadcaster view of a ble device </summary>
-public abstract class BleBroadcaster(IBleDevice device, ILogger<BleBroadcaster> logger)
-    : IBleBroadcaster
+public abstract class BleBroadcaster(IBleDevice device, ILogger<BleBroadcaster> logger) : IBleBroadcaster
 {
     private readonly List<IAdvertisingSet> _advertisingSets = [];
 
@@ -81,9 +80,7 @@ public abstract class BleBroadcaster(IBleDevice device, ILogger<BleBroadcaster> 
     {
         ArgumentNullException.ThrowIfNull(advertisingSetStartInfo);
 
-        foreach (
-            (IAdvertisingSet set, TimeSpan duration, int numberOfEvents) in advertisingSetStartInfo
-        )
+        foreach ((IAdvertisingSet set, TimeSpan duration, int numberOfEvents) in advertisingSetStartInfo)
         {
             if (set.Broadcaster != this)
             {
@@ -109,11 +106,7 @@ public abstract class BleBroadcaster(IBleDevice device, ILogger<BleBroadcaster> 
     /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
     /// <returns> An async disposable to stop advertising </returns>
     protected abstract Task<IAsyncDisposable> StartAdvertisingCoreAsync(
-        IReadOnlyCollection<(
-            IAdvertisingSet AdvertisingSet,
-            TimeSpan Duration,
-            byte NumberOfEvents
-        )> advertisingSets,
+        IReadOnlyCollection<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, byte NumberOfEvents)> advertisingSets,
         CancellationToken cancellationToken
     );
 

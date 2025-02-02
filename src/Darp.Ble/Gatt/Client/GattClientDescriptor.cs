@@ -24,10 +24,7 @@ public abstract class GattClientDescriptor(
     public IGattClientCharacteristic Characteristic { get; } = clientCharacteristic;
 
     /// <inheritdoc />
-    public ValueTask<byte[]> GetValueAsync(
-        IGattClientPeer? clientPeer,
-        CancellationToken cancellationToken
-    )
+    public ValueTask<byte[]> GetValueAsync(IGattClientPeer? clientPeer, CancellationToken cancellationToken)
     {
         if (_onRead is null)
             throw new NotSupportedException("Reading is not supported by this descriptor");

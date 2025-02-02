@@ -144,8 +144,7 @@ public abstract class GattServerCharacteristic(
     }
 
     /// <inheritdoc />
-    public Task<byte[]> ReadAsync(CancellationToken cancellationToken) =>
-        ReadAsyncCore(cancellationToken);
+    public Task<byte[]> ReadAsync(CancellationToken cancellationToken) => ReadAsyncCore(cancellationToken);
 
     /// <inheritdoc cref="ReadAsync" />
     protected abstract Task<byte[]> ReadAsyncCore(CancellationToken cancellationToken);
@@ -195,14 +194,12 @@ public class GattServerCharacteristic<TProp1>(IGattServerCharacteristic characte
     public GattProperty Properties => Characteristic.Properties;
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<BleUuid, IGattServerDescriptor> Descriptors =>
-        Characteristic.Descriptors;
+    public IReadOnlyDictionary<BleUuid, IGattServerDescriptor> Descriptors => Characteristic.Descriptors;
 
     Task IGattServerCharacteristic.WriteAsync(byte[] bytes, CancellationToken cancellationToken) =>
         Characteristic.WriteAsync(bytes, cancellationToken);
 
-    void IGattServerCharacteristic.WriteWithoutResponse(byte[] bytes) =>
-        Characteristic.WriteWithoutResponse(bytes);
+    void IGattServerCharacteristic.WriteWithoutResponse(byte[] bytes) => Characteristic.WriteWithoutResponse(bytes);
 
     Task<IAsyncDisposable> IGattServerCharacteristic.OnNotifyAsync<TState>(
         TState state,
@@ -218,27 +215,21 @@ public class GattServerCharacteristic<TProp1>(IGattServerCharacteristic characte
 /// <param name="serverCharacteristic"> The underlying characteristic </param>
 /// <typeparam name="TProp1"> The first property definition </typeparam>
 /// <typeparam name="TProp2"> The second property definition </typeparam>
-public sealed class GattServerCharacteristic<TProp1, TProp2>(
-    IGattServerCharacteristic serverCharacteristic
-) : GattServerCharacteristic<TProp1>(serverCharacteristic), IGattServerCharacteristic<TProp2>
+public sealed class GattServerCharacteristic<TProp1, TProp2>(IGattServerCharacteristic serverCharacteristic)
+    : GattServerCharacteristic<TProp1>(serverCharacteristic),
+        IGattServerCharacteristic<TProp2>
     where TProp1 : IBleProperty
     where TProp2 : IBleProperty
 {
     /// <summary> Convert implicitly to a different order of type parameters </summary>
     /// <param name="characteristicDeclaration"> The characteristic declaration to convert </param>
     /// <returns> The converted characteristic declaration </returns>
-    [SuppressMessage(
-        "Usage",
-        "CA2225:Operator overloads have named alternates",
-        Justification = "Convenience method"
-    )]
+    [SuppressMessage("Usage", "CA2225:Operator overloads have named alternates", Justification = "Convenience method")]
     public static implicit operator GattServerCharacteristic<TProp2, TProp1>(
         GattServerCharacteristic<TProp1, TProp2> characteristicDeclaration
     )
     {
         ArgumentNullException.ThrowIfNull(characteristicDeclaration);
-        return new GattServerCharacteristic<TProp2, TProp1>(
-            characteristicDeclaration.Characteristic
-        );
+        return new GattServerCharacteristic<TProp2, TProp1>(characteristicDeclaration.Characteristic);
     }
 }

@@ -12,10 +12,7 @@ public static partial class GattServerServiceExtensions
     /// <typeparam name="TProp1"> The type of the first characteristic </typeparam>
     /// <typeparam name="T"> The type of the characteristic value </typeparam>
     /// <returns> The discovered gatt server characteristic </returns>
-    public static async Task<TypedGattServerCharacteristic<T, TProp1>> DiscoverCharacteristicAsync<
-        T,
-        TProp1
-    >(
+    public static async Task<TypedGattServerCharacteristic<T, TProp1>> DiscoverCharacteristicAsync<T, TProp1>(
         this IGattServerService service,
         TypedCharacteristicDeclaration<T, TProp1> characteristicDeclaration,
         CancellationToken cancellationToken = default
@@ -29,9 +26,7 @@ public static partial class GattServerServiceExtensions
             .ConfigureAwait(false);
         if (!serverCharacteristic.Properties.HasFlag(TProp1.GattProperty))
         {
-            throw new Exception(
-                $"Discovered characteristic does not support property {TProp1.GattProperty}"
-            );
+            throw new Exception($"Discovered characteristic does not support property {TProp1.GattProperty}");
         }
         return new TypedGattServerCharacteristic<T, TProp1>(
             serverCharacteristic,
@@ -50,9 +45,11 @@ public static partial class GattServerServiceExtensions
     /// <typeparam name="TProp1"> The type of the first characteristic </typeparam>
     /// <typeparam name="TProp2"> The type of the second characteristic </typeparam>
     /// <returns> The discovered gatt server characteristic </returns>
-    public static async Task<
-        TypedGattServerCharacteristic<T, TProp1, TProp2>
-    > DiscoverCharacteristicAsync<T, TProp1, TProp2>(
+    public static async Task<TypedGattServerCharacteristic<T, TProp1, TProp2>> DiscoverCharacteristicAsync<
+        T,
+        TProp1,
+        TProp2
+    >(
         this IGattServerService service,
         TypedCharacteristicDeclaration<T, TProp1, TProp2> characteristicDeclaration,
         CancellationToken cancellationToken = default

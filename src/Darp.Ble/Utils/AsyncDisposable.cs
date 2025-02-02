@@ -4,8 +4,7 @@ namespace Darp.Ble.Utils;
 public static class AsyncDisposable
 {
     /// <summary> An empty async disposable </summary>
-    public static IAsyncDisposable Empty { get; } =
-        new AnonymousAsyncDisposable(() => ValueTask.CompletedTask);
+    public static IAsyncDisposable Empty { get; } = new AnonymousAsyncDisposable(() => ValueTask.CompletedTask);
 
     /// <summary> Create an async disposable from a disposable </summary>
     /// <param name="disposable"> The disposable to wrap </param>
@@ -18,8 +17,7 @@ public static class AsyncDisposable
     /// <summary> Create an async disposable </summary>
     /// <param name="onDispose"> The dispose action expecting a ValueTask </param>
     /// <returns> The async disposable </returns>
-    public static IAsyncDisposable Create(Func<ValueTask> onDispose) =>
-        new AnonymousAsyncDisposable(onDispose);
+    public static IAsyncDisposable Create(Func<ValueTask> onDispose) => new AnonymousAsyncDisposable(onDispose);
 
     /// <summary> Create an async disposable from a sync callback</summary>
     /// <param name="onDispose"> The dispose action </param>

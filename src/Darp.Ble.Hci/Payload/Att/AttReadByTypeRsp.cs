@@ -27,11 +27,7 @@ public readonly partial record struct AttReadByTypeRsp : IAttPdu, IBinaryReadabl
     }
 
     /// <inheritdoc />
-    public static bool TryReadLittleEndian(
-        ReadOnlySpan<byte> source,
-        out AttReadByTypeRsp value,
-        out int bytesRead
-    )
+    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out AttReadByTypeRsp value, out int bytesRead)
     {
         value = default;
         bytesRead = 0;
@@ -81,11 +77,7 @@ public readonly partial record struct AttReadByTypeRsp : IAttPdu, IBinaryReadabl
     }
 
     /// <inheritdoc />
-    public static bool TryReadBigEndian(
-        ReadOnlySpan<byte> source,
-        out AttReadByTypeRsp value,
-        out int bytesRead
-    )
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out AttReadByTypeRsp value, out int bytesRead)
     {
         throw new NotSupportedException();
     }

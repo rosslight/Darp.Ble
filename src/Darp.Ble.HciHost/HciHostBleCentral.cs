@@ -51,10 +51,7 @@ internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger<HciHost
                 .QueryCommandStatus(packet)
                 .SelectMany(status =>
                 {
-                    if (
-                        status.Data.Status
-                        is not (HciCommandStatus.PageTimeout or HciCommandStatus.Success)
-                    )
+                    if (status.Data.Status is not (HciCommandStatus.PageTimeout or HciCommandStatus.Success))
                     {
                         throw new BleCentralConnectionFailedException(
                             this,
@@ -77,9 +74,7 @@ internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger<HciHost
     }
 
     /// <inheritdoc />
-    protected override IObservable<IGattServerPeer> DoAfterConnection(
-        IObservable<IGattServerPeer> source
-    ) =>
+    protected override IObservable<IGattServerPeer> DoAfterConnection(IObservable<IGattServerPeer> source) =>
         source
             .Select(x => ((HciHostGattServerPeer)x).RequestExchangeMtu(65))
             .Concat()

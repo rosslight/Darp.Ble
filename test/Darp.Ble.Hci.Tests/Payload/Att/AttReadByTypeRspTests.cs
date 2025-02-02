@@ -26,11 +26,7 @@ public sealed class AttReadByTypeRspTests
             })
             .ToArray();
 
-        bool success = AttReadByTypeRsp.TryReadLittleEndian(
-            bytes,
-            out AttReadByTypeRsp value,
-            out int decoded
-        );
+        bool success = AttReadByTypeRsp.TryReadLittleEndian(bytes, out AttReadByTypeRsp value, out int decoded);
 
         success.Should().BeTrue();
         decoded.Should().Be(2 + 7 * dataList.Length);

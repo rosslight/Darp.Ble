@@ -15,10 +15,8 @@ public sealed class AdvertisingDataExtensionsGetterTests
     private const string AdDataCompleteLocalNameTestName = "0909546573744E616D65";
     private const string AdDataShortenedLocalNameEmpty = "0108";
     private const string AdDataShortenedLocalNameTestName = "0908546573744E616D65";
-    private const string AdDataFlagsLimitedDiscoverableCompleteLocalNameTestName =
-        "0201010909546573744E616D65";
-    private const string AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName =
-        "0201010908546573744E616D65";
+    private const string AdDataFlagsLimitedDiscoverableCompleteLocalNameTestName = "0201010909546573744E616D65";
+    private const string AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName = "0201010908546573744E616D65";
 
     private const string AdDataIncomplete16Uuids0XAabb = "0302BBAA";
     private const string AdDataComplete16Uuids0XAabb = "0303BBAA";
@@ -108,38 +106,22 @@ public sealed class AdvertisingDataExtensionsGetterTests
     [Theory]
     [InlineData(AdDataEmpty, BleUuidType.Uuid16)]
     [InlineData(AdDataFlagsLimitedDiscoverableGeneralDiscoverable, BleUuidType.Uuid16)]
-    [InlineData(
-        AdDataIncomplete16Uuids0XAabb,
-        BleUuidType.Uuid16,
-        "0000aabb-0000-1000-8000-00805f9b34fb"
-    )]
-    [InlineData(
-        AdDataComplete16Uuids0XAabb,
-        BleUuidType.Uuid16,
-        "0000aabb-0000-1000-8000-00805f9b34fb"
-    )]
+    [InlineData(AdDataIncomplete16Uuids0XAabb, BleUuidType.Uuid16, "0000aabb-0000-1000-8000-00805f9b34fb")]
+    [InlineData(AdDataComplete16Uuids0XAabb, BleUuidType.Uuid16, "0000aabb-0000-1000-8000-00805f9b34fb")]
     [InlineData(
         AdDataComplete16Uuids0XAabbAacc,
         BleUuidType.Uuid16,
         "0000aabb-0000-1000-8000-00805f9b34fb",
         "0000aacc-0000-1000-8000-00805f9b34fb"
     )]
-    [InlineData(
-        AdDataComplete32Uuids0XAabbccdd,
-        BleUuidType.Uuid32,
-        "aabbccdd-0000-1000-8000-00805f9b34fb"
-    )]
+    [InlineData(AdDataComplete32Uuids0XAabbccdd, BleUuidType.Uuid32, "aabbccdd-0000-1000-8000-00805f9b34fb")]
     [InlineData(
         AdDataComplete32Uuids0XAabbccddAabbccee,
         BleUuidType.Uuid32,
         "aabbccdd-0000-1000-8000-00805f9b34fb",
         "aabbccee-0000-1000-8000-00805f9b34fb"
     )]
-    [InlineData(
-        AdDataComplete128Uuids,
-        BleUuidType.Uuid128,
-        "ccddeeff-aabb-8899-7766-554433221100"
-    )]
+    [InlineData(AdDataComplete128Uuids, BleUuidType.Uuid128, "ccddeeff-aabb-8899-7766-554433221100")]
     public void GetServices_WithMultipleServiceUuids_ReturnsUuids(
         string sections,
         BleUuidType type,
@@ -180,10 +162,7 @@ public sealed class AdvertisingDataExtensionsGetterTests
         // Assert
         result.Should().Be(expectedSuccess);
         companyUuid.Should().Be(expectedCompanyIdentifiers);
-        manufacturerData
-            .ToArray()
-            .Should()
-            .BeEquivalentTo(Convert.FromHexString(expectedDataString));
+        manufacturerData.ToArray().Should().BeEquivalentTo(Convert.FromHexString(expectedDataString));
     }
 
     [Theory]
@@ -203,10 +182,7 @@ public sealed class AdvertisingDataExtensionsGetterTests
         AdvertisingData data = AdvertisingData.From(Convert.FromHexString(sections));
 
         // Act
-        bool result = data.TryGetManufacturerSpecificData(
-            companyUuid,
-            out ReadOnlyMemory<byte> manufacturerData
-        );
+        bool result = data.TryGetManufacturerSpecificData(companyUuid, out ReadOnlyMemory<byte> manufacturerData);
 
         // Assert
         result.Should().Be(expectedSuccess);

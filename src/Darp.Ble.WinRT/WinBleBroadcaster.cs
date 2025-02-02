@@ -11,10 +11,8 @@ using Windows.Devices.Bluetooth.Advertisement;
 
 namespace Darp.Ble.WinRT;
 
-internal sealed class WinBleBroadcaster(
-    WinBleDevice winBleDevice,
-    ILogger<WinBleBroadcaster> logger
-) : BleBroadcaster(winBleDevice, logger)
+internal sealed class WinBleBroadcaster(WinBleDevice winBleDevice, ILogger<WinBleBroadcaster> logger)
+    : BleBroadcaster(winBleDevice, logger)
 {
     private readonly WinBleDevice _winBleDevice = winBleDevice;
 
@@ -29,22 +27,12 @@ internal sealed class WinBleBroadcaster(
     }
 
     protected override Task<IAsyncDisposable> StartAdvertisingCoreAsync(
-        IReadOnlyCollection<(
-            IAdvertisingSet AdvertisingSet,
-            TimeSpan Duration,
-            byte NumberOfEvents
-        )> advertisingSets,
+        IReadOnlyCollection<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, byte NumberOfEvents)> advertisingSets,
         CancellationToken cancellationToken
     )
     {
         List<IAsyncDisposable> disposables = [];
-        foreach (
-            (
-                IAdvertisingSet advertisingSet,
-                TimeSpan duration,
-                int numberOfEvents
-            ) in advertisingSets
-        )
+        foreach ((IAdvertisingSet advertisingSet, TimeSpan duration, int numberOfEvents) in advertisingSets)
         {
             if (_winBleDevice.Capabilities.HasFlag(Capabilities.Peripheral))
             {
@@ -120,8 +108,7 @@ internal sealed class WinBleBroadcaster(
             if (advertisingSet.Parameters.AdvertisingTxPower is not TxPowerLevel.NotAvailable)
             {
                 publisher.IncludeTransmitPowerLevel = true;
-                publisher.PreferredTransmitPowerLevelInDBm = (short)
-                    advertisingSet.Parameters.AdvertisingTxPower;
+                publisher.PreferredTransmitPowerLevelInDBm = (short)advertisingSet.Parameters.AdvertisingTxPower;
             }
 
             IAsyncDisposable disposable = AsyncDisposable.Create(publisher, state => state.Stop());

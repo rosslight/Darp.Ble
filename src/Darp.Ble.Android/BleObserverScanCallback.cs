@@ -7,9 +7,7 @@ using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Android;
 
-public sealed class BleObserverScanCallback(BleObserver bleObserver)
-    : ScanCallback,
-        IObservable<ScanResult>
+public sealed class BleObserverScanCallback(BleObserver bleObserver) : ScanCallback, IObservable<ScanResult>
 {
     private readonly BleObserver _bleObserver = bleObserver;
     private readonly List<IObserver<ScanResult>> _observers = [];
@@ -50,10 +48,7 @@ public sealed class BleObserverScanCallback(BleObserver bleObserver)
     public override void OnScanFailed(ScanFailure errorCode)
     {
         base.OnScanFailed(errorCode);
-        var scanFailedException = new BleObservationStopException(
-            _bleObserver,
-            $"Scan failed because of {errorCode}"
-        );
+        var scanFailedException = new BleObservationStopException(_bleObserver, $"Scan failed because of {errorCode}");
         foreach (IObserver<ScanResult> observer in _observers)
         {
             observer.OnError(scanFailedException);
