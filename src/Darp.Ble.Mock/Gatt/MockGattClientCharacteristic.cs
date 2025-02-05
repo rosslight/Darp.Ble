@@ -2,17 +2,19 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock.Gatt;
 
 internal sealed class MockGattClientCharacteristic(
     MockGattClientService service,
-    ushort attributeHandle,
     BleUuid uuid,
     GattProperty gattProperty,
     IGattClientAttribute.OnReadCallback? onRead,
-    IGattClientAttribute.OnWriteCallback? onWrite
-) : GattClientCharacteristic(service, attributeHandle, uuid, gattProperty, onRead, onWrite)
+    IGattClientAttribute.OnWriteCallback? onWrite,
+    GattClientCharacteristic? previousCharacteristic,
+    ILogger<MockGattClientCharacteristic> logger
+) : GattClientCharacteristic(service, uuid, gattProperty, onRead, onWrite, previousCharacteristic, logger)
 {
     private readonly ConcurrentDictionary<IGattClientPeer, Action<byte[]>> _notifyActions = [];
 
@@ -38,14 +40,17 @@ internal sealed class MockGattClientCharacteristic(
         );
     }
 
-    protected override Task<IGattClientDescriptor> AddDescriptorAsyncCore(
+    protected override Task<GattClientDescriptor> AddDescriptorAsyncCore(
         BleUuid uuid,
         IGattClientAttribute.OnReadCallback? onRead,
         IGattClientAttribute.OnWriteCallback? onWrite,
+        GattClientDescriptor? previousDescriptor,
         CancellationToken cancellationToken
     )
     {
-        return Task.FromResult<IGattClientDescriptor>(new MockGattClientDescriptor(this, uuid, onRead, onWrite));
+        return Task.FromResult<GattClientDescriptor>(
+            new MockGattClientDescriptor(this, uuid, onRead, onWrite, previousDescriptor)
+        );
     }
 
     protected override void NotifyCore(IGattClientPeer clientPeer, byte[] value)

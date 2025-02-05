@@ -12,7 +12,7 @@ internal sealed class MockGattServerCharacteristic(
     MockGattClientCharacteristic characteristic,
     MockGattClientPeer gattClient,
     ILogger<MockGattServerCharacteristic> logger
-) : GattServerCharacteristic(service, characteristic.AttributeHandle, uuid, characteristic.Properties, logger)
+) : GattServerCharacteristic(service, characteristic.StartHandle, uuid, characteristic.Properties, logger)
 {
     private readonly MockGattClientCharacteristic _characteristic = characteristic;
     private readonly MockGattClientPeer _gattClient = gattClient;

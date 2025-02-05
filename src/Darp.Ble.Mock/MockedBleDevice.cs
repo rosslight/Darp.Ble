@@ -1,6 +1,8 @@
 using System.Reactive.Concurrency;
 using Darp.Ble.Data;
+using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
+using Darp.Ble.Gatt.Services;
 using Darp.Ble.Implementation;
 using Microsoft.Extensions.Logging;
 
@@ -16,6 +18,7 @@ internal sealed class MockedBleDevice(
     private readonly BleMockFactory.InitializeAsync _onInitialize = onInitialize;
     public override string Identifier => BleDeviceIdentifiers.MockDevice;
     public override string? Name { get; } = name;
+    public override AppearanceValues Appearance => AppearanceValues.Unknown;
     public IScheduler Scheduler { get; } = scheduler;
 
     public MockDeviceSettings Settings { get; } = new();
@@ -43,6 +46,7 @@ internal sealed class MockedBleDevice(
     {
         Broadcaster = new MockedBleBroadcaster(this, LoggerFactory.CreateLogger<MockedBleBroadcaster>());
         Peripheral = new MockedBlePeripheral(this, LoggerFactory.CreateLogger<MockedBlePeripheral>());
+        await Peripheral.AddGapServiceAsync(cancellationToken).ConfigureAwait(false);
         await _onInitialize(this, Settings).ConfigureAwait(false);
         return InitializeResult.Success;
     }

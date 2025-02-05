@@ -1,4 +1,5 @@
 using Darp.Ble.Data;
+using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Implementation;
 using Microsoft.Extensions.Logging;
 using Windows.Devices.Bluetooth;
@@ -32,6 +33,9 @@ internal sealed class WinBleDevice(ILoggerFactory loggerFactory)
 
     /// <inheritdoc />
     public override string Name => "Windows";
+
+    /// <inheritdoc />
+    public override AppearanceValues Appearance => AppearanceValues.Computer;
 
     /// <inheritdoc />
     public override string Identifier => BleDeviceIdentifiers.WinRT;

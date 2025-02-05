@@ -3,7 +3,7 @@ using Darp.Ble.Data;
 namespace Darp.Ble.Gatt.Client;
 
 /// <summary> The client service </summary>
-public interface IGattClientService
+public interface IGattClientService : IGattAttribute
 {
     /// <summary> The peripheral device this service was added to</summary>
     public IBlePeripheral Peripheral { get; }

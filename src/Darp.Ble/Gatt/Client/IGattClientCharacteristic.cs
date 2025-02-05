@@ -3,13 +3,10 @@ using Darp.Ble.Data;
 namespace Darp.Ble.Gatt.Client;
 
 /// <summary> A gatt client characteristic </summary>
-public interface IGattClientCharacteristic : IGattClientAttribute
+public interface IGattClientCharacteristic : IGattAttribute, IGattClientAttribute
 {
     /// <summary> The service this characteristic was added to </summary>
     IGattClientService Service { get; }
-
-    /// <summary> The handle of the characteristic attribute </summary>
-    ushort AttributeHandle { get; }
 
     /// <summary> The UUID of the characteristic </summary>
     BleUuid Uuid { get; }

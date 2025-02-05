@@ -1,5 +1,6 @@
 using System.Reactive.Concurrency;
 using Darp.Ble.Data;
+using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Implementation;
 using Microsoft.Extensions.Logging;
 
@@ -21,6 +22,9 @@ internal sealed class MockBleDevice(
 
     /// <inheritdoc />
     public override string Name { get; } = name;
+
+    /// <inheritdoc />
+    public override AppearanceValues Appearance => AppearanceValues.Unknown;
 
     public IScheduler Scheduler { get; } = scheduler;
 

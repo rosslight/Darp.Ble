@@ -7,23 +7,36 @@ using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Gatt.Services;
 using Darp.Ble.Utils;
+using Microsoft.Extensions.Logging;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
 
 namespace Darp.Ble.WinRT.Gatt;
 
-internal sealed class WinGattClientService(WinBlePeripheral peripheral, GattServiceProvider provider)
-    : GattClientService(peripheral, BleUuid.FromGuid(provider.Service.Uuid, inferType: true), GattServiceType.Undefined)
+internal sealed class WinGattClientService(
+    WinBlePeripheral peripheral,
+    GattServiceProvider provider,
+    GattClientService? previousService,
+    ILogger<WinGattClientService> logger
+)
+    : GattClientService(
+        peripheral,
+        BleUuid.FromGuid(provider.Service.Uuid, inferType: true),
+        GattServiceType.Undefined,
+        previousService,
+        logger
+    )
 {
     private readonly GattServiceProvider _serviceProvider = provider;
     private readonly GattLocalService _winService = provider.Service;
     public new WinBlePeripheral Peripheral { get; } = peripheral;
 
-    protected override async Task<IGattClientCharacteristic> CreateCharacteristicAsyncCore(
+    protected override async Task<GattClientCharacteristic> CreateCharacteristicAsyncCore(
         BleUuid uuid,
         GattProperty gattProperty,
         IGattClientAttribute.OnReadCallback? onRead,
         IGattClientAttribute.OnWriteCallback? onWrite,
+        GattClientCharacteristic? previousCharacteristic,
         CancellationToken cancellationToken
     )
     {
@@ -46,7 +59,14 @@ internal sealed class WinGattClientService(WinBlePeripheral peripheral, GattServ
                 Peripheral.GetOrRegisterSession(senderSubscribedClient.Session);
             }
         };
-        return new WinGattClientCharacteristic(this, result.Characteristic, onRead, onWrite);
+        return new WinGattClientCharacteristic(
+            this,
+            result.Characteristic,
+            onRead,
+            onWrite,
+            previousCharacteristic,
+            LoggerFactory.CreateLogger<WinGattClientCharacteristic>()
+        );
     }
 
     public IAsyncDisposable Advertise(IAdvertisingSet advertisingSet)

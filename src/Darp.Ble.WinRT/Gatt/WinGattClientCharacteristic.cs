@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices.WindowsRuntime;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
+using Microsoft.Extensions.Logging;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
 using Windows.Foundation;
@@ -17,15 +18,18 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
         WinGattClientService winService,
         GattLocalCharacteristic winCharacteristic,
         IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite
+        IGattClientAttribute.OnWriteCallback? onWrite,
+        GattClientCharacteristic? previousCharacteristic,
+        ILogger<WinGattClientCharacteristic> logger
     )
         : base(
             winService,
-            (ushort)winCharacteristic.GetHashCode(), // TODO: some other way?
             BleUuid.FromGuid(winCharacteristic.Uuid, inferType: true),
             (GattProperty)winCharacteristic.CharacteristicProperties,
             onRead,
-            onWrite
+            onWrite,
+            previousCharacteristic,
+            logger
         )
     {
         Service = winService;
@@ -71,10 +75,11 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
         };
     }
 
-    protected override async Task<IGattClientDescriptor> AddDescriptorAsyncCore(
+    protected override async Task<GattClientDescriptor> AddDescriptorAsyncCore(
         BleUuid uuid,
         IGattClientAttribute.OnReadCallback? onRead,
         IGattClientAttribute.OnWriteCallback? onWrite,
+        GattClientDescriptor? previousDescriptor,
         CancellationToken cancellationToken
     )
     {
@@ -84,7 +89,7 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
             .ConfigureAwait(false);
         if (result.Error is not BluetoothError.Success)
             throw new Exception("Could not add descriptor to windows");
-        return new WinGattClientDescriptor(this, result.Descriptor, uuid, onRead, onWrite);
+        return new WinGattClientDescriptor(this, result.Descriptor, uuid, onRead, onWrite, previousDescriptor);
     }
 
     protected override void NotifyCore(IGattClientPeer clientPeer, byte[] value)

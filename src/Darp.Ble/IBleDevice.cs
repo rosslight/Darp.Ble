@@ -1,4 +1,5 @@
 using Darp.Ble.Data;
+using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Exceptions;
 using Microsoft.Extensions.Logging;
 
@@ -21,6 +22,9 @@ public interface IBleDevice : IAsyncDisposable
 
     /// <summary> An optional name </summary>
     public string? Name { get; }
+
+    /// <summary> An optional appearance of the device </summary>
+    public AppearanceValues Appearance { get; }
 
     /// <summary>
     /// Gives back capabilities of this device. Before the device was successfully initialized, the capabilities are unknown

@@ -1,3 +1,4 @@
+using System.Reactive;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
 
@@ -20,6 +21,9 @@ public interface IBlePeripheral
 
     /// <summary> An observable which fires when a GattClient disconnected </summary>
     IObservable<IGattClientPeer> WhenDisconnected { get; }
+
+    /// <summary> An observable which fires when a service (or an attribute inside a service) has changed </summary>
+    IObservable<Unit> WhenServiceChanged { get; }
 
     /// <summary> Add a new service to this peripheral </summary>
     /// <param name="uuid"> The uuid of the service to be added </param>

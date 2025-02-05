@@ -1,6 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Darp.Ble.Data;
+using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Exceptions;
 using Microsoft.Extensions.Logging;
 
@@ -34,6 +35,9 @@ public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice>
 
     /// <inheritdoc />
     public abstract string? Name { get; }
+
+    /// <inheritdoc />
+    public abstract AppearanceValues Appearance { get; }
 
     /// <inheritdoc />
     public Capabilities Capabilities =>

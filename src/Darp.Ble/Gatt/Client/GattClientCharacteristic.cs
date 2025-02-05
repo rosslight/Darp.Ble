@@ -1,33 +1,51 @@
 using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Gatt.Client;
 
 /// <summary> An abstract gatt client characteristic </summary>
 /// <param name="clientService"> The parent client service </param>
-/// <param name="attributeHandle"> The AttributeHandle of the characteristic </param>
 /// <param name="uuid"> The UUID of the characteristic </param>
 /// <param name="gattProperty"> The property of the characteristic </param>
 /// <param name="onRead"> The callback to be called when a read operation was requested on this attribute </param>
 /// <param name="onWrite"> The callback to be called when a write operation was requested on this attribute </param>
 public abstract class GattClientCharacteristic(
     GattClientService clientService,
-    ushort attributeHandle,
     BleUuid uuid,
     GattProperty gattProperty,
     IGattClientAttribute.OnReadCallback? onRead,
-    IGattClientAttribute.OnWriteCallback? onWrite
-) : IGattClientCharacteristic
+    IGattClientAttribute.OnWriteCallback? onWrite,
+    GattClientCharacteristic? previousCharacteristic,
+    ILogger<GattClientCharacteristic> logger
+) : IGattClientCharacteristic, IGattAttribute
 {
-    private readonly Dictionary<BleUuid, IGattClientDescriptor> _descriptors = [];
+    private readonly List<GattClientDescriptor> _descriptors = [];
     private readonly IGattClientAttribute.OnReadCallback? _onRead = onRead;
     private readonly IGattClientAttribute.OnWriteCallback? _onWrite = onWrite;
+    private readonly GattClientCharacteristic? _previousCharacteristic = previousCharacteristic;
+
+    /// <summary> The optional logger </summary>
+    protected ILogger<GattClientCharacteristic> Logger { get; } = logger;
+
+    /// <summary> The logger factory </summary>
+    protected ILoggerFactory LoggerFactory => Service.Peripheral.Device.LoggerFactory;
 
     /// <inheritdoc />
     public IGattClientService Service { get; } = clientService;
 
-    /// <inheritdoc />
-    public ushort AttributeHandle { get; } = attributeHandle;
+    public virtual ushort StartHandle => _previousCharacteristic?.EndHandle ?? 0;
+
+    public virtual ushort EndHandle
+    {
+        get
+        {
+            ushort handleOffset = StartHandle;
+            if (_descriptors.Count is 0)
+                return (ushort)(handleOffset + 1);
+            return (ushort)(_descriptors[^1].EndHandle + 1);
+        }
+    }
 
     /// <inheritdoc />
     public BleUuid Uuid { get; } = uuid;
@@ -36,29 +54,38 @@ public abstract class GattClientCharacteristic(
     public GattProperty Properties { get; } = gattProperty;
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<BleUuid, IGattClientDescriptor> Descriptors => _descriptors;
+    public IReadOnlyDictionary<BleUuid, IGattClientDescriptor> Descriptors =>
+        _descriptors.ToDictionary(x => x.Uuid, IGattClientDescriptor (x) => x);
 
     /// <inheritdoc />
     public async Task<IGattClientDescriptor> AddDescriptorAsync(
         BleUuid uuid,
-        IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite,
+        IGattClientAttribute.OnReadCallback? onRead = null,
+        IGattClientAttribute.OnWriteCallback? onWrite = null,
         CancellationToken cancellationToken = default
     )
     {
         if (Descriptors.TryGetValue(uuid, out IGattClientDescriptor? foundDescriptor))
             return foundDescriptor;
-        IGattClientDescriptor descriptor = await AddDescriptorAsyncCore(uuid, onRead, onWrite, cancellationToken)
+        GattClientDescriptor? previousDescriptor = _descriptors.Count > 0 ? _descriptors[^1] : null;
+        GattClientDescriptor descriptor = await AddDescriptorAsyncCore(
+                uuid,
+                onRead,
+                onWrite,
+                previousDescriptor,
+                cancellationToken
+            )
             .ConfigureAwait(false);
-        _descriptors[uuid] = descriptor;
+        _descriptors.Add(descriptor);
         return descriptor;
     }
 
     /// <inheritdoc cref="AddDescriptorAsync" />
-    protected abstract Task<IGattClientDescriptor> AddDescriptorAsyncCore(
+    protected abstract Task<GattClientDescriptor> AddDescriptorAsyncCore(
         BleUuid uuid,
         IGattClientAttribute.OnReadCallback? onRead,
         IGattClientAttribute.OnWriteCallback? onWrite,
+        GattClientDescriptor? previousDescriptor,
         CancellationToken cancellationToken
     );
 
@@ -162,7 +189,10 @@ public class GattClientCharacteristic<TProp1>(IGattClientCharacteristic characte
     public IGattClientService Service => Characteristic.Service;
 
     /// <inheritdoc />
-    public ushort AttributeHandle => Characteristic.AttributeHandle;
+    public ushort StartHandle => Characteristic.StartHandle;
+
+    /// <inheritdoc />
+    public ushort EndHandle => Characteristic.EndHandle;
 
     /// <inheritdoc />
     public BleUuid Uuid => Characteristic.Uuid;

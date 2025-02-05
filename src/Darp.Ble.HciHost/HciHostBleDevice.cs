@@ -1,4 +1,5 @@
 using Darp.Ble.Data;
+using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Result;
@@ -23,6 +24,7 @@ internal sealed class HciHostBleDevice(
         );
 
     public override string Name { get; } = name;
+    public override AppearanceValues Appearance => AppearanceValues.Unknown;
 
     public BleAddress RandomAddress { get; private set; } = randomAddress ?? BleAddress.NewRandomStaticAddress();
 
@@ -45,6 +47,7 @@ internal sealed class HciHostBleDevice(
             result.MaxAdvertisingDataLength,
             LoggerFactory.CreateLogger<HciHostBleBroadcaster>()
         );
+        Peripheral = new HciHostBlePeripheral(this, LoggerFactory.CreateLogger<HciHostBlePeripheral>());
         return InitializeResult.Success;
     }
 

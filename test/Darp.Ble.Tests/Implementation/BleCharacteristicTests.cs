@@ -23,7 +23,15 @@ public sealed class BleCharacteristicTests
             BleAddress.NotAvailable,
             NullLogger<MockGattClientPeer>.Instance
         );
-        var mockClientChar = new MockGattClientCharacteristic(null!, 0, 0x1234, TProperty.GattProperty, null, null);
+        var mockClientChar = new MockGattClientCharacteristic(
+            null!,
+            0x1234,
+            TProperty.GattProperty,
+            null,
+            null,
+            null,
+            NullLogger<MockGattClientCharacteristic>.Instance
+        );
         var characteristic = new MockGattServerCharacteristic(
             null!,
             0x1234,

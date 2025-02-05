@@ -22,6 +22,12 @@ public abstract class GattClientServiceProxy(IGattClientService service) : IGatt
     public BleUuid Uuid => _service.Uuid;
 
     /// <inheritdoc />
+    public ushort StartHandle => _service.StartHandle;
+
+    /// <inheritdoc />
+    public ushort EndHandle => _service.EndHandle;
+
+    /// <inheritdoc />
     public GattServiceType Type => _service.Type;
 
     IReadOnlyCollection<IGattClientCharacteristic> IGattClientService.Characteristics => _service.Characteristics;

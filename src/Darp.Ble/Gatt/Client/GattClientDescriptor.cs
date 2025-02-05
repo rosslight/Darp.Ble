@@ -11,17 +11,30 @@ public abstract class GattClientDescriptor(
     GattClientCharacteristic clientCharacteristic,
     BleUuid uuid,
     IGattClientAttribute.OnReadCallback? onRead,
-    IGattClientAttribute.OnWriteCallback? onWrite
+    IGattClientAttribute.OnWriteCallback? onWrite,
+    GattClientDescriptor? previousDescriptor
 ) : IGattClientDescriptor
 {
     private readonly IGattClientAttribute.OnReadCallback? _onRead = onRead;
     private readonly IGattClientAttribute.OnWriteCallback? _onWrite = onWrite;
+    private readonly GattClientDescriptor? _previousDescriptor = previousDescriptor;
 
     /// <inheritdoc />
     public BleUuid Uuid { get; } = uuid;
 
     /// <inheritdoc />
     public IGattClientCharacteristic Characteristic { get; } = clientCharacteristic;
+
+    public virtual ushort StartHandle => _previousDescriptor?.EndHandle ?? 0;
+
+    public virtual ushort EndHandle
+    {
+        get
+        {
+            ushort handleOffset = StartHandle;
+            return (ushort)(handleOffset + 1);
+        }
+    }
 
     /// <inheritdoc />
     public ValueTask<byte[]> GetValueAsync(IGattClientPeer? clientPeer, CancellationToken cancellationToken)

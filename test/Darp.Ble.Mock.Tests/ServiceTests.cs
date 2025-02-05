@@ -24,9 +24,11 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
             .AddMock(factory =>
                 factory.AddPeripheral(async device =>
                 {
-                    await device.Peripheral.AddDeviceInformationServiceAsync(
-                        manufacturerName: expectedManufacturerName
-                    );
+                    GattClientDeviceInformationService service =
+                        await device.Peripheral.AddDeviceInformationServiceAsync(
+                            manufacturerName: expectedManufacturerName
+                        );
+                    service.EndHandle.Should().Be(0x0002);
                     await device.Broadcaster.StartAdvertisingAsync();
                 })
             )
@@ -62,7 +64,12 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
             .AddMock(factory =>
                 factory.AddPeripheral(async device =>
                 {
-                    await device.Peripheral.AddEchoServiceAsync(serviceUuid, writeUuid, notifyUuid);
+                    GattClientEchoService service = await device.Peripheral.AddEchoServiceAsync(
+                        serviceUuid,
+                        writeUuid,
+                        notifyUuid
+                    );
+                    service.EndHandle.Should().Be(0x0003);
                     await device.Broadcaster.StartAdvertisingAsync();
                 })
             )

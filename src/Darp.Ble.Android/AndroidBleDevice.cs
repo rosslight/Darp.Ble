@@ -3,6 +3,7 @@ using Android;
 using Android.Bluetooth;
 using Android.Content.PM;
 using Darp.Ble.Data;
+using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Implementation;
 using Microsoft.Extensions.Logging;
 
@@ -18,6 +19,7 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, ILoggerF
     public bool IsAvailable => BluetoothAdapter?.IsEnabled == true;
 
     public override string? Name => BluetoothAdapter?.Name;
+    public override AppearanceValues Appearance => AppearanceValues.Unknown;
 
     protected override Task SetRandomAddressAsyncCore(BleAddress randomAddress, CancellationToken cancellationToken)
     {

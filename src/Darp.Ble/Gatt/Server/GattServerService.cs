@@ -9,7 +9,7 @@ namespace Darp.Ble.Gatt.Server;
 /// <param name="type"> The type of the gatt service </param>
 /// <param name="logger"> An optional logger </param>
 public abstract class GattServerService(
-    IGattServerPeer peer,
+    GattServerPeer peer,
     BleUuid uuid,
     GattServiceType type,
     ILogger<GattServerService> logger

@@ -14,9 +14,10 @@ internal sealed class WinGattClientDescriptor : GattClientDescriptor
         GattLocalDescriptor winDescriptor,
         BleUuid uuid,
         IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite
+        IGattClientAttribute.OnWriteCallback? onWrite,
+        GattClientDescriptor? previousDescriptor
     )
-        : base(clientCharacteristic, uuid, onRead, onWrite)
+        : base(clientCharacteristic, uuid, onRead, onWrite, previousDescriptor)
     {
         winDescriptor.ReadRequested += async (_, args) =>
         {
