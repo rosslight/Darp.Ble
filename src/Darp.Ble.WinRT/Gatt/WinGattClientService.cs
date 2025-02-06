@@ -6,6 +6,7 @@ using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Gatt.Services;
+using Darp.Ble.Implementation;
 using Darp.Ble.Utils;
 using Microsoft.Extensions.Logging;
 using Windows.Devices.Bluetooth;
@@ -16,14 +17,12 @@ namespace Darp.Ble.WinRT.Gatt;
 internal sealed class WinGattClientService(
     WinBlePeripheral peripheral,
     GattServiceProvider provider,
-    GattClientService? previousService,
     ILogger<WinGattClientService> logger
 )
     : GattClientService(
         peripheral,
         BleUuid.FromGuid(provider.Service.Uuid, inferType: true),
         GattServiceType.Undefined,
-        previousService,
         logger
     )
 {
@@ -36,7 +35,6 @@ internal sealed class WinGattClientService(
         GattProperty gattProperty,
         IGattClientAttribute.OnReadCallback? onRead,
         IGattClientAttribute.OnWriteCallback? onWrite,
-        GattClientCharacteristic? previousCharacteristic,
         CancellationToken cancellationToken
     )
     {
@@ -64,7 +62,6 @@ internal sealed class WinGattClientService(
             result.Characteristic,
             onRead,
             onWrite,
-            previousCharacteristic,
             LoggerFactory.CreateLogger<WinGattClientCharacteristic>()
         );
     }

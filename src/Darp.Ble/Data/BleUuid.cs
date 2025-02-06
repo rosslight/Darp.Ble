@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 
 namespace Darp.Ble.Data;
 
@@ -148,30 +149,51 @@ public sealed record BleUuid
     public override int GetHashCode() => Type.GetHashCode() ^ Value.GetHashCode();
 
     /// <inheritdoc />
-    public override string ToString() => Value.ToString();
+    public override string ToString() =>
+        Type switch
+        {
+            BleUuidType.Uuid16 => $"{AsUShort():X4}",
+            BleUuidType.Uuid32 => $"{AsUInt():X8}",
+            _ => Value.ToString(),
+        };
 
     /// <inheritdoc />
-    public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format, formatProvider);
+    public string ToString(string? format, IFormatProvider? formatProvider) =>
+        Type switch
+        {
+            BleUuidType.Uuid16 => $"{AsUShort():X4}",
+            BleUuidType.Uuid32 => $"{AsUInt():X8}",
+            _ => Value.ToString(format, formatProvider),
+        };
 
     /// <inheritdoc cref="Guid.TryFormat(System.Span{char},out int,System.ReadOnlySpan{char})"/>/>
     public bool TryFormat(
         Span<char> destination,
         out int charsWritten,
         [StringSyntax("GuidFormat")] ReadOnlySpan<char> format = default
-    )
-    {
-        return Value.TryFormat(destination, out charsWritten, format);
-    }
+    ) =>
+        Type switch
+        {
+            BleUuidType.Uuid16 => AsUShort()
+                .TryFormat(destination, out charsWritten, "X4", CultureInfo.InvariantCulture),
+            BleUuidType.Uuid32 => AsUInt().TryFormat(destination, out charsWritten, "X8", CultureInfo.InvariantCulture),
+            _ => Value.TryFormat(destination, out charsWritten, format),
+        };
 
     /// <inheritdoc cref="Guid.TryFormat(System.Span{byte},out int,System.ReadOnlySpan{char})"/>/>
     public bool TryFormat(
         Span<byte> utf8Destination,
         out int bytesWritten,
         [StringSyntax("GuidFormat")] ReadOnlySpan<char> format = default
-    )
-    {
-        return Value.TryFormat(utf8Destination, out bytesWritten, format);
-    }
+    ) =>
+        Type switch
+        {
+            BleUuidType.Uuid16 => AsUShort()
+                .TryFormat(utf8Destination, out bytesWritten, "X4", CultureInfo.InvariantCulture),
+            BleUuidType.Uuid32 => AsUInt()
+                .TryFormat(utf8Destination, out bytesWritten, "X8", CultureInfo.InvariantCulture),
+            _ => Value.TryFormat(utf8Destination, out bytesWritten, format),
+        };
 
     bool ISpanFormattable.TryFormat(
         Span<char> destination,
@@ -191,6 +213,20 @@ public sealed record BleUuid
     )
     {
         return TryFormat(utf8Destination, out bytesWritten, format);
+    }
+
+    private ushort AsUShort()
+    {
+        Span<byte> bytes = stackalloc byte[16];
+        Value.TryWriteBytes(bytes);
+        return BinaryPrimitives.ReadUInt16LittleEndian(bytes[..2]);
+    }
+
+    private uint AsUInt()
+    {
+        Span<byte> bytes = stackalloc byte[16];
+        Value.TryWriteBytes(bytes);
+        return BinaryPrimitives.ReadUInt32LittleEndian(bytes[..4]);
     }
 
     /// <summary> Write the ble uuid to a span </summary>

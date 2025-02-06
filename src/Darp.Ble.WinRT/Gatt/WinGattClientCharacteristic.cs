@@ -1,6 +1,7 @@
 using System.Runtime.InteropServices.WindowsRuntime;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
+using Darp.Ble.Implementation;
 using Microsoft.Extensions.Logging;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
@@ -19,7 +20,6 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
         GattLocalCharacteristic winCharacteristic,
         IGattClientAttribute.OnReadCallback? onRead,
         IGattClientAttribute.OnWriteCallback? onWrite,
-        GattClientCharacteristic? previousCharacteristic,
         ILogger<WinGattClientCharacteristic> logger
     )
         : base(
@@ -28,7 +28,6 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
             (GattProperty)winCharacteristic.CharacteristicProperties,
             onRead,
             onWrite,
-            previousCharacteristic,
             logger
         )
     {
@@ -79,7 +78,6 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
         BleUuid uuid,
         IGattClientAttribute.OnReadCallback? onRead,
         IGattClientAttribute.OnWriteCallback? onWrite,
-        GattClientDescriptor? previousDescriptor,
         CancellationToken cancellationToken
     )
     {
@@ -89,7 +87,7 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
             .ConfigureAwait(false);
         if (result.Error is not BluetoothError.Success)
             throw new Exception("Could not add descriptor to windows");
-        return new WinGattClientDescriptor(this, result.Descriptor, uuid, onRead, onWrite, previousDescriptor);
+        return new WinGattClientDescriptor(this, result.Descriptor, uuid, onRead, onWrite);
     }
 
     protected override void NotifyCore(IGattClientPeer clientPeer, byte[] value)

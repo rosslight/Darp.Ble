@@ -2,6 +2,7 @@ using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Services;
+using Darp.Ble.Implementation;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock.Gatt;
@@ -10,9 +11,8 @@ internal sealed class MockGattClientService(
     BleUuid uuid,
     GattServiceType type,
     MockedBlePeripheral blePeripheral,
-    GattClientService? previousService,
     ILogger<MockGattClientService> logger
-) : GattClientService(blePeripheral, uuid, type, previousService, logger)
+) : GattClientService(blePeripheral, uuid, type, logger)
 {
     public MockedBlePeripheral BlePeripheral { get; } = blePeripheral;
 
@@ -22,7 +22,6 @@ internal sealed class MockGattClientService(
         GattProperty gattProperty,
         IGattClientAttribute.OnReadCallback? onRead,
         IGattClientAttribute.OnWriteCallback? onWrite,
-        GattClientCharacteristic? previousCharacteristic,
         CancellationToken cancellationToken
     )
     {
@@ -33,7 +32,6 @@ internal sealed class MockGattClientService(
                 gattProperty,
                 onRead,
                 onWrite,
-                previousCharacteristic,
                 LoggerFactory.CreateLogger<MockGattClientCharacteristic>()
             )
         );

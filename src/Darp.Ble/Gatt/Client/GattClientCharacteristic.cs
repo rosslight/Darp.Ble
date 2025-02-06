@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data;
 using Microsoft.Extensions.Logging;
@@ -16,14 +17,12 @@ public abstract class GattClientCharacteristic(
     GattProperty gattProperty,
     IGattClientAttribute.OnReadCallback? onRead,
     IGattClientAttribute.OnWriteCallback? onWrite,
-    GattClientCharacteristic? previousCharacteristic,
     ILogger<GattClientCharacteristic> logger
-) : IGattClientCharacteristic, IGattAttribute
+) : IGattClientCharacteristic
 {
     private readonly List<GattClientDescriptor> _descriptors = [];
     private readonly IGattClientAttribute.OnReadCallback? _onRead = onRead;
     private readonly IGattClientAttribute.OnWriteCallback? _onWrite = onWrite;
-    private readonly GattClientCharacteristic? _previousCharacteristic = previousCharacteristic;
 
     /// <summary> The optional logger </summary>
     protected ILogger<GattClientCharacteristic> Logger { get; } = logger;
@@ -34,17 +33,20 @@ public abstract class GattClientCharacteristic(
     /// <inheritdoc />
     public IGattClientService Service { get; } = clientService;
 
-    public virtual ushort StartHandle => _previousCharacteristic?.EndHandle ?? 0;
+    /// <inheritdoc />
+    public virtual ushort Handle => Service.Peripheral.GattDatabase[this];
 
-    public virtual ushort EndHandle
+    /// <inheritdoc />
+    public byte[] AttributeValue => CreateAttributeValue(Properties, (ushort)(Handle + 1), Uuid);
+
+    private static byte[] CreateAttributeValue(GattProperty properties, ushort valueHandle, BleUuid uuid)
     {
-        get
-        {
-            ushort handleOffset = StartHandle;
-            if (_descriptors.Count is 0)
-                return (ushort)(handleOffset + 1);
-            return (ushort)(_descriptors[^1].EndHandle + 1);
-        }
+        var bytes = new byte[3 + (int)uuid.Type];
+        Span<byte> buffer = bytes;
+        buffer[0] = (byte)properties;
+        BinaryPrimitives.WriteUInt16LittleEndian(buffer[1..], valueHandle);
+        uuid.TryWriteBytes(buffer[3..]);
+        return bytes;
     }
 
     /// <inheritdoc />
@@ -67,16 +69,10 @@ public abstract class GattClientCharacteristic(
     {
         if (Descriptors.TryGetValue(uuid, out IGattClientDescriptor? foundDescriptor))
             return foundDescriptor;
-        GattClientDescriptor? previousDescriptor = _descriptors.Count > 0 ? _descriptors[^1] : null;
-        GattClientDescriptor descriptor = await AddDescriptorAsyncCore(
-                uuid,
-                onRead,
-                onWrite,
-                previousDescriptor,
-                cancellationToken
-            )
+        GattClientDescriptor descriptor = await AddDescriptorAsyncCore(uuid, onRead, onWrite, cancellationToken)
             .ConfigureAwait(false);
         _descriptors.Add(descriptor);
+        Service.Peripheral.GattDatabase.AddDescriptor(descriptor);
         return descriptor;
     }
 
@@ -85,7 +81,6 @@ public abstract class GattClientCharacteristic(
         BleUuid uuid,
         IGattClientAttribute.OnReadCallback? onRead,
         IGattClientAttribute.OnWriteCallback? onWrite,
-        GattClientDescriptor? previousDescriptor,
         CancellationToken cancellationToken
     );
 
@@ -168,6 +163,9 @@ public abstract class GattClientCharacteristic(
         byte[] value,
         CancellationToken cancellationToken
     );
+
+    /// <inheritdoc />
+    public override string ToString() => $"Characteristic {AttributeValue}";
 }
 
 /// <summary> The implementation of a gatt client characteristic with a single property </summary>
@@ -189,10 +187,9 @@ public class GattClientCharacteristic<TProp1>(IGattClientCharacteristic characte
     public IGattClientService Service => Characteristic.Service;
 
     /// <inheritdoc />
-    public ushort StartHandle => Characteristic.StartHandle;
+    public ushort Handle => Characteristic.Handle;
 
-    /// <inheritdoc />
-    public ushort EndHandle => Characteristic.EndHandle;
+    byte[] IGattAttribute.AttributeValue => Characteristic.AttributeValue;
 
     /// <inheritdoc />
     public BleUuid Uuid => Characteristic.Uuid;

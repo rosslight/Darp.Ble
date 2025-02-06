@@ -24,7 +24,6 @@ internal sealed class MockedBlePeripheral(MockedBleDevice device, ILogger<Mocked
     protected override Task<GattClientService> AddServiceAsyncCore(
         BleUuid uuid,
         bool isPrimary,
-        GattClientService? previousService,
         CancellationToken cancellationToken
     )
     {
@@ -32,7 +31,6 @@ internal sealed class MockedBlePeripheral(MockedBleDevice device, ILogger<Mocked
             uuid,
             isPrimary ? GattServiceType.Primary : GattServiceType.Secondary,
             this,
-            previousService,
             LoggerFactory.CreateLogger<MockGattClientService>()
         );
         return Task.FromResult<GattClientService>(service);

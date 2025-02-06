@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
+using Darp.Ble.Implementation;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock.Gatt;
@@ -12,9 +13,8 @@ internal sealed class MockGattClientCharacteristic(
     GattProperty gattProperty,
     IGattClientAttribute.OnReadCallback? onRead,
     IGattClientAttribute.OnWriteCallback? onWrite,
-    GattClientCharacteristic? previousCharacteristic,
     ILogger<MockGattClientCharacteristic> logger
-) : GattClientCharacteristic(service, uuid, gattProperty, onRead, onWrite, previousCharacteristic, logger)
+) : GattClientCharacteristic(service, uuid, gattProperty, onRead, onWrite, logger)
 {
     private readonly ConcurrentDictionary<IGattClientPeer, Action<byte[]>> _notifyActions = [];
 
@@ -44,13 +44,10 @@ internal sealed class MockGattClientCharacteristic(
         BleUuid uuid,
         IGattClientAttribute.OnReadCallback? onRead,
         IGattClientAttribute.OnWriteCallback? onWrite,
-        GattClientDescriptor? previousDescriptor,
         CancellationToken cancellationToken
     )
     {
-        return Task.FromResult<GattClientDescriptor>(
-            new MockGattClientDescriptor(this, uuid, onRead, onWrite, previousDescriptor)
-        );
+        return Task.FromResult<GattClientDescriptor>(new MockGattClientDescriptor(this, uuid, onRead, onWrite));
     }
 
     protected override void NotifyCore(IGattClientPeer clientPeer, byte[] value)

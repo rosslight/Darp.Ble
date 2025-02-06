@@ -29,7 +29,6 @@ public sealed class BleCharacteristicTests
             TProperty.GattProperty,
             null,
             null,
-            null,
             NullLogger<MockGattClientCharacteristic>.Instance
         );
         var characteristic = new MockGattServerCharacteristic(

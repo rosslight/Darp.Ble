@@ -10,16 +10,19 @@ namespace Darp.Ble.Implementation;
 /// <summary> The central view of a ble device </summary>
 public abstract class BlePeripheral(BleDevice device, ILogger<BlePeripheral> logger) : IBlePeripheral
 {
+    private readonly List<GattClientService> _services = [];
+    private readonly Dictionary<BleAddress, IGattClientPeer> _peerDevices = new();
+    private readonly Subject<IGattClientPeer> _whenConnected = new();
+    private readonly Subject<Unit> _whenServiceChanged = new();
+
     /// <summary> The logger </summary>
     protected ILogger<BlePeripheral> Logger { get; } = logger;
 
     /// <summary> The logger factory </summary>
     protected ILoggerFactory LoggerFactory => Device.LoggerFactory;
 
-    private readonly List<GattClientService> _services = [];
-    private readonly Dictionary<BleAddress, IGattClientPeer> _peerDevices = new();
-    private readonly Subject<IGattClientPeer> _whenConnected = new();
-    private readonly Subject<Unit> _whenServiceChanged = new();
+    /// <inheritdoc />
+    public GattDatabaseCollection GattDatabase { get; } = new();
 
     /// <inheritdoc />
     public IReadOnlyCollection<IGattClientService> Services => _services;
@@ -47,23 +50,20 @@ public abstract class BlePeripheral(BleDevice device, ILogger<BlePeripheral> log
         CancellationToken cancellationToken = default
     )
     {
-        GattClientService? previousService = _services.Count > 0 ? _services[^1] : null;
-        GattClientService service = await AddServiceAsyncCore(uuid, isPrimary, previousService, cancellationToken)
-            .ConfigureAwait(false);
+        GattClientService service = await AddServiceAsyncCore(uuid, isPrimary, cancellationToken).ConfigureAwait(false);
         _services.Add(service);
+        GattDatabase.AddService(service);
         return service;
     }
 
     /// <summary> Core implementation to add a new service </summary>
     /// <param name="uuid"> The uuid of the service to be added </param>
     /// <param name="isPrimary"> True, if the service is a primary service; False, if secondary </param>
-    /// <param name="previousService"></param>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> The newly added service </returns>
     protected abstract Task<GattClientService> AddServiceAsyncCore(
         BleUuid uuid,
         bool isPrimary,
-        GattClientService? previousService,
         CancellationToken cancellationToken
     );
 
@@ -94,9 +94,4 @@ public abstract class BlePeripheral(BleDevice device, ILogger<BlePeripheral> log
     /// False if called by the asynchronous <see cref="IAsyncDisposable.DisposeAsync"/> method
     /// </param>
     protected virtual void Dispose(bool disposing) { }
-
-    /// <summary> Notify that a service was changed and update all relevant handles </summary>
-    /// <param name="service"></param>
-    /// <param name="attribute"></param>
-    internal void NotifyServiceChanged(IGattClientService service, IGattAttribute? attribute) { }
 }

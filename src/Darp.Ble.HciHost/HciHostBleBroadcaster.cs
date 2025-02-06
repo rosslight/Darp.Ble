@@ -18,16 +18,14 @@ internal sealed class HciHostGattClientService(
     HciHostBlePeripheral peripheral,
     BleUuid uuid,
     GattServiceType type,
-    HciHostGattClientService? previousService,
     ILogger<HciHostGattClientService> logger
-) : GattClientService(peripheral, uuid, type, previousService, logger)
+) : GattClientService(peripheral, uuid, type, logger)
 {
     protected override Task<GattClientCharacteristic> CreateCharacteristicAsyncCore(
         BleUuid uuid,
         GattProperty gattProperty,
         IGattClientAttribute.OnReadCallback? onRead,
         IGattClientAttribute.OnWriteCallback? onWrite,
-        GattClientCharacteristic? previousCharacteristic,
         CancellationToken cancellationToken
     )
     {
@@ -38,7 +36,6 @@ internal sealed class HciHostGattClientService(
                 gattProperty,
                 onRead,
                 onWrite,
-                previousCharacteristic,
                 LoggerFactory.CreateLogger<HciHostGattClientCharacteristic>()
             )
         );
@@ -51,15 +48,13 @@ internal sealed class HciHostGattClientCharacteristic(
     GattProperty gattProperty,
     IGattClientAttribute.OnReadCallback? onRead,
     IGattClientAttribute.OnWriteCallback? onWrite,
-    GattClientCharacteristic? previousCharacteristic,
     ILogger<HciHostGattClientCharacteristic> logger
-) : GattClientCharacteristic(clientService, uuid, gattProperty, onRead, onWrite, previousCharacteristic, logger)
+) : GattClientCharacteristic(clientService, uuid, gattProperty, onRead, onWrite, logger)
 {
     protected override Task<GattClientDescriptor> AddDescriptorAsyncCore(
         BleUuid uuid,
         IGattClientAttribute.OnReadCallback? onRead,
         IGattClientAttribute.OnWriteCallback? onWrite,
-        GattClientDescriptor? previousDescriptor,
         CancellationToken cancellationToken
     )
     {
@@ -87,7 +82,6 @@ internal sealed class HciHostBlePeripheral(HciHostBleDevice device, ILogger<HciH
     protected override Task<GattClientService> AddServiceAsyncCore(
         BleUuid uuid,
         bool isPrimary,
-        GattClientService? previousService,
         CancellationToken cancellationToken
     )
     {
