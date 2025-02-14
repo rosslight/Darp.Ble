@@ -36,7 +36,7 @@ internal sealed class WinBlePeripheral(WinBleDevice device, ILogger<WinBlePeriph
         {
             return clientPeer;
         }
-        clientPeer = new WinGattClientPeer(this, gattSession, address);
+        clientPeer = new WinGattClientPeer(this, gattSession, address, LoggerFactory.CreateLogger<WinGattClientPeer>());
         OnConnectedCentral(clientPeer);
         return clientPeer;
     }

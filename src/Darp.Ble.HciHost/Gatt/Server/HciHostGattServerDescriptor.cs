@@ -1,5 +1,6 @@
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Server;
+using Darp.Ble.Hci;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Att;
 using Microsoft.Extensions.Logging;
@@ -19,33 +20,20 @@ internal sealed class HciHostGattServerDescriptor(
     public void WriteWithoutResponse(byte[] bytes)
     {
         ArgumentOutOfRangeException.ThrowIfGreaterThan(bytes.Length, _peer.AttMtu, nameof(bytes));
-        _peer.SendAttMtuCommand(new AttWriteCmd { Handle = AttHandle, Value = bytes });
+        _peer.EnqueueGattPacket(new AttWriteCmd { Handle = AttHandle, Value = bytes });
     }
 
     public override async Task<bool> WriteAsync(byte[] bytes, CancellationToken cancellationToken = default)
     {
-        AttReadResult response = await _peer
+        AttResponse<AttWriteRsp> response = await _peer
             .QueryAttPduAsync<AttWriteReq, AttWriteRsp>(
                 new AttWriteReq { Handle = AttHandle, Value = bytes },
                 cancellationToken: cancellationToken
             )
             .ConfigureAwait(false);
-        if (
-            response.OpCode is AttOpCode.ATT_ERROR_RSP
-            && AttErrorRsp.TryReadLittleEndian(response.Pdu, out AttErrorRsp errorRsp, out _)
-        )
+        if (response.IsError)
         {
-            Logger.LogWarning("Could not write with response: {ErrorCode}", errorRsp.ErrorCode);
-            return false;
-        }
-        if (
-            !(
-                response.OpCode is AttOpCode.ATT_WRITE_RSP
-                && AttWriteRsp.TryReadLittleEndian(response.Pdu, out AttWriteRsp _)
-            )
-        )
-        {
-            Logger.LogWarning("Received unexpected att response {OpCode}", response.OpCode);
+            Logger.LogWarning("Could not write with response: {ErrorCode}", response.Error.ErrorCode);
             return false;
         }
         return true;

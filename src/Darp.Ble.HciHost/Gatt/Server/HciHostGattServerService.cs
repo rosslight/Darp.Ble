@@ -3,8 +3,7 @@ using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Server;
-using Darp.Ble.Gatt.Services;
-using Darp.Ble.Hci.Package;
+using Darp.Ble.Hci;
 using Darp.Ble.Hci.Payload.Att;
 using Microsoft.Extensions.Logging;
 
@@ -33,7 +32,10 @@ internal sealed class HciHostGattServerService(
                 List<HciHostGattServerCharacteristic> discoveredCharacteristics = [];
                 while (!token.IsCancellationRequested && startingHandle < 0xFFFF)
                 {
-                    AttReadResult response = await Peer.QueryAttPduAsync<AttReadByTypeReq<ushort>, AttReadByTypeRsp>(
+                    AttResponse<AttReadByTypeRsp> response = await Peer.QueryAttPduAsync<
+                        AttReadByTypeReq<ushort>,
+                        AttReadByTypeRsp
+                    >(
                             new AttReadByTypeReq<ushort>
                             {
                                 StartingHandle = startingHandle,
@@ -43,24 +45,15 @@ internal sealed class HciHostGattServerService(
                             cancellationToken: token
                         )
                         .ConfigureAwait(false);
-                    if (
-                        response.OpCode is AttOpCode.ATT_ERROR_RSP
-                        && AttErrorRsp.TryReadLittleEndian(response.Pdu, out AttErrorRsp errorRsp, out _)
-                    )
+                    if (response.IsError)
                     {
-                        if (errorRsp.ErrorCode is AttErrorCode.AttributeNotFoundError)
+                        if (response.Error.ErrorCode is AttErrorCode.AttributeNotFoundError)
                             break;
-                        throw new Exception($"Could not discover characteristics due to error {errorRsp.ErrorCode}");
+                        throw new Exception(
+                            $"Could not discover characteristics due to error {response.Error.ErrorCode}"
+                        );
                     }
-                    if (
-                        !(
-                            response.OpCode is AttOpCode.ATT_READ_BY_TYPE_RSP
-                            && AttReadByTypeRsp.TryReadLittleEndian(response.Pdu, out AttReadByTypeRsp rsp, out _)
-                        )
-                    )
-                    {
-                        throw new Exception($"Received unexpected att response {response.OpCode}");
-                    }
+                    AttReadByTypeRsp rsp = response.Value;
                     if (rsp.AttributeDataList.Length == 0)
                         break;
                     foreach ((ushort handle, ReadOnlyMemory<byte> memory) in rsp.AttributeDataList)

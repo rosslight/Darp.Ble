@@ -7,6 +7,7 @@ using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Event;
+using Darp.Ble.Hci.Reactive;
 using Darp.Ble.HciHost.Gatt.Server;
 using Darp.Ble.Implementation;
 using Microsoft.Extensions.Logging;
@@ -49,6 +50,7 @@ internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger<HciHost
             };
             return _host
                 .QueryCommandStatus(packet)
+                .AsObservable()
                 .SelectMany(status =>
                 {
                     if (status.Data.Status is not (HciCommandStatus.PageTimeout or HciCommandStatus.Success))
@@ -58,9 +60,8 @@ internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger<HciHost
                             $"Started connection but is not pending but {status}"
                         );
                     }
-                    return _host.WhenHciLeMetaEventPackageReceived;
+                    return _host.WhenHciLeMetaEventReceived.AsObservable();
                 })
-                .Timeout(timeout)
                 .SelectWhereLeMetaEvent<HciLeEnhancedConnectionCompleteV1Event>()
                 .Select(x => new HciHostGattServerPeer(
                     this,
@@ -69,6 +70,7 @@ internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger<HciHost
                     address,
                     LoggerFactory.CreateLogger<HciHostGattServerPeer>()
                 ))
+                .Timeout(timeout)
                 .Subscribe(observer.OnNext, observer.OnError, observer.OnCompleted);
         });
     }

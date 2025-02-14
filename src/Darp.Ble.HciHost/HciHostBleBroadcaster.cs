@@ -8,6 +8,7 @@ using Darp.Ble.Gatt.Server;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Result;
+using Darp.Ble.HciHost.Gatt.Server;
 using Darp.Ble.Implementation;
 using Darp.Ble.Utils;
 using Microsoft.Extensions.Logging;
@@ -29,16 +30,15 @@ internal sealed class HciHostGattClientService(
         CancellationToken cancellationToken
     )
     {
-        return Task.FromResult<GattClientCharacteristic>(
-            new HciHostGattClientCharacteristic(
-                this,
-                uuid,
-                gattProperty,
-                onRead,
-                onWrite,
-                LoggerFactory.CreateLogger<HciHostGattClientCharacteristic>()
-            )
+        var characteristic = new HciHostGattClientCharacteristic(
+            this,
+            uuid,
+            gattProperty,
+            onRead,
+            onWrite,
+            LoggerFactory.CreateLogger<HciHostGattClientCharacteristic>()
         );
+        return Task.FromResult<GattClientCharacteristic>(characteristic);
     }
 }
 
@@ -58,7 +58,8 @@ internal sealed class HciHostGattClientCharacteristic(
         CancellationToken cancellationToken
     )
     {
-        throw new NotImplementedException();
+        var descriptor = new HciHostGattClientDescriptor(this, uuid, onRead, onWrite);
+        return Task.FromResult<GattClientDescriptor>(descriptor);
     }
 
     protected override void NotifyCore(IGattClientPeer clientPeer, byte[] value)
@@ -76,18 +77,12 @@ internal sealed class HciHostGattClientCharacteristic(
     }
 }
 
-internal sealed class HciHostBlePeripheral(HciHostBleDevice device, ILogger<HciHostBlePeripheral> logger)
-    : BlePeripheral(device, logger)
-{
-    protected override Task<GattClientService> AddServiceAsyncCore(
-        BleUuid uuid,
-        bool isPrimary,
-        CancellationToken cancellationToken
-    )
-    {
-        throw new NotImplementedException();
-    }
-}
+internal sealed class HciHostGattClientDescriptor(
+    HciHostGattClientCharacteristic clientCharacteristic,
+    BleUuid uuid,
+    IGattClientAttribute.OnReadCallback? onRead,
+    IGattClientAttribute.OnWriteCallback? onWrite
+) : GattClientDescriptor(clientCharacteristic, uuid, onRead, onWrite);
 
 /// <summary> The hci implementation of a <see cref="IBleBroadcaster"/> </summary>
 /// <param name="device"> The device </param>
@@ -357,9 +352,11 @@ internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster) : Adv
 
     protected override async ValueTask DisposeAsyncCore()
     {
+        await base.DisposeAsyncCore().ConfigureAwait(false);
         await _host
             .QueryCommandCompletionAsync<HciLeRemoveAdvertisingSetCommand, HciLeRemoveAdvertisingSetResult>(
-                new HciLeRemoveAdvertisingSetCommand { AdvertisingHandle = AdvertisingHandle }
+                new HciLeRemoveAdvertisingSetCommand { AdvertisingHandle = AdvertisingHandle },
+                cancellationToken: CancellationToken.None
             )
             .ConfigureAwait(false);
     }

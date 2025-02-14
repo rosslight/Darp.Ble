@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Darp.Ble.Data;
+using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Server;
@@ -15,6 +16,33 @@ namespace Darp.Ble.Mock.Tests;
 public sealed class ServiceTests(ILoggerFactory loggerFactory)
 {
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
+
+    [Fact]
+    public async Task GapService_ShouldWork()
+    {
+        const string expectedDeviceName = "Some device name";
+
+        BleManager manager = new BleManagerBuilder()
+            .AddMock(factory =>
+                factory.AddPeripheral(
+                    async device => await device.Broadcaster.StartAdvertisingAsync(),
+                    expectedDeviceName
+                )
+            )
+            .SetLogger(_loggerFactory)
+            .CreateManager();
+        IBleDevice device = manager.EnumerateDevices().First();
+        await device.InitializeAsync();
+
+        IGapAdvertisement advertisement = await device.Observer.RefCount().FirstAsync();
+        await using IGattServerPeer peer = await advertisement.ConnectToPeripheral().FirstAsync();
+
+        GattServerGapService service = await peer.DiscoverGapServiceAsync();
+        string deviceName = await service.DeviceName.ReadAsync();
+        deviceName.Should().Be(expectedDeviceName);
+        AppearanceValues appearance = await service.Appearance.ReadAsync();
+        appearance.Should().Be(AppearanceValues.Unknown);
+    }
 
     [Fact]
     public async Task DeviceInformationService_ShouldWork()

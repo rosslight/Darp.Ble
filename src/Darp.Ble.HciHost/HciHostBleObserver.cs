@@ -9,6 +9,7 @@ using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.Hci.Payload.Result;
+using Darp.Ble.Hci.Reactive;
 using Darp.Ble.Implementation;
 using Microsoft.Extensions.Logging;
 using UInt48 = Darp.Ble.Data.UInt48;
@@ -86,9 +87,10 @@ internal sealed class HciHostBleObserver(HciHostBleDevice device, ILogger<HciHos
                 }
 
                 return _device
-                    .Host.WhenHciEventPackageReceived.SelectWhereEvent<HciLeExtendedAdvertisingReportEvent>()
+                    .Host.WhenHciEventReceived.SelectWhereEvent<HciLeExtendedAdvertisingReportEvent>()
                     .SelectMany(x => x.Data.Reports)
                     .Select(x => OnAdvertisementReport(this, x))
+                    .AsObservable()
                     .Subscribe(observer);
             }
         );

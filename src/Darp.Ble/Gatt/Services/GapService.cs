@@ -10,7 +10,7 @@ namespace Darp.Ble.Gatt.Services;
 
 /// <summary> The service contract for a GAP service </summary>
 /// <seealso hcref="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/generic-access-profile.html#UUID-37d5043e-0d5b-e174-a1fa-91006b88a3db"/>
-public static class GapContract
+public static class GapServiceContract
 {
     /// <summary> The uuid of the service </summary>
     public static ServiceDeclaration GapService => new(0x1800);

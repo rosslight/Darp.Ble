@@ -3,6 +3,7 @@ using System.Reactive.Linq;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Event;
+using Darp.Ble.Hci.Reactive;
 
 namespace Darp.Ble.Hci;
 
@@ -23,7 +24,9 @@ public static class ReactiveExtensions
     /// <summary> The selector </summary>
     /// <typeparam name="T"> The type of the source </typeparam>
     /// <typeparam name="TResult"> The type of the result </typeparam>
-    public delegate bool TrySelector<in T, TResult>(T value, [NotNullWhen(true)] out TResult? result);
+    public delegate bool TrySelector<in T, TResult>(T value, [NotNullWhen(true)] out TResult? result)
+        where T : allows ref struct
+        where TResult : allows ref struct;
 
     /// <summary> Select everything, where the <paramref name="trySelector"/> returned true </summary>
     /// <param name="source"> The source to operate on </param>
@@ -59,11 +62,47 @@ public static class ReactiveExtensions
         });
     }
 
+    /// <summary> Select everything, where the <paramref name="trySelector"/> returned true </summary>
+    /// <param name="source"> The source to operate on </param>
+    /// <param name="trySelector"> The selector if return is true </param>
+    /// <typeparam name="T"> The type of the source </typeparam>
+    /// <typeparam name="TResult"> The type of the result </typeparam>
+    /// <returns> The resulting observable </returns>
+    public static IRefObservable<TResult> SelectWhere<T, TResult>(
+        this IRefObservable<T> source,
+        TrySelector<T, TResult> trySelector
+    )
+        where T : allows ref struct
+        where TResult : allows ref struct
+    {
+        return RefObservable.Create<TResult>(observer =>
+        {
+            return source.Subscribe(
+                next =>
+                {
+                    try
+                    {
+                        if (trySelector(next, out TResult? result))
+                            observer.OnNext(result);
+                    }
+                    catch (Exception e)
+                    {
+                        observer.OnError(e);
+                    }
+                },
+                observer.OnError,
+                observer.OnCompleted
+            );
+        });
+    }
+
     /// <summary> Select all event packets which where the event data matches <typeparamref name="TEvent"/> </summary>
     /// <param name="source"> The source to operate on </param>
     /// <typeparam name="TEvent"> The type of the event data </typeparam>
     /// <returns> An observable with the event data </returns>
-    public static IObservable<HciEventPacket<TEvent>> SelectWhereEvent<TEvent>(this IObservable<HciEventPacket> source)
+    public static IRefObservable<HciEventPacket<TEvent>> SelectWhereEvent<TEvent>(
+        this IRefObservable<HciEventPacket> source
+    )
         where TEvent : IHciEvent<TEvent> =>
         source.SelectWhere<HciEventPacket, HciEventPacket<TEvent>>(HciEventPacket.TryWithData);
 

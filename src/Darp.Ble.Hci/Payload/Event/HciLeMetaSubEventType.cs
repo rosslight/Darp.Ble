@@ -16,6 +16,9 @@ public enum HciLeMetaSubEventType : byte
     /// <summary> <see cref="HciLeEnhancedConnectionCompleteV1Event"/> </summary>
     HCI_LE_Enhanced_Connection_Complete_V1 = 0x0A,
 
+    /// <summary> The <see cref="HciLePhyUpdateCompleteEvent"/> </summary>
+    HCI_LE_PHY_Update_Complete = 0x0C,
+
     /// <summary> <see cref="HciLeExtendedAdvertisingReportEvent"/> </summary>
     HCI_LE_Extended_Advertising_Report = 0x0D,
 

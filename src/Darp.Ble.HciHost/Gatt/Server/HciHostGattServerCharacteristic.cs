@@ -1,11 +1,10 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Hci;
-using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Att;
+using Darp.Ble.Hci.Reactive;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost.Gatt.Server;
@@ -33,45 +32,25 @@ internal sealed class HciHostGattServerCharacteristic(
                 ushort startingHandle = AttHandle;
                 while (!token.IsCancellationRequested && startingHandle < 0xFFFF)
                 {
-                    AttReadResult response = await _peer
+                    AttResponse<AttFindInformationRsp> response = await _peer
                         .QueryAttPduAsync<AttFindInformationReq, AttFindInformationRsp>(
                             new AttFindInformationReq { StartingHandle = startingHandle, EndingHandle = EndHandle },
                             cancellationToken: token
                         )
                         .ConfigureAwait(false);
-                    if (
-                        response.OpCode is AttOpCode.ATT_ERROR_RSP
-                        && AttErrorRsp.TryReadLittleEndian(response.Pdu, out AttErrorRsp errorRsp, out _)
-                    )
+                    if (response.IsError)
                     {
-                        if (errorRsp.ErrorCode is AttErrorCode.AttributeNotFoundError)
+                        if (response.Error.ErrorCode is AttErrorCode.AttributeNotFoundError)
                             break;
                         observer.OnError(
                             new GattCharacteristicException(
                                 this,
-                                $"Could not discover descriptors due to error {errorRsp.ErrorCode}"
+                                $"Could not discover descriptors due to error {response.Error.ErrorCode}"
                             )
                         );
                         return;
                     }
-
-                    if (
-                        !(
-                            response.OpCode is AttOpCode.ATT_FIND_INFORMATION_RSP
-                            && AttFindInformationRsp.TryReadLittleEndian(
-                                response.Pdu,
-                                out AttFindInformationRsp rsp,
-                                out _
-                            )
-                        )
-                    )
-                    {
-                        observer.OnError(
-                            new GattCharacteristicException(this, $"Received unexpected att response {response.OpCode}")
-                        );
-                        return;
-                    }
-
+                    var rsp = response.Value;
                     if (rsp.InformationData.Length == 0)
                         break;
                     foreach ((ushort handle, ReadOnlyMemory<byte> uuid) in rsp.InformationData)
@@ -143,25 +122,13 @@ internal sealed class HciHostGattServerCharacteristic(
         {
             throw new GattCharacteristicException(this, "Characteristic does not support notification");
         }
-        if (!await cccd.WriteAsync((byte[])[0x01, 0x00], cancellationToken).ConfigureAwait(false))
+        if (!await cccd.WriteAsync([0x01, 0x00], cancellationToken).ConfigureAwait(false))
         {
             throw new GattCharacteristicException(this, "Could not write notification status to cccd");
         }
         return _peer
-            .WhenAttPduReceived.Where(x => x.OpCode is AttOpCode.ATT_HANDLE_VALUE_NTF)
-            .SelectWhere(
-                ((AttOpCode OpCode, byte[] Pdu) t, [NotNullWhen(true)] out byte[]? result) =>
-                {
-                    if (!AttHandleValueNtf.TryReadLittleEndian(t.Pdu, out AttHandleValueNtf notification, out int _))
-                    {
-                        result = null;
-                        return false;
-                    }
-                    result = notification.Value.ToArray();
-                    return true;
-                }
-            )
-            .Subscribe(bytes => onNotify(state, bytes));
+            .WhenL2CapPduReceived.SelectWhereAttPdu<AttHandleValueNtf>()
+            .Subscribe(ntf => onNotify(state, ntf.Value.ToArray()));
     }
 
     protected override async Task DisableNotificationsAsync()
@@ -170,6 +137,6 @@ internal sealed class HciHostGattServerCharacteristic(
         {
             return;
         }
-        await cccd.WriteAsync((byte[])[0x00, 0x00], CancellationToken.None).ConfigureAwait(false);
+        await cccd.WriteAsync([0x00, 0x00], CancellationToken.None).ConfigureAwait(false);
     }
 }

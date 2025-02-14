@@ -1,12 +1,21 @@
 using System.Collections.Concurrent;
 using System.IO.Ports;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
+using System.Reactive.Disposables;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
+using Darp.Ble.Hci.Reactive;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci.Transport;
+
+/// <summary> The received HCI packet </summary>
+/// <param name="packetType"> The type of the HCI packet </param>
+/// <param name="pdu"> The pdu </param>
+public readonly ref struct HciPacket(HciPacketType packetType, ReadOnlySpan<byte> pdu)
+{
+    public HciPacketType PacketType { get; } = packetType;
+    public ReadOnlySpan<byte> Pdu { get; } = pdu;
+}
 
 /// <summary> A transport layer which sends HCI packets via a <see cref="SerialPort"/> </summary>
 public sealed class H4TransportLayer : ITransportLayer
@@ -16,7 +25,7 @@ public sealed class H4TransportLayer : ITransportLayer
     private readonly ConcurrentQueue<IHciPacket> _txQueue;
     private readonly CancellationTokenSource _cancelSource;
     private readonly CancellationToken _cancelToken;
-    private readonly Subject<IHciPacket> _rxSubject;
+    private readonly List<IRefObserver<HciPacket>> _observers = [];
     private bool _isDisposing;
 
     /// <summary> Instantiate a new h4 transport layer </summary>
@@ -27,7 +36,6 @@ public sealed class H4TransportLayer : ITransportLayer
         _logger = logger;
         _serialPort = new SerialPort(portName);
         _txQueue = new ConcurrentQueue<IHciPacket>();
-        _rxSubject = new Subject<IHciPacket>();
         _cancelSource = new CancellationTokenSource();
         _cancelToken = _cancelSource.Token;
     }
@@ -94,7 +102,10 @@ public sealed class H4TransportLayer : ITransportLayer
             );
             return;
         }
-        _rxSubject.OnNext(packet);
+        foreach (IRefObserver<HciPacket> refObserver in _observers)
+        {
+            refObserver.OnNext(new HciPacket(TPacket.Type, buffer[..(TPacket.HeaderLength + payloadLength)].Span));
+        }
     }
 
     private async ValueTask RunRx()
@@ -124,7 +135,6 @@ public sealed class H4TransportLayer : ITransportLayer
                         continue;
                 }
             }
-            _rxSubject.OnCompleted();
         }
 #pragma warning disable CA1031
         catch (Exception e)
@@ -132,13 +142,19 @@ public sealed class H4TransportLayer : ITransportLayer
             if (_isDisposing)
             {
                 _logger?.LogTransportDisconnected("Rx");
-                _rxSubject.OnCompleted();
                 return;
             }
+
             _logger?.LogTransportWithError(e, "Rx", e.Message);
-            _rxSubject.OnError(e);
+            foreach (IRefObserver<HciPacket> refObserver in _observers)
+                refObserver.OnError(e);
         }
 #pragma warning restore CA1031
+        finally
+        {
+            foreach (IRefObserver<HciPacket> refObserver in _observers)
+                refObserver.OnCompleted();
+        }
     }
 
     /// <inheritdoc />
@@ -167,9 +183,10 @@ public sealed class H4TransportLayer : ITransportLayer
     }
 
     /// <inheritdoc />
-    public IObservable<IHciPacket> WhenReceived()
+    public IDisposable Subscribe(IRefObserver<HciPacket> observer)
     {
         _cancelToken.ThrowIfCancellationRequested();
-        return _rxSubject.AsObservable();
+        _observers.Add(observer);
+        return Disposable.Create((_observers, observer), state => state._observers.Remove(state.observer));
     }
 }

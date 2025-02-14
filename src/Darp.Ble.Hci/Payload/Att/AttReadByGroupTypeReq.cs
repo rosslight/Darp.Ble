@@ -7,7 +7,9 @@ namespace Darp.Ble.Hci.Payload.Att;
 /// <summary> The ATT_READ_BY_TYPE_REQ PDU is used to obtain the values of attributes where the attribute type is known but the handle is not known </summary>
 /// <typeparam name="TAttributeType">The type of the attribute</typeparam>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/attribute-protocol--att-.html#UUID-2c2cdcd4-6173-9654-82fc-c4c7bd74fe3a"/>
-public readonly partial record struct AttReadByGroupTypeReq<TAttributeType> : IAttPdu, IBinaryWritable
+public readonly partial record struct AttReadByGroupTypeReq<TAttributeType>
+    : IAttPdu,
+        IBinaryObject<AttReadByGroupTypeReq<TAttributeType>>
     where TAttributeType : unmanaged
 {
     /// <inheritdoc />
@@ -50,14 +52,55 @@ public readonly partial record struct AttReadByGroupTypeReq<TAttributeType> : IA
     }
 
     /// <inheritdoc />
-    public bool TryWriteBigEndian(Span<byte> destination)
+    public bool TryWriteBigEndian(Span<byte> destination) => TryWriteBigEndian(destination, out _);
+
+    /// <inheritdoc />
+    public bool TryWriteBigEndian(Span<byte> destination, out int bytesWritten) => throw new NotSupportedException();
+
+    /// <inheritdoc />
+    public static bool TryReadLittleEndian(
+        ReadOnlySpan<byte> source,
+        out AttReadByGroupTypeReq<TAttributeType> value
+    ) => TryReadLittleEndian(source, out value, out _);
+
+    /// <inheritdoc />
+    public static bool TryReadLittleEndian(
+        ReadOnlySpan<byte> source,
+        out AttReadByGroupTypeReq<TAttributeType> value,
+        out int bytesRead
+    )
     {
-        throw new NotSupportedException();
+        bytesRead = 0;
+        value = default;
+        int attributeTypeLength = Marshal.SizeOf<TAttributeType>();
+        if (source.Length < 5 + attributeTypeLength)
+            return false;
+        var opCode = (AttOpCode)source[0];
+        if (opCode != ExpectedOpCode)
+            return false;
+        ushort startingHandle = BinaryPrimitives.ReadUInt16LittleEndian(source[1..]);
+        ushort endingHandle = BinaryPrimitives.ReadUInt16LittleEndian(source[3..]);
+        bytesRead += 5;
+        ReadOnlySpan<TAttributeType> attributeTypeSpan = MemoryMarshal.Cast<byte, TAttributeType>(source[5..]);
+        TAttributeType attributeType = attributeTypeSpan[0];
+        bytesRead += attributeTypeLength;
+        value = new AttReadByGroupTypeReq<TAttributeType>
+        {
+            StartingHandle = startingHandle,
+            EndingHandle = endingHandle,
+            AttributeType = attributeType,
+        };
+        return true;
     }
 
     /// <inheritdoc />
-    public bool TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
-    {
-        throw new NotSupportedException();
-    }
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out AttReadByGroupTypeReq<TAttributeType> value) =>
+        TryReadBigEndian(source, out value, out _);
+
+    /// <inheritdoc />
+    public static bool TryReadBigEndian(
+        ReadOnlySpan<byte> source,
+        out AttReadByGroupTypeReq<TAttributeType> value,
+        out int bytesRead
+    ) => throw new NotSupportedException();
 }
