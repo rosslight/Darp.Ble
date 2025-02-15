@@ -35,8 +35,14 @@ public abstract class GattClientService(
     public virtual ushort Handle => Peripheral.GattDatabase[this];
 
     /// <inheritdoc />
+    public BleUuid AttributeType =>
+        Type is GattServiceType.Secondary
+            ? GattDatabaseCollection.SecondaryServiceType
+            : GattDatabaseCollection.PrimaryServiceType;
+
+    /// <inheritdoc />
     /// <remarks> Either is 0x1800 for primary services or 0x1801 for secondary services </remarks>
-    public byte[] AttributeValue { get; } = [type is GattServiceType.Secondary ? (byte)0x01 : (byte)0x00, 0x18];
+    public byte[] AttributeValue { get; } = uuid.ToByteArray();
 
     /// <inheritdoc />
     public IReadOnlyCollection<IGattClientCharacteristic> Characteristics => _characteristics.AsReadOnly();

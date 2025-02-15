@@ -24,7 +24,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer, IBleConnection
     public Hci.HciHost Host { get; }
     private readonly List<IDisposable> _disposables = [];
 
-    internal new ILogger Logger => base.Logger;
+    ILogger IBleConnection.Logger => base.Logger;
     public ushort ConnectionHandle { get; }
     public ushort AttMtu { get; private set; } = DefaultAttMtu;
     public AclPacketQueue AclPacketQueue => Host.AclPacketQueue;
@@ -78,7 +78,7 @@ internal sealed class HciHostGattServerPeer : GattServerPeer, IBleConnection
                             {
                                 StartingHandle = startingHandle,
                                 EndingHandle = 0xFFFF,
-                                AttributeType = 0x2800, // TODO discover both primary and secondary services
+                                AttributeGroupType = 0x2800, // TODO discover both primary and secondary services
                             },
                             cancellationToken: token
                         )

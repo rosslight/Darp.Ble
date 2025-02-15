@@ -31,6 +31,7 @@
     <Using Include="Xunit" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Darp.Ble.HciHost\Darp.Ble.HciHost.csproj" />
     <ProjectReference Include="..\..\src\Darp.Ble.Mock\Darp.Ble.Mock.csproj" />
     <ProjectReference Include="..\..\src\Darp.Ble\Darp.Ble.csproj" />
   </ItemGroup>

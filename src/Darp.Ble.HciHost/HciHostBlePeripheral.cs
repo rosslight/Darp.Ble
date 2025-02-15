@@ -1,7 +1,7 @@
+using System.Buffers.Binary;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using Darp.BinaryObjects;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Client;
@@ -19,12 +19,14 @@ internal sealed class HciHostGattClientPeer : GattClientPeer, IBleConnection
 {
     public ushort ConnectionHandle { get; }
     private const ushort MaxMtu = 517;
-    public Hci.HciHost Host { get; }
+    public new HciHostBlePeripheral Peripheral { get; }
+    public Hci.HciHost Host => Peripheral.Device.Host;
     public ushort AttMtu { get; private set; } = 23;
     public AclPacketQueue AclPacketQueue => Host.AclPacketQueue;
     private readonly BehaviorSubject<bool> _disconnectedBehavior = new(value: false);
 
     public IRefObservable<L2CapPdu> WhenL2CapPduReceived { get; }
+    ILogger IBleConnection.Logger => base.Logger;
 
     public HciHostGattClientPeer(
         HciHostBlePeripheral peripheral,
@@ -35,7 +37,7 @@ internal sealed class HciHostGattClientPeer : GattClientPeer, IBleConnection
         : base(peripheral, address, logger)
     {
         ConnectionHandle = connectionHandle;
-        Host = peripheral.Device.Host;
+        Peripheral = peripheral;
         Host.WhenHciLeMetaEventReceived.SelectWhereEvent<HciDisconnectionCompleteEvent>()
             .Select(_ => true)
             .AsObservable()
@@ -62,18 +64,8 @@ internal sealed class HciHostGattClientPeer : GattClientPeer, IBleConnection
             {
                 int i = 0;
             });
-        WhenL2CapPduReceived
-            .SelectWhereAttPdu<AttReadByGroupTypeReq<ushort>>()
-            .Subscribe(x =>
-            {
-                int i = 0;
-            });
-        WhenL2CapPduReceived
-            .SelectWhereAttPdu<AttReadByTypeReq<ushort>>()
-            .Subscribe(x =>
-            {
-                int i = 0;
-            });
+        WhenL2CapPduReceived.SelectWhereAttPdu<AttReadByGroupTypeReq<ushort>>().Subscribe(HandleGroupTypeRequest);
+        WhenL2CapPduReceived.SelectWhereAttPdu<AttReadByTypeReq<ushort>>().Subscribe(HandleTypeRequest);
         Host.WhenHciLeMetaEventReceived.AsObservable()
             .SelectWhereLeMetaEvent<HciLePhyUpdateCompleteEvent>()
             .Subscribe(packet =>
@@ -90,8 +82,109 @@ internal sealed class HciHostGattClientPeer : GattClientPeer, IBleConnection
             .SelectWhereLeMetaEvent<HciLeDataLengthChangeEvent>()
             .Subscribe(packet =>
             {
-                int i = 0;
+                Logger.LogDebug("Received le datachange event: {@PacketData}", packet.Data);
             });
+    }
+
+    private void HandleTypeRequest(AttReadByTypeReq<ushort> request)
+    {
+        BleUuid attributeType = BleUuid.FromUInt16(request.AttributeType);
+        int availablePduSpace = AttMtu - 2;
+        int maxAttributeSize = Math.Min(AttMtu - 4, 253);
+
+        List<AttReadByTypeData> attributes = [];
+        byte? attributeLength = null;
+        foreach (
+            GattDatabaseEntry attribute in Peripheral.GattDatabase.Where(x =>
+                x.AttributeType.Equals(attributeType)
+                && x.Handle >= request.StartingHandle
+                && x.Handle <= request.EndingHandle
+            )
+        )
+        {
+            ReadOnlyMemory<byte> value = attribute.AttributeValue;
+            if (value.Length > maxAttributeSize)
+            {
+                value = value[..maxAttributeSize];
+            }
+            attributeLength ??= (byte)value.Length;
+            // Only return attributes of same size
+            if (value.Length != attributeLength)
+                break;
+            var entryLength = (byte)(2 + attributeLength);
+            // Check if there is enough space to hold this attribute
+            if (availablePduSpace < entryLength)
+                break;
+            attributes.Add(new AttReadByTypeData { Handle = attribute.Handle, Value = value });
+        }
+        if (attributes.Count == 0)
+        {
+            var response = new AttErrorRsp
+            {
+                RequestOpCode = request.OpCode,
+                Handle = request.StartingHandle,
+                ErrorCode = AttErrorCode.AttributeNotFoundError,
+            };
+            this.EnqueueGattPacket(response);
+            return;
+        }
+        var rsp = new AttReadByTypeRsp
+        {
+            Length = (byte)attributes[0].GetByteCount(),
+            AttributeDataList = attributes.ToArray(),
+        };
+        this.EnqueueGattPacket(rsp);
+    }
+
+    private void HandleGroupTypeRequest(AttReadByGroupTypeReq<ushort> attribute)
+    {
+        if (attribute.AttributeGroupType is not (0x2800 or 0x2801))
+        {
+            var response = new AttErrorRsp
+            {
+                RequestOpCode = attribute.OpCode,
+                Handle = attribute.StartingHandle,
+                ErrorCode = AttErrorCode.UnsupportedGroupTypeError,
+            };
+            this.EnqueueGattPacket(response);
+        }
+
+        BleUuid attributeType = BleUuid.FromUInt16(attribute.AttributeGroupType);
+
+        int availablePduSpace = AttMtu - 2;
+        var maxNumberOfAttributes = availablePduSpace / 6;
+        AttGroupTypeData<ushort>[] serviceAttributes = Peripheral
+            .GattDatabase.GetServiceEntries(attribute.StartingHandle)
+            .Where(x =>
+                x.AttributeType.Equals(attributeType)
+                && x.Handle >= attribute.StartingHandle
+                && x.Handle <= attribute.EndingHandle
+            )
+            .Select(x => new AttGroupTypeData<ushort>
+            {
+                Value = BinaryPrimitives.ReadUInt16LittleEndian(x.AttributeValue),
+                Handle = x.Handle,
+                EndGroup = x.EndGroupHandle,
+            })
+            .Take(maxNumberOfAttributes)
+            .ToArray();
+        if (serviceAttributes.Length == 0)
+        {
+            var response = new AttErrorRsp
+            {
+                RequestOpCode = attribute.OpCode,
+                Handle = attribute.StartingHandle,
+                ErrorCode = AttErrorCode.AttributeNotFoundError,
+            };
+            this.EnqueueGattPacket(response);
+            return;
+        }
+        var rsp = new AttReadByGroupTypeRsp<ushort>
+        {
+            Length = (byte)serviceAttributes[0].GetByteCount(),
+            AttributeDataList = serviceAttributes,
+        };
+        this.EnqueueGattPacket(rsp);
     }
 
     public override bool IsConnected => !_disconnectedBehavior.Value;

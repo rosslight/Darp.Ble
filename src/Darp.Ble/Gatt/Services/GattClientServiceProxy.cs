@@ -24,6 +24,8 @@ public abstract class GattClientServiceProxy(IGattClientService service) : IGatt
     /// <inheritdoc />
     public ushort Handle => _service.Handle;
 
+    BleUuid IGattAttribute.AttributeType => _service.AttributeType;
+
     /// <inheritdoc />
     byte[] IGattAttribute.AttributeValue => _service.AttributeValue;
 

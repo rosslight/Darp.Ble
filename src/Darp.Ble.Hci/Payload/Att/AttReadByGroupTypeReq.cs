@@ -28,7 +28,7 @@ public readonly partial record struct AttReadByGroupTypeReq<TAttributeType>
     public required ushort EndingHandle { get; init; }
 
     /// <summary> 2 or 16 octet UUID </summary>
-    public required TAttributeType AttributeType { get; init; }
+    public required TAttributeType AttributeGroupType { get; init; }
 
     /// <inheritdoc />
     public bool TryWriteLittleEndian(Span<byte> destination)
@@ -46,7 +46,7 @@ public readonly partial record struct AttReadByGroupTypeReq<TAttributeType>
         BinaryPrimitives.WriteUInt16LittleEndian(destination[1..], StartingHandle);
         BinaryPrimitives.WriteUInt16LittleEndian(destination[3..], EndingHandle);
         Span<TAttributeType> attributeTypeSpan = stackalloc TAttributeType[1];
-        attributeTypeSpan[0] = AttributeType;
+        attributeTypeSpan[0] = AttributeGroupType;
         bytesWritten = GetByteCount();
         return MemoryMarshal.Cast<TAttributeType, byte>(attributeTypeSpan).TryCopyTo(destination[5..]);
     }
@@ -88,7 +88,7 @@ public readonly partial record struct AttReadByGroupTypeReq<TAttributeType>
         {
             StartingHandle = startingHandle,
             EndingHandle = endingHandle,
-            AttributeType = attributeType,
+            AttributeGroupType = attributeType,
         };
         return true;
     }

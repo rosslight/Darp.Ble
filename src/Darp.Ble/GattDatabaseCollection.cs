@@ -1,4 +1,5 @@
 using System.Collections;
+using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
 
 namespace Darp.Ble;
@@ -14,15 +15,53 @@ namespace Darp.Ble;
             Characteristic Value (readable)
             Descriptor 0x2902 (CCCD)
  */
-/// <summary> The gatt database </summary>
-public sealed class GattDatabaseCollection : IReadOnlyDictionary<IGattAttribute, ushort>
+
+public readonly struct GattDatabaseEntry(IGattAttribute attribute, ushort handle) : IGattAttribute
 {
+    private readonly IGattAttribute _attribute = attribute;
+
+    /// <inheritdoc />
+    public ushort Handle { get; } = handle;
+
+    /// <inheritdoc />
+    public BleUuid AttributeType => _attribute.AttributeType;
+
+    /// <inheritdoc />
+    public byte[] AttributeValue => _attribute.AttributeValue;
+}
+
+public readonly struct GattDatabaseGroupEntry(IGattAttribute attribute, ushort handle, ushort endGroupHandle)
+    : IGattAttribute
+{
+    private readonly IGattAttribute _attribute = attribute;
+
+    /// <inheritdoc />
+    public ushort Handle { get; } = handle;
+
+    /// <summary> The end handle of an attribute group </summary>
+    public ushort EndGroupHandle { get; } = endGroupHandle;
+
+    /// <inheritdoc />
+    public BleUuid AttributeType => _attribute.AttributeType;
+
+    /// <inheritdoc />
+    public byte[] AttributeValue => _attribute.AttributeValue;
+}
+
+/// <summary> The gatt database </summary>
+public sealed class GattDatabaseCollection : IReadOnlyCollection<GattDatabaseEntry>
+{
+    public static readonly BleUuid PrimaryServiceType = 0x2800;
+    public static readonly BleUuid SecondaryServiceType = 0x2801;
+    public static readonly BleUuid CharacteristicType = 0x2803;
+    public static readonly BleUuid UserDescriptionType = 0x2901;
+
     private readonly object _lock = new();
     private readonly List<IGattAttribute> _attributes = [];
 
     /// <summary> Add a service at the end of the database </summary>
     /// <param name="service"> The service to be added </param>
-    internal void AddService(GattClientService service)
+    internal void AddService(IGattClientService service)
     {
         lock (_lock)
         {
@@ -38,22 +77,33 @@ public sealed class GattDatabaseCollection : IReadOnlyDictionary<IGattAttribute,
         lock (_lock)
         {
             ArgumentNullException.ThrowIfNull(characteristic);
-            int serviceIndex = _attributes.IndexOf(characteristic.Service);
-            if (serviceIndex < 0)
-                throw new KeyNotFoundException();
-            var characteristicIndex = (ushort)(serviceIndex + 1);
-            for (; characteristicIndex < _attributes.Count; characteristicIndex++)
-            {
-                IGattAttribute attribute = _attributes[characteristicIndex];
-                if (attribute is IGattClientService)
-                {
-                    // Break if the next service was found
-                    break;
-                }
-            }
-            _attributes.Insert(characteristicIndex, characteristic);
-            _attributes.Insert(characteristicIndex + 1, new GatCharacteristicValue(characteristic));
+            ushort serviceHandle = GetHandle(characteristic.Service);
+            ushort serviceEndHandle = GetServiceEndHandle(serviceHandle);
+            int serviceEndIndex = serviceEndHandle - 1;
+            _attributes.Insert(serviceEndIndex + 1, characteristic);
+            _attributes.Insert(serviceEndIndex + 2, new GattCharacteristicValue(characteristic));
         }
+    }
+
+    /// <summary> Searches the database for the next service and returns the last handle before </summary>
+    /// <param name="serviceHandle"> The service handle to start at </param>
+    /// <returns> The end group handle of the service </returns>
+    private ushort GetServiceEndHandle(ushort serviceHandle)
+    {
+        var serviceEndIndex = (ushort)(serviceHandle - 1);
+        for (; serviceEndIndex < _attributes.Count - 1; serviceEndIndex++)
+        {
+            IGattAttribute attribute = _attributes[serviceEndIndex + 1];
+            if (
+                attribute.AttributeType.Equals(PrimaryServiceType)
+                || attribute.AttributeType.Equals(SecondaryServiceType)
+            )
+            {
+                // Break if the next service was found
+                break;
+            }
+        }
+        return (ushort)(serviceEndIndex + 1);
     }
 
     /// <summary> Add a descriptor at the end of the characteristic section </summary>
@@ -64,29 +114,39 @@ public sealed class GattDatabaseCollection : IReadOnlyDictionary<IGattAttribute,
         lock (_lock)
         {
             ArgumentNullException.ThrowIfNull(descriptor);
-            int characteristicIndex = _attributes.IndexOf(descriptor.Characteristic);
-            if (characteristicIndex < 0)
-                throw new KeyNotFoundException();
-            var descriptorIndex = (ushort)(characteristicIndex + 2);
-            for (; descriptorIndex < _attributes.Count; descriptorIndex++)
-            {
-                IGattAttribute attribute = _attributes[descriptorIndex];
-                if (attribute is IGattClientCharacteristic)
-                {
-                    // Break if the next characteristic was found
-                    break;
-                }
-            }
-            _attributes.Insert(descriptorIndex, descriptor);
+            ushort characteristicHandle = GetHandle(descriptor.Characteristic);
+            ushort characteristicEndHandle = GetCharacteristicEndHandle(characteristicHandle);
+            int characteristicEndIndex = characteristicEndHandle - 1;
+            _attributes.Insert(characteristicEndIndex + 1, descriptor);
         }
     }
 
+    /// <summary> Searches the database for the next characteristic and returns the last handle before </summary>
+    /// <param name="characteristicHandle"> The characteristic handle to start at </param>
+    /// <returns> The end group handle of the characteristic </returns>
+    private ushort GetCharacteristicEndHandle(ushort characteristicHandle)
+    {
+        // Start with offset of 1 to account for the characteristic value
+        var characteristicEndIndex = (ushort)(characteristicHandle - 1 + 1);
+        for (; characteristicEndIndex < _attributes.Count - 1; characteristicEndIndex++)
+        {
+            IGattAttribute attribute = _attributes[characteristicEndIndex + 1];
+            if (attribute.AttributeType.Equals(CharacteristicType))
+            {
+                // Break if the next characteristic was found
+                break;
+            }
+        }
+
+        return (ushort)(characteristicEndIndex + 1);
+    }
+
     /// <inheritdoc />
-    public IEnumerator<KeyValuePair<IGattAttribute, ushort>> GetEnumerator()
+    public IEnumerator<GattDatabaseEntry> GetEnumerator()
     {
         lock (_lock)
         {
-            return _attributes.Select((x, i) => KeyValuePair.Create(x, (ushort)i)).GetEnumerator();
+            return _attributes.Select((x, i) => new GattDatabaseEntry(x, (ushort)(i + 1))).GetEnumerator();
         }
     }
 
@@ -104,56 +164,68 @@ public sealed class GattDatabaseCollection : IReadOnlyDictionary<IGattAttribute,
         }
     }
 
-    /// <inheritdoc />
-    public bool ContainsKey(IGattAttribute key)
+    private ushort GetHandle(IGattAttribute attribute)
     {
-        lock (_lock)
-        {
-            return _attributes.Contains(key);
-        }
+        int index = _attributes.IndexOf(attribute);
+        if (index < 0)
+            throw new KeyNotFoundException("Could not find attribute");
+        return (ushort)(index + 1); // Attributes start at 0x0001
     }
 
-    /// <inheritdoc />
-    public bool TryGetValue(IGattAttribute key, out ushort value)
+    /// <summary> Tries to get the handle of a given attribute </summary>
+    /// <param name="attribute"> The attribute to look for </param>
+    /// <param name="handle"> The attribute handle </param>
+    /// <returns> True, if a handle could be found; False, otherwise </returns>
+    public bool TryGetHandle(IGattAttribute attribute, out ushort handle)
     {
         lock (_lock)
         {
-            int result = _attributes.IndexOf(key);
-            if (result is < 0 or > ushort.MaxValue)
+            int index = _attributes.IndexOf(attribute);
+            if (index is < 0 or > ushort.MaxValue)
             {
-                value = 0;
+                handle = 0;
                 return false;
             }
 
-            value = (ushort)result;
+            handle = (ushort)(index + 1); // Attributes start at 0x0001
             return true;
         }
     }
 
-    /// <inheritdoc />
-    public ushort this[IGattAttribute key] =>
-        TryGetValue(key, out ushort value) ? value : throw new KeyNotFoundException();
+    /// <summary> Get the handle of a given attribute </summary>
+    /// <param name="attribute"> The attribute to look for </param>
+    /// <returns> The attribute handle </returns>
+    /// <exception cref="KeyNotFoundException"> Thrown, if the attribute was not present in the database </exception>
+    public ushort this[IGattAttribute attribute] =>
+        TryGetHandle(attribute, out ushort handle) ? handle : throw new KeyNotFoundException();
 
-    /// <inheritdoc />
-    public IEnumerable<IGattAttribute> Keys
+    /// <summary> Get all service group entries starting from a specific handle </summary>
+    /// <param name="startHandle"> The handle to start searching from </param>
+    /// <returns> An enumerable containing all service group entries </returns>
+    public IEnumerable<GattDatabaseGroupEntry> GetServiceEntries(ushort startHandle)
     {
-        get
-        {
-            lock (_lock)
-            {
-                return _attributes.AsReadOnly();
-            }
-        }
-    }
+        var currentIndex = (ushort)(startHandle - 1);
 
-    /// <inheritdoc />
-    public IEnumerable<ushort> Values
-    {
-        get
+        lock (_lock)
         {
-            lock (_lock)
+            while (currentIndex < _attributes.Count)
             {
-                return Enumerable.Range(0, _attributes.Count).Select(x => (ushort)x);
+                IGattAttribute attribute = _attributes[currentIndex];
+                if (
+                    !(
+                        attribute.AttributeType.Equals(PrimaryServiceType)
+                        || attribute.AttributeType.Equals(SecondaryServiceType)
+                    )
+                )
+                {
+                    currentIndex++;
+                    continue;
+                }
+
+                var serviceHandle = (ushort)(currentIndex + 1);
+                ushort endGroupHandle = GetServiceEndHandle(serviceHandle);
+                yield return new GattDatabaseGroupEntry(attribute, serviceHandle, endGroupHandle);
+                currentIndex = endGroupHandle;
             }
         }
     }
@@ -161,12 +233,15 @@ public sealed class GattDatabaseCollection : IReadOnlyDictionary<IGattAttribute,
 
 /// <summary> The characteristic value </summary>
 /// <param name="characteristic"> The characteristic </param>
-public sealed class GatCharacteristicValue(IGattClientCharacteristic characteristic) : IGattAttribute
+public sealed class GattCharacteristicValue(IGattClientCharacteristic characteristic) : IGattAttribute
 {
     private readonly IGattClientCharacteristic _characteristic = characteristic;
 
     /// <inheritdoc />
     public ushort Handle => _characteristic.Service.Peripheral.GattDatabase[this];
+
+    /// <inheritdoc />
+    public BleUuid AttributeType => _characteristic.Uuid;
 
     /// <inheritdoc />
     public byte[] AttributeValue

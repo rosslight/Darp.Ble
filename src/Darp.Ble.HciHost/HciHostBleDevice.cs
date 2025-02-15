@@ -1,5 +1,6 @@
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
+using Darp.Ble.Gatt.Services;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Result;
@@ -48,6 +49,7 @@ internal sealed class HciHostBleDevice(
             LoggerFactory.CreateLogger<HciHostBleBroadcaster>()
         );
         Peripheral = new HciHostBlePeripheral(this, LoggerFactory.CreateLogger<HciHostBlePeripheral>());
+        await Peripheral.AddGapServiceAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
         return InitializeResult.Success;
     }
 

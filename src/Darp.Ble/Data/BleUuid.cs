@@ -146,7 +146,7 @@ public sealed record BleUuid
         other is not null && Type == BleUuidType.Uuid16 && Value == CreateGuid(other.Value);
 
     /// <inheritdoc />
-    public override int GetHashCode() => Type.GetHashCode() ^ Value.GetHashCode();
+    public override int GetHashCode() => HashCode.Combine(Type, Value);
 
     /// <inheritdoc />
     public override string ToString() =>
@@ -253,6 +253,16 @@ public sealed record BleUuid
             default:
                 return false;
         }
+    }
+
+    /// <summary> Write the ble uuid to a byte array </summary>
+    /// <returns> The byte array. Length depends on the <see cref="Type"/> </returns>
+    public byte[] ToByteArray()
+    {
+        var buffer = new byte[(int)Type];
+        if (!TryWriteBytes(buffer))
+            throw new Exception("Ble uuid is corrupt. Could not write bytes");
+        return buffer;
     }
 
     /// <summary> Creates a new BleUuid from a 16-bit integer </summary>

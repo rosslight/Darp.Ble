@@ -27,6 +27,9 @@ public abstract class GattClientDescriptor(
     public virtual ushort Handle => Characteristic.Service.Peripheral.GattDatabase[this];
 
     /// <inheritdoc />
+    public BleUuid AttributeType => 0x2902;
+
+    /// <inheritdoc />
     public byte[] AttributeValue
     {
         get

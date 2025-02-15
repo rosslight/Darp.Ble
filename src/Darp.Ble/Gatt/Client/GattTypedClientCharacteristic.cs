@@ -36,6 +36,9 @@ public class GattTypedClientCharacteristic<T, TProp1>(
     /// <inheritdoc />
     public ushort Handle => Characteristic.Handle;
 
+    /// <inheritdoc />
+    public BleUuid AttributeType => Characteristic.AttributeType;
+
     byte[] IGattAttribute.AttributeValue => Characteristic.AttributeValue;
 
     /// <inheritdoc />

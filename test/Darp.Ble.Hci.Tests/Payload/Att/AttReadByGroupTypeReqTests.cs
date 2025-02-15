@@ -26,7 +26,7 @@ public sealed class AttReadByGroupTypeReqTests
         {
             StartingHandle = startingHandle,
             EndingHandle = endingHandle,
-            AttributeType = attributeType,
+            AttributeGroupType = attributeType,
         };
 
         bool success = value.TryWriteLittleEndian(buffer);
@@ -51,7 +51,7 @@ public sealed class AttReadByGroupTypeReqTests
         {
             StartingHandle = startingHandle,
             EndingHandle = endingHandle,
-            AttributeType = new Guid(Convert.FromHexString(attributeTypeHexBytes)),
+            AttributeGroupType = new Guid(Convert.FromHexString(attributeTypeHexBytes)),
         };
 
         bool success = value.TryWriteLittleEndian(buffer);
@@ -70,7 +70,7 @@ public sealed class AttReadByGroupTypeReqTests
         {
             StartingHandle = 1,
             EndingHandle = 0xFFFF,
-            AttributeType = 0x2800,
+            AttributeGroupType = 0x2800,
         };
 
         bool success = value.TryWriteLittleEndian(buffer);
@@ -85,7 +85,7 @@ public sealed class AttReadByGroupTypeReqTests
         {
             StartingHandle = 1,
             EndingHandle = 0xFFFF,
-            AttributeType = new Guid(Convert.FromHexString("0000FFE000001000800000805F9B34FB")),
+            AttributeGroupType = new Guid(Convert.FromHexString("0000FFE000001000800000805F9B34FB")),
         };
 
         bool success = value.TryWriteLittleEndian(buffer);

@@ -37,6 +37,9 @@ public abstract class GattClientCharacteristic(
     public virtual ushort Handle => Service.Peripheral.GattDatabase[this];
 
     /// <inheritdoc />
+    public BleUuid AttributeType => GattDatabaseCollection.CharacteristicType;
+
+    /// <inheritdoc />
     public byte[] AttributeValue => CreateAttributeValue(Properties, (ushort)(Handle + 1), Uuid);
 
     private static byte[] CreateAttributeValue(GattProperty properties, ushort valueHandle, BleUuid uuid)
@@ -188,6 +191,9 @@ public class GattClientCharacteristic<TProp1>(IGattClientCharacteristic characte
 
     /// <inheritdoc />
     public ushort Handle => Characteristic.Handle;
+
+    /// <inheritdoc />
+    public BleUuid AttributeType => Characteristic.AttributeType;
 
     byte[] IGattAttribute.AttributeValue => Characteristic.AttributeValue;
 

@@ -67,6 +67,7 @@ public interface IBleConnection
     ushort AttMtu { get; }
     AclPacketQueue AclPacketQueue { get; }
     IRefObservable<L2CapPdu> WhenL2CapPduReceived { get; }
+    protected internal ILogger Logger { get; }
 }
 
 public static class ReactiveEx
@@ -370,6 +371,7 @@ public static class L2CapHelpers
         ArgumentNullException.ThrowIfNull(connection);
         const ushort attCId = 0x0004;
         byte[] payloadBytes = attPdu.ToArrayLittleEndian();
+        connection.Logger.LogTrace("Enqueued att response {@Packet} on channel {CId}", attPdu, attCId);
         connection.AclPacketQueue.EnqueueL2CapBasic(connection.ConnectionHandle, attCId, payloadBytes);
     }
 
