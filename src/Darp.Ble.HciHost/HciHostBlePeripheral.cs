@@ -38,18 +38,17 @@ internal sealed class HciHostGattClientPeer : GattClientPeer, IBleConnection
     {
         ConnectionHandle = connectionHandle;
         Peripheral = peripheral;
-        Host.WhenHciLeMetaEventReceived.SelectWhereEvent<HciDisconnectionCompleteEvent>()
+        Host.WhenHciEventReceived.SelectWhereEvent<HciDisconnectionCompleteEvent>()
             .Select(_ => true)
             .AsObservable()
+            .Do(_ =>
+                Logger.LogDebug("Received disconnection event for connection 0x{ConnectionHandle}", ConnectionHandle)
+            )
             .Subscribe(_disconnectedBehavior);
         WhenL2CapPduReceived = this.AssembleL2CAp(logger)
             .Where(x => x.ChannelId is 0x0004)
             .TakeUntil(WhenDisconnected)
             .Share();
-        WhenL2CapPduReceived.Subscribe(pdu =>
-        {
-            int i = 0;
-        });
         WhenL2CapPduReceived
             .SelectWhereAttPdu<AttExchangeMtuReq>()
             .Subscribe(mtuRequest =>
