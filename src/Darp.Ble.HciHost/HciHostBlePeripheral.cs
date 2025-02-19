@@ -249,18 +249,13 @@ internal sealed class HciHostBlePeripheral : BlePeripheral
         }
     }
 
-    protected override Task<GattClientService> AddServiceAsyncCore(
-        BleUuid uuid,
-        bool isPrimary,
-        CancellationToken cancellationToken
-    )
+    protected override GattClientService AddServiceCore(BleUuid uuid, bool isPrimary)
     {
-        var service = new HciHostGattClientService(
+        return new HciHostGattClientService(
             this,
             uuid,
             isPrimary ? GattServiceType.Primary : GattServiceType.Secondary,
             LoggerFactory.CreateLogger<HciHostGattClientService>()
         );
-        return Task.FromResult<GattClientService>(service);
     }
 }

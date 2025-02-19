@@ -90,9 +90,8 @@ public static class DeviceInformationServiceContract
     /// <param name="softwareRevision"> The Software Revision String characteristic shall represent the software revision for the software within the device. </param>
     /// <param name="systemId"> The System ID characteristic shall represent a structure containing an Organizationally Unique Identifier (OUI) followed by a manufacturer-defined identifier and is unique for each individual instance of the product. </param>
     /// <param name="ieeeRegulatoryCertificationData"> The IEEE 11073-20601 Regulatory Certification Data List characteristic shall represent regulatory and certification information for the product in a list defined in IEEE 11073-20601 </param>
-    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> A task which contains the service on completion </returns>
-    public static async Task<GattClientDeviceInformationService> AddDeviceInformationServiceAsync(
+    public static GattClientDeviceInformationService AddDeviceInformationService(
         this IBlePeripheral peripheral,
         string? manufacturerName = null,
         string? modelNumber = null,
@@ -101,89 +100,81 @@ public static class DeviceInformationServiceContract
         string? firmwareRevision = null,
         string? softwareRevision = null,
         SystemId? systemId = null,
-        byte[]? ieeeRegulatoryCertificationData = null,
-        CancellationToken cancellationToken = default
+        byte[]? ieeeRegulatoryCertificationData = null
     )
     {
         ArgumentNullException.ThrowIfNull(peripheral);
-        IGattClientService service = await peripheral
-            .AddServiceAsync(DeviceInformationService, cancellationToken)
-            .ConfigureAwait(false);
+        IGattClientService service = peripheral.AddService(DeviceInformationService);
 
         // Add optional manufacturer name characteristic
         GattTypedClientCharacteristic<string, Properties.Read>? manufacturerNameCharacteristic = null;
         if (manufacturerName is not null)
         {
-            manufacturerNameCharacteristic = await service
-                .AddCharacteristicAsync(ManufacturerNameCharacteristic, manufacturerName, cancellationToken)
-                .ConfigureAwait(false);
+            manufacturerNameCharacteristic = service.AddCharacteristic(
+                ManufacturerNameCharacteristic,
+                manufacturerName
+            );
         }
 
         // Add optional model number characteristic
         GattTypedClientCharacteristic<string, Properties.Read>? modelNumberCharacteristic = null;
         if (modelNumber is not null)
         {
-            modelNumberCharacteristic = await service
-                .AddCharacteristicAsync(ModelNumberCharacteristic, modelNumber, cancellationToken)
-                .ConfigureAwait(false);
+            modelNumberCharacteristic = service.AddCharacteristic(ModelNumberCharacteristic, modelNumber);
         }
 
         // Add optional serial number characteristic
         GattTypedClientCharacteristic<string, Properties.Read>? serialNumberCharacteristic = null;
         if (serialNumber is not null)
         {
-            serialNumberCharacteristic = await service
-                .AddCharacteristicAsync(SerialNumberCharacteristic, serialNumber, cancellationToken)
-                .ConfigureAwait(false);
+            serialNumberCharacteristic = service.AddCharacteristic(SerialNumberCharacteristic, serialNumber);
         }
 
         // Add optional serial number characteristic
         GattTypedClientCharacteristic<string, Properties.Read>? hardwareRevisionCharacteristic = null;
         if (hardwareRevision is not null)
         {
-            hardwareRevisionCharacteristic = await service
-                .AddCharacteristicAsync(HardwareRevisionCharacteristic, hardwareRevision, cancellationToken)
-                .ConfigureAwait(false);
+            hardwareRevisionCharacteristic = service.AddCharacteristic(
+                HardwareRevisionCharacteristic,
+                hardwareRevision
+            );
         }
 
         // Add optional serial number characteristic
         GattTypedClientCharacteristic<string, Properties.Read>? firmwareRevisionCharacteristic = null;
         if (firmwareRevision is not null)
         {
-            firmwareRevisionCharacteristic = await service
-                .AddCharacteristicAsync(FirmwareRevisionCharacteristic, firmwareRevision, cancellationToken)
-                .ConfigureAwait(false);
+            firmwareRevisionCharacteristic = service.AddCharacteristic(
+                FirmwareRevisionCharacteristic,
+                firmwareRevision
+            );
         }
 
         // Add optional serial number characteristic
         GattTypedClientCharacteristic<string, Properties.Read>? softwareRevisionCharacteristic = null;
         if (softwareRevision is not null)
         {
-            softwareRevisionCharacteristic = await service
-                .AddCharacteristicAsync(SoftwareRevisionCharacteristic, softwareRevision, cancellationToken)
-                .ConfigureAwait(false);
+            softwareRevisionCharacteristic = service.AddCharacteristic(
+                SoftwareRevisionCharacteristic,
+                softwareRevision
+            );
         }
 
         // Add optional serial number characteristic
         GattTypedClientCharacteristic<SystemId, Properties.Read>? systemIdCharacteristic = null;
         if (systemId is not null)
         {
-            systemIdCharacteristic = await service
-                .AddCharacteristicAsync(SystemIdCharacteristic, systemId.Value, cancellationToken)
-                .ConfigureAwait(false);
+            systemIdCharacteristic = service.AddCharacteristic(SystemIdCharacteristic, systemId.Value);
         }
 
         // Add optional serial number characteristic
         GattClientCharacteristic<Properties.Read>? regulatoryCertificationDataCharacteristic = null;
         if (ieeeRegulatoryCertificationData is not null)
         {
-            regulatoryCertificationDataCharacteristic = await service
-                .AddCharacteristicAsync<Properties.Read>(
-                    RegulatoryCertificationDataCharacteristic.Uuid,
-                    ieeeRegulatoryCertificationData,
-                    cancellationToken
-                )
-                .ConfigureAwait(false);
+            regulatoryCertificationDataCharacteristic = service.AddCharacteristic<Properties.Read>(
+                RegulatoryCertificationDataCharacteristic.Uuid,
+                ieeeRegulatoryCertificationData
+            );
         }
 
         return new GattClientDeviceInformationService(service)

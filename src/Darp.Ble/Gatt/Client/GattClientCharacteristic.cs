@@ -63,28 +63,25 @@ public abstract class GattClientCharacteristic(
         _descriptors.ToDictionary(x => x.Uuid, IGattClientDescriptor (x) => x);
 
     /// <inheritdoc />
-    public async Task<IGattClientDescriptor> AddDescriptorAsync(
+    public IGattClientDescriptor AddDescriptor(
         BleUuid uuid,
         IGattClientAttribute.OnReadCallback? onRead = null,
-        IGattClientAttribute.OnWriteCallback? onWrite = null,
-        CancellationToken cancellationToken = default
+        IGattClientAttribute.OnWriteCallback? onWrite = null
     )
     {
         if (Descriptors.TryGetValue(uuid, out IGattClientDescriptor? foundDescriptor))
             return foundDescriptor;
-        GattClientDescriptor descriptor = await AddDescriptorAsyncCore(uuid, onRead, onWrite, cancellationToken)
-            .ConfigureAwait(false);
+        GattClientDescriptor descriptor = AddDescriptorCore(uuid, onRead, onWrite);
         _descriptors.Add(descriptor);
         Service.Peripheral.GattDatabase.AddDescriptor(descriptor);
         return descriptor;
     }
 
-    /// <inheritdoc cref="AddDescriptorAsync" />
-    protected abstract Task<GattClientDescriptor> AddDescriptorAsyncCore(
+    /// <inheritdoc cref="AddDescriptor" />
+    protected abstract GattClientDescriptor AddDescriptorCore(
         BleUuid uuid,
         IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite,
-        CancellationToken cancellationToken
+        IGattClientAttribute.OnWriteCallback? onWrite
     );
 
     /// <inheritdoc />
@@ -207,12 +204,11 @@ public class GattClientCharacteristic<TProp1>(IGattClientCharacteristic characte
     public IReadOnlyDictionary<BleUuid, IGattClientDescriptor> Descriptors => Characteristic.Descriptors;
 
     /// <inheritdoc />
-    public Task<IGattClientDescriptor> AddDescriptorAsync(
+    public IGattClientDescriptor AddDescriptor(
         BleUuid uuid,
         IGattClientAttribute.OnReadCallback? onRead = null,
-        IGattClientAttribute.OnWriteCallback? onWrite = null,
-        CancellationToken cancellationToken = default
-    ) => Characteristic.AddDescriptorAsync(uuid, onRead, onWrite, cancellationToken);
+        IGattClientAttribute.OnWriteCallback? onWrite = null
+    ) => Characteristic.AddDescriptor(uuid, onRead, onWrite);
 
     ValueTask<byte[]> IGattClientAttribute.GetValueAsync(
         IGattClientPeer? clientPeer,

@@ -21,32 +21,23 @@ public static class BatteryServiceContract
     /// <param name="peripheral"> The peripheral to add the service to </param>
     /// <param name="initialBatteryLevel"> The initial battery level </param>
     /// <param name="batteryLevelDescription"> The description of the battery level characteristic; No descriptor will be added if <c>null</c> </param>
-    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> A task which contains the service on completion </returns>
-    public static async Task<GattClientBatteryService> AddBatteryService(
+    public static GattClientBatteryService AddBatteryService(
         this IBlePeripheral peripheral,
         byte initialBatteryLevel = 50,
-        string? batteryLevelDescription = "main",
-        CancellationToken cancellationToken = default
+        string? batteryLevelDescription = "main"
     )
     {
         ArgumentNullException.ThrowIfNull(peripheral);
-        IGattClientService service = await peripheral
-            .AddServiceAsync(BatteryService, cancellationToken)
-            .ConfigureAwait(false);
+        IGattClientService service = peripheral.AddService(BatteryService);
 
-        GattTypedClientCharacteristic<byte, Read, Notify> batteryLevelCharacteristic = await service
-            .AddCharacteristicAsync(
-                BatteryLevelCharacteristic,
-                staticValue: initialBatteryLevel,
-                cancellationToken: cancellationToken
-            )
-            .ConfigureAwait(false);
+        GattTypedClientCharacteristic<byte, Read, Notify> batteryLevelCharacteristic = service.AddCharacteristic(
+            BatteryLevelCharacteristic,
+            staticValue: initialBatteryLevel
+        );
         if (batteryLevelDescription is not null)
         {
-            await batteryLevelCharacteristic
-                .AddUserDescriptionAsync(batteryLevelDescription, cancellationToken)
-                .ConfigureAwait(false);
+            batteryLevelCharacteristic.AddUserDescription(batteryLevelDescription);
         }
 
         return new GattClientBatteryService(service) { BatteryLevel = batteryLevelCharacteristic };

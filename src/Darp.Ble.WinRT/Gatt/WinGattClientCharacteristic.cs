@@ -74,17 +74,15 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
         };
     }
 
-    protected override async Task<GattClientDescriptor> AddDescriptorAsyncCore(
+    protected override GattClientDescriptor AddDescriptorCore(
         BleUuid uuid,
         IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite,
-        CancellationToken cancellationToken
+        IGattClientAttribute.OnWriteCallback? onWrite
     )
     {
-        var result = await _winCharacteristic
+        var result = _winCharacteristic
             .CreateDescriptorAsync(uuid.Value, new GattLocalDescriptorParameters())
-            .AsTask(cancellationToken)
-            .ConfigureAwait(false);
+            .GetResults();
         if (result.Error is not BluetoothError.Success)
             throw new Exception("Could not add descriptor to windows");
         return new WinGattClientDescriptor(this, result.Descriptor, uuid, onRead, onWrite);

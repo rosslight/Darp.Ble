@@ -25,12 +25,8 @@ public static class GapServiceContract
 
     /// <summary> Add the GAP service to the peripheral </summary>
     /// <param name="peripheral"> The peripheral to add the service to </param>
-    /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
     /// <returns> A wrapper with the discovered characteristics </returns>
-    public static async Task<GattClientGapService> AddGapServiceAsync(
-        this IBlePeripheral peripheral,
-        CancellationToken cancellationToken = default
-    )
+    public static GattClientGapService AddGapService(this IBlePeripheral peripheral)
     {
         ArgumentNullException.ThrowIfNull(peripheral);
 
@@ -39,25 +35,17 @@ public static class GapServiceContract
             throw new Exception("The GapService may be added only once");
 
         // Add the client service
-        IGattClientService service = await peripheral
-            .AddServiceAsync(GapService, cancellationToken)
-            .ConfigureAwait(false);
+        IGattClientService service = peripheral.AddService(GapService);
 
         // Add the characteristics
-        GattTypedClientCharacteristic<string, Read> deviceNameCharacteristic = await service
-            .AddCharacteristicAsync(
-                DeviceNameCharacteristic,
-                onRead: _ => peripheral.Device.Name ?? "n/a",
-                cancellationToken: cancellationToken
-            )
-            .ConfigureAwait(false);
-        GattTypedClientCharacteristic<AppearanceValues, Read> appearanceCharacteristic = await service
-            .AddCharacteristicAsync(
-                AppearanceCharacteristic,
-                onRead: _ => peripheral.Device.Appearance,
-                cancellationToken: cancellationToken
-            )
-            .ConfigureAwait(false);
+        GattTypedClientCharacteristic<string, Read> deviceNameCharacteristic = service.AddCharacteristic(
+            DeviceNameCharacteristic,
+            onRead: _ => peripheral.Device.Name ?? "n/a"
+        );
+        GattTypedClientCharacteristic<AppearanceValues, Read> appearanceCharacteristic = service.AddCharacteristic(
+            AppearanceCharacteristic,
+            onRead: _ => peripheral.Device.Appearance
+        );
 
         return new GattClientGapService(service)
         {

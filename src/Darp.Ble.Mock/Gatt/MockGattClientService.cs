@@ -17,23 +17,20 @@ internal sealed class MockGattClientService(
     public MockedBlePeripheral BlePeripheral { get; } = blePeripheral;
 
     /// <inheritdoc />
-    protected override Task<GattClientCharacteristic> CreateCharacteristicAsyncCore(
+    protected override GattClientCharacteristic CreateCharacteristicCore(
         BleUuid uuid,
         GattProperty gattProperty,
         IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite,
-        CancellationToken cancellationToken
+        IGattClientAttribute.OnWriteCallback? onWrite
     )
     {
-        return Task.FromResult<GattClientCharacteristic>(
-            new MockGattClientCharacteristic(
-                this,
-                uuid,
-                gattProperty,
-                onRead,
-                onWrite,
-                LoggerFactory.CreateLogger<MockGattClientCharacteristic>()
-            )
+        return new MockGattClientCharacteristic(
+            this,
+            uuid,
+            gattProperty,
+            onRead,
+            onWrite,
+            LoggerFactory.CreateLogger<MockGattClientCharacteristic>()
         );
     }
 }

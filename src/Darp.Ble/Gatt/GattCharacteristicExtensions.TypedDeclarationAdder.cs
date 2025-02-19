@@ -12,17 +12,15 @@ public static partial class GattCharacteristicExtensions
     /// <param name="characteristicDeclaration"> The description of the characteristic to add </param>
     /// <param name="onRead"> Callback when a read request was received </param>
     /// <param name="onWrite"> Callback when a write request was received </param>
-    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <typeparam name="T"> The type of the characteristic value </typeparam>
     /// <typeparam name="TProp1"> The type of the property of the characteristic </typeparam>
     /// <returns> A gatt client characteristic </returns>
     [OverloadResolutionPriority(1)]
-    public static async Task<GattTypedClientCharacteristic<T, TProp1>> AddCharacteristicAsync<T, TProp1>(
+    public static GattTypedClientCharacteristic<T, TProp1> AddCharacteristic<T, TProp1>(
         this IGattClientService service,
         TypedCharacteristicDeclaration<T, TProp1> characteristicDeclaration,
         IGattClientAttribute.OnReadCallback<T>? onRead = null,
-        IGattClientAttribute.OnWriteCallback<T>? onWrite = null,
-        CancellationToken cancellationToken = default
+        IGattClientAttribute.OnWriteCallback<T>? onWrite = null
     )
         where TProp1 : IBleProperty
     {
@@ -38,15 +36,12 @@ public static partial class GattCharacteristicExtensions
         IGattClientAttribute.OnWriteCallback? onAsyncWrite = onWrite is null
             ? null
             : (peer, bytes, token) => onWrite(peer, characteristicDeclaration.ReadValue(bytes), token);
-        IGattClientCharacteristic characteristic = await service
-            .AddCharacteristicAsync(
-                characteristicDeclaration.Uuid,
-                TProp1.GattProperty,
-                onAsyncRead,
-                onAsyncWrite,
-                cancellationToken
-            )
-            .ConfigureAwait(false);
+        IGattClientCharacteristic characteristic = service.AddCharacteristic(
+            characteristicDeclaration.Uuid,
+            TProp1.GattProperty,
+            onAsyncRead,
+            onAsyncWrite
+        );
         return new GattTypedClientCharacteristic<T, TProp1>(
             characteristic,
             characteristicDeclaration.ReadValue,
@@ -59,16 +54,14 @@ public static partial class GattCharacteristicExtensions
     /// <param name="characteristicDeclaration"> The description of the characteristic to add </param>
     /// <param name="onRead"> Callback when a read request was received </param>
     /// <param name="onWrite"> Callback when a write request was received </param>
-    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <typeparam name="T"> The type of the characteristic value </typeparam>
     /// <typeparam name="TProp1"> The type of the property of the characteristic </typeparam>
     /// <returns> A gatt client characteristic </returns>
-    public static Task<GattTypedClientCharacteristic<T, TProp1>> AddCharacteristicAsync<T, TProp1>(
+    public static GattTypedClientCharacteristic<T, TProp1> AddCharacteristic<T, TProp1>(
         this IGattClientService service,
         TypedCharacteristicDeclaration<T, TProp1> characteristicDeclaration,
         Func<IGattClientPeer?, T>? onRead = null,
-        Func<IGattClientPeer?, T, GattProtocolStatus>? onWrite = null,
-        CancellationToken cancellationToken = default
+        Func<IGattClientPeer?, T, GattProtocolStatus>? onWrite = null
     )
         where TProp1 : IBleProperty
     {
@@ -79,7 +72,7 @@ public static partial class GattCharacteristicExtensions
         IGattClientAttribute.OnWriteCallback<T>? onAsyncWrite = onWrite is null
             ? null
             : (peer, bytes, _) => ValueTask.FromResult(onWrite(peer, bytes));
-        return service.AddCharacteristicAsync(characteristicDeclaration, onAsyncRead, onAsyncWrite, cancellationToken);
+        return service.AddCharacteristic(characteristicDeclaration, onAsyncRead, onAsyncWrite);
     }
 
     /// <summary> Add a characteristic with a specific UUID to a service </summary>
@@ -87,22 +80,16 @@ public static partial class GattCharacteristicExtensions
     /// <param name="characteristicDeclaration"> The description of the characteristic to add </param>
     /// <param name="onRead"> Callback when a read request was received </param>
     /// <param name="onWrite"> Callback when a write request was received </param>
-    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <typeparam name="T"> The type of the characteristic value </typeparam>
     /// <typeparam name="TProp1"> The type of the first property of the characteristic </typeparam>
     /// <typeparam name="TProp2"> The type of the second property of the characteristic </typeparam>
     /// <returns> A gatt client characteristic </returns>
     [OverloadResolutionPriority(1)]
-    public static async Task<GattTypedClientCharacteristic<T, TProp1, TProp2>> AddCharacteristicAsync<
-        T,
-        TProp1,
-        TProp2
-    >(
+    public static GattTypedClientCharacteristic<T, TProp1, TProp2> AddCharacteristic<T, TProp1, TProp2>(
         this IGattClientService service,
         TypedCharacteristicDeclaration<T, TProp1, TProp2> characteristicDeclaration,
         IGattClientAttribute.OnReadCallback<T>? onRead = null,
-        IGattClientAttribute.OnWriteCallback<T>? onWrite = null,
-        CancellationToken cancellationToken = default
+        IGattClientAttribute.OnWriteCallback<T>? onWrite = null
     )
         where TProp1 : IBleProperty
         where TProp2 : IBleProperty
@@ -119,15 +106,12 @@ public static partial class GattCharacteristicExtensions
         IGattClientAttribute.OnWriteCallback? onAsyncWrite = onWrite is null
             ? null
             : (peer, bytes, token) => onWrite(peer, characteristicDeclaration.ReadValue(bytes), token);
-        IGattClientCharacteristic characteristic = await service
-            .AddCharacteristicAsync(
-                characteristicDeclaration.Uuid,
-                TProp1.GattProperty,
-                onAsyncRead,
-                onAsyncWrite,
-                cancellationToken
-            )
-            .ConfigureAwait(false);
+        IGattClientCharacteristic characteristic = service.AddCharacteristic(
+            characteristicDeclaration.Uuid,
+            TProp1.GattProperty,
+            onAsyncRead,
+            onAsyncWrite
+        );
         return new GattTypedClientCharacteristic<T, TProp1, TProp2>(
             characteristic,
             characteristicDeclaration.ReadValue,
@@ -139,28 +123,25 @@ public static partial class GattCharacteristicExtensions
     /// <param name="service"> The service to add the characteristic to </param>
     /// <param name="characteristicDeclaration"> The description of the characteristic to add </param>
     /// <param name="staticValue"> The initial static value </param>
-    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <typeparam name="T"> The type of the characteristic value </typeparam>
     /// <typeparam name="TProp1"> The type of the property of the characteristic </typeparam>
     /// <returns> A gatt client characteristic </returns>
-    public static Task<GattTypedClientCharacteristic<T, TProp1>> AddCharacteristicAsync<T, TProp1>(
+    public static GattTypedClientCharacteristic<T, TProp1> AddCharacteristic<T, TProp1>(
         this IGattClientService service,
         TypedCharacteristicDeclaration<T, TProp1> characteristicDeclaration,
-        T staticValue,
-        CancellationToken cancellationToken = default
+        T staticValue
     )
         where TProp1 : IBleProperty
     {
         ArgumentNullException.ThrowIfNull(service);
-        return service.AddCharacteristicAsync(
+        return service.AddCharacteristic(
             characteristicDeclaration,
             onRead: (_, _) => ValueTask.FromResult(staticValue),
             onWrite: (_, bytesToWrite, _) =>
             {
                 staticValue = bytesToWrite;
                 return ValueTask.FromResult(GattProtocolStatus.Success);
-            },
-            cancellationToken
+            }
         );
     }
 
@@ -168,30 +149,27 @@ public static partial class GattCharacteristicExtensions
     /// <param name="service"> The service to add the characteristic to </param>
     /// <param name="characteristicDeclaration"> The description of the characteristic to add </param>
     /// <param name="staticValue"> The initial static value </param>
-    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <typeparam name="T"> The type of the characteristic value </typeparam>
     /// <typeparam name="TProp1"> The type of the first property </typeparam>
     /// <typeparam name="TProp2"> The type of the second property </typeparam>
     /// <returns> A gatt client characteristic </returns>
-    public static Task<GattTypedClientCharacteristic<T, TProp1, TProp2>> AddCharacteristicAsync<T, TProp1, TProp2>(
+    public static GattTypedClientCharacteristic<T, TProp1, TProp2> AddCharacteristic<T, TProp1, TProp2>(
         this IGattClientService service,
         TypedCharacteristicDeclaration<T, TProp1, TProp2> characteristicDeclaration,
-        T staticValue,
-        CancellationToken cancellationToken = default
+        T staticValue
     )
         where TProp1 : IBleProperty
         where TProp2 : IBleProperty
     {
         ArgumentNullException.ThrowIfNull(service);
-        return service.AddCharacteristicAsync(
+        return service.AddCharacteristic(
             characteristicDeclaration,
             onRead: (_, _) => ValueTask.FromResult(staticValue),
             onWrite: (_, bytesToWrite, _) =>
             {
                 staticValue = bytesToWrite;
                 return ValueTask.FromResult(GattProtocolStatus.Success);
-            },
-            cancellationToken
+            }
         );
     }
 }

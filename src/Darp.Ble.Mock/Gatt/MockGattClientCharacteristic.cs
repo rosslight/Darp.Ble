@@ -40,14 +40,13 @@ internal sealed class MockGattClientCharacteristic(
         );
     }
 
-    protected override Task<GattClientDescriptor> AddDescriptorAsyncCore(
+    protected override GattClientDescriptor AddDescriptorCore(
         BleUuid uuid,
         IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite,
-        CancellationToken cancellationToken
+        IGattClientAttribute.OnWriteCallback? onWrite
     )
     {
-        return Task.FromResult<GattClientDescriptor>(new MockGattClientDescriptor(this, uuid, onRead, onWrite));
+        return new MockGattClientDescriptor(this, uuid, onRead, onWrite);
     }
 
     protected override void NotifyCore(IGattClientPeer clientPeer, byte[] value)

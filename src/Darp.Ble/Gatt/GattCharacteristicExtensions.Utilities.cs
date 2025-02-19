@@ -48,14 +48,12 @@ public static partial class GattCharacteristicExtensions
     /// <param name="uuid"> The uuid of the descriptor to be added </param>
     /// <param name="onRead"> The callback to be called when a read operation was requested on this attribute </param>
     /// <param name="onWrite"> The callback to be called when a write operation was requested on this attribute </param>
-    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> A task which holds the descriptor on completion </returns>
-    public static Task<IGattClientDescriptor> AddDescriptorAsync(
+    public static IGattClientDescriptor AddDescriptor(
         this IGattClientCharacteristic characteristic,
         BleUuid uuid,
         Func<IGattClientPeer?, byte[]>? onRead = null,
-        Func<IGattClientPeer?, byte[], GattProtocolStatus>? onWrite = null,
-        CancellationToken cancellationToken = default
+        Func<IGattClientPeer?, byte[], GattProtocolStatus>? onWrite = null
     )
     {
         ArgumentNullException.ThrowIfNull(characteristic);
@@ -65,7 +63,7 @@ public static partial class GattCharacteristicExtensions
         IGattClientAttribute.OnWriteCallback? onAsyncWrite = onWrite is null
             ? null
             : (peer, bytes, _) => ValueTask.FromResult(onWrite(peer, bytes));
-        return characteristic.AddDescriptorAsync(uuid, onAsyncRead, onAsyncWrite, cancellationToken);
+        return characteristic.AddDescriptor(uuid, onAsyncRead, onAsyncWrite);
     }
 
     /// <summary> Add a descriptor to the characteristic </summary>
@@ -73,20 +71,18 @@ public static partial class GattCharacteristicExtensions
     /// <param name="descriptorDeclaration"> The descriptor declaration </param>
     /// <param name="onRead"> The callback to be called when a read operation was requested on this attribute </param>
     /// <param name="onWrite"> The callback to be called when a write operation was requested on this attribute </param>
-    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> A task which holds the descriptor on completion </returns>
     [OverloadResolutionPriority(1)]
-    public static Task<IGattClientDescriptor> AddDescriptorAsync(
+    public static IGattClientDescriptor AddDescriptor(
         this IGattClientCharacteristic characteristic,
         DescriptorDeclaration descriptorDeclaration,
         IGattClientAttribute.OnReadCallback? onRead = null,
-        IGattClientAttribute.OnWriteCallback? onWrite = null,
-        CancellationToken cancellationToken = default
+        IGattClientAttribute.OnWriteCallback? onWrite = null
     )
     {
         ArgumentNullException.ThrowIfNull(characteristic);
         ArgumentNullException.ThrowIfNull(descriptorDeclaration);
-        return characteristic.AddDescriptorAsync(descriptorDeclaration.Uuid, onRead, onWrite, cancellationToken);
+        return characteristic.AddDescriptor(descriptorDeclaration.Uuid, onRead, onWrite);
     }
 
     /// <summary> Add a descriptor to the characteristic </summary>
@@ -94,83 +90,68 @@ public static partial class GattCharacteristicExtensions
     /// <param name="descriptorDeclaration"> The descriptor declaration </param>
     /// <param name="onRead"> The callback to be called when a read operation was requested on this attribute </param>
     /// <param name="onWrite"> The callback to be called when a write operation was requested on this attribute </param>
-    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> A task which holds the descriptor on completion </returns>
-    public static Task<IGattClientDescriptor> AddDescriptorAsync(
+    public static IGattClientDescriptor AddDescriptor(
         this IGattClientCharacteristic characteristic,
         DescriptorDeclaration descriptorDeclaration,
         Func<IGattClientPeer?, byte[]>? onRead = null,
-        Func<IGattClientPeer?, byte[], GattProtocolStatus>? onWrite = null,
-        CancellationToken cancellationToken = default
+        Func<IGattClientPeer?, byte[], GattProtocolStatus>? onWrite = null
     )
     {
         ArgumentNullException.ThrowIfNull(characteristic);
         ArgumentNullException.ThrowIfNull(descriptorDeclaration);
-        return characteristic.AddDescriptorAsync(descriptorDeclaration.Uuid, onRead, onWrite, cancellationToken);
+        return characteristic.AddDescriptor(descriptorDeclaration.Uuid, onRead, onWrite);
     }
 
     /// <summary> Add a descriptor to the characteristic </summary>
     /// <param name="characteristic"> The characteristic to add to </param>
     /// <param name="descriptorDeclaration"> The descriptor declaration </param>
     /// <param name="staticValue"> The static value of the characteristic </param>
-    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> A task which holds the descriptor on completion </returns>
-    public static Task<IGattClientDescriptor> AddDescriptorAsync(
+    public static IGattClientDescriptor AddDescriptor(
         this IGattClientCharacteristic characteristic,
         DescriptorDeclaration descriptorDeclaration,
-        byte[] staticValue,
-        CancellationToken cancellationToken = default
+        byte[] staticValue
     )
     {
         ArgumentNullException.ThrowIfNull(characteristic);
         ArgumentNullException.ThrowIfNull(descriptorDeclaration);
-        return characteristic.AddDescriptorAsync(descriptorDeclaration.Uuid, staticValue, cancellationToken);
+        return characteristic.AddDescriptor(descriptorDeclaration.Uuid, staticValue);
     }
 
     /// <summary> Add a descriptor to the characteristic </summary>
     /// <param name="characteristic"> The characteristic to add to </param>
     /// <param name="uuid"> The uuid of the descriptor to add </param>
     /// <param name="staticValue"> The static value of the characteristic </param>
-    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> A task which holds the descriptor on completion </returns>
-    public static Task<IGattClientDescriptor> AddDescriptorAsync(
+    public static IGattClientDescriptor AddDescriptor(
         this IGattClientCharacteristic characteristic,
         BleUuid uuid,
-        byte[] staticValue,
-        CancellationToken cancellationToken = default
+        byte[] staticValue
     )
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        return characteristic.AddDescriptorAsync(
+        return characteristic.AddDescriptor(
             uuid,
             (_, _) => ValueTask.FromResult(staticValue),
             (_, value, _) =>
             {
                 staticValue = value;
                 return ValueTask.FromResult(GattProtocolStatus.Success);
-            },
-            cancellationToken
+            }
         );
     }
 
     /// <summary> Add a user description to the characteristic </summary>
     /// <param name="characteristic"> The characteristic to add the descriptor to </param>
     /// <param name="description"> The description to add </param>
-    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> A task which holds the descriptor on completion </returns>
-    public static async Task<IGattClientDescriptor> AddUserDescriptionAsync(
+    public static IGattClientDescriptor AddUserDescription(
         this IGattClientCharacteristic characteristic,
-        string description,
-        CancellationToken cancellationToken
+        string description
     )
     {
         byte[] descriptionBytes = Encoding.UTF8.GetBytes(description);
-        return await characteristic
-            .AddDescriptorAsync(
-                DescriptorDeclaration.CharacteristicUserDescription,
-                descriptionBytes,
-                cancellationToken
-            )
-            .ConfigureAwait(false);
+        return characteristic.AddDescriptor(DescriptorDeclaration.CharacteristicUserDescription, descriptionBytes);
     }
 }

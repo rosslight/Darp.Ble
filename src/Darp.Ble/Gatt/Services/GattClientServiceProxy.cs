@@ -34,11 +34,10 @@ public abstract class GattClientServiceProxy(IGattClientService service) : IGatt
 
     IReadOnlyCollection<IGattClientCharacteristic> IGattClientService.Characteristics => _service.Characteristics;
 
-    Task<IGattClientCharacteristic> IGattClientService.AddCharacteristicAsync(
+    IGattClientCharacteristic IGattClientService.AddCharacteristic(
         BleUuid uuid,
         GattProperty gattProperty,
         IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite,
-        CancellationToken cancellationToken
-    ) => _service.AddCharacteristicAsync(uuid, gattProperty, onRead, onWrite, cancellationToken);
+        IGattClientAttribute.OnWriteCallback? onWrite
+    ) => _service.AddCharacteristic(uuid, gattProperty, onRead, onWrite);
 }

@@ -17,46 +17,37 @@ public static class EchoServiceContract
     /// <param name="writeUuid"> The uuid of the write characteristic </param>
     /// <param name="notifyUuid"> The uuid of the notify characteristic </param>
     /// <param name="handleRequest"> A function which defines how a request is handled. Defaults to <see cref="Observable.Return{TResult}(TResult)"/> </param>
-    /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
     /// <returns> A wrapper with the discovered characteristics </returns>
-    public static async Task<GattClientEchoService> AddEchoServiceAsync(
+    public static GattClientEchoService AddEchoService(
         this IBlePeripheral peripheral,
         BleUuid serviceUuid,
         BleUuid writeUuid,
         BleUuid notifyUuid,
-        Func<byte[], IObservable<byte[]>>? handleRequest = null,
-        CancellationToken cancellationToken = default
+        Func<byte[], IObservable<byte[]>>? handleRequest = null
     )
     {
         ArgumentNullException.ThrowIfNull(peripheral);
         handleRequest ??= Observable.Return;
 
         // Add the client service
-        IGattClientService service = await peripheral
-            .AddServiceAsync(serviceUuid, isPrimary: true, cancellationToken)
-            .ConfigureAwait(false);
+        IGattClientService service = peripheral.AddService(serviceUuid, isPrimary: true);
 
         // Add the mandatory write characteristic
         IGattClientCharacteristic<Properties.Notify> notifyCharacteristic = null!;
-        IGattClientCharacteristic<Properties.Write> writeCharacteristic = await service
-            .AddCharacteristicAsync<Properties.Write>(
-                writeUuid,
-                onWrite: (peer, bytes) =>
-                {
-                    IObservable<byte[]> responseObservable = handleRequest(bytes);
-                    // ReSharper disable once AccessToModifiedClosure
-                    // We expect onWrite to not execute before the notify characteristic was added
-                    _ = responseObservable.Subscribe(responseBytes => notifyCharacteristic.Notify(peer, responseBytes));
-                    return GattProtocolStatus.Success;
-                },
-                cancellationToken: cancellationToken
-            )
-            .ConfigureAwait(false);
+        IGattClientCharacteristic<Properties.Write> writeCharacteristic = service.AddCharacteristic<Properties.Write>(
+            writeUuid,
+            onWrite: (peer, bytes) =>
+            {
+                IObservable<byte[]> responseObservable = handleRequest(bytes);
+                // ReSharper disable once AccessToModifiedClosure
+                // We expect onWrite to not execute before the notify characteristic was added
+                _ = responseObservable.Subscribe(responseBytes => notifyCharacteristic.Notify(peer, responseBytes));
+                return GattProtocolStatus.Success;
+            }
+        );
 
         // Add the mandatory notify characteristic
-        notifyCharacteristic = await service
-            .AddCharacteristicAsync<Properties.Notify>(notifyUuid, cancellationToken: cancellationToken)
-            .ConfigureAwait(false);
+        notifyCharacteristic = service.AddCharacteristic<Properties.Notify>(notifyUuid);
 
         return new GattClientEchoService(service) { Write = writeCharacteristic, Notify = notifyCharacteristic };
     }

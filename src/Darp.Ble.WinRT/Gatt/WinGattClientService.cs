@@ -30,15 +30,14 @@ internal sealed class WinGattClientService(
     private readonly GattLocalService _winService = provider.Service;
     public new WinBlePeripheral Peripheral { get; } = peripheral;
 
-    protected override async Task<GattClientCharacteristic> CreateCharacteristicAsyncCore(
+    protected override GattClientCharacteristic CreateCharacteristicCore(
         BleUuid uuid,
         GattProperty gattProperty,
         IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite,
-        CancellationToken cancellationToken
+        IGattClientAttribute.OnWriteCallback? onWrite
     )
     {
-        GattLocalCharacteristicResult result = await _winService
+        GattLocalCharacteristicResult result = _winService
             .CreateCharacteristicAsync(
                 uuid.Value,
                 new GattLocalCharacteristicParameters
@@ -46,8 +45,7 @@ internal sealed class WinGattClientService(
                     CharacteristicProperties = (GattCharacteristicProperties)gattProperty,
                 }
             )
-            .AsTask(cancellationToken)
-            .ConfigureAwait(false);
+            .GetResults();
         if (result.Error is not BluetoothError.Success)
             throw new Exception("Nopiii");
         result.Characteristic.SubscribedClientsChanged += (sender, _) =>

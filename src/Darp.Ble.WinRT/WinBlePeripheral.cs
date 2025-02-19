@@ -13,16 +13,9 @@ namespace Darp.Ble.WinRT;
 internal sealed class WinBlePeripheral(WinBleDevice device, ILogger<WinBlePeripheral> logger)
     : BlePeripheral(device, logger)
 {
-    protected override async Task<GattClientService> AddServiceAsyncCore(
-        BleUuid uuid,
-        bool isPrimary,
-        CancellationToken cancellationToken
-    )
+    protected override GattClientService AddServiceCore(BleUuid uuid, bool isPrimary)
     {
-        GattServiceProviderResult result = await GattServiceProvider
-            .CreateAsync(uuid.Value)
-            .AsTask(cancellationToken)
-            .ConfigureAwait(false);
+        GattServiceProviderResult result = GattServiceProvider.CreateAsync(uuid.Value).GetResults();
         if (result.Error is not BluetoothError.Success)
             throw new Exception("Nope");
         GattServiceProvider provider = result.ServiceProvider;

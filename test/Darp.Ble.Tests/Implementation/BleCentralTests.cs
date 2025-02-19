@@ -36,7 +36,7 @@ public sealed class BleCentralTests
             IObservable<AdvertisingData> source = Observable
                 .Interval(TimeSpan.FromMilliseconds(1000), scheduler)
                 .Select(_ => AdvertisingData.Empty);
-            await device.Peripheral.AddServiceAsync(0x1234);
+            device.Peripheral.AddService(0x1234);
             IAdvertisingSet set = await device.Broadcaster.CreateAdvertisingSetAsync();
             source.Subscribe(data =>
             {
@@ -115,9 +115,9 @@ public sealed class BleCentralTests
         IBleDevice device = await GetMockDeviceAsync(async d =>
         {
             await d.SetRandomAddressAsync(address);
-            IGattClientService service = await d.Peripheral.AddServiceAsync(0xABCD);
-            var notifyChar = await service.AddCharacteristicAsync<Properties.Notify>(0x1234);
-            var writeChar = await service.AddCharacteristicAsync<Properties.Write>(
+            IGattClientService service = d.Peripheral.AddService(0xABCD);
+            var notifyChar = service.AddCharacteristic<Properties.Notify>(0x1234);
+            var writeChar = service.AddCharacteristic<Properties.Write>(
                 0x5678,
                 onWrite: (peer, bytes) =>
                 {

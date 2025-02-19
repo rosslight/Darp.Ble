@@ -48,22 +48,14 @@ public abstract class GattClientService(
     public IReadOnlyCollection<IGattClientCharacteristic> Characteristics => _characteristics.AsReadOnly();
 
     /// <inheritdoc />
-    public async Task<IGattClientCharacteristic> AddCharacteristicAsync(
+    public IGattClientCharacteristic AddCharacteristic(
         BleUuid uuid,
         GattProperty gattProperty,
         IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite,
-        CancellationToken cancellationToken
+        IGattClientAttribute.OnWriteCallback? onWrite
     )
     {
-        GattClientCharacteristic characteristic = await CreateCharacteristicAsyncCore(
-                uuid,
-                gattProperty,
-                onRead,
-                onWrite,
-                cancellationToken
-            )
-            .ConfigureAwait(false);
+        GattClientCharacteristic characteristic = CreateCharacteristicCore(uuid, gattProperty, onRead, onWrite);
         _characteristics.Add(characteristic);
         Peripheral.GattDatabase.AddCharacteristic(characteristic);
         return characteristic;
@@ -74,13 +66,11 @@ public abstract class GattClientService(
     /// <param name="gattProperty"> The property of the characteristic to create </param>
     /// <param name="onRead"> Callback when a read request was received </param>
     /// <param name="onWrite"> Callback when a write request was received </param>
-    /// <param name="cancellationToken"> The CancellationToken to cancel the operation </param>
     /// <returns> A <see cref="IGattClientCharacteristic"/> </returns>
-    protected abstract Task<GattClientCharacteristic> CreateCharacteristicAsyncCore(
+    protected abstract GattClientCharacteristic CreateCharacteristicCore(
         BleUuid uuid,
         GattProperty gattProperty,
         IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite,
-        CancellationToken cancellationToken
+        IGattClientAttribute.OnWriteCallback? onWrite
     );
 }

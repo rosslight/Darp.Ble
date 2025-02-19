@@ -31,22 +31,11 @@ public static class GattServiceExtensions
     /// <summary> Add a new service to this peripheral </summary>
     /// <param name="peripheral"> The peripheral to add the service to </param>
     /// <param name="serviceDeclaration"> The service declaration that specifies the service to be added </param>
-    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> The newly added service </returns>
-    public static async Task<IGattClientService> AddServiceAsync(
-        this IBlePeripheral peripheral,
-        ServiceDeclaration serviceDeclaration,
-        CancellationToken cancellationToken
-    )
+    public static IGattClientService AddService(this IBlePeripheral peripheral, ServiceDeclaration serviceDeclaration)
     {
         ArgumentNullException.ThrowIfNull(peripheral);
         ArgumentNullException.ThrowIfNull(serviceDeclaration);
-        return await peripheral
-            .AddServiceAsync(
-                serviceDeclaration.Uuid,
-                serviceDeclaration.Type is not GattServiceType.Secondary,
-                cancellationToken
-            )
-            .ConfigureAwait(false);
+        return peripheral.AddService(serviceDeclaration.Uuid, serviceDeclaration.Type is not GattServiceType.Secondary);
     }
 }

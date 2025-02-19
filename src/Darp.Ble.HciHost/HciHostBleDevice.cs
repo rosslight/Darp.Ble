@@ -49,7 +49,7 @@ internal sealed class HciHostBleDevice(
             LoggerFactory.CreateLogger<HciHostBleBroadcaster>()
         );
         Peripheral = new HciHostBlePeripheral(this, LoggerFactory.CreateLogger<HciHostBlePeripheral>());
-        await Peripheral.AddGapServiceAsync(cancellationToken: cancellationToken).ConfigureAwait(false);
+        Peripheral.AddGapService();
         return InitializeResult.Success;
     }
 

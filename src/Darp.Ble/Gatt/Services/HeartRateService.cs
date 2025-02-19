@@ -164,54 +164,45 @@ public static class HeartRateServiceContract
     /// <param name="peripheral"> The peripheral to add the service to </param>
     /// <param name="bodySensorLocation"> An optional body sensor location </param>
     /// <param name="onResetExpendedEnergy"> An optional callback to be called when an energy reset is requested </param>
-    /// <param name="token"> The cancellationToken to cancel the operation </param>
     /// <returns> A task which holds a wrapper of the client service </returns>
-    public static async Task<GattClientHeartRateService> AddHeartRateServiceAsync(
+    public static GattClientHeartRateService AddHeartRateService(
         this IBlePeripheral peripheral,
         HeartRateBodySensorLocation? bodySensorLocation = null,
-        Action? onResetExpendedEnergy = null,
-        CancellationToken token = default
+        Action? onResetExpendedEnergy = null
     )
     {
         ArgumentNullException.ThrowIfNull(peripheral);
-        IGattClientService service = await peripheral.AddServiceAsync(HeartRateService, token).ConfigureAwait(false);
+        IGattClientService service = peripheral.AddService(HeartRateService);
 
         // Add the mandatory measurement characteristic
-        GattTypedClientCharacteristic<HeartRateMeasurement, Properties.Notify> measurementCharacteristic = await service
-            .AddCharacteristicAsync(HeartRateMeasurementCharacteristic, cancellationToken: token)
-            .ConfigureAwait(false);
+        GattTypedClientCharacteristic<HeartRateMeasurement, Properties.Notify> measurementCharacteristic =
+            service.AddCharacteristic(HeartRateMeasurementCharacteristic);
 
         // Add the optional body sensor location
         GattTypedClientCharacteristic<HeartRateBodySensorLocation, Properties.Read>? bodySensorLocationCharacteristic =
             null;
         if (bodySensorLocation is not null)
         {
-            bodySensorLocationCharacteristic = await service
-                .AddCharacteristicAsync(
-                    BodySensorLocationCharacteristic,
-                    bodySensorLocation.Value,
-                    cancellationToken: token
-                )
-                .ConfigureAwait(false);
+            bodySensorLocationCharacteristic = service.AddCharacteristic(
+                BodySensorLocationCharacteristic,
+                bodySensorLocation.Value
+            );
         }
 
         // Add the optional heart rate control point characteristic
         GattClientCharacteristic<Properties.Write>? heartRateControlPointCharacteristic = null;
         if (onResetExpendedEnergy is not null)
         {
-            heartRateControlPointCharacteristic = await service
-                .AddCharacteristicAsync<Properties.Write>(
-                    HeartRateControlPointCharacteristic.Uuid,
-                    onWrite: (_, bytes) =>
-                    {
-                        if (bytes.Length < 1 || bytes[0] is not ResetEnergyExpended)
-                            return ControlPointNotSupported;
-                        onResetExpendedEnergy();
-                        return GattProtocolStatus.Success;
-                    },
-                    cancellationToken: token
-                )
-                .ConfigureAwait(false);
+            heartRateControlPointCharacteristic = service.AddCharacteristic<Properties.Write>(
+                HeartRateControlPointCharacteristic.Uuid,
+                onWrite: (_, bytes) =>
+                {
+                    if (bytes.Length < 1 || bytes[0] is not ResetEnergyExpended)
+                        return ControlPointNotSupported;
+                    onResetExpendedEnergy();
+                    return GattProtocolStatus.Success;
+                }
+            );
         }
 
         return new GattClientHeartRateService(service)

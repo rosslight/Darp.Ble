@@ -52,10 +52,7 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
             .AddMock(factory =>
                 factory.AddPeripheral(async device =>
                 {
-                    GattClientDeviceInformationService service =
-                        await device.Peripheral.AddDeviceInformationServiceAsync(
-                            manufacturerName: expectedManufacturerName
-                        );
+                    device.Peripheral.AddDeviceInformationService(manufacturerName: expectedManufacturerName);
                     await device.Broadcaster.StartAdvertisingAsync();
                 })
             )
@@ -91,7 +88,7 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
             .AddMock(factory =>
                 factory.AddPeripheral(async device =>
                 {
-                    await device.Peripheral.AddEchoServiceAsync(serviceUuid, writeUuid, notifyUuid);
+                    device.Peripheral.AddEchoService(serviceUuid, writeUuid, notifyUuid);
                     await device.Broadcaster.StartAdvertisingAsync();
                 })
             )
@@ -130,7 +127,7 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
                             IsSensorContactDetected = expectedIsSensorContactDetected,
                         })
                         .Subscribe(heartRateSubject);
-                    GattClientHeartRateService service = await device.Peripheral.AddHeartRateServiceAsync(
+                    GattClientHeartRateService service = device.Peripheral.AddHeartRateService(
                         expectedSensorLocation,
                         () => energy = 0
                     );
@@ -180,7 +177,7 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
             .AddMock(factory =>
                 factory.AddPeripheral(async device =>
                 {
-                    GattClientBatteryService service = await device.Peripheral.AddBatteryService(
+                    GattClientBatteryService service = device.Peripheral.AddBatteryService(
                         batteryLevelDescription: expectedUserDescription
                     );
                     await device.Broadcaster.StartAdvertisingAsync(

@@ -21,18 +21,13 @@ internal sealed class MockedBlePeripheral(MockedBleDevice device, ILogger<Mocked
     }
 
     /// <inheritdoc />
-    protected override Task<GattClientService> AddServiceAsyncCore(
-        BleUuid uuid,
-        bool isPrimary,
-        CancellationToken cancellationToken
-    )
+    protected override GattClientService AddServiceCore(BleUuid uuid, bool isPrimary)
     {
-        var service = new MockGattClientService(
+        return new MockGattClientService(
             uuid,
             isPrimary ? GattServiceType.Primary : GattServiceType.Secondary,
             this,
             LoggerFactory.CreateLogger<MockGattClientService>()
         );
-        return Task.FromResult<GattClientService>(service);
     }
 }

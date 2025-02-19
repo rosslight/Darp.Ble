@@ -46,7 +46,7 @@ internal sealed class MockedBleDevice(
     {
         Broadcaster = new MockedBleBroadcaster(this, LoggerFactory.CreateLogger<MockedBleBroadcaster>());
         Peripheral = new MockedBlePeripheral(this, LoggerFactory.CreateLogger<MockedBlePeripheral>());
-        await Peripheral.AddGapServiceAsync(cancellationToken).ConfigureAwait(false);
+        Peripheral.AddGapService();
         await _onInitialize(this, Settings).ConfigureAwait(false);
         return InitializeResult.Success;
     }

@@ -31,11 +31,6 @@ public interface IBlePeripheral
     /// <summary> Add a new service to this peripheral </summary>
     /// <param name="uuid"> The uuid of the service to be added </param>
     /// <param name="isPrimary"> True, if the service is a primary service; False, if secondary </param>
-    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> The newly added service </returns>
-    Task<IGattClientService> AddServiceAsync(
-        BleUuid uuid,
-        bool isPrimary = true,
-        CancellationToken cancellationToken = default
-    );
+    IGattClientService AddService(BleUuid uuid, bool isPrimary = true);
 }

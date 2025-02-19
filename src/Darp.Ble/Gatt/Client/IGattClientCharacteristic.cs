@@ -21,14 +21,8 @@ public interface IGattClientCharacteristic : IGattAttribute, IGattClientAttribut
     /// <param name="uuid"> The uuid of the descriptor to be added </param>
     /// <param name="onRead"> The callback to be called when a read operation was requested on this attribute </param>
     /// <param name="onWrite"> The callback to be called when a write operation was requested on this attribute </param>
-    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
-    /// <returns> A task which holds the descriptor on completion </returns>
-    Task<IGattClientDescriptor> AddDescriptorAsync(
-        BleUuid uuid,
-        OnReadCallback? onRead = null,
-        OnWriteCallback? onWrite = null,
-        CancellationToken cancellationToken = default
-    );
+    /// <returns> The descriptor that was added </returns>
+    IGattClientDescriptor AddDescriptor(BleUuid uuid, OnReadCallback? onRead = null, OnWriteCallback? onWrite = null);
 
     /// <summary> Notify subscribers about a new value </summary>
     /// <param name="clientPeer"> The client peer to notify. If null, all subscribed clients will be taken into account </param>

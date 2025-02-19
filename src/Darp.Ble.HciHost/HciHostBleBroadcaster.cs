@@ -22,15 +22,14 @@ internal sealed class HciHostGattClientService(
     ILogger<HciHostGattClientService> logger
 ) : GattClientService(peripheral, uuid, type, logger)
 {
-    protected override Task<GattClientCharacteristic> CreateCharacteristicAsyncCore(
+    protected override GattClientCharacteristic CreateCharacteristicCore(
         BleUuid uuid,
         GattProperty gattProperty,
         IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite,
-        CancellationToken cancellationToken
+        IGattClientAttribute.OnWriteCallback? onWrite
     )
     {
-        var characteristic = new HciHostGattClientCharacteristic(
+        return new HciHostGattClientCharacteristic(
             this,
             uuid,
             gattProperty,
@@ -38,7 +37,6 @@ internal sealed class HciHostGattClientService(
             onWrite,
             LoggerFactory.CreateLogger<HciHostGattClientCharacteristic>()
         );
-        return Task.FromResult<GattClientCharacteristic>(characteristic);
     }
 }
 
@@ -51,15 +49,13 @@ internal sealed class HciHostGattClientCharacteristic(
     ILogger<HciHostGattClientCharacteristic> logger
 ) : GattClientCharacteristic(clientService, uuid, gattProperty, onRead, onWrite, logger)
 {
-    protected override Task<GattClientDescriptor> AddDescriptorAsyncCore(
+    protected override GattClientDescriptor AddDescriptorCore(
         BleUuid uuid,
         IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite,
-        CancellationToken cancellationToken
+        IGattClientAttribute.OnWriteCallback? onWrite
     )
     {
-        var descriptor = new HciHostGattClientDescriptor(this, uuid, onRead, onWrite);
-        return Task.FromResult<GattClientDescriptor>(descriptor);
+        return new HciHostGattClientDescriptor(this, uuid, onRead, onWrite);
     }
 
     protected override void NotifyCore(IGattClientPeer clientPeer, byte[] value)
