@@ -111,15 +111,8 @@ public sealed class GattServerEchoService(IGattServerService service) : GattServ
     /// <returns> A disposable to unsubscribe from notifications </returns>
     public async Task<IAsyncDisposable> EnableNotificationsAsync(CancellationToken cancellationToken = default)
     {
-        return await Notify
-            .OnNotifyAsync(
-                _ =>
-                {
-                    // Do not do anything but subscribe
-                },
-                cancellationToken: cancellationToken
-            )
-            .ConfigureAwait(false);
+        // Do not do anything but subscribe
+        return await Notify.OnNotifyAsync(_ => { }, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary> Query one request from the echo service </summary>

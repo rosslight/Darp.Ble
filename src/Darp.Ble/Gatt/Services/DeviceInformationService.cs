@@ -107,71 +107,44 @@ public static class DeviceInformationServiceContract
         IGattClientService service = peripheral.AddService(DeviceInformationService);
 
         // Add optional manufacturer name characteristic
-        GattTypedClientCharacteristic<string, Properties.Read>? manufacturerNameCharacteristic = null;
+        GattTypedClientCharacteristic<string, Properties.Read>? manufacturerNameChar = null;
         if (manufacturerName is not null)
-        {
-            manufacturerNameCharacteristic = service.AddCharacteristic(
-                ManufacturerNameCharacteristic,
-                manufacturerName
-            );
-        }
-
+            manufacturerNameChar = service.AddCharacteristic(ManufacturerNameCharacteristic, manufacturerName);
         // Add optional model number characteristic
-        GattTypedClientCharacteristic<string, Properties.Read>? modelNumberCharacteristic = null;
+        GattTypedClientCharacteristic<string, Properties.Read>? modelNumberChar = null;
         if (modelNumber is not null)
-        {
-            modelNumberCharacteristic = service.AddCharacteristic(ModelNumberCharacteristic, modelNumber);
-        }
+            modelNumberChar = service.AddCharacteristic(ModelNumberCharacteristic, modelNumber);
 
         // Add optional serial number characteristic
-        GattTypedClientCharacteristic<string, Properties.Read>? serialNumberCharacteristic = null;
+        GattTypedClientCharacteristic<string, Properties.Read>? serialNumberChar = null;
         if (serialNumber is not null)
-        {
-            serialNumberCharacteristic = service.AddCharacteristic(SerialNumberCharacteristic, serialNumber);
-        }
+            serialNumberChar = service.AddCharacteristic(SerialNumberCharacteristic, serialNumber);
 
         // Add optional serial number characteristic
-        GattTypedClientCharacteristic<string, Properties.Read>? hardwareRevisionCharacteristic = null;
+        GattTypedClientCharacteristic<string, Properties.Read>? hardwareRevisionChar = null;
         if (hardwareRevision is not null)
-        {
-            hardwareRevisionCharacteristic = service.AddCharacteristic(
-                HardwareRevisionCharacteristic,
-                hardwareRevision
-            );
-        }
+            hardwareRevisionChar = service.AddCharacteristic(HardwareRevisionCharacteristic, hardwareRevision);
 
         // Add optional serial number characteristic
-        GattTypedClientCharacteristic<string, Properties.Read>? firmwareRevisionCharacteristic = null;
+        GattTypedClientCharacteristic<string, Properties.Read>? firmwareRevisionChar = null;
         if (firmwareRevision is not null)
-        {
-            firmwareRevisionCharacteristic = service.AddCharacteristic(
-                FirmwareRevisionCharacteristic,
-                firmwareRevision
-            );
-        }
+            firmwareRevisionChar = service.AddCharacteristic(FirmwareRevisionCharacteristic, firmwareRevision);
 
         // Add optional serial number characteristic
-        GattTypedClientCharacteristic<string, Properties.Read>? softwareRevisionCharacteristic = null;
+        GattTypedClientCharacteristic<string, Properties.Read>? softwareRevisionChar = null;
         if (softwareRevision is not null)
-        {
-            softwareRevisionCharacteristic = service.AddCharacteristic(
-                SoftwareRevisionCharacteristic,
-                softwareRevision
-            );
-        }
+            softwareRevisionChar = service.AddCharacteristic(SoftwareRevisionCharacteristic, softwareRevision);
 
         // Add optional serial number characteristic
-        GattTypedClientCharacteristic<SystemId, Properties.Read>? systemIdCharacteristic = null;
+        GattTypedClientCharacteristic<SystemId, Properties.Read>? systemIdChar = null;
         if (systemId is not null)
-        {
-            systemIdCharacteristic = service.AddCharacteristic(SystemIdCharacteristic, systemId.Value);
-        }
+            systemIdChar = service.AddCharacteristic(SystemIdCharacteristic, systemId.Value);
 
         // Add optional serial number characteristic
-        GattClientCharacteristic<Properties.Read>? regulatoryCertificationDataCharacteristic = null;
+        GattClientCharacteristic<Properties.Read>? regulatoryCertificationDataChar = null;
         if (ieeeRegulatoryCertificationData is not null)
         {
-            regulatoryCertificationDataCharacteristic = service.AddCharacteristic<Properties.Read>(
+            regulatoryCertificationDataChar = service.AddCharacteristic<Properties.Read>(
                 RegulatoryCertificationDataCharacteristic.Uuid,
                 ieeeRegulatoryCertificationData
             );
@@ -179,14 +152,14 @@ public static class DeviceInformationServiceContract
 
         return new GattClientDeviceInformationService(service)
         {
-            ManufacturerName = manufacturerNameCharacteristic,
-            ModelNumber = modelNumberCharacteristic,
-            SerialNumberCharacteristic = serialNumberCharacteristic,
-            HardwareRevisionCharacteristic = hardwareRevisionCharacteristic,
-            FirmwareRevisionCharacteristic = firmwareRevisionCharacteristic,
-            SoftwareRevisionCharacteristic = softwareRevisionCharacteristic,
-            SystemIdCharacteristic = systemIdCharacteristic,
-            RegulatoryCertificationDataCharacteristic = regulatoryCertificationDataCharacteristic,
+            ManufacturerName = manufacturerNameChar,
+            ModelNumber = modelNumberChar,
+            SerialNumberCharacteristic = serialNumberChar,
+            HardwareRevisionCharacteristic = hardwareRevisionChar,
+            FirmwareRevisionCharacteristic = firmwareRevisionChar,
+            SoftwareRevisionCharacteristic = softwareRevisionChar,
+            SystemIdCharacteristic = systemIdChar,
+            RegulatoryCertificationDataCharacteristic = regulatoryCertificationDataChar,
         };
     }
 

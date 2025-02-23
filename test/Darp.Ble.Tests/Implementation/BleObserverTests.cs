@@ -212,9 +212,4 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
         IDisposable disposable = device.Observer.Connect();
         disposable.Should().Be(Disposable.Empty);
     }
-    /*
-
-
-
-     */
 }
