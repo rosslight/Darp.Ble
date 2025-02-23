@@ -40,6 +40,12 @@ public enum AttOpCode : byte
     /// <summary> The <see cref="AttReadByTypeRsp"/> </summary>
     ATT_READ_BY_TYPE_RSP = 0x09,
 
+    /// <summary> The <see cref="AttReadReq"/> </summary>
+    ATT_READ_REQ = 0x0A,
+
+    /// <summary> The <see cref="AttReadRsp"/> </summary>
+    ATT_READ_RSP = 0x0B,
+
     /// <summary> The <see cref="AttReadByGroupTypeReq{TAttributeType}"/> </summary>
     ATT_READ_BY_GROUP_TYPE_REQ = 0x10,
 

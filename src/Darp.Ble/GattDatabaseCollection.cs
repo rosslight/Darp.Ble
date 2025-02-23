@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
 
@@ -188,6 +189,25 @@ public sealed class GattDatabaseCollection : IReadOnlyCollection<GattDatabaseEnt
             }
 
             handle = (ushort)(index + 1); // Attributes start at 0x0001
+            return true;
+        }
+    }
+
+    /// <summary> Tries to get the attribute of a given handle </summary>
+    /// <param name="handle"> The handle to get the attribute for </param>
+    /// <param name="attribute"> The attribute </param>
+    /// <returns> True, if an attribute could be found; False, otherwise </returns>
+    public bool TryGetAttribute(ushort handle, [NotNullWhen(true)] out IGattAttribute? attribute)
+    {
+        lock (_lock)
+        {
+            int index = handle - 1;
+            if (index > _attributes.Count)
+            {
+                attribute = null;
+                return false;
+            }
+            attribute = _attributes[index];
             return true;
         }
     }

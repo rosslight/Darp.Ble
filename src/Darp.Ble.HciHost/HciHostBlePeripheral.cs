@@ -57,12 +57,7 @@ internal sealed class HciHostGattClientPeer : GattClientPeer, IBleConnection
                 AttMtu = newMtu;
                 this.EnqueueGattPacket(new AttExchangeMtuRsp { ServerRxMtu = newMtu });
             });
-        WhenL2CapPduReceived
-            .SelectWhereAttPdu<AttFindInformationReq>()
-            .Subscribe(x =>
-            {
-                int i = 0;
-            });
+        WhenL2CapPduReceived.SelectWhereAttPdu<AttReadReq>().Subscribe(HandleReadRequest);
         WhenL2CapPduReceived.SelectWhereAttPdu<AttReadByGroupTypeReq<ushort>>().Subscribe(HandleGroupTypeRequest);
         WhenL2CapPduReceived.SelectWhereAttPdu<AttReadByTypeReq<ushort>>().Subscribe(HandleTypeRequest);
         Host.WhenHciLeMetaEventReceived.AsObservable()
@@ -183,6 +178,23 @@ internal sealed class HciHostGattClientPeer : GattClientPeer, IBleConnection
             Length = (byte)serviceAttributes[0].GetByteCount(),
             AttributeDataList = serviceAttributes,
         };
+        this.EnqueueGattPacket(rsp);
+    }
+
+    private void HandleReadRequest(AttReadReq request)
+    {
+        if (!Peripheral.GattDatabase.TryGetAttribute(request.AttributeHandle, out IGattAttribute? attribute))
+        {
+            var invalidHandleResponse = new AttErrorRsp
+            {
+                RequestOpCode = request.OpCode,
+                Handle = request.AttributeHandle,
+                ErrorCode = AttErrorCode.InvalidHandle,
+            };
+            this.EnqueueGattPacket(invalidHandleResponse);
+            return;
+        }
+        var rsp = new AttReadRsp { AttributeValue = attribute.AttributeValue };
         this.EnqueueGattPacket(rsp);
     }
 
