@@ -53,7 +53,7 @@ internal sealed class HciHostGattServerCharacteristic(
                     var rsp = response.Value;
                     if (rsp.InformationData.Length == 0)
                         break;
-                    foreach ((ushort handle, ReadOnlyMemory<byte> uuid) in rsp.InformationData)
+                    foreach ((ushort handle, ReadOnlyMemory<byte> uuid) in rsp.InformationData.Span)
                     {
                         if (handle < startingHandle)
                         {
@@ -75,7 +75,7 @@ internal sealed class HciHostGattServerCharacteristic(
                         observer.OnNext(descriptor);
                     }
 
-                    ushort lastHandle = rsp.InformationData[^1].Handle;
+                    ushort lastHandle = rsp.InformationData.Span[^1].Handle;
                     if (lastHandle == EndHandle)
                         break;
                     startingHandle = (ushort)(lastHandle + 1);

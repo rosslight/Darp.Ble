@@ -48,6 +48,14 @@ internal sealed class HciHostGattClientPeer : GattClientPeer, IBleConnection
         WhenL2CapPduReceived = this.AssembleL2CAp(logger)
             .Where(x => x.ChannelId is 0x0004)
             .TakeUntil(WhenDisconnected)
+            .Do(
+                _ => { },
+                _ => { },
+                () =>
+                {
+                    Logger.LogDebug("Disconnected");
+                }
+            )
             .Share();
         WhenL2CapPduReceived
             .SelectWhereAttPdu<AttExchangeMtuReq>()
@@ -57,6 +65,7 @@ internal sealed class HciHostGattClientPeer : GattClientPeer, IBleConnection
                 AttMtu = newMtu;
                 this.EnqueueGattPacket(new AttExchangeMtuRsp { ServerRxMtu = newMtu });
             });
+        WhenL2CapPduReceived.SelectWhereAttPdu<AttFindInformationReq>().Subscribe(HandleFindInformationRequest);
         WhenL2CapPduReceived.SelectWhereAttPdu<AttReadReq>().Subscribe(HandleReadRequest);
         WhenL2CapPduReceived.SelectWhereAttPdu<AttReadByGroupTypeReq<ushort>>().Subscribe(HandleGroupTypeRequest);
         WhenL2CapPduReceived.SelectWhereAttPdu<AttReadByTypeReq<ushort>>().Subscribe(HandleTypeRequest);
@@ -194,8 +203,69 @@ internal sealed class HciHostGattClientPeer : GattClientPeer, IBleConnection
             this.EnqueueGattPacket(invalidHandleResponse);
             return;
         }
-        var rsp = new AttReadRsp { AttributeValue = attribute.AttributeValue };
+
+        ReadOnlyMemory<byte> value = attribute.AttributeValue;
+        int length = Math.Min(AttMtu - 1, value.Length);
+        var rsp = new AttReadRsp { AttributeValue = value[..length] };
         this.EnqueueGattPacket(rsp);
+    }
+
+    private void HandleFindInformationRequest(AttFindInformationReq request)
+    {
+        if (request.StartingHandle is 0 || request.EndingHandle < request.StartingHandle)
+        {
+            var invalidHandleResponse = new AttErrorRsp
+            {
+                RequestOpCode = request.OpCode,
+                Handle = request.StartingHandle,
+                ErrorCode = AttErrorCode.InvalidHandle,
+            };
+            this.EnqueueGattPacket(invalidHandleResponse);
+            return;
+        }
+
+        int availablePduSpace = AttMtu - 2;
+
+        List<AttFindInformationData> attributes = [];
+        byte? attributeLength = null;
+        foreach (
+            GattDatabaseEntry attribute in Peripheral.GattDatabase.Where(x =>
+                x.Handle >= request.StartingHandle && x.Handle <= request.EndingHandle
+            )
+        )
+        {
+            ReadOnlyMemory<byte> attributeTypeBytes = attribute.AttributeType.ToByteArray();
+            attributeLength ??= (byte)attributeTypeBytes.Length;
+
+            // Stop adding attributes if this attribute type has a different size
+            if (attributeTypeBytes.Length != attributeLength)
+                break;
+            var entryLength = (byte)(2 + attributeLength);
+            // Check if there is enough space to hold this attribute
+            if (availablePduSpace < entryLength)
+                break;
+            availablePduSpace -= entryLength;
+            attributes.Add(new AttFindInformationData(attribute.Handle, attributeTypeBytes));
+        }
+        if (attributes.Count == 0 || attributeLength is null)
+        {
+            var notFoundResponse = new AttErrorRsp
+            {
+                RequestOpCode = request.OpCode,
+                Handle = request.StartingHandle,
+                ErrorCode = AttErrorCode.AttributeNotFoundError,
+            };
+            this.EnqueueGattPacket(notFoundResponse);
+            return;
+        }
+        var response = new AttFindInformationRsp
+        {
+            Format = attributeLength is 2
+                ? AttFindInformationFormat.HandleAnd16BitUuid
+                : AttFindInformationFormat.HandleAnd128BitUuid,
+            InformationData = attributes.ToArray(),
+        };
+        this.EnqueueGattPacket(response);
     }
 
     public override bool IsConnected => !_disconnectedBehavior.Value;

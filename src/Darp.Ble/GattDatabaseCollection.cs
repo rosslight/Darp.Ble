@@ -1,5 +1,7 @@
+using System.Buffers.Binary;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
 
@@ -59,6 +61,21 @@ public sealed class GattDatabaseCollection : IReadOnlyCollection<GattDatabaseEnt
 
     private readonly object _lock = new();
     private readonly List<IGattAttribute> _attributes = [];
+
+    /// <summary> The handle of the first attribute in the database </summary>
+    public ushort MinHandle => 0x0001;
+
+    /// <summary> The handle of the last attribute in the database </summary>
+    public ushort MaxHandle
+    {
+        get
+        {
+            lock (_lock)
+            {
+                return (ushort)(_attributes.Count + 1);
+            }
+        }
+    }
 
     /// <summary> Add a service at the end of the database </summary>
     /// <param name="service"> The service to be added </param>
@@ -247,6 +264,41 @@ public sealed class GattDatabaseCollection : IReadOnlyCollection<GattDatabaseEnt
                 yield return new GattDatabaseGroupEntry(attribute, serviceHandle, endGroupHandle);
                 currentIndex = endGroupHandle;
             }
+        }
+    }
+
+    /// <summary> Hash the gatt database </summary>
+    /// <returns> The has as UInt128 </returns>
+    public UInt128 CreateHash()
+    {
+        lock (_lock)
+        {
+            List<byte> bytesToHash = [];
+            Span<byte> buffer = stackalloc byte[4];
+            foreach (IGattAttribute gattAttribute in _attributes)
+            {
+                if (
+                    gattAttribute.AttributeType == PrimaryServiceType
+                    || gattAttribute.AttributeType == SecondaryServiceType
+                    || gattAttribute.AttributeType == CharacteristicType
+                )
+                {
+                    BinaryPrimitives.WriteUInt16LittleEndian(buffer[..2], gattAttribute.Handle);
+                    gattAttribute.AttributeType.TryWriteBytes(buffer[2..4]);
+                    bytesToHash.AddRange(buffer);
+                    bytesToHash.AddRange(gattAttribute.AttributeValue);
+                }
+                else if (gattAttribute.AttributeType == UserDescriptionType)
+                {
+                    BinaryPrimitives.WriteUInt16LittleEndian(buffer[..2], gattAttribute.Handle);
+                    gattAttribute.AttributeType.TryWriteBytes(buffer[2..4]);
+                    bytesToHash.AddRange(buffer);
+                }
+            }
+
+            using var cmac = new AesCmac("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"u8);
+            byte[] hashBuffer = cmac.Encrypt(CollectionsMarshal.AsSpan(bytesToHash));
+            return BinaryPrimitives.ReadUInt16LittleEndian(hashBuffer);
         }
     }
 }

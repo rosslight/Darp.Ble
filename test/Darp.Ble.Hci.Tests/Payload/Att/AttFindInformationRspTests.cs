@@ -53,7 +53,8 @@ public sealed class AttFindInformationRspTests
         value.OpCode.Should().Be(AttOpCode.ATT_FIND_INFORMATION_RSP);
         value.Format.Should().Be(AttFindInformationFormat.HandleAnd16BitUuid);
         value
-            .InformationData.Zip(findInformationData)
+            .InformationData.ToArray()
+            .Zip(findInformationData)
             .Should()
             .AllSatisfy(x =>
             {
@@ -82,7 +83,8 @@ public sealed class AttFindInformationRspTests
         value.Format.Should().Be(AttFindInformationFormat.HandleAnd128BitUuid);
 
         value
-            .InformationData.Zip(findInformationData)
+            .InformationData.ToArray()
+            .Zip(findInformationData)
             .Should()
             .AllSatisfy(x =>
             {
