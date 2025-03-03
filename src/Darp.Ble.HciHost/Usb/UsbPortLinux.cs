@@ -11,15 +11,19 @@ internal static class UsbPortLinux
     {
         foreach (string strPortName in SerialPort.GetPortNames())
         {
-            UDevAdmin.Properties? properties;
+            UDevAdmin.Properties properties;
             ushort nVendorId;
             ushort nProductId;
+            ulong nId;
             try
             {
                 properties = UDevAdmin.GetProperties(strPortName);
 
-                nVendorId = Convert.ToUInt16(properties?.VendorId, 16);
-                nProductId = Convert.ToUInt16(properties?.ModelId, 16);
+                nVendorId = Convert.ToUInt16(properties.VendorId, 16);
+                nProductId = Convert.ToUInt16(properties.ModelId, 16);
+
+                nId = (ulong)HashCode.Combine(strPortName, properties.VendorId, properties.ModelId) << 32
+                    | (uint)HashCode.Combine(properties.Vendor, properties.Model, properties.Type);
             }
             catch
             {
@@ -28,7 +32,7 @@ internal static class UsbPortLinux
 
             yield return new UsbPortInfo
             {
-                Id = 0, //TODO
+                Id = nId,
                 Type = properties?.Type ?? "N/A",
                 VendorId = nVendorId,
                 ProductId = nProductId,
@@ -53,7 +57,7 @@ internal static class UsbPortLinux
         private const string PROPERTY_Model = "ID_MODEL";
         private const string PROPERTY_Type = "ID_TYPE";
 
-        private static readonly string[] PropertiesAll =
+        private static readonly string[] PROPERTIES_All =
         [
             PROPERTY_VendorId,
             PROPERTY_Vendor,
@@ -70,14 +74,14 @@ internal static class UsbPortLinux
             string? Type
         );
 
-        public static Properties? GetProperties(string strDeviceName)
+        public static Properties GetProperties(string strDeviceName)
         {
             using var process = new Process();
             process.StartInfo.FileName = "udevadm";
             process.StartInfo.ArgumentList.Add("info");
             process.StartInfo.ArgumentList.Add(strDeviceName);
             process.StartInfo.ArgumentList.Add("--query=property");
-            process.StartInfo.ArgumentList.Add("--property=" + string.Join(',', PropertiesAll));
+            process.StartInfo.ArgumentList.Add("--property=" + string.Join(',', PROPERTIES_All));
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardOutput = true;
             process.Start();
@@ -87,14 +91,14 @@ internal static class UsbPortLinux
             process.WaitForExit();
 
             return new Properties(
-                VendorId: GetValueFor(PROPERTY_VendorId, strOutput),
-                Vendor: GetValueFor(PROPERTY_Vendor, strOutput),
-                ModelId: GetValueFor(PROPERTY_ModelId, strOutput),
-                Model: GetValueFor(PROPERTY_Model, strOutput),
-                Type: GetValueFor(PROPERTY_Type, strOutput));
+                VendorId: GetPropertyValue(PROPERTY_VendorId, strOutput),
+                Vendor: GetPropertyValue(PROPERTY_Vendor, strOutput),
+                ModelId: GetPropertyValue(PROPERTY_ModelId, strOutput),
+                Model: GetPropertyValue(PROPERTY_Model, strOutput),
+                Type: GetPropertyValue(PROPERTY_Type, strOutput));
         }
 
-        private static string? GetValueFor(string strProperty, string str)
+        private static string? GetPropertyValue(string strProperty, string str)
         {
             int iStartKey = str.IndexOf(strProperty, StringComparison.Ordinal);
             if (iStartKey < 0)
