@@ -32,7 +32,7 @@ internal sealed class Program
         IBleDevice adapter = manager.EnumerateDevices().First(x => string.Equals(x.Identifier, "Darp.Ble.HciHost", StringComparison.Ordinal));
 
         _ = ble.StartScanAsync(adapter, OnNextAdvertisement);
-        Task.Delay(30000).Wait();
+        Task.Delay(15000).Wait();
         ble.StopScan();
     }
 

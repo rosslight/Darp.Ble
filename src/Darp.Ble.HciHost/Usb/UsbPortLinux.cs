@@ -11,23 +11,15 @@ internal static class UsbPortLinux
     {
         foreach (string strPortName in SerialPort.GetPortNames())
         {
-            string? strVendorId;
-            string? strVendor;
-            string? strProductId;
-            string? strType;
-            string? strDescription;
+            UDevAdmin.Properties? properties;
             ushort nVendorId;
             ushort nProductId;
             try
             {
-                strVendorId = UDevAdmin.GetProperty(strPortName, UDevAdmin.PROPERTY_VendorId);
-                strVendor = UDevAdmin.GetProperty(strPortName, UDevAdmin.PROPERTY_Vendor);
-                strProductId = UDevAdmin.GetProperty(strPortName, UDevAdmin.PROPERTY_ModelId);
-                strDescription = UDevAdmin.GetProperty(strPortName, UDevAdmin.PROPERTY_Model);
-                strType = UDevAdmin.GetProperty(strPortName, UDevAdmin.PROPERTY_Type);
+                properties = UDevAdmin.GetProperties(strPortName);
 
-                nVendorId = Convert.ToUInt16(strVendorId, 16);
-                nProductId = Convert.ToUInt16(strProductId, 16);
+                nVendorId = Convert.ToUInt16(properties?.VendorId, 16);
+                nProductId = Convert.ToUInt16(properties?.ModelId, 16);
             }
             catch
             {
@@ -37,12 +29,12 @@ internal static class UsbPortLinux
             yield return new UsbPortInfo
             {
                 Id = 0, //TODO
-                Type = strType ?? "N/A",
+                Type = properties?.Type ?? "N/A",
                 VendorId = nVendorId,
                 ProductId = nProductId,
                 Port = strPortName,
-                Manufacturer = strVendor,
-                Description = strDescription,
+                Manufacturer = properties?.Vendor,
+                Description = properties?.Model,
             };
         }
     }
@@ -55,20 +47,37 @@ internal static class UsbPortLinux
 
     private static class UDevAdmin
     {
-        public const string PROPERTY_VendorId = "ID_VENDOR_ID";
-        public const string PROPERTY_Vendor = "ID_VENDOR";
-        public const string PROPERTY_ModelId = "ID_MODEL_ID";
-        public const string PROPERTY_Model = "ID_MODEL";
-        public const string PROPERTY_Type = "ID_TYPE";
+        private const string PROPERTY_VendorId = "ID_VENDOR_ID";
+        private const string PROPERTY_Vendor = "ID_VENDOR";
+        private const string PROPERTY_ModelId = "ID_MODEL_ID";
+        private const string PROPERTY_Model = "ID_MODEL";
+        private const string PROPERTY_Type = "ID_TYPE";
 
-        public static string? GetProperty(string strDeviceName, string strProperty)
+        private static readonly string[] PropertiesAll =
+        [
+            PROPERTY_VendorId,
+            PROPERTY_Vendor,
+            PROPERTY_ModelId,
+            PROPERTY_Model,
+            PROPERTY_Type,
+        ];
+
+        public record Properties(
+            string? VendorId,
+            string? Vendor,
+            string? ModelId,
+            string? Model,
+            string? Type
+        );
+
+        public static Properties? GetProperties(string strDeviceName)
         {
             using var process = new Process();
             process.StartInfo.FileName = "udevadm";
             process.StartInfo.ArgumentList.Add("info");
             process.StartInfo.ArgumentList.Add(strDeviceName);
             process.StartInfo.ArgumentList.Add("--query=property");
-            process.StartInfo.ArgumentList.Add("--property=" + strProperty);
+            process.StartInfo.ArgumentList.Add("--property=" + string.Join(',', PropertiesAll));
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardOutput = true;
             process.Start();
@@ -77,11 +86,30 @@ internal static class UsbPortLinux
 
             process.WaitForExit();
 
-            string strPrefix = strProperty + "=";
-            if (strOutput.StartsWith(strPrefix, StringComparison.Ordinal))
-                return strOutput[strPrefix.Length..].TrimEnd();
+            return new Properties(
+                VendorId: GetValueFor(PROPERTY_VendorId, strOutput),
+                Vendor: GetValueFor(PROPERTY_Vendor, strOutput),
+                ModelId: GetValueFor(PROPERTY_ModelId, strOutput),
+                Model: GetValueFor(PROPERTY_Model, strOutput),
+                Type: GetValueFor(PROPERTY_Type, strOutput));
+        }
 
-            return null;
+        private static string? GetValueFor(string strProperty, string str)
+        {
+            int iStartKey = str.IndexOf(strProperty, StringComparison.Ordinal);
+            if (iStartKey < 0)
+                return null;
+
+            int iEqualSign = iStartKey + strProperty.Length;
+            if (str[iEqualSign] != '=')
+                return null;
+
+            int iStartValue = iEqualSign + 1;
+            int iEndValue = str.IndexOf('\n', iStartValue);
+            if (iEndValue < 0)
+                return null;
+
+            return str[iStartValue..iEndValue];
         }
     }
 }
