@@ -1,5 +1,6 @@
 ﻿using System.Globalization;
 using Darp.Ble.Gap;
+using Darp.Ble.HciHost;
 using Darp.Ble.Mock;
 using Serilog;
 using Serilog.Extensions.Logging;
@@ -13,7 +14,7 @@ internal sealed class Program
     public static void Main(string[] args)
     {
         Log.Logger = new LoggerConfiguration()
-            .MinimumLevel.Verbose()
+            .MinimumLevel.Debug()
             .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
             .CreateLogger();
 
@@ -23,13 +24,15 @@ internal sealed class Program
 
         BleManager manager = new BleManagerBuilder()
             .Add(new BleMockFactory { OnInitialize = ble.Initialize })
+            .Add(new HciHostBleFactory())
             .SetLogger(extensionsLogger)
             .CreateManager();
 
-        IBleDevice adapter = manager.EnumerateDevices().First();
+        // "Darp.Ble.Mock"
+        IBleDevice adapter = manager.EnumerateDevices().First(x => string.Equals(x.Identifier, "Darp.Ble.HciHost", StringComparison.Ordinal));
 
         _ = ble.StartScanAsync(adapter, OnNextAdvertisement);
-        Task.Delay(5000).Wait();
+        Task.Delay(30000).Wait();
         ble.StopScan();
     }
 
