@@ -23,13 +23,12 @@ internal sealed class Program
         using var ble = new Ble();
 
         BleManager manager = new BleManagerBuilder()
-            .Add(new BleMockFactory { OnInitialize = ble.Initialize })
             .Add(new HciHostBleFactory())
+            .Add(new BleMockFactory { OnInitialize = ble.Initialize })
             .SetLogger(extensionsLogger)
             .CreateManager();
 
-        // "Darp.Ble.Mock"
-        IBleDevice adapter = manager.EnumerateDevices().First(x => string.Equals(x.Identifier, "Darp.Ble.HciHost", StringComparison.Ordinal));
+        IBleDevice adapter = manager.EnumerateDevices().First();
 
         _ = ble.StartScanAsync(adapter, OnNextAdvertisement);
         Task.Delay(15000).Wait();
