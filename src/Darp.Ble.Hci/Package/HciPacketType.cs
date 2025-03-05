@@ -6,14 +6,19 @@ public enum HciPacketType : byte
 {
     /// <summary> Invalid packet type </summary>
     None,
+
     /// <summary> The <see cref="HciCommandPacket{TParameters}"/> </summary>
     HciCommand = 0x01,
+
     /// <summary> The <see cref="HciAclPacket{TData}"/> </summary>
     HciAclData = 0x02,
+
     /// <summary> The Hci Synchronous data packet </summary>
     HciSynchronousData = 0x03,
+
     /// <summary> The <see cref="HciEventPacket"/> </summary>
     HciEvent = 0x04,
+
     /// <summary> The Hci Iso Data Packet </summary>
     HciIsoData = 0x05,
 }

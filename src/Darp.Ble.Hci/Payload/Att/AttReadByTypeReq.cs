@@ -6,7 +6,9 @@ namespace Darp.Ble.Hci.Payload.Att;
 
 /// <summary> The ATT_READ_BY_TYPE_REQ PDU is used to obtain the values of attributes where the attribute type is known but the handle is not known. </summary>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/attribute-protocol--att-.html#UUID-2c2cdcd4-6173-9654-82fc-c4c7bd74fe3a"/>
-public readonly partial record struct AttReadByTypeReq<TAttributeType> : IAttPdu, IBinaryWritable
+public readonly partial record struct AttReadByTypeReq<TAttributeType>
+    : IAttPdu,
+        IBinaryObject<AttReadByTypeReq<TAttributeType>>
     where TAttributeType : unmanaged
 {
     /// <inheritdoc />
@@ -14,10 +16,13 @@ public readonly partial record struct AttReadByTypeReq<TAttributeType> : IAttPdu
 
     /// <inheritdoc />
     public AttOpCode OpCode => ExpectedOpCode;
+
     /// <summary> First requested handle number </summary>
     public required ushort StartingHandle { get; init; }
+
     /// <summary> Last requested handle number </summary>
     public required ushort EndingHandle { get; init; }
+
     /// <summary> 2 or 16 octet UUID </summary>
     public required TAttributeType AttributeType { get; init; }
 
@@ -34,7 +39,8 @@ public readonly partial record struct AttReadByTypeReq<TAttributeType> : IAttPdu
     public bool TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
     {
         bytesWritten = 0;
-        if (destination.Length < 6) return false;
+        if (destination.Length < 6)
+            return false;
         destination[0] = (byte)OpCode;
         BinaryPrimitives.WriteUInt16LittleEndian(destination[1..], StartingHandle);
         BinaryPrimitives.WriteUInt16LittleEndian(destination[3..], EndingHandle);
@@ -45,14 +51,53 @@ public readonly partial record struct AttReadByTypeReq<TAttributeType> : IAttPdu
     }
 
     /// <inheritdoc />
-    public bool TryWriteBigEndian(Span<byte> destination)
+    public bool TryWriteBigEndian(Span<byte> destination) => TryWriteBigEndian(destination, out _);
+
+    /// <inheritdoc />
+    public bool TryWriteBigEndian(Span<byte> destination, out int bytesWritten) => throw new NotSupportedException();
+
+    /// <inheritdoc />
+    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out AttReadByTypeReq<TAttributeType> value) =>
+        TryReadLittleEndian(source, out value, out _);
+
+    /// <inheritdoc />
+    public static bool TryReadLittleEndian(
+        ReadOnlySpan<byte> source,
+        out AttReadByTypeReq<TAttributeType> value,
+        out int bytesRead
+    )
     {
-        throw new NotSupportedException();
+        bytesRead = 0;
+        value = default;
+        int attributeTypeLength = Marshal.SizeOf<TAttributeType>();
+        if (source.Length < 5 + attributeTypeLength)
+            return false;
+        var opCode = (AttOpCode)source[0];
+        if (opCode != ExpectedOpCode)
+            return false;
+        ushort startingHandle = BinaryPrimitives.ReadUInt16LittleEndian(source[1..]);
+        ushort endingHandle = BinaryPrimitives.ReadUInt16LittleEndian(source[3..]);
+        bytesRead += 5;
+        ReadOnlySpan<TAttributeType> attributeTypeSpan = MemoryMarshal.Cast<byte, TAttributeType>(source[5..]);
+        TAttributeType attributeType = attributeTypeSpan[0];
+        bytesRead += attributeTypeLength;
+        value = new AttReadByTypeReq<TAttributeType>
+        {
+            StartingHandle = startingHandle,
+            EndingHandle = endingHandle,
+            AttributeType = attributeType,
+        };
+        return true;
     }
 
     /// <inheritdoc />
-    public bool TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
-    {
-        throw new NotSupportedException();
-    }
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out AttReadByTypeReq<TAttributeType> value) =>
+        TryReadBigEndian(source, out value, out _);
+
+    /// <inheritdoc />
+    public static bool TryReadBigEndian(
+        ReadOnlySpan<byte> source,
+        out AttReadByTypeReq<TAttributeType> value,
+        out int bytesRead
+    ) => throw new NotSupportedException();
 }

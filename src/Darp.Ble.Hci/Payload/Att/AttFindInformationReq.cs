@@ -1,5 +1,3 @@
-using System.Buffers.Binary;
-using System.Runtime.InteropServices;
 using Darp.BinaryObjects;
 
 namespace Darp.Ble.Hci.Payload.Att;
@@ -14,8 +12,10 @@ public readonly partial record struct AttFindInformationReq() : IAttPdu
 
     /// <inheritdoc />
     public AttOpCode OpCode { get; init; } = ExpectedOpCode;
+
     /// <summary> First requested handle number </summary>
     public required ushort StartingHandle { get; init; }
+
     /// <summary> Last requested handle number </summary>
     public required ushort EndingHandle { get; init; }
 }

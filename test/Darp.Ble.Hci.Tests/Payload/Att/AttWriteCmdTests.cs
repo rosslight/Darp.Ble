@@ -17,11 +17,7 @@ public sealed class AttWriteCmdTests
     {
         var buffer = new byte[7];
         byte[] valueBytes = Convert.FromHexString(valueHexBytes);
-        var value = new AttWriteCmd
-        {
-            Handle = handle,
-            Value = valueBytes,
-        };
+        var value = new AttWriteCmd { Handle = handle, Value = valueBytes };
 
         bool success = value.TryWriteLittleEndian(buffer);
 

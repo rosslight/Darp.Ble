@@ -9,7 +9,5 @@ public sealed class BleObservationStartException : BleObservationException
     /// <param name="bleObserver"> The ble observer </param>
     /// <param name="message"> The message </param>
     public BleObservationStartException(BleObserver bleObserver, string message)
-        : base(bleObserver, message, innerException: null)
-    {
-    }
+        : base(bleObserver, message, innerException: null) { }
 }

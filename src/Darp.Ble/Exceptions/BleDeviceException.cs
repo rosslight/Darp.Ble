@@ -11,7 +11,8 @@ public class BleDeviceException : Exception
     /// <summary> Initializes the new exception </summary>
     /// <param name="device"> The ble device </param>
     /// <param name="message"> The message </param>
-    public BleDeviceException(IBleDevice device, string? message) : base(message)
+    public BleDeviceException(IBleDevice device, string? message)
+        : base(message)
     {
         Device = device;
     }

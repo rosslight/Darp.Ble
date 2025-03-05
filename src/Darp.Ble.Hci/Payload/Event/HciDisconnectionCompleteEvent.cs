@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using Darp.BinaryObjects;
 
 namespace Darp.Ble.Hci.Payload.Event;
@@ -10,9 +9,14 @@ public readonly partial record struct HciDisconnectionCompleteEvent : IHciEvent<
 {
     /// <inheritdoc />
     public static HciEventCode EventCode => HciEventCode.HCI_Disconnection_Complete;
+
+    /// <summary> Status </summary>
+    public required HciCommandStatus Status { get; init; }
+
     /// <summary> Connection_Handle </summary>
     /// <remarks> Range: 0x0000 to 0x0EFF </remarks>
     public required ushort ConnectionHandle { get; init; }
+
     /// <summary> The Reason </summary>
     public required HciCommandStatus Reason { get; init; }
 }

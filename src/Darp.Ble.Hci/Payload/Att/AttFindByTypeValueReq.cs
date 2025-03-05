@@ -13,12 +13,16 @@ public readonly partial record struct AttFindByTypeValueReq() : IAttPdu
 
     /// <inheritdoc />
     public AttOpCode OpCode { get; private init; } = ExpectedOpCode;
+
     /// <summary> First requested handle number </summary>
     public required ushort StartingHandle { get; init; }
+
     /// <summary> Last requested handle number </summary>
     public required ushort EndingHandle { get; init; }
+
     /// <summary> 2 octet UUID to find </summary>
     public required ushort AttributeType { get; init; }
+
     /// <summary> Attribute value to find </summary>
     public required byte[] AttributeValue { get; init; }
 
@@ -28,7 +32,8 @@ public readonly partial record struct AttFindByTypeValueReq() : IAttPdu
     /// <inheritdoc />
     public bool TryEncode(Span<byte> destination)
     {
-        if (destination.Length < Length) return false;
+        if (destination.Length < Length)
+            return false;
         destination[0] = (byte)OpCode;
         BinaryPrimitives.WriteUInt16LittleEndian(destination[1..], StartingHandle);
         BinaryPrimitives.WriteUInt16LittleEndian(destination[3..], EndingHandle);

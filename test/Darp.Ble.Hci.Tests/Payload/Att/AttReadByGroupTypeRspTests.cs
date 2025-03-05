@@ -14,13 +14,22 @@ public sealed class AttReadByGroupTypeRspTests
 
     [Theory]
     [InlineData("110601000B000018", 0x0001, 0x000B, 0x1800)]
-    [InlineData("110601000B0000180C000F000118100022000A182300FFFF4CAA",
-        0x0001, 0x000B, 0x1800,
-        0x000C, 0x000F, 0x1801,
-        0x0010, 0x0022, 0x180A,
-        0x0023, 0xFFFF, 0xAA4C)]
-    public void TryReadLittleEndian_16Bit_ShouldBeValid(string hexBytes,
-        params int[] informationData)
+    [InlineData(
+        "110601000B0000180C000F000118100022000A182300FFFF4CAA",
+        0x0001,
+        0x000B,
+        0x1800,
+        0x000C,
+        0x000F,
+        0x1801,
+        0x0010,
+        0x0022,
+        0x180A,
+        0x0023,
+        0xFFFF,
+        0xAA4C
+    )]
+    public void TryReadLittleEndian_16Bit_ShouldBeValid(string hexBytes, params int[] informationData)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
         AttGroupTypeData<ushort>[] attributeDataList = informationData
@@ -34,7 +43,11 @@ public sealed class AttReadByGroupTypeRspTests
             })
             .ToArray();
 
-        bool success = AttReadByGroupTypeRsp<ushort>.TryReadLittleEndian(bytes, out AttReadByGroupTypeRsp<ushort> value, out int decoded);
+        bool success = AttReadByGroupTypeRsp<ushort>.TryReadLittleEndian(
+            bytes,
+            out AttReadByGroupTypeRsp<ushort> value,
+            out int decoded
+        );
 
         success.Should().BeTrue();
         decoded.Should().Be(2 + 6 * attributeDataList.Length);
@@ -45,8 +58,12 @@ public sealed class AttReadByGroupTypeRspTests
 
     [Theory]
     [InlineData("111401000B000000FFE000001000800000805F9B34FB", 0x0001, 0x000B, "0000FFE000001000800000805F9B34FB")]
-    public void TryReadLittleEndian_128Bit_ShouldBeValid(string hexBytes,
-        ushort startHandle, ushort endHandle, string valueHexBytes)
+    public void TryReadLittleEndian_128Bit_ShouldBeValid(
+        string hexBytes,
+        ushort startHandle,
+        ushort endHandle,
+        string valueHexBytes
+    )
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
         AttGroupTypeData<Guid>[] attributeDataList =
@@ -54,7 +71,11 @@ public sealed class AttReadByGroupTypeRspTests
             new(startHandle, endHandle, new Guid(Convert.FromHexString(valueHexBytes))),
         ];
 
-        bool success = AttReadByGroupTypeRsp<Guid>.TryReadLittleEndian(bytes, out AttReadByGroupTypeRsp<Guid> value, out int decoded);
+        bool success = AttReadByGroupTypeRsp<Guid>.TryReadLittleEndian(
+            bytes,
+            out AttReadByGroupTypeRsp<Guid> value,
+            out int decoded
+        );
 
         success.Should().BeTrue();
         decoded.Should().Be(2 + 20 * attributeDataList.Length);

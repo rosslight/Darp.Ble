@@ -1,4 +1,6 @@
 using Darp.Ble.Data;
+using Darp.Ble.Data.AssignedNumbers;
+using Darp.Ble.Gatt.Services;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Result;
@@ -9,34 +11,69 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.HciHost;
 
 /// <summary> Provides windows specific implementation of a ble device </summary>
-public sealed class HciHostBleDevice(string port, string name, ILogger? logger) : BleDevice(logger)
+internal sealed class HciHostBleDevice(
+    string port,
+    string name,
+    BleAddress? randomAddress,
+    ILoggerFactory loggerFactory
+) : BleDevice(loggerFactory, loggerFactory.CreateLogger<HciHostBleDevice>())
 {
-    public Hci.HciHost Host { get; } = new(new H4TransportLayer(port, logger: logger), logger: logger);
+    public Hci.HciHost Host { get; } =
+        new(
+            new H4TransportLayer(port, logger: loggerFactory.CreateLogger<H4TransportLayer>()),
+            logger: loggerFactory.CreateLogger<Hci.HciHost>()
+        );
 
     public override string Name { get; } = name;
+    public override AppearanceValues Appearance => AppearanceValues.Unknown;
 
-    /// <param name="cancellationToken"></param>
+    public BleAddress RandomAddress { get; private set; } = randomAddress ?? BleAddress.NewRandomStaticAddress();
+
     /// <inheritdoc />
     protected override async Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
     {
-        Host.Initialize();
-        await Host.QueryCommandCompletionAsync<HciResetCommand, HciResetResult>(cancellationToken: cancellationToken).ConfigureAwait(false);
-        //await Host.QueryCommandCompletionAsync<HciReadLocalSupportedCommandsCommand, HciReadLocalSupportedCommandsResult>();
-        await Host.QueryCommandCompletionAsync<HciSetEventMaskCommand, HciSetEventMaskResult>(new HciSetEventMaskCommand((EventMask)0x3fffffffffffffff), cancellationToken: cancellationToken).ConfigureAwait(false);
-        await Host.QueryCommandCompletionAsync<HciLeSetEventMaskCommand, HciLeSetEventMaskResult>(new HciLeSetEventMaskCommand((LeEventMask)0xf0ffff), cancellationToken: cancellationToken).ConfigureAwait(false);
-        await Host.QueryCommandCompletionAsync<HciLeSetRandomAddressCommand, HciLeSetRandomAddressResult>(new HciLeSetRandomAddressCommand(0xF0F1F2F3F4F5), cancellationToken: cancellationToken).ConfigureAwait(false);
-        Observer = new HciHostBleObserver(this, Logger);
-        Central = new HciHostBleCentral(this, Logger);
+        await Host.InitializeAsync(cancellationToken).ConfigureAwait(false);
+        await SetRandomAddressAsync(RandomAddress, cancellationToken).ConfigureAwait(false);
+
+        Observer = new HciHostBleObserver(this, LoggerFactory.CreateLogger<HciHostBleObserver>());
+        Central = new HciHostBleCentral(this, LoggerFactory.CreateLogger<HciHostBleCentral>());
+
+        HciLeReadMaximumAdvertisingDataLengthResult result = await Host.QueryCommandCompletionAsync<
+            HciLeReadMaximumAdvertisingDataLengthCommand,
+            HciLeReadMaximumAdvertisingDataLengthResult
+        >(cancellationToken: cancellationToken)
+            .ConfigureAwait(false);
+        Broadcaster = new HciHostBleBroadcaster(
+            this,
+            result.MaxAdvertisingDataLength,
+            LoggerFactory.CreateLogger<HciHostBleBroadcaster>()
+        );
+        Peripheral = new HciHostBlePeripheral(this, LoggerFactory.CreateLogger<HciHostBlePeripheral>());
+        Peripheral.AddGapService();
         return InitializeResult.Success;
     }
 
-    /// <inheritdoc />
-    public override string Identifier => "Darp.Ble.HciHost";
+    protected override async Task SetRandomAddressAsyncCore(
+        BleAddress randomAddress,
+        CancellationToken cancellationToken
+    )
+    {
+        var addressValue = randomAddress.Value.ToUInt64();
+        await Host.QueryCommandCompletionAsync<HciLeSetRandomAddressCommand, HciLeSetRandomAddressResult>(
+                new HciLeSetRandomAddressCommand(addressValue),
+                cancellationToken: cancellationToken
+            )
+            .ConfigureAwait(false);
+        RandomAddress = randomAddress;
+    }
 
     /// <inheritdoc />
-    protected override void DisposeCore()
+    public override string Identifier => BleDeviceIdentifiers.HciHost;
+
+    /// <inheritdoc />
+    protected override void Dispose(bool disposing)
     {
         Host.Dispose();
-        base.DisposeCore();
+        base.Dispose(disposing);
     }
 }

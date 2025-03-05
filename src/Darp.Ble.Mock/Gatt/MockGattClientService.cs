@@ -1,17 +1,36 @@
 using Darp.Ble.Data;
+using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Client;
+using Darp.Ble.Gatt.Services;
+using Darp.Ble.Implementation;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock.Gatt;
 
-internal sealed class MockGattClientService(BleUuid uuid, MockBlePeripheral blePeripheral) : GattClientService(uuid)
+internal sealed class MockGattClientService(
+    BleUuid uuid,
+    GattServiceType type,
+    MockedBlePeripheral blePeripheral,
+    ILogger<MockGattClientService> logger
+) : GattClientService(blePeripheral, uuid, type, logger)
 {
-    public MockBlePeripheral BlePeripheral { get; } = blePeripheral;
+    public MockedBlePeripheral BlePeripheral { get; } = blePeripheral;
 
     /// <inheritdoc />
-    protected override Task<IGattClientCharacteristic> CreateCharacteristicAsyncCore(BleUuid uuid,
+    protected override GattClientCharacteristic CreateCharacteristicCore(
+        BleUuid uuid,
         GattProperty gattProperty,
-        CancellationToken cancellationToken)
+        IGattClientAttribute.OnReadCallback? onRead,
+        IGattClientAttribute.OnWriteCallback? onWrite
+    )
     {
-        return Task.FromResult<IGattClientCharacteristic>(new MockGattClientCharacteristic(uuid, gattProperty));
+        return new MockGattClientCharacteristic(
+            this,
+            uuid,
+            gattProperty,
+            onRead,
+            onWrite,
+            LoggerFactory.CreateLogger<MockGattClientCharacteristic>()
+        );
     }
 }

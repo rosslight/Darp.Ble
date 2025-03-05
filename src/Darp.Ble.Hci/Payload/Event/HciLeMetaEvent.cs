@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using Darp.BinaryObjects;
 
 namespace Darp.Ble.Hci.Payload.Event;
@@ -12,5 +11,9 @@ public readonly partial record struct HciLeMetaEvent : IHciEvent<HciLeMetaEvent>
     public static HciEventCode EventCode => HciEventCode.HCI_LE_Meta;
 
     /// <summary> The SubEventCode </summary>
-    public required HciLeMetaSubEventType SubEventCode { get; init; }
+    public HciLeMetaSubEventType SubEventCode => (HciLeMetaSubEventType)Parameters.Span[0];
+
+    /// <summary> The Parameters </summary>
+    [BinaryMinElementCount(1)]
+    public required ReadOnlyMemory<byte> Parameters { get; init; }
 }

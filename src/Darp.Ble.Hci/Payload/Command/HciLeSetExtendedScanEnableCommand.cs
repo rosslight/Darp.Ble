@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Event;
@@ -16,10 +15,12 @@ namespace Darp.Ble.Hci.Payload.Command;
 /// <param name="Period"> The Period </param>
 /// <remarks> https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-b96b8577-a22d-4009-cac0-dca78f793b59 </remarks>
 [BinaryObject]
-public readonly partial record struct HciLeSetExtendedScanEnableCommand(byte Enable,
+public readonly partial record struct HciLeSetExtendedScanEnableCommand(
+    byte Enable,
     byte FilterDuplicates,
     ushort Duration,
-    ushort Period) : IHciCommand
+    ushort Period
+) : IHciCommand
 {
     /// <inheritdoc />
     public static HciOpCode OpCode => HciOpCode.HCI_LE_Set_Extended_Scan_Enable;

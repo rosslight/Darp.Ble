@@ -14,10 +14,12 @@ public sealed class AttReadByTypeReqTests
 
     [Theory]
     [InlineData(23, 0xFFFF, 0x2800, "081700FFFF0028")]
-    public void TryWriteLittleEndian_16Bit_ShouldBeValid(ushort startingHandle,
+    public void TryWriteLittleEndian_16Bit_ShouldBeValid(
+        ushort startingHandle,
         ushort endingHandle,
         ushort attributeType,
-        string expectedHexBytes)
+        string expectedHexBytes
+    )
     {
         var buffer = new byte[7];
         var value = new AttReadByTypeReq<ushort>
@@ -37,10 +39,12 @@ public sealed class AttReadByTypeReqTests
 
     [Theory]
     [InlineData(23, 0xFFFF, "0000FFE000001000800000805F9B34FB", "081700FFFF0000FFE000001000800000805F9B34FB")]
-    public void TryWriteLittleEndian_128Bit_ShouldBeValid(ushort startingHandle,
+    public void TryWriteLittleEndian_128Bit_ShouldBeValid(
+        ushort startingHandle,
         ushort endingHandle,
         string attributeTypeHexBytes,
-        string expectedHexBytes)
+        string expectedHexBytes
+    )
     {
         var buffer = new byte[21];
         var value = new AttReadByTypeReq<Guid>

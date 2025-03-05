@@ -15,10 +15,12 @@ public sealed class HciCommandStatusEventTests
 
     [Theory]
     [InlineData("00010604", HciCommandStatus.Success, 1, HciOpCode.HCI_Disconnect)]
-    public void TryReadLittleEndian_HciSetEventMaskResult_ShouldBeValid(string hexBytes,
+    public void TryReadLittleEndian_HciSetEventMaskResult_ShouldBeValid(
+        string hexBytes,
         HciCommandStatus expectedStatus,
         byte expectedNumHciCommandPackets,
-        HciOpCode expectedCommandOpCode)
+        HciOpCode expectedCommandOpCode
+    )
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
         var expectedValue = new HciCommandStatusEvent

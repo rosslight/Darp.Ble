@@ -13,11 +13,13 @@ public sealed class AttFindByTypeValueReqTests
 
     [Theory]
     [InlineData(1, 0xFFFF, 0x2800, "ABCD", "060100FFFF0028ABCD")]
-    public void TryWriteLittleEndian_ShouldBeValid(ushort startingHandle,
+    public void TryWriteLittleEndian_ShouldBeValid(
+        ushort startingHandle,
         ushort endingHandle,
         ushort attributeType,
         string attributeValue,
-        string expectedHexBytes)
+        string expectedHexBytes
+    )
     {
         var buffer = new byte[9];
         var value = new AttFindByTypeValueReq
