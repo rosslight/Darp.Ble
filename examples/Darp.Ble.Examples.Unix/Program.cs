@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using Darp.Ble.Gap;
 using Darp.Ble.HciHost;
+using Darp.Ble.HciHost.Usb;
 using Darp.Ble.Mock;
 using Serilog;
 using Serilog.Extensions.Logging;
@@ -30,9 +31,22 @@ internal sealed class Program
 
         IBleDevice adapter = manager.EnumerateDevices().First();
 
+        // _ = Task.Run(async () =>
+        // {
+        //     for (; ; )
+        //     {
+        //         Console.WriteLine(UsbPort.IsOpen("/dev/ttyACM0"));
+        //         await Task.Delay(100);
+        //     }
+        // });
+
+        // Task.Delay(3000).Wait();
+
         _ = ble.StartScanAsync(adapter, OnNextAdvertisement);
         Task.Delay(15000).Wait();
         ble.StopScan();
+
+        // Task.Delay(3000).Wait();
     }
 
     private static void OnNextAdvertisement(IGapAdvertisement advertisement)

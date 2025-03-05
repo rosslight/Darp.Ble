@@ -1,10 +1,11 @@
 using System.Diagnostics;
 using System.IO.Ports;
 using System.Runtime.Versioning;
+using System.Text.RegularExpressions;
 
 namespace Darp.Ble.HciHost.Usb;
 
-internal static class UsbPortLinux
+internal static partial class UsbPortLinux
 {
     [SupportedOSPlatform("linux")]
     public static IEnumerable<UsbPortInfo> GetPortInfos()
@@ -47,7 +48,7 @@ internal static class UsbPortLinux
     public static bool IsOpen(string portName)
     {
         string strOutput = Call_lsof(portName);
-        return !string.IsNullOrEmpty(strOutput);
+        return GetLsofResultRegex().IsMatch(strOutput);
     }
 
     private static string Call_lsof(string strDeviceName)
@@ -75,7 +76,6 @@ internal static class UsbPortLinux
         private const string PROPERTY_ModelId = "ID_MODEL_ID";
         private const string PROPERTY_Model = "ID_MODEL";
         private const string PROPERTY_Type = "ID_TYPE";
-
         private static readonly string[] PROPERTIES_All =
         [
             PROPERTY_VendorId,
@@ -104,8 +104,7 @@ internal static class UsbPortLinux
 
         private static string Call_udevadm(string strDeviceName)
         {
-            // Example for output:
-            //
+            // Output looks like:
             // ID_MODEL=HCI_via_H4_UART_dongle
             // ID_MODEL_ID=0004
             // ID_VENDOR=ZEPHYR
@@ -128,20 +127,12 @@ internal static class UsbPortLinux
 
         private static string? GetPropertyValue(string strProperty, string str)
         {
-            int iStartKey = str.IndexOf(strProperty, StringComparison.Ordinal);
-            if (iStartKey < 0)
-                return null;
-
-            int iEqual = iStartKey + strProperty.Length;
-            if (str[iEqual] != '=')
-                return null;
-
-            int iStartValue = iEqual + 1;
-            int iEndValue = str.IndexOf('\n', iStartValue);
-            if (iEndValue < 0)
-                return null;
-
-            return str[iStartValue..iEndValue];
+            var regex = new Regex("^" + strProperty + "=(?<value>.+)$", RegexOptions.Multiline, new TimeSpan(0, 0, 0, 0, 100));
+            Match m = regex.Match(str);
+            return m.Success ? m.Groups["value"].Value : null;
         }
     }
+
+    [GeneratedRegex("^\\d+$", RegexOptions.Multiline, matchTimeoutMilliseconds: 100)]
+    private static partial Regex GetLsofResultRegex();
 }
