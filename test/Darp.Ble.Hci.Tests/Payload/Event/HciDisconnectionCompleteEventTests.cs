@@ -13,7 +13,7 @@ public sealed class HciDisconnectionCompleteEventTests
     }
 
     [Theory]
-    [InlineData("010013", 0x0001, HciCommandStatus.RemoteUserTerminatedConnection)]
+    [InlineData("00010013", 0x0001, HciCommandStatus.RemoteUserTerminatedConnection)]
     public void TryReadLittleEndian_HciSetEventMaskResult_ShouldBeValid(
         string hexBytes,
         ushort expectedConnectionHandle,
@@ -31,7 +31,7 @@ public sealed class HciDisconnectionCompleteEventTests
         bool success = Extensions.TryReadLittleEndian(bytes, out HciDisconnectionCompleteEvent value, out int decoded);
 
         success.Should().BeTrue();
-        decoded.Should().Be(3);
+        decoded.Should().Be(4);
         value.ConnectionHandle.Should().Be(expectedValue.ConnectionHandle);
         value.Reason.Should().Be(expectedValue.Reason);
     }
