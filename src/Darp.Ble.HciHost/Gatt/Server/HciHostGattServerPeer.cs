@@ -50,6 +50,7 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
         );
         _assemblerSubscription = _assembler.Subscribe(this);
         _hostSubscription = Host.Subscribe(this);
+        Host.RegisterConnection(this);
     }
 
     [MessageSink]

@@ -12,7 +12,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost.Gatt;
 
-internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnection
+internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnection, IDisposable
 {
     private const ushort MaxMtu = 517;
 
@@ -43,6 +43,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
         _assembler = new L2CapAssembler(Host, connectionHandle, LoggerFactory.CreateLogger<L2CapAssembler>());
         _assemblerSubscription = _assembler.Subscribe(this);
         _hostSubscription = Host.Subscribe(this);
+        Host.RegisterConnection(this);
     }
 
     [MessageSink]
@@ -266,12 +267,11 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
     public override bool IsConnected => !_disconnectedBehavior.Value;
     public override IObservable<Unit> WhenDisconnected => _disconnectedBehavior.Where(x => x).Select(_ => Unit.Default);
 
-    public ValueTask DisposeAsync()
+    public void Dispose()
     {
         _disconnectedBehavior.Dispose();
         _assembler.Dispose();
         _assemblerSubscription.Dispose();
         _hostSubscription.Dispose();
-        return ValueTask.CompletedTask;
     }
 }

@@ -23,6 +23,7 @@ public sealed class HciDisconnectionCompleteEventTests
         byte[] bytes = Convert.FromHexString(hexBytes);
         var expectedValue = new HciDisconnectionCompleteEvent
         {
+            Status = HciCommandStatus.Success,
             ConnectionHandle = expectedConnectionHandle,
             Reason = expectedReason,
         };

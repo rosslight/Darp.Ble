@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using Darp.BinaryObjects;
@@ -17,7 +18,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci;
 
-public interface IAclConnection : IMessageSinkProvider, IAsyncDisposable
+public interface IAclConnection : IMessageSinkProvider
 {
     HciHost Host { get; }
     ushort ConnectionHandle { get; }
@@ -55,80 +56,6 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ILogger<HciH
     public IAclPacketQueue AclPacketQueue => _aclPacketQueue ?? throw new Exception("Not initialized yet");
     private readonly ConcurrentDictionary<ushort, IAclConnection> _connections = [];
     private readonly SemaphoreSlim _packetInFlightSemaphore = new(1);
-
-    /// <summary> Enqueue a new hci packet </summary>
-    /// <param name="packet"> The packet to be enqueued </param>
-    private void EnqueuePacket(IHciPacket packet)
-    {
-        Logger.LogEnqueuePacket(packet);
-        _transportLayer.Enqueue(packet);
-    }
-
-    private void OnReceivedPacket(HciPacket packet)
-    {
-        switch (packet)
-        {
-            case { PacketType: HciPacketType.HciEvent }
-                when HciPacketEvent.TryReadLittleEndian(packet.Pdu, out HciPacketEvent x):
-                switch (x.EventCode)
-                {
-                    case HciEventCode.HCI_Disconnection_Complete
-                        when HciDisconnectionCompleteEvent.TryReadLittleEndian(x.DataBytes.Span, out var evt):
-                        PublishMessage(evt);
-                        break;
-                    case HciEventCode.HCI_Command_Complete
-                        when HciCommandCompleteEvent.TryReadLittleEndian(x.DataBytes.Span, out var evt):
-                        PublishMessage(evt);
-                        _packetInFlightSemaphore.Release();
-                        break;
-                    case HciEventCode.HCI_Command_Status
-                        when HciCommandStatusEvent.TryReadLittleEndian(x.DataBytes.Span, out var evt):
-                        PublishMessage(evt);
-                        _packetInFlightSemaphore.Release();
-                        break;
-                    case HciEventCode.HCI_Number_Of_Completed_Packets
-                        when HciNumberOfCompletedPacketsEvent.TryReadLittleEndian(x.DataBytes.Span, out var evt):
-                        PublishMessage(evt);
-                        break;
-                    case HciEventCode.HCI_LE_Meta
-                        when HciLeMetaEvent.TryReadLittleEndian(x.DataBytes.Span, out var leMetaEvent):
-                        OnReceivedMetaEvent(leMetaEvent);
-                        break;
-                    case HciEventCode.None:
-                    default:
-                        break;
-                }
-                break;
-            case { PacketType: HciPacketType.HciAclData }
-                when HciAclPacket.TryReadLittleEndian(packet.Pdu, out HciAclPacket x):
-                PublishMessage(x);
-                break;
-        }
-    }
-
-    private void OnReceivedMetaEvent(HciLeMetaEvent metaEvt)
-    {
-        switch (metaEvt.SubEventCode)
-        {
-            case HciLeMetaSubEventType.HCI_LE_Data_Length_Change
-                when HciLeDataLengthChangeEvent.TryReadLittleEndian(metaEvt.Parameters.Span, out var evt):
-                PublishMessage(evt);
-                break;
-            case HciLeMetaSubEventType.HCI_LE_Enhanced_Connection_Complete_V1
-            or HciLeMetaSubEventType.HCI_LE_Enhanced_Connection_Complete_v2
-                when HciLeEnhancedConnectionCompleteV1Event.TryReadLittleEndian(metaEvt.Parameters.Span, out var evt):
-                PublishMessage(evt);
-                break;
-            case HciLeMetaSubEventType.HCI_LE_PHY_Update_Complete
-                when HciLePhyUpdateCompleteEvent.TryReadLittleEndian(metaEvt.Parameters.Span, out var evt):
-                PublishMessage(evt);
-                break;
-            case HciLeMetaSubEventType.HCI_LE_Extended_Advertising_Report
-                when HciLeExtendedAdvertisingReportEvent.TryReadLittleEndian(metaEvt.Parameters.Span, out var evt):
-                PublishMessage(evt);
-                break;
-        }
-    }
 
     /// <summary> Initialize the host </summary>
     /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
@@ -170,6 +97,102 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ILogger<HciH
             data.LeAclDataPacketLength,
             data.TotalNumLeAclDataPackets
         );
+    }
+
+    private void OnReceivedPacket(HciPacket packet)
+    {
+        switch (packet)
+        {
+            case { PacketType: HciPacketType.HciEvent }
+                when HciPacketEvent.TryReadLittleEndian(packet.Pdu, out HciPacketEvent x):
+                switch (x.EventCode)
+                {
+                    case HciEventCode.HCI_Disconnection_Complete
+                        when HciDisconnectionCompleteEvent.TryReadLittleEndian(x.DataBytes.Span, out var evt):
+                        PublishMessage(evt);
+                        if (_connections.TryGetValue(evt.ConnectionHandle, out IAclConnection? connection))
+                        {
+                            if (connection is IDisposable disposable)
+                                disposable.Dispose();
+                            _connections.TryRemove(evt.ConnectionHandle, out _);
+                        }
+                        break;
+                    case HciEventCode.HCI_Command_Complete
+                        when HciCommandCompleteEvent.TryReadLittleEndian(x.DataBytes.Span, out var evt):
+                        PublishMessage(evt);
+                        _packetInFlightSemaphore.Release();
+                        break;
+                    case HciEventCode.HCI_Command_Status
+                        when HciCommandStatusEvent.TryReadLittleEndian(x.DataBytes.Span, out var evt):
+                        PublishMessage(evt);
+                        _packetInFlightSemaphore.Release();
+                        break;
+                    case HciEventCode.HCI_Number_Of_Completed_Packets
+                        when HciNumberOfCompletedPacketsEvent.TryReadLittleEndian(x.DataBytes.Span, out var evt):
+                        PublishMessage(evt);
+                        break;
+                    case HciEventCode.HCI_LE_Meta
+                        when HciLeMetaEvent.TryReadLittleEndian(x.DataBytes.Span, out var leMetaEvent):
+                        OnReceivedMetaEvent(leMetaEvent);
+                        break;
+                    case HciEventCode.None:
+                    default:
+                        Logger.LogTrace("Unknown Hci event {SubEventCode}", x.EventCode);
+                        break;
+                }
+                break;
+            case { PacketType: HciPacketType.HciAclData }
+                when HciAclPacket.TryReadLittleEndian(packet.Pdu, out HciAclPacket x):
+                PublishMessage(x);
+                break;
+            default:
+                Logger.LogTrace("Unknown packet type {PacketType}", packet.PacketType);
+                break;
+        }
+    }
+
+    private void OnReceivedMetaEvent(HciLeMetaEvent metaEvt)
+    {
+        switch (metaEvt.SubEventCode)
+        {
+            case HciLeMetaSubEventType.HCI_LE_Data_Length_Change
+                when HciLeDataLengthChangeEvent.TryReadLittleEndian(metaEvt.Parameters.Span, out var evt):
+                PublishMessage(evt);
+                break;
+            case HciLeMetaSubEventType.HCI_LE_Enhanced_Connection_Complete_V1
+            or HciLeMetaSubEventType.HCI_LE_Enhanced_Connection_Complete_v2
+                when HciLeEnhancedConnectionCompleteV1Event.TryReadLittleEndian(metaEvt.Parameters.Span, out var evt):
+                PublishMessage(evt);
+                break;
+            case HciLeMetaSubEventType.HCI_LE_PHY_Update_Complete
+                when HciLePhyUpdateCompleteEvent.TryReadLittleEndian(metaEvt.Parameters.Span, out var evt):
+                PublishMessage(evt);
+                break;
+            case HciLeMetaSubEventType.HCI_LE_Extended_Advertising_Report
+                when HciLeExtendedAdvertisingReportEvent.TryReadLittleEndian(metaEvt.Parameters.Span, out var evt):
+                PublishMessage(evt);
+                break;
+            default:
+                Logger.LogTrace("Unknown LE Meta event {SubEventCode}", metaEvt.SubEventCode);
+                break;
+        }
+    }
+
+    /// <summary> Register a connection </summary>
+    /// <param name="connection"> The connection to register </param>
+    public void RegisterConnection(IAclConnection connection)
+    {
+        ArgumentNullException.ThrowIfNull(connection);
+        bool isAdded = _connections.TryAdd(connection.ConnectionHandle, connection);
+        Debug.Assert(isAdded, $"Connection {connection.ConnectionHandle} could not be registered at host!");
+    }
+
+    /// <summary> Enqueue a new hci packet </summary>
+    /// <param name="packet"> The packet to be enqueued </param>
+    private void EnqueuePacket(IHciPacket packet)
+    {
+        Logger.LogEnqueuePacket(packet);
+        _transportLayer.Enqueue(packet);
     }
 
     /// <summary> Query a command expecting a <typeparamref name="TEvent"/> </summary>

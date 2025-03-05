@@ -10,12 +10,18 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost;
 
-internal sealed partial class HciHostBlePeripheral(HciHostBleDevice device, ILogger<HciHostBlePeripheral> logger)
-    : BlePeripheral(device, logger)
+internal sealed partial class HciHostBlePeripheral : BlePeripheral
 {
-    private readonly Hci.HciHost _host = device.Host;
+    private readonly IDisposable _subscription;
 
-    public new HciHostBleDevice Device { get; } = device;
+    public HciHostBlePeripheral(HciHostBleDevice device, ILogger<HciHostBlePeripheral> logger)
+        : base(device, logger)
+    {
+        Device = device;
+        _subscription = device.Host.Subscribe(this);
+    }
+
+    public new HciHostBleDevice Device { get; }
 
     [MessageSink]
     private void OnHciConnectionCompleteEvent(HciLeEnhancedConnectionCompleteV1Event connectionCompleteEvent)
@@ -58,5 +64,11 @@ internal sealed partial class HciHostBlePeripheral(HciHostBleDevice device, ILog
             isPrimary ? GattServiceType.Primary : GattServiceType.Secondary,
             LoggerFactory.CreateLogger<HciHostGattClientService>()
         );
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        _subscription.Dispose();
+        base.Dispose(disposing);
     }
 }
