@@ -7,6 +7,7 @@ using System.Reactive.Threading.Tasks;
 using System.Runtime.CompilerServices;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.AssignedNumbers;
+using Darp.Ble.Hci.Exceptions;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Att;
@@ -110,10 +111,11 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ILogger<HciH
     private AclPacketQueue? _aclPacketQueue;
     public IAclPacketQueue AclPacketQueue => _aclPacketQueue ?? throw new Exception("Not initialized yet");
     private readonly ConcurrentDictionary<ushort, IAclConnection> _connections = [];
+    private readonly SemaphoreSlim _packetInFlightSemaphore = new(1);
 
     /// <summary> Enqueue a new hci packet </summary>
     /// <param name="packet"> The packet to be enqueued </param>
-    public void EnqueuePacket(IHciPacket packet)
+    private void EnqueuePacket(IHciPacket packet)
     {
         Logger.LogEnqueuePacket(packet);
         _transportLayer.Enqueue(packet);
@@ -134,10 +136,12 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ILogger<HciH
                     case HciEventCode.HCI_Command_Complete
                         when HciCommandCompleteEvent.TryReadLittleEndian(x.DataBytes.Span, out var evt):
                         PublishMessage(evt);
+                        _packetInFlightSemaphore.Release();
                         break;
                     case HciEventCode.HCI_Command_Status
                         when HciCommandStatusEvent.TryReadLittleEndian(x.DataBytes.Span, out var evt):
                         PublishMessage(evt);
+                        _packetInFlightSemaphore.Release();
                         break;
                     case HciEventCode.HCI_Number_Of_Completed_Packets
                         when HciNumberOfCompletedPacketsEvent.TryReadLittleEndian(x.DataBytes.Span, out var evt):
@@ -225,11 +229,104 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ILogger<HciH
         );
     }
 
+    /// <summary> Query a command expecting a <typeparamref name="TEvent"/> </summary>
+    /// <param name="command"> The command to be sent </param>
+    /// <param name="timeout"> The timeout waiting for the response </param>
+    /// <param name="predicate"> Check whether the event is acceptable </param>
+    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
+    /// <typeparam name="TCommand"> The type of the command </typeparam>
+    /// <typeparam name="TEvent"> The type of the event packet </typeparam>
+    /// <returns> The parameters of the response packet </returns>
+    public async Task<TEvent> QueryCommandAsync<TCommand, TEvent>(
+        TCommand command,
+        TimeSpan? timeout = null,
+        Func<TEvent, bool>? predicate = null,
+        CancellationToken cancellationToken = default
+    )
+        where TCommand : IHciCommand
+        where TEvent : IHciEvent<TEvent>
+    {
+        timeout ??= TimeSpan.FromSeconds(10);
+        await _packetInFlightSemaphore.WaitAsync(timeout.Value, cancellationToken).ConfigureAwait(false);
+        IObservable<TEvent> statusFailedObservable = Observable.Create<TEvent>(observer =>
+            this.AsObservable<HciCommandStatusEvent>()
+                .Subscribe(
+                    statusEvent =>
+                    {
+                        if (
+                            statusEvent.CommandOpCode != TCommand.OpCode
+                            || statusEvent.Status is HciCommandStatus.Success
+                        )
+                        {
+                            return;
+                        }
+                        observer.OnError(new HciException($"Command failed with status {statusEvent.Status}"));
+                    },
+                    observer.OnError,
+                    observer.OnCompleted
+                )
+        );
+        IObservable<TEvent> resultObservable = Observable.Create<TEvent>(observer =>
+            this.AsObservable<TEvent>()
+                .Subscribe(
+                    completeEvent =>
+                    {
+                        if (predicate is not null && !predicate(completeEvent))
+                            return;
+                        observer.OnNext(completeEvent);
+                    },
+                    observer.OnError,
+                    observer.OnCompleted
+                )
+        );
+        var packet = new HciCommandPacket<TCommand>(command);
+        Logger.LogStartQuery(packet);
+        Task<TEvent> task = resultObservable
+            .Concat(statusFailedObservable)
+            .Timeout(timeout.Value)
+            .FirstAsync()
+            .Do(
+                completePacket => Logger.LogQueryCompleted(command, TEvent.EventCode, completePacket),
+                exception => Logger.LogQueryWithException(exception, command, exception.Message)
+            )
+            .ToTask(cancellationToken);
+        EnqueuePacket(packet);
+        return await task.ConfigureAwait(false);
+    }
+
+    /// <summary> Query a command expecting a <see cref="HciCommandStatusEvent"/> </summary>
+    /// <param name="command"> The command to be sent </param>
+    /// <param name="timeout"> The timeout waiting for the response </param>
+    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
+    /// <typeparam name="TCommand"> The type of the command </typeparam>
+    /// <returns> The parameters of the response packet </returns>
+    public async Task<HciCommandStatus> QueryCommandStatusAsync<TCommand>(
+        TCommand command,
+        TimeSpan? timeout = null,
+        CancellationToken cancellationToken = default
+    )
+        where TCommand : IHciCommand
+    {
+        timeout ??= TimeSpan.FromSeconds(10);
+        await _packetInFlightSemaphore.WaitAsync(timeout.Value, cancellationToken).ConfigureAwait(false);
+        Task<HciCommandStatusEvent> statusTask = this.AsObservable<HciCommandStatusEvent>()
+            .Where(static x => x.CommandOpCode == TCommand.OpCode)
+            .FirstAsync()
+            .Timeout(timeout.Value)
+            .ToTask(cancellationToken);
+        var packet = new HciCommandPacket<TCommand>(command);
+        Logger.LogStartQuery(packet);
+        EnqueuePacket(packet);
+        HciCommandStatusEvent statusEvent = await statusTask.ConfigureAwait(false);
+        return statusEvent.Status;
+    }
+
     /// <inheritdoc />
     public void Dispose()
     {
         _transportLayer.Dispose();
         _aclPacketQueue?.Dispose();
+        _packetInFlightSemaphore.Dispose();
     }
 }
 

@@ -8,7 +8,7 @@ namespace Darp.Ble.Hci.Payload.Command;
 /// The HCI_Disconnect command is used to terminate an existing connection.
 /// Produces a <see cref="HciCommandStatusEvent"/> and a <see cref="HciDisconnectionCompleteEvent"/>
 /// </summary>
-/// <remarks> https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-a211724f-97dc-d1f7-2c28-240854fb271c </remarks>
+/// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-a211724f-97dc-d1f7-2c28-240854fb271c" />
 [BinaryObject]
 public readonly partial record struct HciDisconnectCommand : IHciCommand
 {

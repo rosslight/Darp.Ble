@@ -73,7 +73,7 @@ internal static partial class Logging
         this ILogger logger,
         IBinaryWritable command,
         HciEventCode eventCode,
-        HciEventPacket packet
+        object packet
     );
 
     [LoggerMessage(
