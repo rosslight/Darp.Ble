@@ -5,6 +5,7 @@ using Darp.Ble.Gatt.Server;
 using Darp.Ble.Hci;
 using Darp.Ble.Hci.Payload.Att;
 using Darp.Ble.Hci.Reactive;
+using Darp.Utils.Messaging;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost.Gatt.Server;
@@ -126,9 +127,7 @@ internal sealed class HciHostGattServerCharacteristic(
         {
             throw new GattCharacteristicException(this, "Could not write notification status to cccd");
         }
-        return _peer
-            .WhenL2CapPduReceived.SelectWhereAttPdu<AttHandleValueNtf>()
-            .Subscribe(ntf => onNotify(state, ntf.Value.ToArray()));
+        return _peer.Subscribe<AttHandleValueNtf>(ntf => onNotify(state, ntf.Value.ToArray()));
     }
 
     protected override async Task DisableNotificationsAsync()

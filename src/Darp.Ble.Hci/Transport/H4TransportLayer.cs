@@ -163,7 +163,7 @@ public sealed class H4TransportLayer : ITransportLayer
     }
 
     /// <inheritdoc />
-    public void Initialize()
+    public void Initialize(Action<HciPacket> onReceived)
     {
         _ = Task.Run(RunTx, _cancelToken);
         _ = Task.Run(RunRx, _cancelToken);

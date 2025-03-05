@@ -12,4 +12,7 @@ public readonly partial record struct HciLeMetaEvent : IHciEvent<HciLeMetaEvent>
 
     /// <summary> The SubEventCode </summary>
     public required HciLeMetaSubEventType SubEventCode { get; init; }
+
+    /// <summary> The Parameters </summary>
+    public required ReadOnlyMemory<byte> Parameters { get; init; }
 }

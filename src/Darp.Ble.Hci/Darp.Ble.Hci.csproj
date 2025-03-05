@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Darp.BinaryObjects" />
+    <PackageReference Include="Darp.Utils.Messaging" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="System.IO.Ports" />
     <PackageReference Include="System.Reactive" />

@@ -1,7 +1,5 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
-using Darp.BinaryObjects;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Server;
@@ -12,22 +10,27 @@ using Darp.Ble.Hci.Payload.Att;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.Hci.Payload.Result;
-using Darp.Ble.Hci.Reactive;
+using Darp.Utils.Messaging;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost.Gatt.Server;
 
-internal sealed class HciHostGattServerPeer : GattServerPeer, IBleConnection
+[MessageSource]
+internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnection
 {
     private const ushort DefaultAttMtu = 23;
 
-    public Hci.HciHost Host { get; }
-    private readonly List<IDisposable> _disposables = [];
+    private readonly L2CapAssembler _assembler;
+    private readonly IDisposable _hostSubscription;
+    private readonly IDisposable _assemblerSubscription;
 
-    ILogger IBleConnection.Logger => base.Logger;
+    public Hci.HciHost Host { get; }
+
+    ILogger IAclConnection.Logger => base.Logger;
     public ushort ConnectionHandle { get; }
     public ushort AttMtu { get; private set; } = DefaultAttMtu;
-    public AclPacketQueue AclPacketQueue => Host.AclPacketQueue;
+    public IAclPacketQueue AclPacketQueue => Host.AclPacketQueue;
+    public IL2CapAssembler L2CapAssembler => _assembler;
 
     public HciHostGattServerPeer(
         HciHostBleCentral central,
@@ -40,27 +43,28 @@ internal sealed class HciHostGattServerPeer : GattServerPeer, IBleConnection
     {
         Host = host;
         ConnectionHandle = connectionCompleteEvent.ConnectionHandle;
-        Host.WhenHciEventReceived.Where(x => x.EventCode is HciEventCode.HCI_Disconnection_Complete)
-            .SelectWhereEvent<HciDisconnectionCompleteEvent>()
-            .Where(x => x.Data.ConnectionHandle == ConnectionHandle)
-            .Select(_ => ConnectionStatus.Disconnected)
-            .First()
-            .Subscribe(ConnectionSubject.OnNext, ConnectionSubject.OnError, ConnectionSubject.OnCompleted);
-        _disposables.Add(
-            Host.WhenHciLeMetaEventReceived.AsObservable()
-                .SelectWhereLeMetaEvent<HciLeDataLengthChangeEvent>()
-                .Subscribe(changeEventPacket =>
-                {
-                    Logger.LogTrace("Received event about changed data length: {@Event}", changeEventPacket);
-                })
+        _assembler = new L2CapAssembler(
+            Host,
+            connectionCompleteEvent.ConnectionHandle,
+            LoggerFactory.CreateLogger<L2CapAssembler>()
         );
-        WhenL2CapPduReceived = this.AssembleL2CAp(logger)
-            .Where(x => x.ChannelId is 0x0004)
-            .TakeUntil(WhenConnectionStatusChanged.Where(x => x is ConnectionStatus.Disconnected))
-            .Share();
+        _assemblerSubscription = _assembler.Subscribe(this);
+        _hostSubscription = Host.Subscribe(this);
     }
 
-    public IRefObservable<L2CapPdu> WhenL2CapPduReceived { get; }
+    [MessageSink]
+    private void OnDisconnectEvent(HciDisconnectionCompleteEvent hciEvent)
+    {
+        if (hciEvent.ConnectionHandle != ConnectionHandle)
+            return;
+        ConnectionSubject.OnNext(ConnectionStatus.Disconnected);
+    }
+
+    [MessageSink]
+    private void OnHciLeDataLengthChangeEvent(HciLeDataLengthChangeEvent hciEvent)
+    {
+        Logger.LogTrace("Received event about changed data length: {@Event}", hciEvent);
+    }
 
     protected override IObservable<IGattServerService> DiscoverServicesCore()
     {
@@ -223,10 +227,9 @@ internal sealed class HciHostGattServerPeer : GattServerPeer, IBleConnection
             await task.ConfigureAwait(false);
             await Task.Delay(200).ConfigureAwait(false);
         }
-        foreach (IDisposable disposable in _disposables)
-        {
-            disposable.Dispose();
-        }
+        _assembler.Dispose();
+        _assemblerSubscription.Dispose();
+        _hostSubscription.Dispose();
         await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 }

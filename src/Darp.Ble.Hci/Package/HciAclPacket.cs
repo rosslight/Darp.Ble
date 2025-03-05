@@ -1,5 +1,4 @@
 using System.Buffers.Binary;
-using System.Diagnostics.CodeAnalysis;
 using Darp.BinaryObjects;
 
 namespace Darp.Ble.Hci.Package;
@@ -11,12 +10,12 @@ namespace Darp.Ble.Hci.Package;
 /// <param name="dataTotalLength"> The Data_Total_Length </param>
 /// <param name="dataBytes"> The actual data </param>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-bc4ffa33-44ef-e93c-16c8-14aa99597cfc"/>
-public class HciAclPacket(
+public readonly struct HciAclPacket(
     ushort connectionHandle,
     PacketBoundaryFlag packetBoundaryFlag,
     BroadcastFlag broadcastFlag,
     ushort dataTotalLength,
-    byte[] dataBytes
+    ReadOnlyMemory<byte> dataBytes
 ) : IHciPacket<HciAclPacket>, IBinaryReadable<HciAclPacket>
 {
     /// <inheritdoc />
@@ -42,7 +41,7 @@ public class HciAclPacket(
     public ushort DataTotalLength { get; } = dataTotalLength;
 
     /// <summary> The actual data </summary>
-    public byte[] DataBytes { get; } = dataBytes;
+    public ReadOnlyMemory<byte> DataBytes { get; } = dataBytes;
 
     /// <inheritdoc />
     public override string ToString()
@@ -63,7 +62,7 @@ public class HciAclPacket(
         BinaryPrimitives.WriteUInt16LittleEndian(destination, firstBytes);
         BinaryPrimitives.WriteUInt16LittleEndian(destination[2..], DataTotalLength);
         bytesWritten += 4;
-        if (!DataBytes.AsSpan().TryCopyTo(destination[4..]))
+        if (!DataBytes.Span.TryCopyTo(destination[4..]))
             return false;
         bytesWritten += DataBytes.Length;
         return true;
@@ -76,17 +75,13 @@ public class HciAclPacket(
     public bool TryWriteBigEndian(Span<byte> destination, out int bytesWritten) => throw new NotSupportedException();
 
     /// <inheritdoc />
-    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, [NotNullWhen(true)] out HciAclPacket? value) =>
+    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out HciAclPacket value) =>
         TryReadLittleEndian(source, out value, out _);
 
     /// <inheritdoc />
-    public static bool TryReadLittleEndian(
-        ReadOnlySpan<byte> source,
-        [NotNullWhen(true)] out HciAclPacket? value,
-        out int bytesRead
-    )
+    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out HciAclPacket value, out int bytesRead)
     {
-        value = null;
+        value = default;
         bytesRead = 0;
         if (source.Length < 4)
             return false;
@@ -108,43 +103,10 @@ public class HciAclPacket(
     }
 
     /// <inheritdoc />
-    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, [NotNullWhen(true)] out HciAclPacket? value) =>
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out HciAclPacket value) =>
         TryReadBigEndian(source, out value, out _);
 
     /// <inheritdoc />
-    public static bool TryReadBigEndian(
-        ReadOnlySpan<byte> source,
-        [NotNullWhen(true)] out HciAclPacket? value,
-        out int bytesRead
-    )
-    {
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out HciAclPacket value, out int bytesRead) =>
         throw new NotSupportedException();
-    }
-}
-
-/// <summary> HCI ACL Data packets are used to exchange data between the Host and Controller </summary>
-/// <param name="connectionHandle"> Connection_Handle to be used for transmitting a data packet over a Controller. </param>
-/// <param name="packetBoundaryFlag"> The Packet_Boundary_Flag </param>
-/// <param name="broadcastFlag"> The Broadcast_Flag </param>
-/// <param name="dataTotalLength"> The Data_Total_Length </param>
-/// <param name="data"> The actual data </param>
-/// <typeparam name="TData"> The type of the data </typeparam>
-public sealed class HciAclPacket<TData>(
-    ushort connectionHandle,
-    PacketBoundaryFlag packetBoundaryFlag,
-    BroadcastFlag broadcastFlag,
-    ushort dataTotalLength,
-    TData data
-)
-    : HciAclPacket(connectionHandle, packetBoundaryFlag, broadcastFlag, dataTotalLength, data.ToArrayLittleEndian()),
-        IHciPacket<HciAclPacket<TData>, TData>
-    where TData : IBinaryWritable
-{
-    /// <inheritdoc />
-    public HciPacketType PacketType => Type;
-    static HciPacketType IHciPacket<HciAclPacket<TData>>.Type => Type;
-    static int IHciPacket<HciAclPacket<TData>>.HeaderLength => HeaderLength;
-
-    /// <inheritdoc />
-    public TData Data { get; } = data;
 }

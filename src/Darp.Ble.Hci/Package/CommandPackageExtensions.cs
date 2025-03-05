@@ -7,6 +7,7 @@ using Darp.Ble.Hci.Exceptions;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.Hci.Reactive;
+using Darp.Utils.Messaging;
 
 namespace Darp.Ble.Hci.Package;
 
@@ -87,6 +88,59 @@ public static class CommandPackageExtensions
         where TParameters : unmanaged, IBinaryReadable<TParameters>
     {
         return hciHost.QueryCommandCompletionAsync<TCommand, TParameters>(command, timeout: null, cancellationToken);
+    }
+
+    public static Task<TResult> QueryCommandCompletionAsync2<TCommand, TResult>(
+        this HciHost hciHost,
+        TCommand command,
+        TimeSpan? timeout = null,
+        CancellationToken cancellationToken = default
+    )
+        where TCommand : IHciPacket, IHciCommand
+        where TResult : IBinaryReadable<TResult>
+    {
+        timeout ??= TimeSpan.FromSeconds(10);
+        IObservable<TResult> statusFailedObservable = Observable.Create<TResult>(observer =>
+            hciHost
+                .AsObservable<HciCommandStatusEvent>()
+                .Subscribe(
+                    statusEvent =>
+                    {
+                        if (statusEvent.CommandOpCode != TCommand.OpCode)
+                            return;
+                        observer.OnError(new HciException($"Command failed with status {statusEvent.Status}"));
+                    },
+                    observer.OnError,
+                    observer.OnCompleted
+                )
+        );
+        IObservable<TResult> resultObservable = Observable.Create<TResult>(observer =>
+            hciHost
+                .AsObservable<HciCommandCompleteEvent>()
+                .Subscribe(
+                    completeEvent =>
+                    {
+                        if (completeEvent.CommandOpCode != TCommand.OpCode)
+                            return;
+                        if (!TResult.TryReadLittleEndian(completeEvent.ReturnParameters.Span, out TResult? result))
+                        {
+                            observer.OnError(new HciException("Command failed because parameters could not be read"));
+                            return;
+                        }
+                        observer.OnNext(result);
+                    },
+                    observer.OnError,
+                    observer.OnCompleted
+                )
+        );
+        var commandPacket = new HciCommandPacket<TCommand>(command);
+        hciHost.Logger.LogStartQuery(commandPacket);
+        hciHost.EnqueuePacket(commandPacket);
+        return resultObservable
+            .Concat(statusFailedObservable)
+            .Timeout(timeout.Value)
+            .FirstAsync()
+            .ToTask(cancellationToken);
     }
 
     /// <summary> Query a command expecting a <see cref="HciCommandCompleteEvent{TParameters}"/> </summary>

@@ -11,5 +11,5 @@ public interface ITransportLayer : IRefObservable<HciPacket>, IDisposable
     void Enqueue(IHciPacket packet);
 
     /// <summary> Initialize the transport layer </summary>
-    void Initialize();
+    void Initialize(Action<HciPacket> onReceived);
 }
