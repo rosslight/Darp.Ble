@@ -4,7 +4,6 @@ using Darp.Ble.Exceptions;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Hci;
 using Darp.Ble.Hci.Payload.Att;
-using Darp.Ble.Hci.Reactive;
 using Darp.Utils.Messaging;
 using Microsoft.Extensions.Logging;
 

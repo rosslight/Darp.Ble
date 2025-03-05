@@ -1,9 +1,7 @@
 using System.Collections.Concurrent;
 using System.IO.Ports;
-using System.Reactive.Disposables;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
-using Darp.Ble.Hci.Reactive;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci.Transport;
@@ -25,7 +23,6 @@ public sealed class H4TransportLayer : ITransportLayer
     private readonly ConcurrentQueue<IHciPacket> _txQueue;
     private readonly CancellationTokenSource _cancelSource;
     private readonly CancellationToken _cancelToken;
-    private readonly List<IRefObserver<HciPacket>> _observers = [];
     private bool _isDisposing;
 
     /// <summary> Instantiate a new h4 transport layer </summary>
@@ -76,7 +73,11 @@ public sealed class H4TransportLayer : ITransportLayer
 #pragma warning restore CA1031
     }
 
-    private async ValueTask RunRxPacket<TPacket>(Memory<byte> buffer, byte payloadLengthIndex)
+    private async ValueTask RunRxPacket<TPacket>(
+        Memory<byte> buffer,
+        byte payloadLengthIndex,
+        Action<HciPacket> onReceived
+    )
         where TPacket : IHciPacket<TPacket>, IBinaryReadable<TPacket>
     {
         // Read Header
@@ -107,13 +108,10 @@ public sealed class H4TransportLayer : ITransportLayer
             TPacket.Type,
             buffer[..(TPacket.HeaderLength + payloadLength)].ToArray()
         );
-        foreach (IRefObserver<HciPacket> refObserver in _observers)
-        {
-            refObserver.OnNext(new HciPacket(TPacket.Type, buffer[..(TPacket.HeaderLength + payloadLength)].Span));
-        }
+        onReceived(new HciPacket(TPacket.Type, buffer[..(TPacket.HeaderLength + payloadLength)].Span));
     }
 
-    private async ValueTask RunRx()
+    private async ValueTask RunRx(Action<HciPacket> onReceived)
     {
         // Longest allowed memory
         Memory<byte> buffer = new byte[4 + 255];
@@ -128,10 +126,10 @@ public sealed class H4TransportLayer : ITransportLayer
                 switch (type)
                 {
                     case HciPacketType.HciEvent:
-                        await RunRxPacket<HciEventPacket>(buffer, 1).ConfigureAwait(false);
+                        await RunRxPacket<HciEventPacket>(buffer, 1, onReceived).ConfigureAwait(false);
                         break;
                     case HciPacketType.HciAclData:
-                        await RunRxPacket<HciAclPacket>(buffer, 2).ConfigureAwait(false);
+                        await RunRxPacket<HciAclPacket>(buffer, 2, onReceived).ConfigureAwait(false);
                         break;
                     case HciPacketType.HciCommand:
                     default:
@@ -151,22 +149,15 @@ public sealed class H4TransportLayer : ITransportLayer
             }
 
             _logger?.LogTransportWithError(e, "Rx", e.Message);
-            foreach (IRefObserver<HciPacket> refObserver in _observers)
-                refObserver.OnError(e);
         }
 #pragma warning restore CA1031
-        finally
-        {
-            foreach (IRefObserver<HciPacket> refObserver in _observers)
-                refObserver.OnCompleted();
-        }
     }
 
     /// <inheritdoc />
     public void Initialize(Action<HciPacket> onReceived)
     {
         _ = Task.Run(RunTx, _cancelToken);
-        _ = Task.Run(RunRx, _cancelToken);
+        _ = Task.Run(() => RunRx(onReceived), _cancelToken);
         _serialPort.Open();
     }
 
@@ -185,13 +176,5 @@ public sealed class H4TransportLayer : ITransportLayer
     {
         _cancelToken.ThrowIfCancellationRequested();
         _txQueue.Enqueue(packet);
-    }
-
-    /// <inheritdoc />
-    public IDisposable Subscribe(IRefObserver<HciPacket> observer)
-    {
-        _cancelToken.ThrowIfCancellationRequested();
-        _observers.Add(observer);
-        return Disposable.Create((_observers, observer), state => state._observers.Remove(state.observer));
     }
 }

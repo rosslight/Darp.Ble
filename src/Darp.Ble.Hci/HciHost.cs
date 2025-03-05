@@ -1,10 +1,7 @@
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
-using System.Diagnostics.CodeAnalysis;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
-using System.Runtime.CompilerServices;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.AssignedNumbers;
 using Darp.Ble.Hci.Exceptions;
@@ -14,7 +11,6 @@ using Darp.Ble.Hci.Payload.Att;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.Hci.Payload.Result;
-using Darp.Ble.Hci.Reactive;
 using Darp.Ble.Hci.Transport;
 using Darp.Utils.Messaging;
 using Microsoft.Extensions.Logging;
@@ -29,59 +25,6 @@ public interface IAclConnection : IMessageSinkProvider, IAsyncDisposable
     IAclPacketQueue AclPacketQueue { get; }
     IL2CapAssembler L2CapAssembler { get; }
     protected internal ILogger Logger { get; }
-}
-
-public static class ReactiveEx
-{
-    /// <summary> Share the connection between subscribers. Subscribes once and notifies all current subscribers </summary>
-    /// <param name="source"> The source to share </param>
-    /// <typeparam name="T">  The type of the elements in the source sequence. </typeparam>
-    /// <returns> A shared observable sequence </returns>
-    public static IRefObservable<T> Share<T>(this IRefObservable<T> source)
-        where T : allows ref struct
-    {
-        List<IRefObserver<T>> observers = [];
-        source.Subscribe(
-            value =>
-            {
-                // Reversed for loop if one of the observers disconnects
-                for (int index = observers.Count - 1; index >= 0; index--)
-                {
-                    IRefObserver<T> refObserver = observers[index];
-                    refObserver.OnNext(value);
-                }
-            },
-            exception =>
-            {
-                // Reversed for loop if one of the observers disconnects
-                for (int index = observers.Count - 1; index >= 0; index--)
-                {
-                    IRefObserver<T> refObserver = observers[index];
-                    refObserver.OnError(exception);
-                }
-            },
-            () =>
-            {
-                // Reversed for loop if one of the observers disconnects
-                for (int index = observers.Count - 1; index >= 0; index--)
-                {
-                    IRefObserver<T> refObserver = observers[index];
-                    refObserver.OnCompleted();
-                }
-            }
-        );
-        return RefObservable.Create<T, List<IRefObserver<T>>>(
-            observers,
-            (state, observer) =>
-            {
-                state.Add(observer);
-                return Disposable.Create(
-                    (List: state, Observer: observer),
-                    state2 => state2.List.Remove(state2.Observer)
-                );
-            }
-        );
-    }
 }
 
 public readonly ref struct L2CapPdu(ushort channelId, ReadOnlySpan<byte> pdu)
@@ -375,22 +318,6 @@ public static class L2CapHelpers
             );
             throw;
         }
-    }
-
-    public static IRefObservable<T> SelectWhereAttPdu<T>(this IRefObservable<L2CapPdu> source)
-        where T : IAttPdu, IBinaryReadable<T>
-    {
-        return source.SelectWhere(
-            (L2CapPdu value, [NotNullWhen(true)] out T? result) =>
-            {
-                if (value.Pdu.Length < 0 || (AttOpCode)value.Pdu[0] != T.ExpectedOpCode)
-                {
-                    result = default;
-                    return false;
-                }
-                return T.TryReadLittleEndian(value.Pdu, out result);
-            }
-        );
     }
 
     /// <summary> Enqueue a new acl packet </summary>
