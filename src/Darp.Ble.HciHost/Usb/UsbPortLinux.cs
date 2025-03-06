@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace Darp.Ble.HciHost.Usb;
 
-internal static class UsbPortLinux
+internal static partial class UsbPortLinux
 {
     [SupportedOSPlatform("linux")]
     public static IEnumerable<UsbPortInfo> GetPortInfos()
@@ -47,16 +47,27 @@ internal static class UsbPortLinux
     [SupportedOSPlatform("linux")]
     public static bool IsOpen(string portName)
     {
-        using var port = new SerialPort(portName);
-        try
-        {
-            port.Open();
-        }
-        catch
-        {
-            return true;
-        }
-        return false;
+        string strOutput = Call_lsof(portName);
+        return GetLsofResultRegex().IsMatch(strOutput);
+    }
+
+    private static string Call_lsof(string strDeviceName)
+    {
+        // If device is opened by a process, lsof outputs the PID of that process.
+        //
+        using var process = new Process();
+        process.StartInfo.FileName = "lsof";
+        process.StartInfo.ArgumentList.Add("-t");
+        process.StartInfo.ArgumentList.Add("-S2");
+        process.StartInfo.ArgumentList.Add("-O");
+        process.StartInfo.ArgumentList.Add(strDeviceName);
+        process.StartInfo.UseShellExecute = false;
+        process.StartInfo.RedirectStandardOutput = true;
+        process.StartInfo.RedirectStandardError = true;
+        process.Start();
+        string strOutput = process.StandardOutput.ReadToEnd();
+        process.WaitForExit();
+        return strOutput;
     }
 
     private sealed class DeviceProperties
@@ -109,6 +120,7 @@ internal static class UsbPortLinux
             process.StartInfo.ArgumentList.Add("--property=" + string.Join(',', PROPERTIES_All));
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardOutput = true;
+            process.StartInfo.RedirectStandardError = true;
             process.Start();
             string strOutput = process.StandardOutput.ReadToEnd();
             process.WaitForExit();
@@ -122,4 +134,7 @@ internal static class UsbPortLinux
             return m.Success ? m.Groups["value"].Value : null;
         }
     }
+
+    [GeneratedRegex("^\\d+$", RegexOptions.Multiline, matchTimeoutMilliseconds: 100)]
+    private static partial Regex GetLsofResultRegex();
 }

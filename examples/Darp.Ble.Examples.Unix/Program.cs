@@ -34,8 +34,8 @@ internal sealed class Program
         // {
         //     for (; ; )
         //     {
-        //         Console.WriteLine(UsbPort.IsOpen("/dev/ttyACM0"));
-        //         await Task.Delay(100);
+        //         Console.WriteLine(HciHost.Usb.UsbPort.IsOpen("/dev/ttyACM0"));
+        //         await Task.Delay(200);
         //     }
         // });
 
