@@ -1,7 +1,6 @@
 ﻿using System.Globalization;
 using Darp.Ble.Gap;
 using Darp.Ble.HciHost;
-using Darp.Ble.HciHost.Usb;
 using Darp.Ble.Mock;
 using Serilog;
 using Serilog.Extensions.Logging;

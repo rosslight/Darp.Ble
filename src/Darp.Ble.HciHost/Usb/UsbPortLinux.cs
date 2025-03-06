@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 
 namespace Darp.Ble.HciHost.Usb;
 
-internal static partial class UsbPortLinux
+internal static class UsbPortLinux
 {
     [SupportedOSPlatform("linux")]
     public static IEnumerable<UsbPortInfo> GetPortInfos()
