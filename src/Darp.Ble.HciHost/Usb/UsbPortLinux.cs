@@ -47,26 +47,16 @@ internal static partial class UsbPortLinux
     [SupportedOSPlatform("linux")]
     public static bool IsOpen(string portName)
     {
-        string strOutput = Call_lsof(portName);
-        return GetLsofResultRegex().IsMatch(strOutput);
-    }
-
-    private static string Call_lsof(string strDeviceName)
-    {
-        // Outputs PID of process having opened the device
-        //
-        using var process = new Process();
-        process.StartInfo.FileName = "lsof";
-        process.StartInfo.ArgumentList.Add("-t");
-        process.StartInfo.ArgumentList.Add("-S2");
-        process.StartInfo.ArgumentList.Add("-O");
-        process.StartInfo.ArgumentList.Add(strDeviceName);
-        process.StartInfo.UseShellExecute = false;
-        process.StartInfo.RedirectStandardOutput = true;
-        process.Start();
-        string strOutput = process.StandardOutput.ReadToEnd();
-        process.WaitForExit();
-        return strOutput;
+        using var port = new SerialPort(portName);
+        try
+        {
+            port.Open();
+        }
+        catch
+        {
+            return true;
+        }
+        return false;
     }
 
     private sealed class DeviceProperties
@@ -132,7 +122,4 @@ internal static partial class UsbPortLinux
             return m.Success ? m.Groups["value"].Value : null;
         }
     }
-
-    [GeneratedRegex("^\\d+$", RegexOptions.Multiline, matchTimeoutMilliseconds: 100)]
-    private static partial Regex GetLsofResultRegex();
 }
