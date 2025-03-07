@@ -41,11 +41,11 @@ internal sealed class Program
 
     private static void OnNextAdvertisement(IGapAdvertisement advertisement)
     {
-        Log.Information(string.Format(CultureInfo.InvariantCulture, "Addr=0x{0}, PowerLevel={1}, Rssi={2}, Data=0x{3}",
+        Log.Information("Addr=0x{0}, PowerLevel={1}, Rssi={2}, Data=0x{3}",
             advertisement.Address,
             advertisement.TxPower,
             advertisement.Rssi,
-            Convert.ToHexString(advertisement.Data.ToByteArray())));
+            Convert.ToHexString(advertisement.Data.ToByteArray()));
     }
 
     private sealed class Test_IsOpen : IDisposable
@@ -54,14 +54,16 @@ internal sealed class Program
 
         public Test_IsOpen(string strPortName)
         {
+            CancellationToken cancelTok = m_cancelSource.Token;
+
             _ = Task.Run(async () =>
             {
-                while (!m_cancelSource.IsCancellationRequested)
+                while (!cancelTok.IsCancellationRequested)
                 {
-                    Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "IsOpen({0})={1}", strPortName, HciHost.Usb.UsbPort.IsOpen(strPortName)));
+                    Console.WriteLine("IsOpen({0})={1}", strPortName, HciHost.Usb.UsbPort.IsOpen(strPortName));
                     await Task.Delay(200);
                 }
-            }, m_cancelSource.Token);
+            }, cancelTok);
 
             Task.Delay(3000).Wait();
         }
