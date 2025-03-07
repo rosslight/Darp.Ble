@@ -30,22 +30,13 @@ internal sealed class Program
 
         IBleDevice adapter = manager.EnumerateDevices().First();
 
-        // _ = Task.Run(async () =>
-        // {
-        //     for (; ; )
-        //     {
-        //         Console.WriteLine(HciHost.Usb.UsbPort.IsOpen("/dev/ttyACM0"));
-        //         await Task.Delay(200);
-        //     }
-        // });
-
-        // Task.Delay(3000).Wait();
+        using var test = new Test_IsOpen("/dev/ttyACM0");
 
         _ = ble.StartScanAsync(adapter, OnNextAdvertisement);
         Task.Delay(15000).Wait();
         ble.StopScan();
 
-        // Task.Delay(3000).Wait();
+        test.Stop();
     }
 
     private static void OnNextAdvertisement(IGapAdvertisement advertisement)
@@ -55,5 +46,36 @@ internal sealed class Program
             advertisement.TxPower,
             advertisement.Rssi,
             Convert.ToHexString(advertisement.Data.ToByteArray())));
+    }
+
+    private sealed class Test_IsOpen : IDisposable
+    {
+        private readonly CancellationTokenSource m_cancelSource = new();
+
+        public Test_IsOpen(string strPortName)
+        {
+            _ = Task.Run(async () =>
+            {
+                while (!m_cancelSource.IsCancellationRequested)
+                {
+                    Console.WriteLine(string.Format(CultureInfo.InvariantCulture, "IsOpen({0})={1}", strPortName, HciHost.Usb.UsbPort.IsOpen(strPortName)));
+                    await Task.Delay(200);
+                }
+            }, m_cancelSource.Token);
+
+            Task.Delay(3000).Wait();
+        }
+
+        public void Stop()
+        {
+            Task.Delay(3000).Wait();
+
+            m_cancelSource.Cancel();
+        }
+
+        public void Dispose()
+        {
+            m_cancelSource.Dispose();
+        }
     }
 }
