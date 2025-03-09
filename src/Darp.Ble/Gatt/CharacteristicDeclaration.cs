@@ -68,8 +68,8 @@ public static class CharacteristicDeclaration
     /// <returns> A typed characteristic declaration </returns>
     public static TypedCharacteristicDeclaration<T, TProp1> Create<T, TProp1>(
         BleUuid uuid,
-        IGattTypedCharacteristic<T>.ReadValueFunc onRead,
-        IGattTypedCharacteristic<T>.WriteValueFunc onWrite
+        IGattTypedCharacteristic<T>.DecodeFunc onRead,
+        IGattTypedCharacteristic<T>.EncodeFunc onWrite
     )
         where TProp1 : IBleProperty
     {
@@ -86,8 +86,8 @@ public static class CharacteristicDeclaration
     /// <returns> A typed characteristic declaration </returns>
     public static TypedCharacteristicDeclaration<T, TProp1, TProp2> Create<T, TProp1, TProp2>(
         BleUuid uuid,
-        IGattTypedCharacteristic<T>.ReadValueFunc onRead,
-        IGattTypedCharacteristic<T>.WriteValueFunc onWrite
+        IGattTypedCharacteristic<T>.DecodeFunc onRead,
+        IGattTypedCharacteristic<T>.EncodeFunc onWrite
     )
         where TProp1 : IBleProperty
         where TProp2 : IBleProperty

@@ -22,22 +22,18 @@ public abstract class GattClientServiceProxy(IGattClientService service) : IGatt
     public BleUuid Uuid => _service.Uuid;
 
     /// <inheritdoc />
-    public ushort Handle => _service.Handle;
-
-    BleUuid IGattAttribute.AttributeType => _service.AttributeType;
-
-    /// <inheritdoc />
-    byte[] IGattAttribute.AttributeValue => _service.AttributeValue;
-
-    /// <inheritdoc />
     public GattServiceType Type => _service.Type;
+
+    IGattAttribute IGattClientService.Declaration => _service.Declaration;
 
     IReadOnlyCollection<IGattClientCharacteristic> IGattClientService.Characteristics => _service.Characteristics;
 
     IGattClientCharacteristic IGattClientService.AddCharacteristic(
-        BleUuid uuid,
-        GattProperty gattProperty,
-        IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite
-    ) => _service.AddCharacteristic(uuid, gattProperty, onRead, onWrite);
+        GattProperty properties,
+        IGattCharacteristicValue value,
+        IGattAttribute[] descriptors
+    )
+    {
+        return _service.AddCharacteristic(properties, value, descriptors);
+    }
 }

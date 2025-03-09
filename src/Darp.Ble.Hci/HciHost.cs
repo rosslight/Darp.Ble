@@ -357,6 +357,26 @@ public static class L2CapHelpers
         connection.AclPacketQueue.EnqueueL2CapBasic(connection.ConnectionHandle, attCId, payloadBytes);
     }
 
+    /// <summary> Enqueue a new acl packet </summary>
+    /// <param name="connection"> The connection to send this packet to </param>
+    /// <param name="attPdu"> The packet to be enqueued </param>
+    public static void EnqueueGattErrorResponse(
+        this IAclConnection connection,
+        AttOpCode requestOpCode,
+        ushort handle,
+        AttErrorCode errorCode
+    )
+    {
+        connection.EnqueueGattPacket(
+            new AttErrorRsp
+            {
+                RequestOpCode = requestOpCode,
+                Handle = handle,
+                ErrorCode = errorCode,
+            }
+        );
+    }
+
     private static void EnqueueL2CapBasic(
         this IAclPacketQueue packetQueue,
         ushort connectionHandle,

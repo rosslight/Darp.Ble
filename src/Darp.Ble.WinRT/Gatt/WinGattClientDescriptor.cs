@@ -12,11 +12,9 @@ internal sealed class WinGattClientDescriptor : GattClientDescriptor
     public WinGattClientDescriptor(
         WinGattClientCharacteristic clientCharacteristic,
         GattLocalDescriptor winDescriptor,
-        BleUuid uuid,
-        IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite
+        IGattCharacteristicValue value
     )
-        : base(clientCharacteristic, uuid, onRead, onWrite)
+        : base(clientCharacteristic, value)
     {
         winDescriptor.ReadRequested += async (_, args) =>
         {
@@ -25,8 +23,8 @@ internal sealed class WinGattClientDescriptor : GattClientDescriptor
             try
             {
                 IGattClientPeer peerClient = clientCharacteristic.Service.Peripheral.GetOrRegisterSession(args.Session);
-                byte[] value = await GetValueAsync(peerClient, CancellationToken.None).ConfigureAwait(false);
-                request.RespondWithValue(value.AsBuffer());
+                byte[] readValue = await Value.ReadValueAsync(peerClient).ConfigureAwait(false);
+                request.RespondWithValue(readValue.AsBuffer());
             }
             catch
             {
@@ -42,8 +40,7 @@ internal sealed class WinGattClientDescriptor : GattClientDescriptor
                 IGattClientPeer peerClient = clientCharacteristic.Service.Peripheral.GetOrRegisterSession(args.Session);
                 DataReader reader = DataReader.FromBuffer(request.Value);
                 byte[] bytes = reader.DetachBuffer().ToArray();
-                GattProtocolStatus status = await UpdateValueAsync(peerClient, bytes, CancellationToken.None)
-                    .ConfigureAwait(false);
+                GattProtocolStatus status = await Value.WriteValueAsync(peerClient, bytes).ConfigureAwait(false);
                 if (request.Option == GattWriteOption.WriteWithResponse)
                 {
                     if (status is GattProtocolStatus.Success)

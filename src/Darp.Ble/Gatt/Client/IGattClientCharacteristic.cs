@@ -2,8 +2,16 @@ using Darp.Ble.Data;
 
 namespace Darp.Ble.Gatt.Client;
 
+public interface IGattCharacteristicDeclaration : IGattAttribute
+{
+    /// <summary> The property of the characteristic </summary>
+    GattProperty Properties { get; }
+}
+
+public interface IGattCharacteristicValue : IGattAttribute;
+
 /// <summary> A gatt client characteristic </summary>
-public interface IGattClientCharacteristic : IGattAttribute, IGattClientAttribute
+public interface IGattClientCharacteristic
 {
     /// <summary> The service this characteristic was added to </summary>
     IGattClientService Service { get; }
@@ -17,12 +25,18 @@ public interface IGattClientCharacteristic : IGattAttribute, IGattClientAttribut
     /// <summary> The descriptors added to this characteristic </summary>
     IReadOnlyDictionary<BleUuid, IGattClientDescriptor> Descriptors { get; }
 
+    /// <summary> Access the characteristic declaration </summary>
+    internal IGattCharacteristicDeclaration Declaration { get; }
+
+    /// <summary> Access the characteristic value </summary>
+    internal IGattCharacteristicValue Value { get; }
+
     /// <summary> Add a new descriptor </summary>
     /// <param name="uuid"> The uuid of the descriptor to be added </param>
     /// <param name="onRead"> The callback to be called when a read operation was requested on this attribute </param>
     /// <param name="onWrite"> The callback to be called when a write operation was requested on this attribute </param>
     /// <returns> The descriptor that was added </returns>
-    IGattClientDescriptor AddDescriptor(BleUuid uuid, OnReadCallback? onRead = null, OnWriteCallback? onWrite = null);
+    IGattClientDescriptor AddDescriptor(IGattCharacteristicValue value);
 
     /// <summary> Notify subscribers about a new value </summary>
     /// <param name="clientPeer"> The client peer to notify. If null, all subscribed clients will be taken into account </param>

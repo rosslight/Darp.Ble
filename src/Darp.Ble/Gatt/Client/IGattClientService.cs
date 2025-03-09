@@ -3,7 +3,7 @@ using Darp.Ble.Data;
 namespace Darp.Ble.Gatt.Client;
 
 /// <summary> The client service </summary>
-public interface IGattClientService : IGattAttribute
+public interface IGattClientService
 {
     /// <summary> The peripheral device this service was added to</summary>
     public IBlePeripheral Peripheral { get; }
@@ -13,6 +13,9 @@ public interface IGattClientService : IGattAttribute
 
     /// <summary> The type of the service </summary>
     GattServiceType Type { get; }
+
+    /// <summary> Get the service declaration </summary>
+    internal IGattAttribute Declaration { get; }
 
     /// <summary> All characteristics of the client service </summary>
     IReadOnlyCollection<IGattClientCharacteristic> Characteristics { get; }
@@ -24,9 +27,8 @@ public interface IGattClientService : IGattAttribute
     /// <param name="onWrite"> Callback when a write request was received </param>
     /// <returns> An <see cref="IGattClientCharacteristic"/> </returns>
     IGattClientCharacteristic AddCharacteristic(
-        BleUuid uuid,
-        GattProperty gattProperty,
-        IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite
+        GattProperty properties,
+        IGattCharacteristicValue value,
+        IGattAttribute[] descriptors
     );
 }

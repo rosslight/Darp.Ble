@@ -9,46 +9,49 @@ public static partial class GattCharacteristicExtensions
     /// <summary> Get the value of the characteristic with a <see cref="Properties.Write"/> property by manually reading from it </summary>
     /// <param name="characteristic"> The characteristic to read from </param>
     /// <returns> The value </returns>
-    public static byte[] GetValue(this IGattClientCharacteristic<Write> characteristic)
+    public static ValueTask<byte[]> GetValueAsync(this IGattClientCharacteristic<Write> characteristic)
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        return characteristic.GetValue(clientPeer: null);
+        return characteristic.Value.ReadValueAsync(clientPeer: null);
     }
 
     /// <summary> Get the value of the characteristic with a <see cref="Properties.Write"/> property by manually reading from it </summary>
     /// <param name="characteristic"> The characteristic to read from </param>
     /// <typeparam name="T"> The type of the value </typeparam>
     /// <returns> The value </returns>
-    public static T GetValue<T>(this IGattTypedClientCharacteristic<T, Write> characteristic)
+    public static async ValueTask<T> GetValueAsync<T>(this IGattTypedClientCharacteristic<T, Write> characteristic)
         where T : unmanaged
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        byte[] bytes = characteristic.GetValue(clientPeer: null);
-        return characteristic.ReadValue(bytes);
+        byte[] bytes = await characteristic.Value.ReadValueAsync(clientPeer: null).ConfigureAwait(false);
+        return characteristic.Decode(bytes);
     }
 
     /// <summary> Update a specific value of the characteristic with a <see cref="Properties.Read"/> property by manually writing to it </summary>
     /// <param name="characteristic"> The characteristic to update </param>
     /// <param name="value"> The value to update </param>
     /// <returns> A status of the update operation </returns>
-    public static GattProtocolStatus UpdateValue(this IGattClientCharacteristic<Read> characteristic, byte[] value)
+    public static ValueTask<GattProtocolStatus> UpdateValueAsync(
+        this IGattClientCharacteristic<Read> characteristic,
+        byte[] value
+    )
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        return characteristic.UpdateValue(clientPeer: null, value);
+        return characteristic.Value.WriteValueAsync(clientPeer: null, value);
     }
 
     /// <summary> Update a specific value of the characteristic with a <see cref="Properties.Read"/> property by manually writing to it </summary>
     /// <param name="characteristic"> The characteristic to update </param>
     /// <param name="value"> The value to update </param>
     /// <returns> A status of the update operation </returns>
-    public static GattProtocolStatus UpdateValue<T>(
+    public static ValueTask<GattProtocolStatus> UpdateValueAsync<T>(
         this IGattTypedClientCharacteristic<T, Read> characteristic,
         T value
     )
         where T : unmanaged
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        return characteristic.UpdateValue(clientPeer: null, characteristic.WriteValue(value));
+        return characteristic.Value.WriteValueAsync(clientPeer: null, characteristic.Encode(value));
     }
 
     /// <summary> Notify a connected peer of a new value </summary>
@@ -77,7 +80,7 @@ public static partial class GattCharacteristicExtensions
     )
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        characteristic.NotifyValue(clientPeer: peer, characteristic.WriteValue(value));
+        characteristic.NotifyValue(clientPeer: peer, characteristic.Encode(value));
     }
 
     /// <summary> Notify all connected peers of a new value </summary>
@@ -96,6 +99,6 @@ public static partial class GattCharacteristicExtensions
     public static void NotifyAll<T>(this IGattTypedClientCharacteristic<T, Notify> characteristic, T value)
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        characteristic.NotifyValue(clientPeer: null, characteristic.WriteValue(value));
+        characteristic.NotifyValue(clientPeer: null, characteristic.Encode(value));
     }
 }

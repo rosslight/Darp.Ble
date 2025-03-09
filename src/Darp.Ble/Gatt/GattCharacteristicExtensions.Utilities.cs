@@ -7,151 +7,21 @@ namespace Darp.Ble.Gatt;
 
 public static partial class GattCharacteristicExtensions
 {
-    private static byte[] GetValue(this IGattClientCharacteristic characteristic, IGattClientPeer? clientPeer)
-    {
-        ValueTask<byte[]> getTask = characteristic.GetValueAsync(clientPeer, CancellationToken.None);
-        return getTask.IsCompleted ? getTask.Result : getTask.AsTask().GetAwaiter().GetResult();
-    }
-
-    private static GattProtocolStatus UpdateValue(
-        this IGattClientCharacteristic characteristic,
-        IGattClientPeer? clientPeer,
-        byte[] value
+    internal static Func<IGattClientPeer, PermissionCheckStatus> CreateReadAccessPermissionFunc(
+        this IGattAttribute.OnReadAsyncCallback? nullable
     )
     {
-        ValueTask<GattProtocolStatus> updateTask = characteristic.UpdateValueAsync(
-            clientPeer,
-            value,
-            CancellationToken.None
-        );
-        return updateTask.IsCompleted ? updateTask.Result : updateTask.AsTask().GetAwaiter().GetResult();
+        if (nullable is null)
+            return _ => PermissionCheckStatus.ReadNotPermittedError;
+        return _ => PermissionCheckStatus.Success;
     }
 
-    private static void StartUpdateValue(
-        this IGattClientCharacteristic characteristic,
-        IGattClientPeer? clientPeer,
-        byte[] value
+    internal static Func<IGattClientPeer, PermissionCheckStatus> CreateWriteAccessPermissionFunc(
+        this IGattAttribute.OnWriteAsyncCallback? nullable
     )
     {
-        ValueTask<GattProtocolStatus> updateTask = characteristic.UpdateValueAsync(
-            clientPeer,
-            value,
-            CancellationToken.None
-        );
-        if (updateTask.IsCompleted)
-            return;
-        _ = updateTask.AsTask();
-    }
-
-    /// <summary> Add a descriptor to the characteristic </summary>
-    /// <param name="characteristic"> The characteristic to add to </param>
-    /// <param name="uuid"> The uuid of the descriptor to be added </param>
-    /// <param name="onRead"> The callback to be called when a read operation was requested on this attribute </param>
-    /// <param name="onWrite"> The callback to be called when a write operation was requested on this attribute </param>
-    /// <returns> A task which holds the descriptor on completion </returns>
-    public static IGattClientDescriptor AddDescriptor(
-        this IGattClientCharacteristic characteristic,
-        BleUuid uuid,
-        Func<IGattClientPeer?, byte[]>? onRead = null,
-        Func<IGattClientPeer?, byte[], GattProtocolStatus>? onWrite = null
-    )
-    {
-        ArgumentNullException.ThrowIfNull(characteristic);
-        IGattClientAttribute.OnReadCallback? onAsyncRead = onRead is null
-            ? null
-            : (peer, _) => ValueTask.FromResult(onRead(peer));
-        IGattClientAttribute.OnWriteCallback? onAsyncWrite = onWrite is null
-            ? null
-            : (peer, bytes, _) => ValueTask.FromResult(onWrite(peer, bytes));
-        return characteristic.AddDescriptor(uuid, onAsyncRead, onAsyncWrite);
-    }
-
-    /// <summary> Add a descriptor to the characteristic </summary>
-    /// <param name="characteristic"> The characteristic to add to </param>
-    /// <param name="descriptorDeclaration"> The descriptor declaration </param>
-    /// <param name="onRead"> The callback to be called when a read operation was requested on this attribute </param>
-    /// <param name="onWrite"> The callback to be called when a write operation was requested on this attribute </param>
-    /// <returns> A task which holds the descriptor on completion </returns>
-    [OverloadResolutionPriority(1)]
-    public static IGattClientDescriptor AddDescriptor(
-        this IGattClientCharacteristic characteristic,
-        DescriptorDeclaration descriptorDeclaration,
-        IGattClientAttribute.OnReadCallback? onRead = null,
-        IGattClientAttribute.OnWriteCallback? onWrite = null
-    )
-    {
-        ArgumentNullException.ThrowIfNull(characteristic);
-        ArgumentNullException.ThrowIfNull(descriptorDeclaration);
-        return characteristic.AddDescriptor(descriptorDeclaration.Uuid, onRead, onWrite);
-    }
-
-    /// <summary> Add a descriptor to the characteristic </summary>
-    /// <param name="characteristic"> The characteristic to add to </param>
-    /// <param name="descriptorDeclaration"> The descriptor declaration </param>
-    /// <param name="onRead"> The callback to be called when a read operation was requested on this attribute </param>
-    /// <param name="onWrite"> The callback to be called when a write operation was requested on this attribute </param>
-    /// <returns> A task which holds the descriptor on completion </returns>
-    public static IGattClientDescriptor AddDescriptor(
-        this IGattClientCharacteristic characteristic,
-        DescriptorDeclaration descriptorDeclaration,
-        Func<IGattClientPeer?, byte[]>? onRead = null,
-        Func<IGattClientPeer?, byte[], GattProtocolStatus>? onWrite = null
-    )
-    {
-        ArgumentNullException.ThrowIfNull(characteristic);
-        ArgumentNullException.ThrowIfNull(descriptorDeclaration);
-        return characteristic.AddDescriptor(descriptorDeclaration.Uuid, onRead, onWrite);
-    }
-
-    /// <summary> Add a descriptor to the characteristic </summary>
-    /// <param name="characteristic"> The characteristic to add to </param>
-    /// <param name="descriptorDeclaration"> The descriptor declaration </param>
-    /// <param name="staticValue"> The static value of the characteristic </param>
-    /// <returns> A task which holds the descriptor on completion </returns>
-    public static IGattClientDescriptor AddDescriptor(
-        this IGattClientCharacteristic characteristic,
-        DescriptorDeclaration descriptorDeclaration,
-        byte[] staticValue
-    )
-    {
-        ArgumentNullException.ThrowIfNull(characteristic);
-        ArgumentNullException.ThrowIfNull(descriptorDeclaration);
-        return characteristic.AddDescriptor(descriptorDeclaration.Uuid, staticValue);
-    }
-
-    /// <summary> Add a descriptor to the characteristic </summary>
-    /// <param name="characteristic"> The characteristic to add to </param>
-    /// <param name="uuid"> The uuid of the descriptor to add </param>
-    /// <param name="staticValue"> The static value of the characteristic </param>
-    /// <returns> A task which holds the descriptor on completion </returns>
-    public static IGattClientDescriptor AddDescriptor(
-        this IGattClientCharacteristic characteristic,
-        BleUuid uuid,
-        byte[] staticValue
-    )
-    {
-        ArgumentNullException.ThrowIfNull(characteristic);
-        return characteristic.AddDescriptor(
-            uuid,
-            (_, _) => ValueTask.FromResult(staticValue),
-            (_, value, _) =>
-            {
-                staticValue = value;
-                return ValueTask.FromResult(GattProtocolStatus.Success);
-            }
-        );
-    }
-
-    /// <summary> Add a user description to the characteristic </summary>
-    /// <param name="characteristic"> The characteristic to add the descriptor to </param>
-    /// <param name="description"> The description to add </param>
-    /// <returns> A task which holds the descriptor on completion </returns>
-    public static IGattClientDescriptor AddUserDescription(
-        this IGattClientCharacteristic characteristic,
-        string description
-    )
-    {
-        byte[] descriptionBytes = Encoding.UTF8.GetBytes(description);
-        return characteristic.AddDescriptor(DescriptorDeclaration.CharacteristicUserDescription, descriptionBytes);
+        if (nullable is null)
+            return _ => PermissionCheckStatus.WriteNotPermittedError;
+        return _ => PermissionCheckStatus.Success;
     }
 }

@@ -32,30 +32,26 @@ public abstract class GattClientService(
     public GattServiceType Type { get; } = type;
 
     /// <inheritdoc />
-    public virtual ushort Handle => Peripheral.GattDatabase[this];
-
-    /// <inheritdoc />
-    public BleUuid AttributeType =>
-        Type is GattServiceType.Secondary
-            ? GattDatabaseCollection.SecondaryServiceType
-            : GattDatabaseCollection.PrimaryServiceType;
-
-    /// <inheritdoc />
-    /// <remarks> Either is 0x1800 for primary services or 0x1801 for secondary services </remarks>
-    public byte[] AttributeValue { get; } = uuid.ToByteArray();
+    public IGattAttribute Declaration { get; } =
+        new FuncCharacteristicValue(
+            type is GattServiceType.Secondary
+                ? GattDatabaseCollection.SecondaryServiceType
+                : GattDatabaseCollection.PrimaryServiceType,
+            blePeripheral.GattDatabase,
+            _ => ValueTask.FromResult(uuid.ToByteArray())
+        );
 
     /// <inheritdoc />
     public IReadOnlyCollection<IGattClientCharacteristic> Characteristics => _characteristics.AsReadOnly();
 
     /// <inheritdoc />
     public IGattClientCharacteristic AddCharacteristic(
-        BleUuid uuid,
-        GattProperty gattProperty,
-        IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite
+        GattProperty properties,
+        IGattCharacteristicValue value,
+        IGattAttribute[] descriptors
     )
     {
-        GattClientCharacteristic characteristic = CreateCharacteristicCore(uuid, gattProperty, onRead, onWrite);
+        GattClientCharacteristic characteristic = CreateCharacteristicCore(properties, value, descriptors);
         _characteristics.Add(characteristic);
         Peripheral.GattDatabase.AddCharacteristic(characteristic);
         return characteristic;
@@ -68,9 +64,8 @@ public abstract class GattClientService(
     /// <param name="onWrite"> Callback when a write request was received </param>
     /// <returns> A <see cref="IGattClientCharacteristic"/> </returns>
     protected abstract GattClientCharacteristic CreateCharacteristicCore(
-        BleUuid uuid,
-        GattProperty gattProperty,
-        IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite
+        GattProperty properties,
+        IGattCharacteristicValue value,
+        IGattAttribute[] descriptors
     );
 }

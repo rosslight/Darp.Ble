@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Concurrent;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
@@ -8,7 +7,6 @@ using Darp.Ble.Gatt.Server;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Result;
-using Darp.Ble.HciHost.Gatt.Server;
 using Darp.Ble.Implementation;
 using Darp.Ble.Utils;
 using Microsoft.Extensions.Logging;
@@ -23,18 +21,16 @@ internal sealed class HciHostGattClientService(
 ) : GattClientService(peripheral, uuid, type, logger)
 {
     protected override GattClientCharacteristic CreateCharacteristicCore(
-        BleUuid uuid,
-        GattProperty gattProperty,
-        IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite
+        GattProperty properties,
+        IGattCharacteristicValue value,
+        IGattAttribute[] descriptors
     )
     {
         return new HciHostGattClientCharacteristic(
             this,
-            uuid,
-            gattProperty,
-            onRead,
-            onWrite,
+            properties,
+            value,
+            descriptors,
             LoggerFactory.CreateLogger<HciHostGattClientCharacteristic>()
         );
     }
@@ -42,20 +38,15 @@ internal sealed class HciHostGattClientService(
 
 internal sealed class HciHostGattClientCharacteristic(
     GattClientService clientService,
-    BleUuid uuid,
-    GattProperty gattProperty,
-    IGattClientAttribute.OnReadCallback? onRead,
-    IGattClientAttribute.OnWriteCallback? onWrite,
+    GattProperty properties,
+    IGattCharacteristicValue value,
+    IGattAttribute[] descriptors,
     ILogger<HciHostGattClientCharacteristic> logger
-) : GattClientCharacteristic(clientService, uuid, gattProperty, onRead, onWrite, logger)
+) : GattClientCharacteristic(clientService, properties, value, descriptors, logger)
 {
-    protected override GattClientDescriptor AddDescriptorCore(
-        BleUuid uuid,
-        IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite
-    )
+    protected override GattClientDescriptor AddDescriptorCore(IGattCharacteristicValue value)
     {
-        return new HciHostGattClientDescriptor(this, uuid, onRead, onWrite);
+        return new HciHostGattClientDescriptor(this, value);
     }
 
     protected override void NotifyCore(IGattClientPeer clientPeer, byte[] value)
@@ -75,10 +66,8 @@ internal sealed class HciHostGattClientCharacteristic(
 
 internal sealed class HciHostGattClientDescriptor(
     HciHostGattClientCharacteristic clientCharacteristic,
-    BleUuid uuid,
-    IGattClientAttribute.OnReadCallback? onRead,
-    IGattClientAttribute.OnWriteCallback? onWrite
-) : GattClientDescriptor(clientCharacteristic, uuid, onRead, onWrite);
+    IGattCharacteristicValue value
+) : GattClientDescriptor(clientCharacteristic, value);
 
 /// <summary> The hci implementation of a <see cref="IBleBroadcaster"/> </summary>
 /// <param name="device"> The device </param>

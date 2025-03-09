@@ -31,18 +31,18 @@ internal sealed class WinGattClientService(
     public new WinBlePeripheral Peripheral { get; } = peripheral;
 
     protected override GattClientCharacteristic CreateCharacteristicCore(
-        BleUuid uuid,
-        GattProperty gattProperty,
-        IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite
+        GattProperty properties,
+        IGattCharacteristicValue value,
+        IGattAttribute[] descriptors
     )
     {
         GattLocalCharacteristicResult result = _winService
             .CreateCharacteristicAsync(
-                uuid.Value,
+                value.AttributeType.Value,
                 new GattLocalCharacteristicParameters
                 {
-                    CharacteristicProperties = (GattCharacteristicProperties)gattProperty,
+                    CharacteristicProperties = (GattCharacteristicProperties)properties,
+                    ReadProtectionLevel = GattProtectionLevel.EncryptionAndAuthenticationRequired,
                 }
             )
             .GetResults();
@@ -58,8 +58,8 @@ internal sealed class WinGattClientService(
         return new WinGattClientCharacteristic(
             this,
             result.Characteristic,
-            onRead,
-            onWrite,
+            value,
+            descriptors,
             LoggerFactory.CreateLogger<WinGattClientCharacteristic>()
         );
     }

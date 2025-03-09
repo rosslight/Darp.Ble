@@ -17,13 +17,13 @@ public interface IGattTypedCharacteristicDeclaration<T, TProp1>
 /// <typeparam name="TProp1"> The type of the first property </typeparam>
 public class TypedCharacteristicDeclaration<T, TProp1>(
     BleUuid uuid,
-    IGattTypedCharacteristic<T>.ReadValueFunc onRead,
-    IGattTypedCharacteristic<T>.WriteValueFunc onWrite
+    IGattTypedCharacteristic<T>.DecodeFunc onRead,
+    IGattTypedCharacteristic<T>.EncodeFunc onWrite
 ) : IGattTypedCharacteristicDeclaration<T, TProp1>
     where TProp1 : IBleProperty
 {
-    private readonly IGattTypedCharacteristic<T>.ReadValueFunc _onRead = onRead;
-    private readonly IGattTypedCharacteristic<T>.WriteValueFunc _onWrite = onWrite;
+    private readonly IGattTypedCharacteristic<T>.DecodeFunc _onRead = onRead;
+    private readonly IGattTypedCharacteristic<T>.EncodeFunc _onWrite = onWrite;
 
     /// <inheritdoc />
     public virtual GattProperty Properties => TProp1.GattProperty;
@@ -31,15 +31,15 @@ public class TypedCharacteristicDeclaration<T, TProp1>(
     /// <inheritdoc />
     public BleUuid Uuid { get; } = uuid;
 
-    /// <inheritdoc cref="IGattTypedCharacteristic{T}.ReadValue(System.ReadOnlySpan{byte})" />
+    /// <inheritdoc cref="IGattTypedCharacteristic{T}.Decode" />
     protected internal T ReadValue(ReadOnlySpan<byte> source) => _onRead(source);
 
-    /// <inheritdoc cref="IGattTypedCharacteristic{T}.WriteValue" />
+    /// <inheritdoc cref="IGattTypedCharacteristic{T}.Encode" />
     protected internal byte[] WriteValue(T value) => _onWrite(value);
 
-    T IGattTypedCharacteristic<T>.ReadValue(ReadOnlySpan<byte> source) => ReadValue(source);
+    T IGattTypedCharacteristic<T>.Decode(ReadOnlySpan<byte> source) => ReadValue(source);
 
-    byte[] IGattTypedCharacteristic<T>.WriteValue(T value) => WriteValue(value);
+    byte[] IGattTypedCharacteristic<T>.Encode(T value) => WriteValue(value);
 }
 
 /// <summary> The typed characteristic declaration </summary>
@@ -49,8 +49,8 @@ public class TypedCharacteristicDeclaration<T, TProp1>(
 /// <typeparam name="TProp2"> The type of the second property </typeparam>
 public sealed class TypedCharacteristicDeclaration<T, TProp1, TProp2>(
     BleUuid uuid,
-    IGattTypedCharacteristic<T>.ReadValueFunc onRead,
-    IGattTypedCharacteristic<T>.WriteValueFunc onWrite
+    IGattTypedCharacteristic<T>.DecodeFunc onRead,
+    IGattTypedCharacteristic<T>.EncodeFunc onWrite
 ) : TypedCharacteristicDeclaration<T, TProp1>(uuid, onRead, onWrite), IGattTypedCharacteristicDeclaration<T, TProp2>
     where TProp1 : IBleProperty
     where TProp2 : IBleProperty

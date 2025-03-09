@@ -15,6 +15,7 @@ namespace Darp.Ble.HciHost.Gatt;
 internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnection, IDisposable
 {
     private const ushort MaxMtu = 517;
+    private const ushort GattMaxAttributeValueSize = 512;
 
     private readonly L2CapAssembler _assembler;
     private readonly IDisposable _hostSubscription;
@@ -82,7 +83,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
     }
 
     [MessageSink]
-    private void HandleTypeRequest(AttReadByTypeReq<ushort> request)
+    private async void HandleTypeRequest(AttReadByTypeReq<ushort> request)
     {
         BleUuid attributeType = BleUuid.FromUInt16(request.AttributeType);
         int availablePduSpace = AttMtu - 2;
@@ -98,7 +99,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             )
         )
         {
-            ReadOnlyMemory<byte> value = attribute.AttributeValue;
+            ReadOnlyMemory<byte> value = await attribute.ReadValueAsync(this).ConfigureAwait(false);
             if (value.Length > maxAttributeSize)
             {
                 value = value[..maxAttributeSize];
@@ -133,7 +134,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
     }
 
     [MessageSink]
-    private void HandleGroupTypeRequest(AttReadByGroupTypeReq<ushort> attribute)
+    private async void HandleGroupTypeRequest(AttReadByGroupTypeReq<ushort> attribute)
     {
         if (attribute.AttributeGroupType is not (0x2800 or 0x2801))
         {
@@ -149,22 +150,24 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
         BleUuid attributeType = BleUuid.FromUInt16(attribute.AttributeGroupType);
 
         int availablePduSpace = AttMtu - 2;
-        var maxNumberOfAttributes = availablePduSpace / 6;
-        AttGroupTypeData<ushort>[] serviceAttributes = Peripheral
+        int maxNumberOfAttributes = availablePduSpace / 6;
+        AttGroupTypeData<ushort>[] serviceAttributes = await Peripheral
             .GattDatabase.GetServiceEntries(attribute.StartingHandle)
             .Where(x =>
                 x.AttributeType.Equals(attributeType)
                 && x.Handle >= attribute.StartingHandle
                 && x.Handle <= attribute.EndingHandle
             )
-            .Select(x => new AttGroupTypeData<ushort>
+            .ToAsyncEnumerable()
+            .SelectAwait(async x => new AttGroupTypeData<ushort>
             {
-                Value = BinaryPrimitives.ReadUInt16LittleEndian(x.AttributeValue),
+                Value = BinaryPrimitives.ReadUInt16LittleEndian(await x.ReadValueAsync(this).ConfigureAwait(false)),
                 Handle = x.Handle,
                 EndGroup = x.EndGroupHandle,
             })
             .Take(maxNumberOfAttributes)
-            .ToArray();
+            .ToArrayAsync()
+            .ConfigureAwait(false);
         if (serviceAttributes.Length == 0)
         {
             var response = new AttErrorRsp
@@ -185,23 +188,24 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
     }
 
     [MessageSink]
-    private void HandleReadRequest(AttReadReq request)
+    private async void HandleReadRequest(AttReadReq request)
     {
         if (!Peripheral.GattDatabase.TryGetAttribute(request.AttributeHandle, out IGattAttribute? attribute))
         {
-            var invalidHandleResponse = new AttErrorRsp
-            {
-                RequestOpCode = request.OpCode,
-                Handle = request.AttributeHandle,
-                ErrorCode = AttErrorCode.InvalidHandle,
-            };
-            this.EnqueueGattPacket(invalidHandleResponse);
+            this.EnqueueGattErrorResponse(request.OpCode, request.AttributeHandle, AttErrorCode.InvalidHandle);
             return;
         }
 
-        ReadOnlyMemory<byte> value = attribute.AttributeValue;
+        PermissionCheckStatus permissionStatus = attribute.CheckReadPermissions(this);
+        if (permissionStatus is not PermissionCheckStatus.Success)
+        {
+            this.EnqueueGattErrorResponse(request.OpCode, request.AttributeHandle, (AttErrorCode)permissionStatus);
+            return;
+        }
+
+        byte[] value = await attribute.ReadValueAsync(this).ConfigureAwait(false);
         int length = Math.Min(AttMtu - 1, value.Length);
-        var rsp = new AttReadRsp { AttributeValue = value[..length] };
+        var rsp = new AttReadRsp { AttributeValue = value.AsMemory()[..length] };
         this.EnqueueGattPacket(rsp);
     }
 
@@ -210,13 +214,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
     {
         if (request.StartingHandle is 0 || request.EndingHandle < request.StartingHandle)
         {
-            var invalidHandleResponse = new AttErrorRsp
-            {
-                RequestOpCode = request.OpCode,
-                Handle = request.StartingHandle,
-                ErrorCode = AttErrorCode.InvalidHandle,
-            };
-            this.EnqueueGattPacket(invalidHandleResponse);
+            this.EnqueueGattErrorResponse(request.OpCode, request.StartingHandle, AttErrorCode.InvalidHandle);
             return;
         }
 
@@ -245,13 +243,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
         }
         if (attributes.Count == 0 || attributeLength is null)
         {
-            var notFoundResponse = new AttErrorRsp
-            {
-                RequestOpCode = request.OpCode,
-                Handle = request.StartingHandle,
-                ErrorCode = AttErrorCode.AttributeNotFoundError,
-            };
-            this.EnqueueGattPacket(notFoundResponse);
+            this.EnqueueGattErrorResponse(request.OpCode, request.StartingHandle, AttErrorCode.AttributeNotFoundError);
             return;
         }
         var response = new AttFindInformationRsp
@@ -262,6 +254,42 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             InformationData = attributes.ToArray(),
         };
         this.EnqueueGattPacket(response);
+    }
+
+    [MessageSink]
+    private async void HandleAttWriteRequest(AttWriteReq request)
+    {
+        if (!Peripheral.GattDatabase.TryGetAttribute(request.AttributeHandle, out IGattAttribute? attribute))
+        {
+            this.EnqueueGattErrorResponse(request.OpCode, request.AttributeHandle, AttErrorCode.InvalidHandle);
+            return;
+        }
+        if (request.AttributeValue.Length > GattMaxAttributeValueSize)
+        {
+            this.EnqueueGattErrorResponse(
+                request.OpCode,
+                request.AttributeHandle,
+                AttErrorCode.InvalidAttributeLengthError
+            );
+            return;
+        }
+
+        PermissionCheckStatus permissionStatus = attribute.CheckWritePermissions(this);
+        if (permissionStatus is not PermissionCheckStatus.Success)
+        {
+            this.EnqueueGattErrorResponse(request.OpCode, request.AttributeHandle, (AttErrorCode)permissionStatus);
+            return;
+        }
+
+        GattProtocolStatus status = await attribute
+            .WriteValueAsync(this, request.AttributeValue.ToArray())
+            .ConfigureAwait(false);
+        if (status is not GattProtocolStatus.Success)
+        {
+            this.EnqueueGattErrorResponse(request.OpCode, request.AttributeHandle, (AttErrorCode)status);
+            return;
+        }
+        this.EnqueueGattPacket(new AttWriteRsp());
     }
 
     public override bool IsConnected => !_disconnectedBehavior.Value;

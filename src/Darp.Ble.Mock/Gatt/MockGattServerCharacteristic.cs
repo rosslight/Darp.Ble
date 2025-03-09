@@ -12,7 +12,7 @@ internal sealed class MockGattServerCharacteristic(
     MockGattClientCharacteristic characteristic,
     MockGattClientPeer gattClient,
     ILogger<MockGattServerCharacteristic> logger
-) : GattServerCharacteristic(service, characteristic.Handle, uuid, characteristic.Properties, logger)
+) : GattServerCharacteristic(service, characteristic.Declaration.Handle, uuid, characteristic.Properties, logger)
 {
     private readonly MockGattClientCharacteristic _characteristic = characteristic;
     private readonly MockGattClientPeer _gattClient = gattClient;
@@ -32,17 +32,17 @@ internal sealed class MockGattServerCharacteristic(
     /// <inheritdoc />
     protected override Task WriteAsyncCore(byte[] bytes, CancellationToken cancellationToken)
     {
-        return _characteristic.WriteAsync(_gattClient, bytes, cancellationToken);
+        return _characteristic.Value.WriteValueAsync(_gattClient, bytes).AsTask();
     }
 
     protected override void WriteWithoutResponseCore(byte[] bytes)
     {
-        _ = Task.Run(() => _characteristic.WriteAsync(_gattClient, bytes, CancellationToken.None));
+        _ = Task.Run(() => _characteristic.Value.WriteValueAsync(_gattClient, bytes));
     }
 
     protected override async Task<byte[]> ReadAsyncCore(CancellationToken cancellationToken)
     {
-        return await _characteristic.GetValueAsync(_gattClient, cancellationToken).ConfigureAwait(false);
+        return await _characteristic.Value.ReadValueAsync(_gattClient).ConfigureAwait(false);
     }
 
     protected override async Task<IDisposable> EnableNotificationsAsync<TState>(

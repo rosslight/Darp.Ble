@@ -98,7 +98,7 @@ public static class GattServerCharacteristicExtensions
         IAsyncDisposable disposable = await characteristic
             .OnNotifyAsync(
                 (characteristic, subject),
-                (tuple, bytes) => tuple.subject.OnNext(tuple.characteristic.ReadValue(bytes)),
+                (tuple, bytes) => tuple.subject.OnNext(tuple.characteristic.Decode(bytes)),
                 cancellationToken
             )
             .ConfigureAwait(false);
@@ -160,6 +160,6 @@ public static class GattServerCharacteristicExtensions
     {
         ArgumentNullException.ThrowIfNull(characteristic);
         byte[] bytes = await characteristic.ReadAsync(cancellationToken).ConfigureAwait(false);
-        return characteristic.ReadValue(bytes);
+        return characteristic.Decode(bytes);
     }
 }

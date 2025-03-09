@@ -5,6 +5,141 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Gatt.Client;
 
+/// <summary>/// Att error codes to return if the permission check was unsuccessful/// </summary>
+public enum PermissionCheckStatus
+{
+    /// <summary> All permissions are met </summary>
+    Success,
+
+    /// <summary> The attribute cannot be read </summary>
+    ReadNotPermittedError = 0x02,
+
+    /// <summary> The attribute cannot be written </summary>
+    WriteNotPermittedError = 0x03,
+
+    /// <summary> The attribute requires encryption before it can be read or written </summary>
+    InsufficientEncryptionError = 0x0F,
+
+    /// <summary> The attribute requires authentication before it can be read or written </summary>
+    InsufficientAuthenticationError = 0x05,
+
+    /// <summary> The attribute requires authorization before it can be read or written </summary>
+    InsufficientAuthorizationError = 0x08,
+}
+
+public sealed class FuncCharacteristicValue(
+    BleUuid attributeType,
+    GattDatabaseCollection gattDatabase,
+    Func<IGattClientPeer, PermissionCheckStatus> checkReadPermissions,
+    IGattAttribute.OnReadAsyncCallback? onRead,
+    Func<IGattClientPeer, PermissionCheckStatus> checkWritePermissions,
+    IGattAttribute.OnWriteAsyncCallback? onWrite
+) : IGattCharacteristicValue
+{
+    private readonly GattDatabaseCollection _gattDatabase = gattDatabase;
+    private readonly Func<IGattClientPeer, PermissionCheckStatus> _checkReadPermissions = checkReadPermissions;
+    private readonly IGattAttribute.OnReadAsyncCallback? _onRead = onRead;
+    private readonly Func<IGattClientPeer, PermissionCheckStatus> _checkWritePermissions = checkWritePermissions;
+    private readonly IGattAttribute.OnWriteAsyncCallback? _onWrite = onWrite;
+
+    public FuncCharacteristicValue(
+        BleUuid attributeType,
+        GattDatabaseCollection gattDatabase,
+        IGattAttribute.OnReadAsyncCallback onRead
+    )
+        : this(
+            attributeType,
+            gattDatabase,
+            checkReadPermissions: _ => PermissionCheckStatus.Success,
+            onRead: onRead,
+            checkWritePermissions: _ => PermissionCheckStatus.WriteNotPermittedError,
+            onWrite: null
+        ) { }
+
+    public FuncCharacteristicValue(
+        BleUuid attributeType,
+        GattDatabaseCollection gattDatabase,
+        IGattAttribute.OnWriteAsyncCallback onWrite
+    )
+        : this(
+            attributeType,
+            gattDatabase,
+            checkReadPermissions: _ => PermissionCheckStatus.ReadNotPermittedError,
+            onRead: null,
+            checkWritePermissions: _ => PermissionCheckStatus.Success,
+            onWrite: onWrite
+        ) { }
+
+    /// <inheritdoc />
+    public BleUuid AttributeType { get; } = attributeType;
+
+    /// <inheritdoc />
+    public ushort Handle => _gattDatabase[this];
+
+    /// <inheritdoc />
+    public PermissionCheckStatus CheckReadPermissions(IGattClientPeer clientPeer) => _checkReadPermissions(clientPeer);
+
+    /// <inheritdoc />
+    public PermissionCheckStatus CheckWritePermissions(IGattClientPeer clientPeer) =>
+        _checkWritePermissions(clientPeer);
+
+    /// <inheritdoc />
+    public ValueTask<byte[]> ReadValueAsync(IGattClientPeer? clientPeer)
+    {
+        return _onRead?.Invoke(clientPeer) ?? ValueTask.FromResult<byte[]>([]);
+    }
+
+    /// <inheritdoc />
+    public ValueTask<GattProtocolStatus> WriteValueAsync(IGattClientPeer? clientPeer, byte[] value)
+    {
+        return _onWrite?.Invoke(clientPeer, value) ?? ValueTask.FromResult(GattProtocolStatus.WriteRequestRejected);
+    }
+}
+
+public sealed class GattClientCharacteristicDeclaration(
+    GattProperty properties,
+    GattDatabaseCollection databaseCollection,
+    IGattCharacteristicValue value
+) : IGattCharacteristicDeclaration
+{
+    private readonly GattDatabaseCollection _databaseCollection = databaseCollection;
+    private readonly IGattCharacteristicValue _value = value;
+
+    /// <inheritdoc />
+    public BleUuid AttributeType => GattDatabaseCollection.CharacteristicType;
+
+    /// <inheritdoc />
+    public ushort Handle => _databaseCollection[this];
+
+    /// <inheritdoc />
+    public GattProperty Properties { get; } = properties;
+
+    /// <inheritdoc />
+    /// <remarks> Read Only, No Authentication, No Authorization </remarks>
+    public PermissionCheckStatus CheckReadPermissions(IGattClientPeer clientPeer) => PermissionCheckStatus.Success;
+
+    /// <inheritdoc />
+    /// <remarks> Read Only, No Authentication, No Authorization </remarks>
+    public PermissionCheckStatus CheckWritePermissions(IGattClientPeer clientPeer) =>
+        PermissionCheckStatus.WriteNotPermittedError;
+
+    /// <inheritdoc />
+    public ValueTask<byte[]> ReadValueAsync(IGattClientPeer? clientPeer)
+    {
+        var bytes = new byte[3 + (int)_value.AttributeType.Type];
+        Span<byte> buffer = bytes;
+        buffer[0] = (byte)Properties;
+        ushort valueHandle = _databaseCollection[_value];
+        BinaryPrimitives.WriteUInt16LittleEndian(buffer[1..], valueHandle);
+        _value.AttributeType.TryWriteBytes(buffer[3..]);
+        return ValueTask.FromResult(bytes);
+    }
+
+    /// <inheritdoc />
+    public ValueTask<GattProtocolStatus> WriteValueAsync(IGattClientPeer? clientPeer, byte[] value) =>
+        ValueTask.FromResult(GattProtocolStatus.WriteRequestRejected);
+}
+
 /// <summary> An abstract gatt client characteristic </summary>
 /// <param name="clientService"> The parent client service </param>
 /// <param name="uuid"> The UUID of the characteristic </param>
@@ -13,16 +148,13 @@ namespace Darp.Ble.Gatt.Client;
 /// <param name="onWrite"> The callback to be called when a write operation was requested on this attribute </param>
 public abstract class GattClientCharacteristic(
     GattClientService clientService,
-    BleUuid uuid,
     GattProperty gattProperty,
-    IGattClientAttribute.OnReadCallback? onRead,
-    IGattClientAttribute.OnWriteCallback? onWrite,
+    IGattCharacteristicValue value,
+    IGattAttribute[] descriptors,
     ILogger<GattClientCharacteristic> logger
 ) : IGattClientCharacteristic
 {
     private readonly List<GattClientDescriptor> _descriptors = [];
-    private readonly IGattClientAttribute.OnReadCallback? _onRead = onRead;
-    private readonly IGattClientAttribute.OnWriteCallback? _onWrite = onWrite;
 
     /// <summary> The optional logger </summary>
     protected ILogger<GattClientCharacteristic> Logger { get; } = logger;
@@ -34,26 +166,7 @@ public abstract class GattClientCharacteristic(
     public IGattClientService Service { get; } = clientService;
 
     /// <inheritdoc />
-    public virtual ushort Handle => Service.Peripheral.GattDatabase[this];
-
-    /// <inheritdoc />
-    public BleUuid AttributeType => GattDatabaseCollection.CharacteristicType;
-
-    /// <inheritdoc />
-    public byte[] AttributeValue => CreateAttributeValue(Properties, (ushort)(Handle + 1), Uuid);
-
-    private static byte[] CreateAttributeValue(GattProperty properties, ushort valueHandle, BleUuid uuid)
-    {
-        var bytes = new byte[3 + (int)uuid.Type];
-        Span<byte> buffer = bytes;
-        buffer[0] = (byte)properties;
-        BinaryPrimitives.WriteUInt16LittleEndian(buffer[1..], valueHandle);
-        uuid.TryWriteBytes(buffer[3..]);
-        return bytes;
-    }
-
-    /// <inheritdoc />
-    public BleUuid Uuid { get; } = uuid;
+    public BleUuid Uuid => Value.AttributeType;
 
     /// <inheritdoc />
     public GattProperty Properties { get; } = gattProperty;
@@ -63,60 +176,61 @@ public abstract class GattClientCharacteristic(
         _descriptors.ToDictionary(x => x.Uuid, IGattClientDescriptor (x) => x);
 
     /// <inheritdoc />
-    public IGattClientDescriptor AddDescriptor(
-        BleUuid uuid,
-        IGattClientAttribute.OnReadCallback? onRead = null,
-        IGattClientAttribute.OnWriteCallback? onWrite = null
-    )
+    public IGattCharacteristicDeclaration Declaration { get; } =
+        new GattClientCharacteristicDeclaration(gattProperty, clientService.Peripheral.GattDatabase, value);
+
+    /// <inheritdoc />
+    public IGattCharacteristicValue Value { get; } = value;
+
+    /// <inheritdoc />
+    public IGattClientDescriptor AddDescriptor(IGattCharacteristicValue value)
     {
-        if (Descriptors.TryGetValue(uuid, out IGattClientDescriptor? foundDescriptor))
+        if (Descriptors.TryGetValue(value.AttributeType, out IGattClientDescriptor? foundDescriptor))
             return foundDescriptor;
-        GattClientDescriptor descriptor = AddDescriptorCore(uuid, onRead, onWrite);
+        GattClientDescriptor descriptor = AddDescriptorCore(value);
         _descriptors.Add(descriptor);
         Service.Peripheral.GattDatabase.AddDescriptor(descriptor);
         return descriptor;
     }
 
     /// <inheritdoc cref="AddDescriptor" />
-    protected abstract GattClientDescriptor AddDescriptorCore(
-        BleUuid uuid,
-        IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite
-    );
+    protected abstract GattClientDescriptor AddDescriptorCore(IGattCharacteristicValue value);
 
+    /*
     /// <inheritdoc />
-    public ValueTask<byte[]> GetValueAsync(IGattClientPeer? clientPeer, CancellationToken cancellationToken)
+    public ValueTask<byte[]> GetValueAsync(IGattClientPeer? clientPeer)
     {
         if (_onRead is null)
             throw new NotSupportedException("Reading is not supported by this characteristic");
-        return _onRead(clientPeer, cancellationToken);
+        return _onRead(clientPeer);
+    }
+
+    public ValueTask<GattProtocolStatus> UpdateValueAsync(IGattClientPeer? clientPeer, ReadOnlyMemory<byte> value)
+    {
+        throw new NotImplementedException();
     }
 
     /// <inheritdoc />
-    public ValueTask<GattProtocolStatus> UpdateValueAsync(
-        IGattClientPeer? clientPeer,
-        byte[] value,
-        CancellationToken cancellationToken
-    )
+    public ValueTask<GattProtocolStatus> UpdateValueAsync(IGattClientPeer? clientPeer, ReadOnlySpan<byte> value)
     {
         if (_onWrite is null)
             throw new NotSupportedException("Writing is not supported by this characteristic");
-        return _onWrite(clientPeer, value, cancellationToken);
+        return _onWrite(clientPeer, value);
     }
-
+*/
     /// <inheritdoc />
     public void NotifyValue(IGattClientPeer? clientPeer, byte[] value)
     {
-        if (_onWrite is not null)
-        {
-            ValueTask<GattProtocolStatus> writeTask = _onWrite(clientPeer, value, CancellationToken.None);
-            if (!writeTask.IsCompleted)
-            {
-                writeTask.AsTask().GetAwaiter().GetResult();
-            }
-        }
         if (clientPeer is not null)
         {
+            if (Value.CheckReadPermissions(clientPeer) is PermissionCheckStatus.Success)
+            {
+                ValueTask<GattProtocolStatus> valueTask = Value.WriteValueAsync(clientPeer, value);
+                if (!valueTask.IsCompletedSuccessfully)
+                {
+                    _ = valueTask.AsTask();
+                }
+            }
             NotifyCore(clientPeer, value);
         }
         else
@@ -131,12 +245,12 @@ public abstract class GattClientCharacteristic(
     /// <inheritdoc />
     public async Task IndicateAsync(IGattClientPeer? clientPeer, byte[] value, CancellationToken cancellationToken)
     {
-        if (_onWrite is not null)
-        {
-            await _onWrite(clientPeer, value, cancellationToken).ConfigureAwait(false);
-        }
         if (clientPeer is not null)
         {
+            if (Value.CheckReadPermissions(clientPeer) is PermissionCheckStatus.Success)
+            {
+                await Value.WriteValueAsync(clientPeer, value).ConfigureAwait(false);
+            }
             await IndicateAsyncCore(clientPeer, value, cancellationToken).ConfigureAwait(false);
         }
         else
@@ -165,7 +279,7 @@ public abstract class GattClientCharacteristic(
     );
 
     /// <inheritdoc />
-    public override string ToString() => $"Characteristic {AttributeValue}";
+    public override string ToString() => $"Characteristic {Uuid}";
 }
 
 /// <summary> The implementation of a gatt client characteristic with a single property </summary>
@@ -187,14 +301,6 @@ public class GattClientCharacteristic<TProp1>(IGattClientCharacteristic characte
     public IGattClientService Service => Characteristic.Service;
 
     /// <inheritdoc />
-    public ushort Handle => Characteristic.Handle;
-
-    /// <inheritdoc />
-    public BleUuid AttributeType => Characteristic.AttributeType;
-
-    byte[] IGattAttribute.AttributeValue => Characteristic.AttributeValue;
-
-    /// <inheritdoc />
     public BleUuid Uuid => Characteristic.Uuid;
 
     /// <inheritdoc />
@@ -203,23 +309,11 @@ public class GattClientCharacteristic<TProp1>(IGattClientCharacteristic characte
     /// <inheritdoc />
     public IReadOnlyDictionary<BleUuid, IGattClientDescriptor> Descriptors => Characteristic.Descriptors;
 
+    IGattCharacteristicDeclaration IGattClientCharacteristic.Declaration => Characteristic.Declaration;
+    IGattCharacteristicValue IGattClientCharacteristic.Value => Characteristic.Value;
+
     /// <inheritdoc />
-    public IGattClientDescriptor AddDescriptor(
-        BleUuid uuid,
-        IGattClientAttribute.OnReadCallback? onRead = null,
-        IGattClientAttribute.OnWriteCallback? onWrite = null
-    ) => Characteristic.AddDescriptor(uuid, onRead, onWrite);
-
-    ValueTask<byte[]> IGattClientAttribute.GetValueAsync(
-        IGattClientPeer? clientPeer,
-        CancellationToken cancellationToken
-    ) => Characteristic.GetValueAsync(clientPeer, cancellationToken);
-
-    ValueTask<GattProtocolStatus> IGattClientAttribute.UpdateValueAsync(
-        IGattClientPeer? clientPeer,
-        byte[] value,
-        CancellationToken cancellationToken
-    ) => Characteristic.UpdateValueAsync(clientPeer, value, cancellationToken);
+    public IGattClientDescriptor AddDescriptor(IGattCharacteristicValue value) => Characteristic.AddDescriptor(value);
 
     void IGattClientCharacteristic.NotifyValue(IGattClientPeer? clientPeer, byte[] value) =>
         Characteristic.NotifyValue(clientPeer, value);

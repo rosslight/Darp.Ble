@@ -27,7 +27,7 @@ internal sealed class HciHostGattServerDescriptor(
     {
         AttResponse<AttWriteRsp> response = await _peer
             .QueryAttPduAsync<AttWriteReq, AttWriteRsp>(
-                new AttWriteReq { Handle = AttHandle, Value = bytes },
+                new AttWriteReq { AttributeHandle = AttHandle, AttributeValue = bytes },
                 cancellationToken: cancellationToken
             )
             .ConfigureAwait(false);

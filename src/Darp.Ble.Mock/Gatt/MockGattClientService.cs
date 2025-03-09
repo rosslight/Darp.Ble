@@ -18,18 +18,16 @@ internal sealed class MockGattClientService(
 
     /// <inheritdoc />
     protected override GattClientCharacteristic CreateCharacteristicCore(
-        BleUuid uuid,
-        GattProperty gattProperty,
-        IGattClientAttribute.OnReadCallback? onRead,
-        IGattClientAttribute.OnWriteCallback? onWrite
+        GattProperty properties,
+        IGattCharacteristicValue value,
+        IGattAttribute[] descriptors
     )
     {
         return new MockGattClientCharacteristic(
             this,
-            uuid,
-            gattProperty,
-            onRead,
-            onWrite,
+            properties,
+            value,
+            descriptors,
             LoggerFactory.CreateLogger<MockGattClientCharacteristic>()
         );
     }

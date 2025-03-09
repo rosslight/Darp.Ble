@@ -22,15 +22,15 @@ public interface ITypedGattServerCharacteristic<T, TProp1> : IGattTypedCharacter
 )]
 public class TypedGattServerCharacteristic<T, TProp1>(
     IGattServerCharacteristic characteristic,
-    IGattTypedCharacteristic<T>.ReadValueFunc onRead,
-    IGattTypedCharacteristic<T>.WriteValueFunc onWrite
+    IGattTypedCharacteristic<T>.DecodeFunc onRead,
+    IGattTypedCharacteristic<T>.EncodeFunc onWrite
 ) : ITypedGattServerCharacteristic<T, TProp1>
     where TProp1 : IBleProperty
 {
     /// <summary> The underlying characteristic </summary>
     protected IGattServerCharacteristic Characteristic { get; } = characteristic;
-    private readonly IGattTypedCharacteristic<T>.ReadValueFunc _onRead = onRead;
-    private readonly IGattTypedCharacteristic<T>.WriteValueFunc _onWrite = onWrite;
+    private readonly IGattTypedCharacteristic<T>.DecodeFunc _onRead = onRead;
+    private readonly IGattTypedCharacteristic<T>.EncodeFunc _onWrite = onWrite;
 
     /// <inheritdoc />
     public IGattServerService Service => Characteristic.Service;
@@ -47,15 +47,15 @@ public class TypedGattServerCharacteristic<T, TProp1>(
     /// <inheritdoc />
     public IReadOnlyDictionary<BleUuid, IGattServerDescriptor> Descriptors => Characteristic.Descriptors;
 
-    /// <inheritdoc cref="IGattTypedCharacteristic{T}.ReadValue(System.ReadOnlySpan{byte})" />
+    /// <inheritdoc cref="IGattTypedCharacteristic{T}.Decode" />
     protected T ReadValue(ReadOnlySpan<byte> source) => _onRead(source);
 
-    /// <inheritdoc cref="IGattTypedCharacteristic{T}.WriteValue" />
+    /// <inheritdoc cref="IGattTypedCharacteristic{T}.Encode" />
     protected byte[] WriteValue(T value) => _onWrite(value);
 
-    T IGattTypedCharacteristic<T>.ReadValue(ReadOnlySpan<byte> source) => ReadValue(source);
+    T IGattTypedCharacteristic<T>.Decode(ReadOnlySpan<byte> source) => ReadValue(source);
 
-    byte[] IGattTypedCharacteristic<T>.WriteValue(T value) => WriteValue(value);
+    byte[] IGattTypedCharacteristic<T>.Encode(T value) => WriteValue(value);
 
     Task IGattServerCharacteristic.WriteAsync(byte[] bytes, CancellationToken cancellationToken) =>
         Characteristic.WriteAsync(bytes, cancellationToken);
@@ -81,8 +81,8 @@ public class TypedGattServerCharacteristic<T, TProp1>(
 /// <typeparam name="TProp2"> The second property definition </typeparam>
 public sealed class TypedGattServerCharacteristic<T, TProp1, TProp2>(
     IGattServerCharacteristic characteristic,
-    IGattTypedCharacteristic<T>.ReadValueFunc onRead,
-    IGattTypedCharacteristic<T>.WriteValueFunc onWrite
+    IGattTypedCharacteristic<T>.DecodeFunc onRead,
+    IGattTypedCharacteristic<T>.EncodeFunc onWrite
 ) : TypedGattServerCharacteristic<T, TProp1>(characteristic, onRead, onWrite), ITypedGattServerCharacteristic<T, TProp2>
     where TProp1 : IBleProperty
     where TProp2 : IBleProperty

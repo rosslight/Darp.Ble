@@ -20,26 +20,18 @@ public interface IGattTypedClientCharacteristic<T, TProp1> : IGattTypedCharacter
 )]
 public class GattTypedClientCharacteristic<T, TProp1>(
     IGattClientCharacteristic characteristic,
-    IGattTypedCharacteristic<T>.ReadValueFunc onRead,
-    IGattTypedCharacteristic<T>.WriteValueFunc onWrite
+    IGattTypedCharacteristic<T>.DecodeFunc onDecode,
+    IGattTypedCharacteristic<T>.EncodeFunc onEncode
 ) : IGattTypedClientCharacteristic<T, TProp1>
     where TProp1 : IBleProperty
 {
     /// <summary> The underlying characteristic </summary>
     protected IGattClientCharacteristic Characteristic { get; } = characteristic;
-    private readonly IGattTypedCharacteristic<T>.ReadValueFunc _onRead = onRead;
-    private readonly IGattTypedCharacteristic<T>.WriteValueFunc _onWrite = onWrite;
+    private readonly IGattTypedCharacteristic<T>.DecodeFunc _onDecode = onDecode;
+    private readonly IGattTypedCharacteristic<T>.EncodeFunc _onEncode = onEncode;
 
     /// <inheritdoc />
     public IGattClientService Service => Characteristic.Service;
-
-    /// <inheritdoc />
-    public ushort Handle => Characteristic.Handle;
-
-    /// <inheritdoc />
-    public BleUuid AttributeType => Characteristic.AttributeType;
-
-    byte[] IGattAttribute.AttributeValue => Characteristic.AttributeValue;
 
     /// <inheritdoc />
     public BleUuid Uuid => Characteristic.Uuid;
@@ -50,23 +42,11 @@ public class GattTypedClientCharacteristic<T, TProp1>(
     /// <inheritdoc />
     public IReadOnlyDictionary<BleUuid, IGattClientDescriptor> Descriptors => Characteristic.Descriptors;
 
+    IGattCharacteristicDeclaration IGattClientCharacteristic.Declaration => Characteristic.Declaration;
+    IGattCharacteristicValue IGattClientCharacteristic.Value => Characteristic.Value;
+
     /// <inheritdoc />
-    public IGattClientDescriptor AddDescriptor(
-        BleUuid uuid,
-        IGattClientAttribute.OnReadCallback? onRead = null,
-        IGattClientAttribute.OnWriteCallback? onWrite = null
-    ) => Characteristic.AddDescriptor(uuid, onRead, onWrite);
-
-    ValueTask<byte[]> IGattClientAttribute.GetValueAsync(
-        IGattClientPeer? clientPeer,
-        CancellationToken cancellationToken
-    ) => Characteristic.GetValueAsync(clientPeer, cancellationToken);
-
-    ValueTask<GattProtocolStatus> IGattClientAttribute.UpdateValueAsync(
-        IGattClientPeer? clientPeer,
-        byte[] value,
-        CancellationToken cancellationToken
-    ) => Characteristic.UpdateValueAsync(clientPeer, value, cancellationToken);
+    public IGattClientDescriptor AddDescriptor(IGattCharacteristicValue value) => Characteristic.AddDescriptor(value);
 
     void IGattClientCharacteristic.NotifyValue(IGattClientPeer? clientPeer, byte[] value) =>
         Characteristic.NotifyValue(clientPeer, value);
@@ -77,15 +57,15 @@ public class GattTypedClientCharacteristic<T, TProp1>(
         CancellationToken cancellationToken
     ) => Characteristic.IndicateAsync(clientPeer, value, cancellationToken);
 
-    /// <inheritdoc cref="IGattTypedCharacteristic{T}.ReadValue(System.ReadOnlySpan{byte})" />
-    protected T ReadValue(ReadOnlySpan<byte> source) => _onRead(source);
+    /// <inheritdoc cref="IGattTypedCharacteristic{T}.Decode" />
+    protected T Decode(ReadOnlySpan<byte> source) => _onDecode(source);
 
-    /// <inheritdoc cref="IGattTypedCharacteristic{T}.WriteValue" />
-    protected byte[] WriteValue(T value) => _onWrite(value);
+    /// <inheritdoc cref="IGattTypedCharacteristic{T}.Encode" />
+    protected byte[] Encode(T value) => _onEncode(value);
 
-    T IGattTypedCharacteristic<T>.ReadValue(ReadOnlySpan<byte> source) => ReadValue(source);
+    T IGattTypedCharacteristic<T>.Decode(ReadOnlySpan<byte> source) => Decode(source);
 
-    byte[] IGattTypedCharacteristic<T>.WriteValue(T value) => WriteValue(value);
+    byte[] IGattTypedCharacteristic<T>.Encode(T value) => Encode(value);
 }
 
 /// <summary> The implementation of a gatt client characteristic with a single property </summary>
@@ -95,9 +75,11 @@ public class GattTypedClientCharacteristic<T, TProp1>(
 /// <typeparam name="TProp2"> The second property </typeparam>
 public sealed class GattTypedClientCharacteristic<T, TProp1, TProp2>(
     IGattClientCharacteristic characteristic,
-    IGattTypedCharacteristic<T>.ReadValueFunc onRead,
-    IGattTypedCharacteristic<T>.WriteValueFunc onWrite
-) : GattTypedClientCharacteristic<T, TProp1>(characteristic, onRead, onWrite), IGattTypedClientCharacteristic<T, TProp2>
+    IGattTypedCharacteristic<T>.DecodeFunc onDecode,
+    IGattTypedCharacteristic<T>.EncodeFunc onEncode
+)
+    : GattTypedClientCharacteristic<T, TProp1>(characteristic, onDecode, onEncode),
+        IGattTypedClientCharacteristic<T, TProp2>
     where TProp1 : IBleProperty
     where TProp2 : IBleProperty
 {
@@ -112,8 +94,8 @@ public sealed class GattTypedClientCharacteristic<T, TProp1, TProp2>(
         ArgumentNullException.ThrowIfNull(characteristicDeclaration);
         return new GattTypedClientCharacteristic<T, TProp2, TProp1>(
             characteristicDeclaration.Characteristic,
-            characteristicDeclaration.ReadValue,
-            characteristicDeclaration.WriteValue
+            characteristicDeclaration.Decode,
+            characteristicDeclaration.Encode
         );
     }
 }

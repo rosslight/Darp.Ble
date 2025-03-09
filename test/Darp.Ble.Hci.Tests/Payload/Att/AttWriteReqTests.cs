@@ -17,7 +17,7 @@ public sealed class AttWriteReqTests
     {
         var buffer = new byte[7];
         byte[] valueBytes = Convert.FromHexString(valueHexBytes);
-        var value = new AttWriteReq { Handle = handle, Value = valueBytes };
+        var value = new AttWriteReq { AttributeHandle = handle, AttributeValue = valueBytes };
 
         bool success = value.TryWriteLittleEndian(buffer);
 

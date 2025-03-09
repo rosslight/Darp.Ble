@@ -30,7 +30,19 @@ public readonly struct GattDatabaseEntry(IGattAttribute attribute, ushort handle
     public BleUuid AttributeType => _attribute.AttributeType;
 
     /// <inheritdoc />
-    public byte[] AttributeValue => _attribute.AttributeValue;
+    public PermissionCheckStatus CheckReadPermissions(IGattClientPeer clientPeer) =>
+        _attribute.CheckReadPermissions(clientPeer);
+
+    /// <inheritdoc />
+    public PermissionCheckStatus CheckWritePermissions(IGattClientPeer clientPeer) =>
+        _attribute.CheckWritePermissions(clientPeer);
+
+    /// <inheritdoc />
+    public ValueTask<GattProtocolStatus> WriteValueAsync(IGattClientPeer? clientPeer, byte[] value) =>
+        _attribute.WriteValueAsync(clientPeer, value);
+
+    /// <inheritdoc />
+    public ValueTask<byte[]> ReadValueAsync(IGattClientPeer? clientPeer) => _attribute.ReadValueAsync(clientPeer);
 }
 
 public readonly struct GattDatabaseGroupEntry(IGattAttribute attribute, ushort handle, ushort endGroupHandle)
@@ -48,14 +60,34 @@ public readonly struct GattDatabaseGroupEntry(IGattAttribute attribute, ushort h
     public BleUuid AttributeType => _attribute.AttributeType;
 
     /// <inheritdoc />
-    public byte[] AttributeValue => _attribute.AttributeValue;
+    public PermissionCheckStatus CheckReadPermissions(IGattClientPeer clientPeer) =>
+        _attribute.CheckReadPermissions(clientPeer);
+
+    /// <inheritdoc />
+    public PermissionCheckStatus CheckWritePermissions(IGattClientPeer clientPeer) =>
+        _attribute.CheckWritePermissions(clientPeer);
+
+    /// <inheritdoc />
+    public ValueTask<GattProtocolStatus> WriteValueAsync(IGattClientPeer? clientPeer, byte[] value) =>
+        _attribute.WriteValueAsync(clientPeer, value);
+
+    /// <inheritdoc />
+    public ValueTask<byte[]> ReadValueAsync(IGattClientPeer? clientPeer) => _attribute.ReadValueAsync(clientPeer);
 }
 
 /// <summary> The gatt database </summary>
 public sealed class GattDatabaseCollection : IReadOnlyCollection<GattDatabaseEntry>
 {
+    /// <summary> UUID for <c>Primary Service</c> </summary>
+    /// <value> 0x2800 </value>
     public static readonly BleUuid PrimaryServiceType = 0x2800;
+
+    /// <summary> UUID for <c>Secondary Service</c> </summary>
+    /// <value> 0x2801 </value>
     public static readonly BleUuid SecondaryServiceType = 0x2801;
+
+    /// <summary> UUID for <c>Characteristic</c> </summary>
+    /// <value> 0x2803 </value>
     public static readonly BleUuid CharacteristicType = 0x2803;
     public static readonly BleUuid UserDescriptionType = 0x2901;
 
@@ -83,7 +115,7 @@ public sealed class GattDatabaseCollection : IReadOnlyCollection<GattDatabaseEnt
     {
         lock (_lock)
         {
-            _attributes.Add(service);
+            _attributes.Add(service.Declaration);
         }
     }
 
@@ -95,11 +127,11 @@ public sealed class GattDatabaseCollection : IReadOnlyCollection<GattDatabaseEnt
         lock (_lock)
         {
             ArgumentNullException.ThrowIfNull(characteristic);
-            ushort serviceHandle = GetHandle(characteristic.Service);
+            ushort serviceHandle = GetHandle(characteristic.Service.Declaration);
             ushort serviceEndHandle = GetServiceEndHandle(serviceHandle);
             int serviceEndIndex = serviceEndHandle - 1;
-            _attributes.Insert(serviceEndIndex + 1, characteristic);
-            _attributes.Insert(serviceEndIndex + 2, new GattCharacteristicValue(characteristic));
+            _attributes.Insert(serviceEndIndex + 1, characteristic.Declaration);
+            _attributes.Insert(serviceEndIndex + 2, characteristic.Value);
         }
     }
 
@@ -132,10 +164,10 @@ public sealed class GattDatabaseCollection : IReadOnlyCollection<GattDatabaseEnt
         lock (_lock)
         {
             ArgumentNullException.ThrowIfNull(descriptor);
-            ushort characteristicHandle = GetHandle(descriptor.Characteristic);
+            ushort characteristicHandle = GetHandle(descriptor.Characteristic.Declaration);
             ushort characteristicEndHandle = GetCharacteristicEndHandle(characteristicHandle);
             int characteristicEndIndex = characteristicEndHandle - 1;
-            _attributes.Insert(characteristicEndIndex + 1, descriptor);
+            _attributes.Insert(characteristicEndIndex + 1, descriptor.Value);
         }
     }
 
@@ -277,21 +309,25 @@ public sealed class GattDatabaseCollection : IReadOnlyCollection<GattDatabaseEnt
             Span<byte> buffer = stackalloc byte[4];
             foreach (IGattAttribute gattAttribute in _attributes)
             {
-                if (
-                    gattAttribute.AttributeType == PrimaryServiceType
-                    || gattAttribute.AttributeType == SecondaryServiceType
-                    || gattAttribute.AttributeType == CharacteristicType
-                )
+                BleUuid type = gattAttribute.AttributeType;
+                if (type == PrimaryServiceType || type == SecondaryServiceType || type == CharacteristicType)
                 {
                     BinaryPrimitives.WriteUInt16LittleEndian(buffer[..2], gattAttribute.Handle);
-                    gattAttribute.AttributeType.TryWriteBytes(buffer[2..4]);
+                    type.TryWriteBytes(buffer[2..4]);
                     bytesToHash.AddRange(buffer);
-                    bytesToHash.AddRange(gattAttribute.AttributeValue);
+                    if (type == PrimaryServiceType || type == SecondaryServiceType)
+                    {
+                        bytesToHash.AddRange(type.ToByteArray());
+                    }
+                    else if (type == CharacteristicType)
+                    {
+                        bytesToHash.AddRange(type.ToByteArray());
+                    }
                 }
-                else if (gattAttribute.AttributeType == UserDescriptionType)
+                else if (type == UserDescriptionType)
                 {
                     BinaryPrimitives.WriteUInt16LittleEndian(buffer[..2], gattAttribute.Handle);
-                    gattAttribute.AttributeType.TryWriteBytes(buffer[2..4]);
+                    type.TryWriteBytes(buffer[2..4]);
                     bytesToHash.AddRange(buffer);
                 }
             }
@@ -301,30 +337,4 @@ public sealed class GattDatabaseCollection : IReadOnlyCollection<GattDatabaseEnt
             return BinaryPrimitives.ReadUInt16LittleEndian(hashBuffer);
         }
     }
-}
-
-/// <summary> The characteristic value </summary>
-/// <param name="characteristic"> The characteristic </param>
-public sealed class GattCharacteristicValue(IGattClientCharacteristic characteristic) : IGattAttribute
-{
-    private readonly IGattClientCharacteristic _characteristic = characteristic;
-
-    /// <inheritdoc />
-    public ushort Handle => _characteristic.Service.Peripheral.GattDatabase[this];
-
-    /// <inheritdoc />
-    public BleUuid AttributeType => _characteristic.Uuid;
-
-    /// <inheritdoc />
-    public byte[] AttributeValue
-    {
-        get
-        {
-            ValueTask<byte[]> task = _characteristic.GetValueAsync(clientPeer: null, CancellationToken.None);
-            return task.IsCompletedSuccessfully ? task.Result : task.AsTask().GetAwaiter().GetResult();
-        }
-    }
-
-    /// <inheritdoc />
-    public override string ToString() => $"Characteristic Value {_characteristic.Uuid}";
 }

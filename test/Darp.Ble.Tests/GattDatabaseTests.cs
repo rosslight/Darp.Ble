@@ -11,8 +11,10 @@ public sealed class GattDatabaseTests
     {
         var service = Substitute.For<IGattClientService>();
         service.Uuid.Returns(uuid);
-        service.AttributeType.Returns(GattDatabaseCollection.PrimaryServiceType);
-        service.Handle.Returns(_ => database[service]);
+        var serviceDeclaration = Substitute.For<IGattCharacteristicDeclaration>();
+        serviceDeclaration.AttributeType.Returns(GattDatabaseCollection.PrimaryServiceType);
+        serviceDeclaration.Handle.Returns(_ => database[serviceDeclaration]);
+        service.Declaration.Returns(serviceDeclaration);
         return service;
     }
 
@@ -24,8 +26,14 @@ public sealed class GattDatabaseTests
     {
         var characteristic = Substitute.For<IGattClientCharacteristic>();
         characteristic.Uuid.Returns(uuid);
-        characteristic.AttributeType.Returns(GattDatabaseCollection.CharacteristicType);
-        characteristic.Handle.Returns(_ => database[characteristic]);
+        var characteristicDeclaration = Substitute.For<IGattCharacteristicDeclaration>();
+        characteristicDeclaration.AttributeType.Returns(GattDatabaseCollection.CharacteristicType);
+        characteristicDeclaration.Handle.Returns(_ => database[characteristicDeclaration]);
+        characteristic.Declaration.Returns(characteristicDeclaration);
+        var characteristicValue = Substitute.For<IGattCharacteristicValue>();
+        characteristicValue.AttributeType.Returns(uuid);
+        characteristicValue.Handle.Returns(_ => database[characteristicValue]);
+        characteristic.Value.Returns(characteristicValue);
         characteristic.Service.Returns(service);
         return characteristic;
     }
@@ -38,8 +46,10 @@ public sealed class GattDatabaseTests
     {
         var descriptor = Substitute.For<IGattClientDescriptor>();
         descriptor.Uuid.Returns(uuid);
-        descriptor.AttributeType.Returns(GattDatabaseCollection.UserDescriptionType);
-        descriptor.Handle.Returns(_ => database[descriptor]);
+        var descriptorValue = Substitute.For<IGattCharacteristicValue>();
+        descriptorValue.AttributeType.Returns(GattDatabaseCollection.UserDescriptionType);
+        descriptorValue.Handle.Returns(_ => database[descriptorValue]);
+        descriptor.Value.Returns(descriptorValue);
         descriptor.Characteristic.Returns(characteristic);
         return descriptor;
     }
@@ -51,7 +61,7 @@ public sealed class GattDatabaseTests
 
         IGattClientService service1 = CreateService(0x1234, database);
         database.AddService(service1);
-        service1.Handle.Should().Be(0x0001);
+        service1.Declaration.Handle.Should().Be(0x0001);
     }
 
     [Fact]
@@ -65,9 +75,9 @@ public sealed class GattDatabaseTests
         database.AddService(service1);
         database.AddService(service2);
         database.AddService(service3);
-        service1.Handle.Should().Be(0x0001);
-        service2.Handle.Should().Be(0x0002);
-        service3.Handle.Should().Be(0x0003);
+        service1.Declaration.Handle.Should().Be(0x0001);
+        service2.Declaration.Handle.Should().Be(0x0002);
+        service3.Declaration.Handle.Should().Be(0x0003);
     }
 
     [Fact]
@@ -81,8 +91,8 @@ public sealed class GattDatabaseTests
         database.AddService(service1);
         database.AddCharacteristic(characteristic1);
 
-        service1.Handle.Should().Be(0x0001);
-        characteristic1.Handle.Should().Be(0x0002);
+        service1.Declaration.Handle.Should().Be(0x0001);
+        characteristic1.Declaration.Handle.Should().Be(0x0002);
     }
 
     [Fact]
@@ -100,10 +110,10 @@ public sealed class GattDatabaseTests
         database.AddCharacteristic(characteristic2);
         database.AddCharacteristic(characteristic3);
 
-        service1.Handle.Should().Be(0x0001);
-        characteristic1.Handle.Should().Be(0x0002);
-        characteristic2.Handle.Should().Be(0x0004);
-        characteristic3.Handle.Should().Be(0x0006);
+        service1.Declaration.Handle.Should().Be(0x0001);
+        characteristic1.Declaration.Handle.Should().Be(0x0002);
+        characteristic2.Declaration.Handle.Should().Be(0x0004);
+        characteristic3.Declaration.Handle.Should().Be(0x0006);
     }
 
     [Fact]
@@ -119,9 +129,9 @@ public sealed class GattDatabaseTests
         database.AddCharacteristic(characteristic1);
         database.AddDescriptor(descriptor1);
 
-        service1.Handle.Should().Be(0x0001);
-        characteristic1.Handle.Should().Be(0x0002);
-        descriptor1.Handle.Should().Be(0x0004);
+        service1.Declaration.Handle.Should().Be(0x0001);
+        characteristic1.Declaration.Handle.Should().Be(0x0002);
+        descriptor1.Value.Handle.Should().Be(0x0004);
     }
 
     [Fact]
@@ -141,11 +151,12 @@ public sealed class GattDatabaseTests
         database.AddDescriptor(descriptor2);
         database.AddDescriptor(descriptor3);
 
-        service1.Handle.Should().Be(0x0001);
-        characteristic1.Handle.Should().Be(0x0002);
-        descriptor1.Handle.Should().Be(0x0004);
-        descriptor2.Handle.Should().Be(0x0005);
-        descriptor3.Handle.Should().Be(0x0006);
+        service1.Declaration.Handle.Should().Be(0x0001);
+        characteristic1.Declaration.Handle.Should().Be(0x0002);
+        characteristic1.Value.Handle.Should().Be(0x0003);
+        descriptor1.Value.Handle.Should().Be(0x0004);
+        descriptor2.Value.Handle.Should().Be(0x0005);
+        descriptor3.Value.Handle.Should().Be(0x0006);
     }
 
     [Fact]
@@ -171,14 +182,17 @@ public sealed class GattDatabaseTests
         database.AddDescriptor(descriptor2);
         database.AddDescriptor(descriptor3);
 
-        service1.Handle.Should().Be(0x0001);
-        characteristic1.Handle.Should().Be(0x0002);
-        descriptor1.Handle.Should().Be(0x0004);
-        descriptor2.Handle.Should().Be(0x0005);
-        characteristic2.Handle.Should().Be(0x0006);
-        service2.Handle.Should().Be(0x0008);
-        characteristic3.Handle.Should().Be(0x0009);
-        descriptor3.Handle.Should().Be(0x000B);
+        service1.Declaration.Handle.Should().Be(0x0001);
+        characteristic1.Declaration.Handle.Should().Be(0x0002);
+        characteristic1.Value.Handle.Should().Be(0x0003);
+        descriptor1.Value.Handle.Should().Be(0x0004);
+        descriptor2.Value.Handle.Should().Be(0x0005);
+        characteristic2.Declaration.Handle.Should().Be(0x0006);
+        characteristic2.Value.Handle.Should().Be(0x0007);
+        service2.Declaration.Handle.Should().Be(0x0008);
+        characteristic3.Declaration.Handle.Should().Be(0x0009);
+        characteristic3.Value.Handle.Should().Be(0x000A);
+        descriptor3.Value.Handle.Should().Be(0x000B);
     }
 
     [Fact]

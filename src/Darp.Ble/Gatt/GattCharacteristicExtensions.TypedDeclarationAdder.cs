@@ -19,28 +19,34 @@ public static partial class GattCharacteristicExtensions
     public static GattTypedClientCharacteristic<T, TProp1> AddCharacteristic<T, TProp1>(
         this IGattClientService service,
         TypedCharacteristicDeclaration<T, TProp1> characteristicDeclaration,
-        IGattClientAttribute.OnReadCallback<T>? onRead = null,
-        IGattClientAttribute.OnWriteCallback<T>? onWrite = null
+        IGattAttribute.OnReadAsyncCallback<T>? onRead = null,
+        IGattAttribute.OnWriteAsyncCallback<T>? onWrite = null
     )
         where TProp1 : IBleProperty
     {
         ArgumentNullException.ThrowIfNull(service);
         ArgumentNullException.ThrowIfNull(characteristicDeclaration);
-        IGattClientAttribute.OnReadCallback? onAsyncRead = onRead is null
+        IGattAttribute.OnReadAsyncCallback? onAsyncRead = onRead is null
             ? null
-            : async (peer, token) =>
+            : async peer =>
             {
-                T value = await onRead(peer, token).ConfigureAwait(false);
+                T value = await onRead(peer).ConfigureAwait(false);
                 return characteristicDeclaration.WriteValue(value);
             };
-        IGattClientAttribute.OnWriteCallback? onAsyncWrite = onWrite is null
+        IGattAttribute.OnWriteAsyncCallback? onAsyncWrite = onWrite is null
             ? null
-            : (peer, bytes, token) => onWrite(peer, characteristicDeclaration.ReadValue(bytes), token);
+            : (peer, bytes) => onWrite(peer, characteristicDeclaration.ReadValue(bytes));
         IGattClientCharacteristic characteristic = service.AddCharacteristic(
-            characteristicDeclaration.Uuid,
             TProp1.GattProperty,
-            onAsyncRead,
-            onAsyncWrite
+            new FuncCharacteristicValue(
+                characteristicDeclaration.Uuid,
+                service.Peripheral.GattDatabase,
+                onAsyncRead.CreateReadAccessPermissionFunc(),
+                onAsyncRead,
+                onAsyncWrite.CreateWriteAccessPermissionFunc(),
+                onAsyncWrite
+            ),
+            []
         );
         return new GattTypedClientCharacteristic<T, TProp1>(
             characteristic,
@@ -60,18 +66,23 @@ public static partial class GattCharacteristicExtensions
     public static GattTypedClientCharacteristic<T, TProp1> AddCharacteristic<T, TProp1>(
         this IGattClientService service,
         TypedCharacteristicDeclaration<T, TProp1> characteristicDeclaration,
-        Func<IGattClientPeer?, T>? onRead = null,
-        Func<IGattClientPeer?, T, GattProtocolStatus>? onWrite = null
+        IGattAttribute.OnReadCallback<T>? onRead = null,
+        IGattAttribute.OnWriteCallback<T>? onWrite = null
     )
         where TProp1 : IBleProperty
     {
         ArgumentNullException.ThrowIfNull(service);
-        IGattClientAttribute.OnReadCallback<T>? onAsyncRead = onRead is null
+        IGattAttribute.OnReadAsyncCallback<T>? onAsyncRead = onRead is null
             ? null
-            : (peer, _) => ValueTask.FromResult(onRead(peer));
-        IGattClientAttribute.OnWriteCallback<T>? onAsyncWrite = onWrite is null
+            : peer => ValueTask.FromResult(onRead(peer));
+        IGattAttribute.OnWriteAsyncCallback<T>? onAsyncWrite = onWrite is null
             ? null
-            : (peer, bytes, _) => ValueTask.FromResult(onWrite(peer, bytes));
+            : (peer, bytes) =>
+            {
+                if (bytes == null)
+                    throw new ArgumentNullException(nameof(bytes));
+                return ValueTask.FromResult(onWrite(peer, bytes));
+            };
         return service.AddCharacteristic(characteristicDeclaration, onAsyncRead, onAsyncWrite);
     }
 
@@ -88,29 +99,35 @@ public static partial class GattCharacteristicExtensions
     public static GattTypedClientCharacteristic<T, TProp1, TProp2> AddCharacteristic<T, TProp1, TProp2>(
         this IGattClientService service,
         TypedCharacteristicDeclaration<T, TProp1, TProp2> characteristicDeclaration,
-        IGattClientAttribute.OnReadCallback<T>? onRead = null,
-        IGattClientAttribute.OnWriteCallback<T>? onWrite = null
+        IGattAttribute.OnReadAsyncCallback<T>? onRead = null,
+        IGattAttribute.OnWriteAsyncCallback<T>? onWrite = null
     )
         where TProp1 : IBleProperty
         where TProp2 : IBleProperty
     {
         ArgumentNullException.ThrowIfNull(service);
         ArgumentNullException.ThrowIfNull(characteristicDeclaration);
-        IGattClientAttribute.OnReadCallback? onAsyncRead = onRead is null
+        IGattAttribute.OnReadAsyncCallback? onAsyncRead = onRead is null
             ? null
-            : async (peer, token) =>
+            : async peer =>
             {
-                T value = await onRead(peer, token).ConfigureAwait(false);
+                T value = await onRead(peer).ConfigureAwait(false);
                 return characteristicDeclaration.WriteValue(value);
             };
-        IGattClientAttribute.OnWriteCallback? onAsyncWrite = onWrite is null
+        IGattAttribute.OnWriteAsyncCallback? onAsyncWrite = onWrite is null
             ? null
-            : (peer, bytes, token) => onWrite(peer, characteristicDeclaration.ReadValue(bytes), token);
+            : (peer, bytes) => onWrite(peer, characteristicDeclaration.ReadValue(bytes));
         IGattClientCharacteristic characteristic = service.AddCharacteristic(
-            characteristicDeclaration.Uuid,
-            TProp1.GattProperty,
-            onAsyncRead,
-            onAsyncWrite
+            TProp1.GattProperty | TProp2.GattProperty,
+            new FuncCharacteristicValue(
+                characteristicDeclaration.Uuid,
+                service.Peripheral.GattDatabase,
+                onAsyncRead.CreateReadAccessPermissionFunc(),
+                onAsyncRead,
+                onAsyncWrite.CreateWriteAccessPermissionFunc(),
+                onAsyncWrite
+            ),
+            []
         );
         return new GattTypedClientCharacteristic<T, TProp1, TProp2>(
             characteristic,
@@ -136,8 +153,8 @@ public static partial class GattCharacteristicExtensions
         ArgumentNullException.ThrowIfNull(service);
         return service.AddCharacteristic(
             characteristicDeclaration,
-            onRead: (_, _) => ValueTask.FromResult(staticValue),
-            onWrite: (_, bytesToWrite, _) =>
+            onRead: _ => ValueTask.FromResult(staticValue),
+            onWrite: (_, bytesToWrite) =>
             {
                 staticValue = bytesToWrite;
                 return ValueTask.FromResult(GattProtocolStatus.Success);
@@ -164,8 +181,8 @@ public static partial class GattCharacteristicExtensions
         ArgumentNullException.ThrowIfNull(service);
         return service.AddCharacteristic(
             characteristicDeclaration,
-            onRead: (_, _) => ValueTask.FromResult(staticValue),
-            onWrite: (_, bytesToWrite, _) =>
+            onRead: _ => ValueTask.FromResult(staticValue),
+            onWrite: (_, bytesToWrite) =>
             {
                 staticValue = bytesToWrite;
                 return ValueTask.FromResult(GattProtocolStatus.Success);
