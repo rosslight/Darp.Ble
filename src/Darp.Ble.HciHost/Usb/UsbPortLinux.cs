@@ -47,11 +47,11 @@ internal static partial class UsbPortLinux
     [SupportedOSPlatform("linux")]
     public static bool IsOpen(string portName)
     {
-        string strOutput = Call_lsof(portName);
+        string strOutput = CallLsof(portName);
         return GetLsofResultRegex().IsMatch(strOutput);
     }
 
-    private static string Call_lsof(string strDeviceName)
+    private static string CallLsof(string strDeviceName)
     {
         // If device is opened by a process, lsof outputs the PID of that process.
         //
@@ -72,18 +72,18 @@ internal static partial class UsbPortLinux
 
     private sealed class DeviceProperties
     {
-        private const string PROPERTY_VendorId = "ID_VENDOR_ID";
-        private const string PROPERTY_Vendor = "ID_VENDOR";
-        private const string PROPERTY_ModelId = "ID_MODEL_ID";
-        private const string PROPERTY_Model = "ID_MODEL";
-        private const string PROPERTY_Type = "ID_TYPE";
-        private static readonly string[] PROPERTIES_All =
+        private const string PropertyVendorId = "ID_VENDOR_ID";
+        private const string PropertyVendor = "ID_VENDOR";
+        private const string PropertyModelId = "ID_MODEL_ID";
+        private const string PropertyModel = "ID_MODEL";
+        private const string PropertyType = "ID_TYPE";
+        private static readonly string[] PropertiesAll =
         [
-            PROPERTY_VendorId,
-            PROPERTY_Vendor,
-            PROPERTY_ModelId,
-            PROPERTY_Model,
-            PROPERTY_Type,
+            PropertyVendorId,
+            PropertyVendor,
+            PropertyModelId,
+            PropertyModel,
+            PropertyType,
         ];
 
         public string? VendorId { get; }
@@ -94,16 +94,16 @@ internal static partial class UsbPortLinux
 
         public DeviceProperties(string strDeviceName)
         {
-            string strOutput = Call_udevadm(strDeviceName);
+            string strOutput = CallUdevAdm(strDeviceName);
 
-            VendorId = GetPropertyValue(PROPERTY_VendorId, strOutput);
-            Vendor = GetPropertyValue(PROPERTY_Vendor, strOutput);
-            ModelId = GetPropertyValue(PROPERTY_ModelId, strOutput);
-            Model = GetPropertyValue(PROPERTY_Model, strOutput);
-            Type = GetPropertyValue(PROPERTY_Type, strOutput);
+            VendorId = GetPropertyValue(PropertyVendorId, strOutput);
+            Vendor = GetPropertyValue(PropertyVendor, strOutput);
+            ModelId = GetPropertyValue(PropertyModelId, strOutput);
+            Model = GetPropertyValue(PropertyModel, strOutput);
+            Type = GetPropertyValue(PropertyType, strOutput);
         }
 
-        private static string Call_udevadm(string strDeviceName)
+        private static string CallUdevAdm(string strDeviceName)
         {
             // Output looks like:
             // ID_MODEL=HCI_via_H4_UART_dongle
@@ -117,7 +117,7 @@ internal static partial class UsbPortLinux
             process.StartInfo.ArgumentList.Add("info");
             process.StartInfo.ArgumentList.Add(strDeviceName);
             process.StartInfo.ArgumentList.Add("--query=property");
-            process.StartInfo.ArgumentList.Add("--property=" + string.Join(',', PROPERTIES_All));
+            process.StartInfo.ArgumentList.Add("--property=" + string.Join(',', PropertiesAll));
             process.StartInfo.UseShellExecute = false;
             process.StartInfo.RedirectStandardOutput = true;
             process.StartInfo.RedirectStandardError = true;
@@ -129,7 +129,7 @@ internal static partial class UsbPortLinux
 
         private static string? GetPropertyValue(string strProperty, string str)
         {
-            var regex = new Regex("^" + strProperty + "=(?<value>.+)$", RegexOptions.Multiline, new TimeSpan(0, 0, 0, 0, 100));
+            var regex = new Regex("^" + strProperty + "=(?<value>.+)$", RegexOptions.Multiline, TimeSpan.FromMilliseconds(100));
             Match m = regex.Match(str);
             return m.Success ? m.Groups["value"].Value : null;
         }
