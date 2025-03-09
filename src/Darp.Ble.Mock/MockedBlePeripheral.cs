@@ -1,7 +1,6 @@
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Client;
-using Darp.Ble.Gatt.Services;
 using Darp.Ble.Implementation;
 using Darp.Ble.Mock.Gatt;
 using Microsoft.Extensions.Logging;

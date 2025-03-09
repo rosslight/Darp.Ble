@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using Darp.Ble.Gatt.Att;
 using Darp.Ble.Gatt.Client;
 
 namespace Darp.Ble.Gatt;

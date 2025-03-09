@@ -3,6 +3,7 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
+using Darp.Ble.Gatt.Database;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Implementation;
@@ -22,7 +23,7 @@ public abstract class BlePeripheral(BleDevice device, ILogger<BlePeripheral> log
     protected ILoggerFactory LoggerFactory => Device.LoggerFactory;
 
     /// <inheritdoc />
-    public GattDatabaseCollection GattDatabase { get; } = new();
+    public IGattDatabase GattDatabase { get; } = new GattDatabaseCollection();
 
     /// <inheritdoc />
     public IReadOnlyCollection<IGattClientService> Services => _services;

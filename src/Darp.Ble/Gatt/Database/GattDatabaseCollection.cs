@@ -3,9 +3,10 @@ using System.Collections;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using Darp.Ble.Data;
+using Darp.Ble.Gatt.Att;
 using Darp.Ble.Gatt.Client;
 
-namespace Darp.Ble;
+namespace Darp.Ble.Gatt.Database;
 
 /*
     Primary Service 0x1800
@@ -19,64 +20,8 @@ namespace Darp.Ble;
             Descriptor 0x2902 (CCCD)
  */
 
-public readonly struct GattDatabaseEntry(IGattAttribute attribute, ushort handle) : IGattAttribute
-{
-    private readonly IGattAttribute _attribute = attribute;
-
-    /// <inheritdoc />
-    public ushort Handle { get; } = handle;
-
-    /// <inheritdoc />
-    public BleUuid AttributeType => _attribute.AttributeType;
-
-    /// <inheritdoc />
-    public PermissionCheckStatus CheckReadPermissions(IGattClientPeer clientPeer) =>
-        _attribute.CheckReadPermissions(clientPeer);
-
-    /// <inheritdoc />
-    public PermissionCheckStatus CheckWritePermissions(IGattClientPeer clientPeer) =>
-        _attribute.CheckWritePermissions(clientPeer);
-
-    /// <inheritdoc />
-    public ValueTask<GattProtocolStatus> WriteValueAsync(IGattClientPeer? clientPeer, byte[] value) =>
-        _attribute.WriteValueAsync(clientPeer, value);
-
-    /// <inheritdoc />
-    public ValueTask<byte[]> ReadValueAsync(IGattClientPeer? clientPeer) => _attribute.ReadValueAsync(clientPeer);
-}
-
-public readonly struct GattDatabaseGroupEntry(IGattAttribute attribute, ushort handle, ushort endGroupHandle)
-    : IGattAttribute
-{
-    private readonly IGattAttribute _attribute = attribute;
-
-    /// <inheritdoc />
-    public ushort Handle { get; } = handle;
-
-    /// <summary> The end handle of an attribute group </summary>
-    public ushort EndGroupHandle { get; } = endGroupHandle;
-
-    /// <inheritdoc />
-    public BleUuid AttributeType => _attribute.AttributeType;
-
-    /// <inheritdoc />
-    public PermissionCheckStatus CheckReadPermissions(IGattClientPeer clientPeer) =>
-        _attribute.CheckReadPermissions(clientPeer);
-
-    /// <inheritdoc />
-    public PermissionCheckStatus CheckWritePermissions(IGattClientPeer clientPeer) =>
-        _attribute.CheckWritePermissions(clientPeer);
-
-    /// <inheritdoc />
-    public ValueTask<GattProtocolStatus> WriteValueAsync(IGattClientPeer? clientPeer, byte[] value) =>
-        _attribute.WriteValueAsync(clientPeer, value);
-
-    /// <inheritdoc />
-    public ValueTask<byte[]> ReadValueAsync(IGattClientPeer? clientPeer) => _attribute.ReadValueAsync(clientPeer);
-}
-
 /// <summary> The gatt database </summary>
-public sealed class GattDatabaseCollection : IReadOnlyCollection<GattDatabaseEntry>
+internal sealed class GattDatabaseCollection : IGattDatabase
 {
     /// <summary> UUID for <c>Primary Service</c> </summary>
     /// <value> 0x2800 </value>
@@ -89,15 +34,14 @@ public sealed class GattDatabaseCollection : IReadOnlyCollection<GattDatabaseEnt
     /// <summary> UUID for <c>Characteristic</c> </summary>
     /// <value> 0x2803 </value>
     public static readonly BleUuid CharacteristicType = 0x2803;
-    public static readonly BleUuid UserDescriptionType = 0x2901;
 
     private readonly object _lock = new();
     private readonly List<IGattAttribute> _attributes = [];
 
-    /// <summary> The handle of the first attribute in the database </summary>
+    /// <inheritdoc />
     public ushort MinHandle => 0x0001;
 
-    /// <summary> The handle of the last attribute in the database </summary>
+    /// <inheritdoc />
     public ushort MaxHandle
     {
         get
@@ -109,9 +53,8 @@ public sealed class GattDatabaseCollection : IReadOnlyCollection<GattDatabaseEnt
         }
     }
 
-    /// <summary> Add a service at the end of the database </summary>
-    /// <param name="service"> The service to be added </param>
-    internal void AddService(IGattClientService service)
+    /// <inheritdoc />
+    public void AddService(IGattClientService service)
     {
         lock (_lock)
         {
@@ -119,10 +62,8 @@ public sealed class GattDatabaseCollection : IReadOnlyCollection<GattDatabaseEnt
         }
     }
 
-    /// <summary> Add a characteristic and the characteristic value at the end of the service section </summary>
-    /// <param name="characteristic"> The characteristic to be added </param>
-    /// <exception cref="KeyNotFoundException"> Thrown when the service the characteristic is contained in is unknown </exception>
-    internal void AddCharacteristic(IGattClientCharacteristic characteristic)
+    /// <inheritdoc />
+    public void AddCharacteristic(IGattClientCharacteristic characteristic)
     {
         lock (_lock)
         {
@@ -156,10 +97,8 @@ public sealed class GattDatabaseCollection : IReadOnlyCollection<GattDatabaseEnt
         return (ushort)(serviceEndIndex + 1);
     }
 
-    /// <summary> Add a descriptor at the end of the characteristic section </summary>
-    /// <param name="descriptor"> The descriptor to be added </param>
-    /// <exception cref="KeyNotFoundException"> Thrown when the characteristic the descriptor is contained in is unknown </exception>
-    internal void AddDescriptor(IGattClientDescriptor descriptor)
+    /// <inheritdoc />
+    public void AddDescriptor(IGattClientDescriptor descriptor)
     {
         lock (_lock)
         {
@@ -222,10 +161,7 @@ public sealed class GattDatabaseCollection : IReadOnlyCollection<GattDatabaseEnt
         return (ushort)(index + 1); // Attributes start at 0x0001
     }
 
-    /// <summary> Tries to get the handle of a given attribute </summary>
-    /// <param name="attribute"> The attribute to look for </param>
-    /// <param name="handle"> The attribute handle </param>
-    /// <returns> True, if a handle could be found; False, otherwise </returns>
+    /// <inheritdoc />
     public bool TryGetHandle(IGattAttribute attribute, out ushort handle)
     {
         lock (_lock)
@@ -242,10 +178,7 @@ public sealed class GattDatabaseCollection : IReadOnlyCollection<GattDatabaseEnt
         }
     }
 
-    /// <summary> Tries to get the attribute of a given handle </summary>
-    /// <param name="handle"> The handle to get the attribute for </param>
-    /// <param name="attribute"> The attribute </param>
-    /// <returns> True, if an attribute could be found; False, otherwise </returns>
+    /// <inheritdoc />
     public bool TryGetAttribute(ushort handle, [NotNullWhen(true)] out IGattAttribute? attribute)
     {
         lock (_lock)
@@ -261,16 +194,11 @@ public sealed class GattDatabaseCollection : IReadOnlyCollection<GattDatabaseEnt
         }
     }
 
-    /// <summary> Get the handle of a given attribute </summary>
-    /// <param name="attribute"> The attribute to look for </param>
-    /// <returns> The attribute handle </returns>
-    /// <exception cref="KeyNotFoundException"> Thrown, if the attribute was not present in the database </exception>
+    /// <inheritdoc />
     public ushort this[IGattAttribute attribute] =>
         TryGetHandle(attribute, out ushort handle) ? handle : throw new KeyNotFoundException();
 
-    /// <summary> Get all service group entries starting from a specific handle </summary>
-    /// <param name="startHandle"> The handle to start searching from </param>
-    /// <returns> An enumerable containing all service group entries </returns>
+    /// <inheritdoc />
     public IEnumerable<GattDatabaseGroupEntry> GetServiceEntries(ushort startHandle)
     {
         var currentIndex = (ushort)(startHandle - 1);
@@ -299,8 +227,7 @@ public sealed class GattDatabaseCollection : IReadOnlyCollection<GattDatabaseEnt
         }
     }
 
-    /// <summary> Hash the gatt database </summary>
-    /// <returns> The has as UInt128 </returns>
+    /// <inheritdoc />
     public UInt128 CreateHash()
     {
         lock (_lock)
@@ -324,7 +251,7 @@ public sealed class GattDatabaseCollection : IReadOnlyCollection<GattDatabaseEnt
                         bytesToHash.AddRange(type.ToByteArray());
                     }
                 }
-                else if (type == UserDescriptionType)
+                else if (type == DescriptorDeclaration.CharacteristicUserDescription.Uuid)
                 {
                     BinaryPrimitives.WriteUInt16LittleEndian(buffer[..2], gattAttribute.Handle);
                     type.TryWriteBytes(buffer[2..4]);

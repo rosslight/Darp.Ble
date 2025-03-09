@@ -2,6 +2,7 @@ using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
+using Darp.Ble.Gatt.Att;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Mock.Gatt;
@@ -27,7 +28,6 @@ public sealed class BleCharacteristicTests
             null!,
             TProperty.GattProperty,
             new FuncCharacteristicValue(0x1234, null!, null!, null!, null!, null!),
-            [],
             NullLogger<MockGattClientCharacteristic>.Instance
         );
         var characteristic = new MockGattServerCharacteristic(

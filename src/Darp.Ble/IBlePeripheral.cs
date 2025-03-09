@@ -1,7 +1,7 @@
 using System.Reactive;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
-using Darp.Ble.Implementation;
+using Darp.Ble.Gatt.Database;
 
 namespace Darp.Ble;
 
@@ -11,7 +11,8 @@ public interface IBlePeripheral
     /// <summary> The ble device </summary>
     IBleDevice Device { get; }
 
-    internal GattDatabaseCollection GattDatabase { get; }
+    /// <summary> The gatt database </summary>
+    internal IGattDatabase GattDatabase { get; }
 
     /// <summary> A list of all centrals this peripheral is connected to </summary>
     IReadOnlyDictionary<BleAddress, IGattClientPeer> PeerDevices { get; }

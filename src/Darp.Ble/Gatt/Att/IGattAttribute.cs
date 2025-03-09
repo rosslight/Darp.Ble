@@ -1,9 +1,12 @@
 using Darp.Ble.Data;
+using Darp.Ble.Gatt.Client;
 
-namespace Darp.Ble.Gatt.Client;
+namespace Darp.Ble.Gatt.Att;
 
 /// <summary> An interface defining a gatt attribute with a start handle and an end handle </summary>
+#pragma warning disable CA1711 // Identifiers should not have incorrect suffix
 public interface IGattAttribute
+#pragma warning restore CA1711
 {
     /// <summary> The type of the attribute </summary>
     BleUuid AttributeType { get; }

@@ -5,8 +5,6 @@ using Darp.Ble.Gap;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
-using Darp.Ble.Gatt.Services;
-using Darp.Ble.Implementation;
 using Darp.Ble.Utils;
 using Microsoft.Extensions.Logging;
 using Windows.Devices.Bluetooth;
@@ -32,8 +30,7 @@ internal sealed class WinGattClientService(
 
     protected override GattClientCharacteristic CreateCharacteristicCore(
         GattProperty properties,
-        IGattCharacteristicValue value,
-        IGattAttribute[] descriptors
+        IGattCharacteristicValue value
     )
     {
         GattLocalCharacteristicResult result = _winService
@@ -59,7 +56,6 @@ internal sealed class WinGattClientService(
             this,
             result.Characteristic,
             value,
-            descriptors,
             LoggerFactory.CreateLogger<WinGattClientCharacteristic>()
         );
     }

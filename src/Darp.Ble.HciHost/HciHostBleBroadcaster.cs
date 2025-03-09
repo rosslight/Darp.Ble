@@ -22,15 +22,13 @@ internal sealed class HciHostGattClientService(
 {
     protected override GattClientCharacteristic CreateCharacteristicCore(
         GattProperty properties,
-        IGattCharacteristicValue value,
-        IGattAttribute[] descriptors
+        IGattCharacteristicValue value
     )
     {
         return new HciHostGattClientCharacteristic(
             this,
             properties,
             value,
-            descriptors,
             LoggerFactory.CreateLogger<HciHostGattClientCharacteristic>()
         );
     }
@@ -40,9 +38,8 @@ internal sealed class HciHostGattClientCharacteristic(
     GattClientService clientService,
     GattProperty properties,
     IGattCharacteristicValue value,
-    IGattAttribute[] descriptors,
     ILogger<HciHostGattClientCharacteristic> logger
-) : GattClientCharacteristic(clientService, properties, value, descriptors, logger)
+) : GattClientCharacteristic(clientService, properties, value, logger)
 {
     protected override GattClientDescriptor AddDescriptorCore(IGattCharacteristicValue value)
     {

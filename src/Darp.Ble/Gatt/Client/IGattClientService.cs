@@ -1,4 +1,5 @@
 using Darp.Ble.Data;
+using Darp.Ble.Gatt.Att;
 
 namespace Darp.Ble.Gatt.Client;
 
@@ -21,14 +22,13 @@ public interface IGattClientService
     IReadOnlyCollection<IGattClientCharacteristic> Characteristics { get; }
 
     /// <summary> Add a characteristic to the service </summary>
-    /// <param name="uuid"> The UUID of the service to add </param>
-    /// <param name="gattProperty"> The property of the service to add </param>
-    /// <param name="onRead"> Callback when a read request was received </param>
-    /// <param name="onWrite"> Callback when a write request was received </param>
+    /// <param name="properties"> The properties of the characteristic to create </param>
+    /// <param name="value"> The characteristic value </param>
+    /// <param name="descriptors"> A collection of descriptors to add when the characteristic was added </param>
     /// <returns> An <see cref="IGattClientCharacteristic"/> </returns>
     IGattClientCharacteristic AddCharacteristic(
         GattProperty properties,
         IGattCharacteristicValue value,
-        IGattAttribute[] descriptors
+        IGattCharacteristicValue[] descriptors
     );
 }

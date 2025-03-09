@@ -1,8 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reactive.Linq;
-using Darp.Ble.Hci.Package;
-using Darp.Ble.Hci.Payload;
-using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.Hci;
 

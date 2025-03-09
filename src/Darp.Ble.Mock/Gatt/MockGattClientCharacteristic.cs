@@ -10,9 +10,8 @@ internal sealed class MockGattClientCharacteristic(
     MockGattClientService service,
     GattProperty properties,
     IGattCharacteristicValue value,
-    IGattAttribute[] descriptors,
     ILogger<MockGattClientCharacteristic> logger
-) : GattClientCharacteristic(service, properties, value, descriptors, logger)
+) : GattClientCharacteristic(service, properties, value, logger)
 {
     private readonly ConcurrentDictionary<IGattClientPeer, Action<byte[]>> _notifyActions = [];
 

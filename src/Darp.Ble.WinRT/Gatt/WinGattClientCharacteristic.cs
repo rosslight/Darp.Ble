@@ -18,10 +18,9 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
         WinGattClientService winService,
         GattLocalCharacteristic winCharacteristic,
         IGattCharacteristicValue value,
-        IGattAttribute[] descriptors,
         ILogger<WinGattClientCharacteristic> logger
     )
-        : base(winService, (GattProperty)winCharacteristic.CharacteristicProperties, value, descriptors, logger)
+        : base(winService, (GattProperty)winCharacteristic.CharacteristicProperties, value, logger)
     {
         Service = winService;
         _winCharacteristic = winCharacteristic;

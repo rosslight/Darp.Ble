@@ -1,4 +1,6 @@
 using Darp.Ble.Data;
+using Darp.Ble.Gatt.Att;
+using Darp.Ble.Gatt.Database;
 using Darp.Ble.Implementation;
 using Microsoft.Extensions.Logging;
 
@@ -48,24 +50,35 @@ public abstract class GattClientService(
     public IGattClientCharacteristic AddCharacteristic(
         GattProperty properties,
         IGattCharacteristicValue value,
-        IGattAttribute[] descriptors
+        IGattCharacteristicValue[] descriptors
     )
     {
-        GattClientCharacteristic characteristic = CreateCharacteristicCore(properties, value, descriptors);
+        ArgumentNullException.ThrowIfNull(descriptors);
+        GattClientCharacteristic characteristic = CreateCharacteristicCore(properties, value);
+        foreach (IGattCharacteristicValue descriptor in descriptors)
+        {
+            characteristic.AddDescriptor(descriptor);
+        }
+
+        if (
+            properties.HasFlag(GattProperty.Notify)
+            && !characteristic.Descriptors.ContainsKey(DescriptorDeclaration.ClientCharacteristicConfiguration.Uuid)
+        )
+        {
+            // TODO Handle CCCD
+        }
+
         _characteristics.Add(characteristic);
         Peripheral.GattDatabase.AddCharacteristic(characteristic);
         return characteristic;
     }
 
     /// <summary> Called when creating a new characteristic </summary>
-    /// <param name="uuid"> The UUID of the characteristic to create </param>
-    /// <param name="gattProperty"> The property of the characteristic to create </param>
-    /// <param name="onRead"> Callback when a read request was received </param>
-    /// <param name="onWrite"> Callback when a write request was received </param>
+    /// <param name="properties"> The properties of the characteristic to create </param>
+    /// <param name="value"> The characteristic value </param>
     /// <returns> A <see cref="IGattClientCharacteristic"/> </returns>
     protected abstract GattClientCharacteristic CreateCharacteristicCore(
         GattProperty properties,
-        IGattCharacteristicValue value,
-        IGattAttribute[] descriptors
+        IGattCharacteristicValue value
     );
 }

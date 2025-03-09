@@ -1,13 +1,11 @@
-using System.Runtime.CompilerServices;
-using System.Text;
-using Darp.Ble.Data;
+using Darp.Ble.Gatt.Att;
 using Darp.Ble.Gatt.Client;
 
 namespace Darp.Ble.Gatt;
 
-public static partial class GattCharacteristicExtensions
+internal static class GattUtilities
 {
-    internal static Func<IGattClientPeer, PermissionCheckStatus> CreateReadAccessPermissionFunc(
+    public static Func<IGattClientPeer, PermissionCheckStatus> CreateReadAccessPermissionFunc(
         this IGattAttribute.OnReadAsyncCallback? nullable
     )
     {
@@ -16,7 +14,7 @@ public static partial class GattCharacteristicExtensions
         return _ => PermissionCheckStatus.Success;
     }
 
-    internal static Func<IGattClientPeer, PermissionCheckStatus> CreateWriteAccessPermissionFunc(
+    public static Func<IGattClientPeer, PermissionCheckStatus> CreateWriteAccessPermissionFunc(
         this IGattAttribute.OnWriteAsyncCallback? nullable
     )
     {

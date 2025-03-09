@@ -1,8 +1,6 @@
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Client;
-using Darp.Ble.Gatt.Services;
-using Darp.Ble.Implementation;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock.Gatt;
@@ -19,15 +17,13 @@ internal sealed class MockGattClientService(
     /// <inheritdoc />
     protected override GattClientCharacteristic CreateCharacteristicCore(
         GattProperty properties,
-        IGattCharacteristicValue value,
-        IGattAttribute[] descriptors
+        IGattCharacteristicValue value
     )
     {
         return new MockGattClientCharacteristic(
             this,
             properties,
             value,
-            descriptors,
             LoggerFactory.CreateLogger<MockGattClientCharacteristic>()
         );
     }

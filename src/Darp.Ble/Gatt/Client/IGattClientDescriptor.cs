@@ -2,6 +2,7 @@ using Darp.Ble.Data;
 
 namespace Darp.Ble.Gatt.Client;
 
+/// <summary> The descriptor </summary>
 public interface IGattClientDescriptor
 {
     /// <summary> The characteristic this descriptor was added to </summary>

@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data;
+using Darp.Ble.Gatt.Att;
 using Darp.Ble.Gatt.Client;
 
 namespace Darp.Ble.Gatt.Services;
@@ -31,7 +32,7 @@ public abstract class GattClientServiceProxy(IGattClientService service) : IGatt
     IGattClientCharacteristic IGattClientService.AddCharacteristic(
         GattProperty properties,
         IGattCharacteristicValue value,
-        IGattAttribute[] descriptors
+        IGattCharacteristicValue[] descriptors
     )
     {
         return _service.AddCharacteristic(properties, value, descriptors);

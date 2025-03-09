@@ -4,9 +4,7 @@ namespace Darp.Ble.Gatt.Client;
 
 /// <summary> An abstract gatt client descriptor </summary>
 /// <param name="clientCharacteristic"> The parent client characteristic </param>
-/// <param name="uuid"> The UUID of the descriptor </param>
-/// <param name="onRead"> The callback to be called when a read operation was requested on this attribute </param>
-/// <param name="onWrite"> The callback to be called when a write operation was requested on this attribute </param>
+/// <param name="value"> The descriptor value </param>
 public abstract class GattClientDescriptor(
     GattClientCharacteristic clientCharacteristic,
     IGattCharacteristicValue value

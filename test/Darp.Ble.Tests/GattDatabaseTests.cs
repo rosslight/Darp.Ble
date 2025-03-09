@@ -1,7 +1,10 @@
 using Darp.Ble.Data;
+using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Client;
+using Darp.Ble.Gatt.Database;
 using FluentAssertions;
 using NSubstitute;
+using IGattCharacteristicDeclaration = Darp.Ble.Gatt.Client.IGattCharacteristicDeclaration;
 
 namespace Darp.Ble.Tests;
 
@@ -47,7 +50,7 @@ public sealed class GattDatabaseTests
         var descriptor = Substitute.For<IGattClientDescriptor>();
         descriptor.Uuid.Returns(uuid);
         var descriptorValue = Substitute.For<IGattCharacteristicValue>();
-        descriptorValue.AttributeType.Returns(GattDatabaseCollection.UserDescriptionType);
+        descriptorValue.AttributeType.Returns(DescriptorDeclaration.CharacteristicUserDescription.Uuid);
         descriptorValue.Handle.Returns(_ => database[descriptorValue]);
         descriptor.Value.Returns(descriptorValue);
         descriptor.Characteristic.Returns(characteristic);
