@@ -13,6 +13,8 @@ public static class UsbPort
     {
         if (OperatingSystem.IsOSPlatform("windows"))
             return UsbPortWin.GetPortInfos();
+        if (OperatingSystem.IsOSPlatform("linux"))
+            return UsbPortLinux.GetPortInfos();
         throw new NotSupportedException($"Invalid operating system {RuntimeInformation.OSDescription}");
     }
 
@@ -26,6 +28,8 @@ public static class UsbPort
     {
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             return UsbPortWin.IsOpen(portName);
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            return UsbPortLinux.IsOpen(portName);
         throw new NotSupportedException($"Invalid operating system {RuntimeInformation.OSDescription}");
     }
 }
