@@ -5,6 +5,7 @@ using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Att;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
+using Darp.Ble.Mock;
 using Darp.Ble.Mock.Gatt;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -14,30 +15,45 @@ namespace Darp.Ble.Tests.Implementation;
 public sealed class BleCharacteristicTests
 {
     private static GattServerCharacteristic<TProperty> CreateCharacteristic<TProperty>(
-        out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
+        out IGattClientCharacteristic<TProperty> clientCharacteristic,
         out IGattClientPeer? clientPeer
     )
         where TProperty : IBleProperty
     {
+        IBleDevice? mockedDevice = null;
+        MockGattClientCharacteristic? createdCharacteristic = null;
+        IBleDevice device = new BleMockFactory()
+            .AddPeripheral(async device =>
+            {
+                mockedDevice = device;
+                IGattClientService service = device.Peripheral.AddService(0x1234);
+                createdCharacteristic = (MockGattClientCharacteristic)
+                    service.AddCharacteristic(
+                        TProperty.GattProperty,
+                        new FuncCharacteristicValue(
+                            0x1235,
+                            service.Peripheral.GattDatabase,
+                            _ => ValueTask.FromResult<byte[]>([0x00])
+                        ),
+                        []
+                    );
+            })
+            .EnumerateDevices(NullLoggerFactory.Instance)
+            .First();
+        device.InitializeAsync().GetAwaiter().GetResult();
         var mockClientPeer = new MockGattClientPeer(
-            null!,
+            (MockedBlePeripheral)mockedDevice!.Peripheral,
             BleAddress.NotAvailable,
             NullLogger<MockGattClientPeer>.Instance
-        );
-        var mockClientChar = new MockGattClientCharacteristic(
-            null!,
-            TProperty.GattProperty,
-            new FuncCharacteristicValue(0x1234, null!, null!, null!, null!, null!),
-            NullLogger<MockGattClientCharacteristic>.Instance
         );
         var characteristic = new MockGattServerCharacteristic(
             null!,
             0x1234,
-            mockClientChar,
+            createdCharacteristic!,
             mockClientPeer,
             NullLogger<MockGattServerCharacteristic>.Instance
         );
-        clientCharacteristic = new GattClientCharacteristic<Properties.Notify>(mockClientChar);
+        clientCharacteristic = new GattClientCharacteristic<TProperty>(createdCharacteristic!);
         clientPeer = mockClientPeer;
         return new GattServerCharacteristic<TProperty>(characteristic);
     }
