@@ -22,7 +22,7 @@ internal sealed class MockGattServerCharacteristic(
             .Descriptors.ToObservable()
             .Select(x => new MockGattServerDescriptor(
                 this,
-                x.Handle,
+                x.AttributeType,
                 x,
                 _gattClient,
                 LoggerFactory.CreateLogger<MockGattServerDescriptor>()

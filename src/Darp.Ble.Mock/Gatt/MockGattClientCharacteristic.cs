@@ -32,11 +32,12 @@ internal sealed class MockGattClientCharacteristic(
         );
     }
 
-    protected override void NotifyCore(IGattClientPeer clientPeer, byte[] value)
+    protected override ValueTask NotifyAsyncCore(IGattClientPeer clientPeer, byte[] value)
     {
         if (!_notifyActions.TryGetValue(clientPeer, out Action<byte[]>? action))
-            return;
+            return ValueTask.CompletedTask;
         action(value);
+        return ValueTask.CompletedTask;
     }
 
     protected override Task IndicateAsyncCore(

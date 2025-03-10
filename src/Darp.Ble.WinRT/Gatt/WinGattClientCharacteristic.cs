@@ -113,7 +113,7 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
         };
     }
 
-    protected override void NotifyCore(IGattClientPeer clientPeer, byte[] value)
+    protected override async ValueTask NotifyAsyncCore(IGattClientPeer clientPeer, byte[] value)
     {
         GattSubscribedClient? subscribedClient = _winCharacteristic.SubscribedClients.FirstOrDefault(x =>
         {
@@ -123,7 +123,10 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
         if (subscribedClient is null)
             return;
 
-        _ = _winCharacteristic.NotifyValueAsync(value.AsBuffer(), subscribedClient).AsTask(CancellationToken.None);
+        await _winCharacteristic
+            .NotifyValueAsync(value.AsBuffer(), subscribedClient)
+            .AsTask(CancellationToken.None)
+            .ConfigureAwait(false);
     }
 
     protected override async Task IndicateAsyncCore(

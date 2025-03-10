@@ -121,7 +121,7 @@ public sealed class BleCentralTests
                 0x5678,
                 onWrite: (peer, bytes) =>
                 {
-                    notifyChar.Notify(peer, bytes);
+                    notifyChar.NotifyAsync(peer, bytes);
                     return GattProtocolStatus.Success;
                 }
             );

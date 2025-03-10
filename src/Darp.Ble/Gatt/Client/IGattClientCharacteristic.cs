@@ -39,7 +39,7 @@ public interface IGattClientCharacteristic
     /// <summary> Notify subscribers about a new value </summary>
     /// <param name="clientPeer"> The client peer to notify. If null, all subscribed clients will be taken into account </param>
     /// <param name="value"> The value to update with </param>
-    void NotifyValue(IGattClientPeer? clientPeer, byte[] value);
+    ValueTask NotifyValueAsync(IGattClientPeer? clientPeer, byte[] value);
 
     /// <summary> Update the characteristic value </summary>
     /// <param name="clientPeer"> The client peer to update the value for. If null, all subscribed clients will be taken into account </param>

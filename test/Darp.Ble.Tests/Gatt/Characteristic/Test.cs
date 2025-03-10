@@ -56,13 +56,13 @@ public sealed class Test
         IGattClientPeer? peer = null;
         var cn1 = service.AddCharacteristic<Notify>(SomeUuid);
         var cn11 = service.AddCharacteristic<Notify, Read>(SomeUuid, SomeBytes);
-        cn1.NotifyAll(SomeBytes);
+        cn1.NotifyAllAsync(SomeBytes);
         await cn11.UpdateValueAsync(SomeBytes);
-        cn11.Notify(peer, SomeBytes);
-        cn11.NotifyAll(SomeBytes);
+        cn11.NotifyAsync(peer, SomeBytes);
+        cn11.NotifyAllAsync(SomeBytes);
 
         var cn2 = service.AddCharacteristic(NotifyChar);
-        cn2.NotifyAll(3);
+        cn2.NotifyAllAsync(3);
         var cn3 = service.AddCharacteristic(ReadNotifyChar, 3);
         //cn3.UpdateValue(SomeBytes);
         await cn3.UpdateValueAsync(32);

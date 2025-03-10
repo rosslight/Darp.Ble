@@ -49,8 +49,8 @@ public class GattTypedClientCharacteristic<T, TProp1>(
     /// <inheritdoc />
     public void AddDescriptor(IGattCharacteristicValue value) => Characteristic.AddDescriptor(value);
 
-    void IGattClientCharacteristic.NotifyValue(IGattClientPeer? clientPeer, byte[] value) =>
-        Characteristic.NotifyValue(clientPeer, value);
+    ValueTask IGattClientCharacteristic.NotifyValueAsync(IGattClientPeer? clientPeer, byte[] value) =>
+        Characteristic.NotifyValueAsync(clientPeer, value);
 
     Task IGattClientCharacteristic.IndicateAsync(
         IGattClientPeer? clientPeer,

@@ -41,7 +41,13 @@ public static class EchoServiceContract
                 IObservable<byte[]> responseObservable = handleRequest(bytes);
                 // ReSharper disable once AccessToModifiedClosure
                 // We expect onWrite to not execute before the notify characteristic was added
-                _ = responseObservable.Subscribe(responseBytes => notifyCharacteristic.Notify(peer, responseBytes));
+                _ = responseObservable
+                    .SelectMany(async responseBytes =>
+                    {
+                        await notifyCharacteristic.NotifyAsync(peer, responseBytes).ConfigureAwait(false);
+                        return true;
+                    })
+                    .Subscribe();
                 return GattProtocolStatus.Success;
             }
         );

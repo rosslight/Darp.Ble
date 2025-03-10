@@ -84,25 +84,25 @@ public abstract class GattClientCharacteristic(
     }
 */
     /// <inheritdoc />
-    public void NotifyValue(IGattClientPeer? clientPeer, byte[] value)
+    public async ValueTask NotifyValueAsync(IGattClientPeer? clientPeer, byte[] value)
     {
         if (clientPeer is not null)
         {
             if (Value.CheckReadPermissions(clientPeer) is PermissionCheckStatus.Success)
             {
-                ValueTask<GattProtocolStatus> valueTask = Value.WriteValueAsync(clientPeer, value);
-                if (!valueTask.IsCompletedSuccessfully)
-                {
-                    _ = valueTask.AsTask();
-                }
+                await Value.WriteValueAsync(clientPeer, value).ConfigureAwait(false);
             }
-            NotifyCore(clientPeer, value);
+            await NotifyAsyncCore(clientPeer, value).ConfigureAwait(false);
         }
         else
         {
             foreach (IGattClientPeer connectedPeer in Service.Peripheral.PeerDevices.Values)
             {
-                NotifyCore(connectedPeer, value);
+                if (Value.CheckReadPermissions(connectedPeer) is PermissionCheckStatus.Success)
+                {
+                    await Value.WriteValueAsync(clientPeer, value).ConfigureAwait(false);
+                }
+                await NotifyAsyncCore(connectedPeer, value).ConfigureAwait(false);
             }
         }
     }
@@ -120,17 +120,26 @@ public abstract class GattClientCharacteristic(
         }
         else
         {
-            IEnumerable<Task> tasks = Service.Peripheral.PeerDevices.Values.Select(connectedPeer =>
-                IndicateAsyncCore(connectedPeer, value, cancellationToken)
-            );
-            await Task.WhenAll(tasks).ConfigureAwait(false);
+            foreach (IGattClientPeer connectedPeer in Service.Peripheral.PeerDevices.Values)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                if (Value.CheckReadPermissions(connectedPeer) is PermissionCheckStatus.Success)
+                {
+                    ValueTask<GattProtocolStatus> valueTask = Value.WriteValueAsync(clientPeer, value);
+                    if (!valueTask.IsCompletedSuccessfully)
+                    {
+                        _ = valueTask.AsTask();
+                    }
+                }
+                await IndicateAsyncCore(connectedPeer, value, cancellationToken).ConfigureAwait(false);
+            }
         }
     }
 
     /// <summary> Notify a connected clientPeer of a new value </summary>
     /// <param name="clientPeer"> The client to notify </param>
     /// <param name="value"> The value to be used </param>
-    protected abstract void NotifyCore(IGattClientPeer clientPeer, byte[] value);
+    protected abstract ValueTask NotifyAsyncCore(IGattClientPeer clientPeer, byte[] value);
 
     /// <summary> Notify a connected clientPeer of a new value </summary>
     /// <param name="clientPeer"> The client to notify </param>
@@ -180,8 +189,8 @@ public class GattClientCharacteristic<TProp1>(IGattClientCharacteristic characte
     /// <inheritdoc />
     public void AddDescriptor(IGattCharacteristicValue value) => Characteristic.AddDescriptor(value);
 
-    void IGattClientCharacteristic.NotifyValue(IGattClientPeer? clientPeer, byte[] value) =>
-        Characteristic.NotifyValue(clientPeer, value);
+    ValueTask IGattClientCharacteristic.NotifyValueAsync(IGattClientPeer? clientPeer, byte[] value) =>
+        Characteristic.NotifyValueAsync(clientPeer, value);
 
     Task IGattClientCharacteristic.IndicateAsync(
         IGattClientPeer? clientPeer,
