@@ -1,5 +1,6 @@
 using System.Reactive;
 using Darp.Ble.Data;
+using Darp.Ble.Gatt.Att;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Database;
 
@@ -18,7 +19,7 @@ public interface IBlePeripheral
     IReadOnlyDictionary<BleAddress, IGattClientPeer> PeerDevices { get; }
 
     /// <summary> A collection of all added services </summary>
-    IReadOnlyCollection<IGattClientService> Services { get; }
+    IReadonlyAttributeCollection<IGattClientService> Services { get; }
 
     /// <summary> An observable which fires when a new GattClient was connected </summary>
     IObservable<IGattClientPeer> WhenConnected { get; }

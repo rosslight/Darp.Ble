@@ -64,7 +64,7 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
         };
     }
 
-    protected override void OnAddDescriptor(IGattCharacteristicValue value)
+    protected override void OnDescriptorAdded(IGattCharacteristicValue value)
     {
         BleUuid uuid = value.AttributeType;
         GattLocalDescriptorResult result = _winCharacteristic

@@ -11,8 +11,6 @@ internal sealed class HciHostGattClientCharacteristic(
     ILogger<HciHostGattClientCharacteristic> logger
 ) : GattClientCharacteristic(clientService, properties, value, logger)
 {
-    protected override void OnAddDescriptor(IGattCharacteristicValue value) { }
-
     protected override void NotifyCore(IGattClientPeer clientPeer, byte[] value)
     {
         throw new NotImplementedException();

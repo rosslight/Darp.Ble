@@ -24,7 +24,7 @@ public interface IGattClientCharacteristic
     GattProperty Properties { get; }
 
     /// <summary> The descriptors added to this characteristic </summary>
-    internal IReadOnlyCollection<IGattCharacteristicValue> Descriptors { get; }
+    internal IReadonlyAttributeCollection<IGattCharacteristicValue> Descriptors { get; }
 
     /// <summary> Access the characteristic declaration </summary>
     internal IGattCharacteristicDeclaration Declaration { get; }

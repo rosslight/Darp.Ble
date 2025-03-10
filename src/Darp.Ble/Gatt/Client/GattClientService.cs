@@ -16,7 +16,9 @@ public abstract class GattClientService(
     ILogger<GattClientService> logger
 ) : IGattClientService
 {
-    private readonly List<GattClientCharacteristic> _characteristics = [];
+    private readonly AttributeCollection<IGattClientCharacteristic> _characteristics = new(characteristic =>
+        characteristic.Uuid
+    );
 
     /// <summary> The optional logger </summary>
     protected ILogger<GattClientService> Logger { get; } = logger;
@@ -44,7 +46,7 @@ public abstract class GattClientService(
         );
 
     /// <inheritdoc />
-    public IReadOnlyCollection<IGattClientCharacteristic> Characteristics => _characteristics.AsReadOnly();
+    public IReadonlyAttributeCollection<IGattClientCharacteristic> Characteristics => _characteristics;
 
     /// <inheritdoc />
     public IGattClientCharacteristic AddCharacteristic(
@@ -64,7 +66,7 @@ public abstract class GattClientService(
         }
         if (
             properties.HasFlag(GattProperty.Notify)
-            && !characteristic.Descriptors.ContainsUuid(DescriptorDeclaration.ClientCharacteristicConfiguration.Uuid)
+            && !characteristic.Descriptors.ContainsAny(DescriptorDeclaration.ClientCharacteristicConfiguration.Uuid)
         )
         {
             characteristic.AddClientCharacteristicConfiguration();

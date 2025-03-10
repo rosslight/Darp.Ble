@@ -19,7 +19,7 @@ public interface IGattClientService
     internal IGattAttribute Declaration { get; }
 
     /// <summary> All characteristics of the client service </summary>
-    IReadOnlyCollection<IGattClientCharacteristic> Characteristics { get; }
+    IReadonlyAttributeCollection<IGattClientCharacteristic> Characteristics { get; }
 
     /// <summary> Add a characteristic to the service </summary>
     /// <param name="properties"> The properties of the characteristic to create </param>

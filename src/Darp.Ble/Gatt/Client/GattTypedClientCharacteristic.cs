@@ -1,5 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data;
+using Darp.Ble.Gatt.Att;
 
 namespace Darp.Ble.Gatt.Client;
 
@@ -40,7 +41,7 @@ public class GattTypedClientCharacteristic<T, TProp1>(
     public GattProperty Properties => Characteristic.Properties;
 
     /// <inheritdoc />
-    public IReadOnlyCollection<IGattCharacteristicValue> Descriptors => Characteristic.Descriptors;
+    public IReadonlyAttributeCollection<IGattCharacteristicValue> Descriptors => Characteristic.Descriptors;
 
     IGattCharacteristicDeclaration IGattClientCharacteristic.Declaration => Characteristic.Declaration;
     IGattCharacteristicValue IGattClientCharacteristic.Value => Characteristic.Value;

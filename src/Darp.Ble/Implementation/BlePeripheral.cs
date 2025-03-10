@@ -2,6 +2,7 @@ using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Darp.Ble.Data;
+using Darp.Ble.Gatt.Att;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Database;
 using Microsoft.Extensions.Logging;
@@ -11,7 +12,8 @@ namespace Darp.Ble.Implementation;
 /// <summary> The central view of a ble device </summary>
 public abstract class BlePeripheral(BleDevice device, ILogger<BlePeripheral> logger) : IBlePeripheral
 {
-    private readonly List<GattClientService> _services = [];
+    private readonly AttributeCollection<IGattClientService> _services = new(characteristic => characteristic.Uuid);
+
     private readonly Dictionary<BleAddress, IGattClientPeer> _peerDevices = new();
     private readonly Subject<IGattClientPeer> _whenConnected = new();
     private readonly Subject<Unit> _whenServiceChanged = new();
@@ -26,7 +28,7 @@ public abstract class BlePeripheral(BleDevice device, ILogger<BlePeripheral> log
     public IGattDatabase GattDatabase { get; } = new GattDatabaseCollection();
 
     /// <inheritdoc />
-    public IReadOnlyCollection<IGattClientService> Services => _services;
+    public IReadonlyAttributeCollection<IGattClientService> Services => _services;
 
     /// <inheritdoc />
     public IReadOnlyDictionary<BleAddress, IGattClientPeer> PeerDevices => _peerDevices;

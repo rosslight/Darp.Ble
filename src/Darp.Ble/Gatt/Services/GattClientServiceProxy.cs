@@ -27,7 +27,8 @@ public abstract class GattClientServiceProxy(IGattClientService service) : IGatt
 
     IGattAttribute IGattClientService.Declaration => _service.Declaration;
 
-    IReadOnlyCollection<IGattClientCharacteristic> IGattClientService.Characteristics => _service.Characteristics;
+    IReadonlyAttributeCollection<IGattClientCharacteristic> IGattClientService.Characteristics =>
+        _service.Characteristics;
 
     IGattClientCharacteristic IGattClientService.AddCharacteristic(
         GattProperty properties,

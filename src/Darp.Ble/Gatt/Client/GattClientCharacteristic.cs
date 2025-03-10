@@ -5,26 +5,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Gatt.Client;
 
-internal static class Ex
-{
-    public static bool ContainsUuid<T>(this IEnumerable<T> source, BleUuid uuid)
-        where T : IGattAttribute => source.Any(x1 => x1.AttributeType == uuid);
-
-    public static bool TryGetByUuid<T>(this IEnumerable<T> source, BleUuid uuid, [NotNullWhen(true)] out T? value)
-        where T : IGattAttribute
-    {
-        foreach (T x1 in source)
-        {
-            if (x1.AttributeType != uuid)
-                continue;
-            value = x1;
-            return true;
-        }
-        value = default;
-        return false;
-    }
-}
-
 /// <summary> An abstract gatt client characteristic </summary>
 /// <param name="clientService"> The parent client service </param>
 /// <param name="properties"> The property of the characteristic </param>
@@ -37,7 +17,9 @@ public abstract class GattClientCharacteristic(
     ILogger<GattClientCharacteristic> logger
 ) : IGattClientCharacteristic
 {
-    private readonly List<IGattCharacteristicValue> _descriptors = [];
+    private readonly AttributeCollection<IGattCharacteristicValue> _descriptors = new(descriptor =>
+        descriptor.AttributeType
+    );
 
     /// <summary> The optional logger </summary>
     protected ILogger<GattClientCharacteristic> Logger { get; } = logger;
@@ -55,7 +37,7 @@ public abstract class GattClientCharacteristic(
     public GattProperty Properties { get; } = properties;
 
     /// <inheritdoc />
-    public IReadOnlyCollection<IGattCharacteristicValue> Descriptors => _descriptors;
+    public IReadonlyAttributeCollection<IGattCharacteristicValue> Descriptors => _descriptors;
 
     /// <inheritdoc />
     public IGattCharacteristicDeclaration Declaration { get; } =
@@ -68,16 +50,16 @@ public abstract class GattClientCharacteristic(
     public void AddDescriptor(IGattCharacteristicValue value)
     {
         ArgumentNullException.ThrowIfNull(value);
-        if (Descriptors.ContainsUuid(value.AttributeType))
+        if (Descriptors.ContainsAny(value.AttributeType))
             throw new Exception($"Descriptor with type {value.AttributeType} was already added");
         _descriptors.Add(value);
-        OnAddDescriptor(value);
         Service.Peripheral.GattDatabase.AddDescriptor(this, value);
+        OnDescriptorAdded(value);
     }
 
     /// <summary> Called after a new descriptor was added </summary>
     /// <param name="value"> The value of the new descriptor </param>
-    protected virtual void OnAddDescriptor(IGattCharacteristicValue value) { }
+    protected virtual void OnDescriptorAdded(IGattCharacteristicValue value) { }
 
     /*
     /// <inheritdoc />
@@ -190,7 +172,7 @@ public class GattClientCharacteristic<TProp1>(IGattClientCharacteristic characte
     public GattProperty Properties => Characteristic.Properties;
 
     /// <inheritdoc />
-    public IReadOnlyCollection<IGattCharacteristicValue> Descriptors => Characteristic.Descriptors;
+    public IReadonlyAttributeCollection<IGattCharacteristicValue> Descriptors => Characteristic.Descriptors;
 
     IGattCharacteristicDeclaration IGattClientCharacteristic.Declaration => Characteristic.Declaration;
     IGattCharacteristicValue IGattClientCharacteristic.Value => Characteristic.Value;
