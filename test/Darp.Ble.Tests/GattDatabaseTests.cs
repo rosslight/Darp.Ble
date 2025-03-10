@@ -41,20 +41,12 @@ public sealed class GattDatabaseTests
         return characteristic;
     }
 
-    private static IGattClientDescriptor CreateDescriptor(
-        BleUuid uuid,
-        IGattClientCharacteristic characteristic,
-        GattDatabaseCollection database
-    )
+    private static IGattCharacteristicValue CreateDescriptor(BleUuid uuid, GattDatabaseCollection database)
     {
-        var descriptor = Substitute.For<IGattClientDescriptor>();
-        descriptor.Uuid.Returns(uuid);
         var descriptorValue = Substitute.For<IGattCharacteristicValue>();
-        descriptorValue.AttributeType.Returns(DescriptorDeclaration.CharacteristicUserDescription.Uuid);
+        descriptorValue.AttributeType.Returns(uuid);
         descriptorValue.Handle.Returns(_ => database[descriptorValue]);
-        descriptor.Value.Returns(descriptorValue);
-        descriptor.Characteristic.Returns(characteristic);
-        return descriptor;
+        return descriptorValue;
     }
 
     [Fact]
@@ -126,15 +118,15 @@ public sealed class GattDatabaseTests
 
         IGattClientService service1 = CreateService(0x1234, database);
         IGattClientCharacteristic characteristic1 = CreateCharacteristic(0x2234, service1, database);
-        IGattClientDescriptor descriptor1 = CreateDescriptor(0x3234, characteristic1, database);
+        IGattCharacteristicValue descriptor1 = CreateDescriptor(0x3234, database);
 
         database.AddService(service1);
         database.AddCharacteristic(characteristic1);
-        database.AddDescriptor(descriptor1);
+        database.AddDescriptor(characteristic1, descriptor1);
 
         service1.Declaration.Handle.Should().Be(0x0001);
         characteristic1.Declaration.Handle.Should().Be(0x0002);
-        descriptor1.Value.Handle.Should().Be(0x0004);
+        descriptor1.Handle.Should().Be(0x0004);
     }
 
     [Fact]
@@ -144,22 +136,22 @@ public sealed class GattDatabaseTests
 
         IGattClientService service1 = CreateService(0x1234, database);
         IGattClientCharacteristic characteristic1 = CreateCharacteristic(0x2234, service1, database);
-        IGattClientDescriptor descriptor1 = CreateDescriptor(0x3234, characteristic1, database);
-        IGattClientDescriptor descriptor2 = CreateDescriptor(0x3235, characteristic1, database);
-        IGattClientDescriptor descriptor3 = CreateDescriptor(0x3236, characteristic1, database);
+        IGattCharacteristicValue descriptor1 = CreateDescriptor(0x3234, database);
+        IGattCharacteristicValue descriptor2 = CreateDescriptor(0x3235, database);
+        IGattCharacteristicValue descriptor3 = CreateDescriptor(0x3236, database);
 
         database.AddService(service1);
         database.AddCharacteristic(characteristic1);
-        database.AddDescriptor(descriptor1);
-        database.AddDescriptor(descriptor2);
-        database.AddDescriptor(descriptor3);
+        database.AddDescriptor(characteristic1, descriptor1);
+        database.AddDescriptor(characteristic1, descriptor2);
+        database.AddDescriptor(characteristic1, descriptor3);
 
         service1.Declaration.Handle.Should().Be(0x0001);
         characteristic1.Declaration.Handle.Should().Be(0x0002);
         characteristic1.Value.Handle.Should().Be(0x0003);
-        descriptor1.Value.Handle.Should().Be(0x0004);
-        descriptor2.Value.Handle.Should().Be(0x0005);
-        descriptor3.Value.Handle.Should().Be(0x0006);
+        descriptor1.Handle.Should().Be(0x0004);
+        descriptor2.Handle.Should().Be(0x0005);
+        descriptor3.Handle.Should().Be(0x0006);
     }
 
     [Fact]
@@ -169,33 +161,33 @@ public sealed class GattDatabaseTests
 
         IGattClientService service1 = CreateService(0x1234, database);
         IGattClientCharacteristic characteristic1 = CreateCharacteristic(0x2234, service1, database);
-        IGattClientDescriptor descriptor1 = CreateDescriptor(0x3234, characteristic1, database);
-        IGattClientDescriptor descriptor2 = CreateDescriptor(0x3235, characteristic1, database);
+        IGattCharacteristicValue descriptor1 = CreateDescriptor(0x3234, database);
+        IGattCharacteristicValue descriptor2 = CreateDescriptor(0x3235, database);
         IGattClientCharacteristic characteristic2 = CreateCharacteristic(0x2235, service1, database);
         IGattClientService service2 = CreateService(0x1235, database);
         IGattClientCharacteristic characteristic3 = CreateCharacteristic(0x2236, service2, database);
-        IGattClientDescriptor descriptor3 = CreateDescriptor(0x3236, characteristic3, database);
+        IGattCharacteristicValue descriptor3 = CreateDescriptor(0x3236, database);
 
         database.AddService(service1);
         database.AddService(service2);
         database.AddCharacteristic(characteristic1);
         database.AddCharacteristic(characteristic2);
         database.AddCharacteristic(characteristic3);
-        database.AddDescriptor(descriptor1);
-        database.AddDescriptor(descriptor2);
-        database.AddDescriptor(descriptor3);
+        database.AddDescriptor(characteristic1, descriptor1);
+        database.AddDescriptor(characteristic1, descriptor2);
+        database.AddDescriptor(characteristic3, descriptor3);
 
         service1.Declaration.Handle.Should().Be(0x0001);
         characteristic1.Declaration.Handle.Should().Be(0x0002);
         characteristic1.Value.Handle.Should().Be(0x0003);
-        descriptor1.Value.Handle.Should().Be(0x0004);
-        descriptor2.Value.Handle.Should().Be(0x0005);
+        descriptor1.Handle.Should().Be(0x0004);
+        descriptor2.Handle.Should().Be(0x0005);
         characteristic2.Declaration.Handle.Should().Be(0x0006);
         characteristic2.Value.Handle.Should().Be(0x0007);
         service2.Declaration.Handle.Should().Be(0x0008);
         characteristic3.Declaration.Handle.Should().Be(0x0009);
         characteristic3.Value.Handle.Should().Be(0x000A);
-        descriptor3.Value.Handle.Should().Be(0x000B);
+        descriptor3.Handle.Should().Be(0x000B);
     }
 
     [Fact]
@@ -205,21 +197,21 @@ public sealed class GattDatabaseTests
 
         IGattClientService service1 = CreateService(0x1234, database);
         IGattClientCharacteristic characteristic1 = CreateCharacteristic(0x2234, service1, database);
-        IGattClientDescriptor descriptor1 = CreateDescriptor(0x3234, characteristic1, database);
-        IGattClientDescriptor descriptor2 = CreateDescriptor(0x3235, characteristic1, database);
+        IGattCharacteristicValue descriptor1 = CreateDescriptor(0x3234, database);
+        IGattCharacteristicValue descriptor2 = CreateDescriptor(0x3235, database);
         IGattClientCharacteristic characteristic2 = CreateCharacteristic(0x2235, service1, database);
         IGattClientService service2 = CreateService(0x1235, database);
         IGattClientCharacteristic characteristic3 = CreateCharacteristic(0x2236, service2, database);
-        IGattClientDescriptor descriptor3 = CreateDescriptor(0x3236, characteristic3, database);
+        IGattCharacteristicValue descriptor3 = CreateDescriptor(0x3236, database);
 
         database.AddService(service1);
         database.AddService(service2);
         database.AddCharacteristic(characteristic1);
         database.AddCharacteristic(characteristic2);
         database.AddCharacteristic(characteristic3);
-        database.AddDescriptor(descriptor1);
-        database.AddDescriptor(descriptor2);
-        database.AddDescriptor(descriptor3);
+        database.AddDescriptor(characteristic1, descriptor1);
+        database.AddDescriptor(characteristic1, descriptor2);
+        database.AddDescriptor(characteristic3, descriptor3);
 
         GattDatabaseEntry firstEntry = database.First();
         firstEntry.Handle.Should().Be(0x0001);
@@ -236,21 +228,21 @@ public sealed class GattDatabaseTests
 
         IGattClientService service1 = CreateService(0x1234, database);
         IGattClientCharacteristic characteristic1 = CreateCharacteristic(0x2234, service1, database);
-        IGattClientDescriptor descriptor1 = CreateDescriptor(0x3234, characteristic1, database);
-        IGattClientDescriptor descriptor2 = CreateDescriptor(0x3235, characteristic1, database);
+        IGattCharacteristicValue descriptor1 = CreateDescriptor(0x3234, database);
+        IGattCharacteristicValue descriptor2 = CreateDescriptor(0x3235, database);
         IGattClientCharacteristic characteristic2 = CreateCharacteristic(0x2235, service1, database);
         IGattClientService service2 = CreateService(0x1235, database);
         IGattClientCharacteristic characteristic3 = CreateCharacteristic(0x2236, service2, database);
-        IGattClientDescriptor descriptor3 = CreateDescriptor(0x3236, characteristic3, database);
+        IGattCharacteristicValue descriptor3 = CreateDescriptor(0x3236, database);
 
         database.AddService(service1);
         database.AddService(service2);
         database.AddCharacteristic(characteristic1);
         database.AddCharacteristic(characteristic2);
         database.AddCharacteristic(characteristic3);
-        database.AddDescriptor(descriptor1);
-        database.AddDescriptor(descriptor2);
-        database.AddDescriptor(descriptor3);
+        database.AddDescriptor(characteristic1, descriptor1);
+        database.AddDescriptor(characteristic1, descriptor2);
+        database.AddDescriptor(characteristic3, descriptor3);
 
         GattDatabaseGroupEntry[] services = database.GetServiceEntries(0x0001).ToArray();
         services[0].Handle.Should().Be(0x0001);

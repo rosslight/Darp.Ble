@@ -40,13 +40,13 @@ public class GattTypedClientCharacteristic<T, TProp1>(
     public GattProperty Properties => Characteristic.Properties;
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<BleUuid, IGattClientDescriptor> Descriptors => Characteristic.Descriptors;
+    public IReadOnlyCollection<IGattCharacteristicValue> Descriptors => Characteristic.Descriptors;
 
     IGattCharacteristicDeclaration IGattClientCharacteristic.Declaration => Characteristic.Declaration;
     IGattCharacteristicValue IGattClientCharacteristic.Value => Characteristic.Value;
 
     /// <inheritdoc />
-    public IGattClientDescriptor AddDescriptor(IGattCharacteristicValue value) => Characteristic.AddDescriptor(value);
+    public void AddDescriptor(IGattCharacteristicValue value) => Characteristic.AddDescriptor(value);
 
     void IGattClientCharacteristic.NotifyValue(IGattClientPeer? clientPeer, byte[] value) =>
         Characteristic.NotifyValue(clientPeer, value);

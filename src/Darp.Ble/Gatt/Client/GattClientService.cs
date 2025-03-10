@@ -55,21 +55,20 @@ public abstract class GattClientService(
     {
         ArgumentNullException.ThrowIfNull(descriptors);
         GattClientCharacteristic characteristic = CreateCharacteristicCore(properties, value);
+        _characteristics.Add(characteristic);
+        Peripheral.GattDatabase.AddCharacteristic(characteristic);
+
         foreach (IGattCharacteristicValue descriptor in descriptors)
         {
             characteristic.AddDescriptor(descriptor);
         }
-
         if (
             properties.HasFlag(GattProperty.Notify)
-            && !characteristic.Descriptors.ContainsKey(DescriptorDeclaration.ClientCharacteristicConfiguration.Uuid)
+            && !characteristic.Descriptors.ContainsUuid(DescriptorDeclaration.ClientCharacteristicConfiguration.Uuid)
         )
         {
-            // TODO Handle CCCD
+            characteristic.AddClientCharacteristicConfiguration();
         }
-
-        _characteristics.Add(characteristic);
-        Peripheral.GattDatabase.AddCharacteristic(characteristic);
         return characteristic;
     }
 

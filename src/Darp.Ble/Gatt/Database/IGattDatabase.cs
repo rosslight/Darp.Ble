@@ -48,9 +48,10 @@ public interface IGattDatabase : IReadOnlyCollection<GattDatabaseEntry>
     internal void AddCharacteristic(IGattClientCharacteristic characteristic);
 
     /// <summary> Add a descriptor at the end of the characteristic section </summary>
+    /// <param name="characteristic"> The characteristic the descriptor is associated to </param>
     /// <param name="descriptor"> The descriptor to be added </param>
     /// <exception cref="KeyNotFoundException"> Thrown when the characteristic the descriptor is contained in is unknown </exception>
-    internal void AddDescriptor(IGattClientDescriptor descriptor);
+    internal void AddDescriptor(IGattClientCharacteristic characteristic, IGattCharacteristicValue descriptor);
 
     /// <summary> Hash the gatt database </summary>
     /// <returns> The has as UInt128 </returns>

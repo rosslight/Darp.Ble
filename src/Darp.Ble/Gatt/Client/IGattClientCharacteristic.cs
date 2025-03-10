@@ -24,7 +24,7 @@ public interface IGattClientCharacteristic
     GattProperty Properties { get; }
 
     /// <summary> The descriptors added to this characteristic </summary>
-    IReadOnlyDictionary<BleUuid, IGattClientDescriptor> Descriptors { get; }
+    internal IReadOnlyCollection<IGattCharacteristicValue> Descriptors { get; }
 
     /// <summary> Access the characteristic declaration </summary>
     internal IGattCharacteristicDeclaration Declaration { get; }
@@ -33,11 +33,8 @@ public interface IGattClientCharacteristic
     internal IGattCharacteristicValue Value { get; }
 
     /// <summary> Add a new descriptor </summary>
-    /// <param name="uuid"> The uuid of the descriptor to be added </param>
-    /// <param name="onRead"> The callback to be called when a read operation was requested on this attribute </param>
-    /// <param name="onWrite"> The callback to be called when a write operation was requested on this attribute </param>
-    /// <returns> The descriptor that was added </returns>
-    IGattClientDescriptor AddDescriptor(IGattCharacteristicValue value);
+    /// <param name="value"> The characteristic value </param>
+    void AddDescriptor(IGattCharacteristicValue value);
 
     /// <summary> Notify subscribers about a new value </summary>
     /// <param name="clientPeer"> The client peer to notify. If null, all subscribed clients will be taken into account </param>

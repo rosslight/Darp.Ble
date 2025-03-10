@@ -64,7 +64,7 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
         };
     }
 
-    protected override GattClientDescriptor AddDescriptorCore(IGattCharacteristicValue value)
+    protected override void OnAddDescriptor(IGattCharacteristicValue value)
     {
         BleUuid uuid = value.AttributeType;
         GattLocalDescriptorResult result = _winCharacteristic
@@ -72,7 +72,45 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
             .GetResults();
         if (result.Error is not BluetoothError.Success)
             throw new Exception("Could not add descriptor to windows");
-        return new WinGattClientDescriptor(this, result.Descriptor, value);
+        var winDescriptor = result.Descriptor;
+        winDescriptor.ReadRequested += async (_, args) =>
+        {
+            using Deferral deferral = args.GetDeferral();
+            GattReadRequest? request = await args.GetRequestAsync().AsTask().ConfigureAwait(false);
+            try
+            {
+                IGattClientPeer peerClient = Service.Peripheral.GetOrRegisterSession(args.Session);
+                byte[] readValue = await Value.ReadValueAsync(peerClient).ConfigureAwait(false);
+                request.RespondWithValue(readValue.AsBuffer());
+            }
+            catch
+            {
+                request.RespondWithProtocolError(123);
+            }
+        };
+        winDescriptor.WriteRequested += async (_, args) =>
+        {
+            using Deferral deferral = args.GetDeferral();
+            GattWriteRequest request = await args.GetRequestAsync().AsTask().ConfigureAwait(false);
+            try
+            {
+                IGattClientPeer peerClient = Service.Peripheral.GetOrRegisterSession(args.Session);
+                DataReader reader = DataReader.FromBuffer(request.Value);
+                byte[] bytes = reader.DetachBuffer().ToArray();
+                GattProtocolStatus status = await Value.WriteValueAsync(peerClient, bytes).ConfigureAwait(false);
+                if (request.Option == GattWriteOption.WriteWithResponse)
+                {
+                    if (status is GattProtocolStatus.Success)
+                        request.Respond();
+                    else
+                        request.RespondWithProtocolError((byte)status);
+                }
+            }
+            catch
+            {
+                // ignored
+            }
+        };
     }
 
     protected override void NotifyCore(IGattClientPeer clientPeer, byte[] value)

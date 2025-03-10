@@ -32,11 +32,6 @@ internal sealed class MockGattClientCharacteristic(
         );
     }
 
-    protected override GattClientDescriptor AddDescriptorCore(IGattCharacteristicValue value)
-    {
-        return new MockGattClientDescriptor(this, value);
-    }
-
     protected override void NotifyCore(IGattClientPeer clientPeer, byte[] value)
     {
         if (!_notifyActions.TryGetValue(clientPeer, out Action<byte[]>? action))

@@ -5,6 +5,26 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Gatt.Client;
 
+internal static class Ex
+{
+    public static bool ContainsUuid<T>(this IEnumerable<T> source, BleUuid uuid)
+        where T : IGattAttribute => source.Any(x1 => x1.AttributeType == uuid);
+
+    public static bool TryGetByUuid<T>(this IEnumerable<T> source, BleUuid uuid, [NotNullWhen(true)] out T? value)
+        where T : IGattAttribute
+    {
+        foreach (T x1 in source)
+        {
+            if (x1.AttributeType != uuid)
+                continue;
+            value = x1;
+            return true;
+        }
+        value = default;
+        return false;
+    }
+}
+
 /// <summary> An abstract gatt client characteristic </summary>
 /// <param name="clientService"> The parent client service </param>
 /// <param name="properties"> The property of the characteristic </param>
@@ -17,7 +37,7 @@ public abstract class GattClientCharacteristic(
     ILogger<GattClientCharacteristic> logger
 ) : IGattClientCharacteristic
 {
-    private readonly List<GattClientDescriptor> _descriptors = [];
+    private readonly List<IGattCharacteristicValue> _descriptors = [];
 
     /// <summary> The optional logger </summary>
     protected ILogger<GattClientCharacteristic> Logger { get; } = logger;
@@ -35,8 +55,7 @@ public abstract class GattClientCharacteristic(
     public GattProperty Properties { get; } = properties;
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<BleUuid, IGattClientDescriptor> Descriptors =>
-        _descriptors.ToDictionary(x => x.Uuid, IGattClientDescriptor (x) => x);
+    public IReadOnlyCollection<IGattCharacteristicValue> Descriptors => _descriptors;
 
     /// <inheritdoc />
     public IGattCharacteristicDeclaration Declaration { get; } =
@@ -46,19 +65,19 @@ public abstract class GattClientCharacteristic(
     public IGattCharacteristicValue Value { get; } = value;
 
     /// <inheritdoc />
-    public IGattClientDescriptor AddDescriptor(IGattCharacteristicValue value)
+    public void AddDescriptor(IGattCharacteristicValue value)
     {
         ArgumentNullException.ThrowIfNull(value);
-        if (Descriptors.TryGetValue(value.AttributeType, out IGattClientDescriptor? foundDescriptor))
-            return foundDescriptor;
-        GattClientDescriptor descriptor = AddDescriptorCore(value);
-        _descriptors.Add(descriptor);
-        Service.Peripheral.GattDatabase.AddDescriptor(descriptor);
-        return descriptor;
+        if (Descriptors.ContainsUuid(value.AttributeType))
+            throw new Exception($"Descriptor with type {value.AttributeType} was already added");
+        _descriptors.Add(value);
+        OnAddDescriptor(value);
+        Service.Peripheral.GattDatabase.AddDescriptor(this, value);
     }
 
-    /// <inheritdoc cref="AddDescriptor" />
-    protected abstract GattClientDescriptor AddDescriptorCore(IGattCharacteristicValue value);
+    /// <summary> Called after a new descriptor was added </summary>
+    /// <param name="value"> The value of the new descriptor </param>
+    protected virtual void OnAddDescriptor(IGattCharacteristicValue value) { }
 
     /*
     /// <inheritdoc />
@@ -171,13 +190,13 @@ public class GattClientCharacteristic<TProp1>(IGattClientCharacteristic characte
     public GattProperty Properties => Characteristic.Properties;
 
     /// <inheritdoc />
-    public IReadOnlyDictionary<BleUuid, IGattClientDescriptor> Descriptors => Characteristic.Descriptors;
+    public IReadOnlyCollection<IGattCharacteristicValue> Descriptors => Characteristic.Descriptors;
 
     IGattCharacteristicDeclaration IGattClientCharacteristic.Declaration => Characteristic.Declaration;
     IGattCharacteristicValue IGattClientCharacteristic.Value => Characteristic.Value;
 
     /// <inheritdoc />
-    public IGattClientDescriptor AddDescriptor(IGattCharacteristicValue value) => Characteristic.AddDescriptor(value);
+    public void AddDescriptor(IGattCharacteristicValue value) => Characteristic.AddDescriptor(value);
 
     void IGattClientCharacteristic.NotifyValue(IGattClientPeer? clientPeer, byte[] value) =>
         Characteristic.NotifyValue(clientPeer, value);

@@ -98,15 +98,15 @@ internal sealed class GattDatabaseCollection : IGattDatabase
     }
 
     /// <inheritdoc />
-    public void AddDescriptor(IGattClientDescriptor descriptor)
+    public void AddDescriptor(IGattClientCharacteristic characteristic, IGattCharacteristicValue descriptor)
     {
         lock (_lock)
         {
             ArgumentNullException.ThrowIfNull(descriptor);
-            ushort characteristicHandle = GetHandle(descriptor.Characteristic.Declaration);
+            ushort characteristicHandle = GetHandle(characteristic.Declaration);
             ushort characteristicEndHandle = GetCharacteristicEndHandle(characteristicHandle);
             int characteristicEndIndex = characteristicEndHandle - 1;
-            _attributes.Insert(characteristicEndIndex + 1, descriptor.Value);
+            _attributes.Insert(characteristicEndIndex + 1, descriptor);
         }
     }
 
