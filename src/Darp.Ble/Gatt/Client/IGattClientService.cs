@@ -16,7 +16,7 @@ public interface IGattClientService
     GattServiceType Type { get; }
 
     /// <summary> Get the service declaration </summary>
-    internal IGattAttribute Declaration { get; }
+    internal IGattServiceDeclaration Declaration { get; }
 
     /// <summary> All characteristics of the client service </summary>
     IReadonlyAttributeCollection<IGattClientCharacteristic> Characteristics { get; }

@@ -6,9 +6,7 @@ namespace Darp.Ble.Gatt;
 /// <summary> A typed characteristic declaration </summary>
 /// <typeparam name="T"> The type of the characteristic value </typeparam>
 /// <typeparam name="TProp1"> The type of the first property </typeparam>
-public interface IGattTypedCharacteristicDeclaration<T, TProp1>
-    : IGattCharacteristicDeclaration,
-        IGattTypedCharacteristic<T>
+public interface ITypedCharacteristicDeclaration<T, TProp1> : ICharacteristicDeclaration, IGattTypedCharacteristic<T>
     where TProp1 : IBleProperty;
 
 /// <summary> The typed characteristic declaration </summary>
@@ -19,7 +17,7 @@ public class TypedCharacteristicDeclaration<T, TProp1>(
     BleUuid uuid,
     IGattTypedCharacteristic<T>.DecodeFunc onRead,
     IGattTypedCharacteristic<T>.EncodeFunc onWrite
-) : IGattTypedCharacteristicDeclaration<T, TProp1>
+) : ITypedCharacteristicDeclaration<T, TProp1>
     where TProp1 : IBleProperty
 {
     private readonly IGattTypedCharacteristic<T>.DecodeFunc _onRead = onRead;
@@ -51,7 +49,7 @@ public sealed class TypedCharacteristicDeclaration<T, TProp1, TProp2>(
     BleUuid uuid,
     IGattTypedCharacteristic<T>.DecodeFunc onRead,
     IGattTypedCharacteristic<T>.EncodeFunc onWrite
-) : TypedCharacteristicDeclaration<T, TProp1>(uuid, onRead, onWrite), IGattTypedCharacteristicDeclaration<T, TProp2>
+) : TypedCharacteristicDeclaration<T, TProp1>(uuid, onRead, onWrite), ITypedCharacteristicDeclaration<T, TProp2>
     where TProp1 : IBleProperty
     where TProp2 : IBleProperty
 {

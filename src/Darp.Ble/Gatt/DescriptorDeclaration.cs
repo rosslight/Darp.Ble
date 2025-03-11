@@ -2,11 +2,8 @@ using Darp.Ble.Data;
 
 namespace Darp.Ble.Gatt;
 
-/// <summary> A descriptor declaration </summary>
-public interface IGattDescriptorDeclaration : IGattAttributeDeclaration;
-
 /// <summary> The descriptor declaration </summary>
-public sealed class DescriptorDeclaration(BleUuid uuid) : IGattDescriptorDeclaration
+public sealed class DescriptorDeclaration(BleUuid uuid) : IGattDeclaration
 {
     /// <summary> The Characteristic Extended Properties declaration is a descriptor that defines additional Characteristic Properties </summary>
     public static DescriptorDeclaration CharacteristicExtendedProperties { get; } = new(0x2900);

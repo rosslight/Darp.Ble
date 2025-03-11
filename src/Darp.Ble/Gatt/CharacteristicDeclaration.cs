@@ -6,7 +6,7 @@ using Darp.Ble.Data;
 namespace Darp.Ble.Gatt;
 
 /// <summary> The characteristic declaration </summary>
-public interface IGattCharacteristicDeclaration : IGattAttributeDeclaration
+public interface ICharacteristicDeclaration : IGattDeclaration
 {
     /// <summary> Properties that are part of the characteristic declaration </summary>
     GattProperty Properties { get; }
@@ -14,13 +14,13 @@ public interface IGattCharacteristicDeclaration : IGattAttributeDeclaration
 
 /// <summary> The characteristic declaration with specified properties </summary>
 /// <typeparam name="TProp1"> The type of the first property </typeparam>
-public interface IGattCharacteristicDeclaration<TProp1> : IGattCharacteristicDeclaration
+public interface ICharacteristicDeclaration<TProp1> : ICharacteristicDeclaration
     where TProp1 : IBleProperty;
 
 /// <summary> The characteristic declaration </summary>
 /// <param name="uuid"> The uuid of the characteristic </param>
 /// <typeparam name="TProp1"> The type of the first property </typeparam>
-public class CharacteristicDeclaration<TProp1>(BleUuid uuid) : IGattCharacteristicDeclaration<TProp1>
+public class CharacteristicDeclaration<TProp1>(BleUuid uuid) : ICharacteristicDeclaration<TProp1>
     where TProp1 : IBleProperty
 {
     /// <inheritdoc />
@@ -36,7 +36,7 @@ public class CharacteristicDeclaration<TProp1>(BleUuid uuid) : IGattCharacterist
 /// <typeparam name="TProp2"> The type of the second property </typeparam>
 public sealed class CharacteristicDeclaration<TProp1, TProp2>(BleUuid uuid)
     : CharacteristicDeclaration<TProp1>(uuid),
-        IGattCharacteristicDeclaration<TProp2>
+        ICharacteristicDeclaration<TProp2>
     where TProp1 : IBleProperty
     where TProp2 : IBleProperty
 {

@@ -25,7 +25,7 @@ public abstract class GattClientServiceProxy(IGattClientService service) : IGatt
     /// <inheritdoc />
     public GattServiceType Type => _service.Type;
 
-    IGattAttribute IGattClientService.Declaration => _service.Declaration;
+    IGattServiceDeclaration IGattClientService.Declaration => _service.Declaration;
 
     IReadonlyAttributeCollection<IGattClientCharacteristic> IGattClientService.Characteristics =>
         _service.Characteristics;

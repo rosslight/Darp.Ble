@@ -3,14 +3,6 @@ using Darp.Ble.Gatt.Att;
 
 namespace Darp.Ble.Gatt.Client;
 
-public interface IGattCharacteristicDeclaration : IGattAttribute
-{
-    /// <summary> The property of the characteristic </summary>
-    GattProperty Properties { get; }
-}
-
-public interface IGattCharacteristicValue : IGattAttribute;
-
 /// <summary> A gatt client characteristic </summary>
 public interface IGattClientCharacteristic
 {

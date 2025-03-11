@@ -13,7 +13,7 @@ public sealed class GattClientCharacteristicDeclaration(
     GattProperty properties,
     IGattDatabase databaseCollection,
     IGattCharacteristicValue value
-) : Client.IGattCharacteristicDeclaration
+) : IGattCharacteristicDeclaration
 {
     private readonly IGattDatabase _databaseCollection = databaseCollection;
     private readonly IGattCharacteristicValue _value = value;

@@ -1,6 +1,5 @@
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Att;
-using Darp.Ble.Gatt.Database;
 using Darp.Ble.Implementation;
 using Microsoft.Extensions.Logging;
 
@@ -36,14 +35,8 @@ public abstract class GattClientService(
     public GattServiceType Type { get; } = type;
 
     /// <inheritdoc />
-    public IGattAttribute Declaration { get; } =
-        new FuncCharacteristicValue(
-            type is GattServiceType.Secondary
-                ? GattDatabaseCollection.SecondaryServiceType
-                : GattDatabaseCollection.PrimaryServiceType,
-            blePeripheral.GattDatabase,
-            _ => ValueTask.FromResult(uuid.ToByteArray())
-        );
+    public IGattServiceDeclaration Declaration { get; } =
+        new GattServiceDeclaration(blePeripheral.GattDatabase, uuid, type);
 
     /// <inheritdoc />
     public IReadonlyAttributeCollection<IGattClientCharacteristic> Characteristics => _characteristics;

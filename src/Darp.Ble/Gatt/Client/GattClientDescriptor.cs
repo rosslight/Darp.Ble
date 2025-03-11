@@ -1,4 +1,5 @@
 using Darp.Ble.Data;
+using Darp.Ble.Gatt.Att;
 
 namespace Darp.Ble.Gatt.Client;
 

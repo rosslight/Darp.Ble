@@ -122,13 +122,13 @@ public static partial class AdvertisingDataExtensions
                     or AdTypes.CompleteListOf32BitServiceOrServiceClassUuids => 4,
                     AdTypes.IncompleteListOf128BitServiceOrServiceClassUuids
                     or AdTypes.CompleteListOf128BitServiceOrServiceClassUuids => 16,
+                    // Using length - 1 to avoid crashing if invalid lengths were transmitted
                     _ => -1,
                 };
                 if (guidLength < 0)
                     continue;
-                // Using length - 1 to avoid crashing if invalid lengths were transmitted
                 for (var i = 0; i < bytes.Length + 1 - guidLength; i += guidLength)
-                    yield return new BleUuid(bytes[i..(i + guidLength)].Span);
+                    yield return BleUuid.Read(bytes[i..(i + guidLength)].Span);
             }
         }
     }

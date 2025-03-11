@@ -266,6 +266,21 @@ public static partial class AdvertisingDataExtensions
         Memory<byte> sectionData = new byte[manufacturerSpecificData.Length + 2];
         BinaryPrimitives.WriteUInt16LittleEndian(sectionData.Span, (ushort)companyIdentifier);
         manufacturerSpecificData.CopyTo(sectionData[2..]);
+        return advertisingData.WithManufacturerSpecificData(sectionData);
+    }
+
+    /// <summary>
+    /// Create a new <see cref="AdvertisingData"/> object with the <see cref="AdTypes.ManufacturerSpecificData"/> section created or updated </summary>
+    /// <param name="advertisingData"> The advertising data to base on </param>
+    /// <param name="sectionData"> The manufacturer specific data including two bytes of manufacturer specific data </param>
+    /// <returns> The new advertising data </returns>
+    [Pure]
+    public static AdvertisingData WithManufacturerSpecificData(
+        this AdvertisingData advertisingData,
+        ReadOnlyMemory<byte> sectionData
+    )
+    {
+        ArgumentNullException.ThrowIfNull(advertisingData);
         return advertisingData.With(AdTypes.ManufacturerSpecificData, sectionData);
     }
 }
