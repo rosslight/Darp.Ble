@@ -33,8 +33,8 @@ public static class EchoServiceContract
         IGattClientService service = peripheral.AddService(serviceUuid, isPrimary: true);
 
         // Add the mandatory write characteristic
-        IGattClientCharacteristic<Properties.Notify> notifyCharacteristic = null!;
-        IGattClientCharacteristic<Properties.Write> writeCharacteristic = service.AddCharacteristic<Properties.Write>(
+        GattClientCharacteristic<Properties.Notify> notifyCharacteristic = null!;
+        GattClientCharacteristic<Properties.Write> writeCharacteristic = service.AddCharacteristic<Properties.Write>(
             writeUuid,
             onWrite: (peer, bytes) =>
             {
@@ -43,10 +43,8 @@ public static class EchoServiceContract
                 // We expect onWrite to not execute before the notify characteristic was added
                 _ = responseObservable
                     .SelectMany(async responseBytes =>
-                    {
-                        await notifyCharacteristic.NotifyAsync(peer, responseBytes).ConfigureAwait(false);
-                        return true;
-                    })
+                        await notifyCharacteristic.NotifyAsync(peer, responseBytes).ConfigureAwait(false)
+                    )
                     .Subscribe();
                 return GattProtocolStatus.Success;
             }

@@ -132,24 +132,16 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
                         () => energy = 0
                     );
                     _ = heartRateSubject
-                        .SelectMany(async measurement =>
-                        {
-                            await service.HeartRateMeasurement.NotifyAllAsync(measurement).ConfigureAwait(false);
-                            return true;
-                        })
+                        .SelectMany(async measurement => await service.HeartRateMeasurement.NotifyAllAsync(measurement))
                         .Subscribe();
                     await device.Broadcaster.StartAdvertisingAsync(
                         data: AdvertisingData.Empty.WithCompleteListOfServiceUuids(device.Peripheral),
                         autoRestart: true
                     );
+                    // Notify subscribers of the current value as soon as they subscribe
                     device.Peripheral.WhenConnected.SelectMany(async clientPeer =>
-                    {
-                        // Notify subscribers of the current value as soon as they subscribe
-                        await service
-                            .HeartRateMeasurement.NotifyAsync(clientPeer, heartRateSubject.Value)
-                            .ConfigureAwait(false);
-                        return true;
-                    });
+                        await service.HeartRateMeasurement.NotifyAsync(clientPeer, heartRateSubject.Value)
+                    );
                 })
             )
             .SetLogger(_loggerFactory)
@@ -195,19 +187,13 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
                     );
                     Observable
                         .Interval(TimeSpan.FromMilliseconds(100))
-                        .SelectMany(async t =>
-                        {
-                            await service.BatteryLevel.NotifyAllAsync(expectedValue);
-                            return t;
-                        })
+                        .SelectMany(async _ => await service.BatteryLevel.NotifyAllAsync(expectedValue))
                         .Subscribe();
+                    // Notify subscribers of the current value as soon as they subscribe
                     device
                         .Peripheral.WhenConnected.SelectMany(async clientPeer =>
-                        {
-                            // Notify subscribers of the current value as soon as they subscribe
-                            await service.BatteryLevel.NotifyAsync(clientPeer, expectedValue);
-                            return true;
-                        })
+                            await service.BatteryLevel.NotifyAsync(clientPeer, expectedValue)
+                        )
                         .Subscribe();
                 })
             )

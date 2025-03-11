@@ -42,7 +42,7 @@ public sealed class Test
         service.AddCharacteristic<Read>(SomeUuid, onRead: _ => SomeBytes);
         service.AddCharacteristic(ReadChar);
         var aa = service.AddCharacteristic(ReadChar, 2);
-        aa.UpdateValueAsync(123);
+        await aa.UpdateValueAsync(123);
         service.AddCharacteristic(ReadChar, _ => 2);
 
         service.AddCharacteristic<Write>(SomeUuid, onWrite: (peer, bytes) => GattProtocolStatus.Success);
@@ -56,13 +56,13 @@ public sealed class Test
         IGattClientPeer? peer = null;
         var cn1 = service.AddCharacteristic<Notify>(SomeUuid);
         var cn11 = service.AddCharacteristic<Notify, Read>(SomeUuid, SomeBytes);
-        cn1.NotifyAllAsync(SomeBytes);
+        await cn1.NotifyAllAsync(SomeBytes);
         await cn11.UpdateValueAsync(SomeBytes);
-        cn11.NotifyAsync(peer, SomeBytes);
-        cn11.NotifyAllAsync(SomeBytes);
+        await cn11.NotifyAsync(peer, SomeBytes);
+        await cn11.NotifyAllAsync(SomeBytes);
 
         var cn2 = service.AddCharacteristic(NotifyChar);
-        cn2.NotifyAllAsync(3);
+        await cn2.NotifyAllAsync(3);
         var cn3 = service.AddCharacteristic(ReadNotifyChar, 3);
         //cn3.UpdateValue(SomeBytes);
         await cn3.UpdateValueAsync(32);

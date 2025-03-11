@@ -1,3 +1,4 @@
+using System.Reactive;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
 using static Darp.Ble.Gatt.Properties;
@@ -56,49 +57,56 @@ public static partial class GattCharacteristicExtensions
 
     /// <summary> Notify a connected peer of a new value </summary>
     /// <param name="characteristic"> The characteristic to be used for the notification </param>
-    /// <param name="peer"> The peer to notify </param>
+    /// <param name="clientPeer"> The client peer to notify. If null, all subscribed clients will be taken into account </param>
     /// <param name="value"> The value to update </param>
-    public static ValueTask NotifyAsync(
+    public static async ValueTask<Unit> NotifyAsync(
         this IGattClientCharacteristic<Notify> characteristic,
-        IGattClientPeer? peer,
+        IGattClientPeer? clientPeer,
         byte[] value
     )
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        return characteristic.NotifyValueAsync(clientPeer: peer, value: value);
+        await characteristic.NotifyValueAsync(clientPeer: clientPeer, value: value).ConfigureAwait(false);
+        return Unit.Default;
     }
 
     /// <summary> Notify a connected peer of a new value </summary>
     /// <param name="characteristic"> The characteristic to be used for the notification </param>
-    /// <param name="peer"> The peer to notify </param>
+    /// <param name="clientPeer"> The client peer to notify. If null, all subscribed clients will be taken into account </param>
     /// <param name="value"> The value to update </param>
     /// <typeparam name="T"> The type of the value </typeparam>
-    public static ValueTask NotifyAsync<T>(
+    public static async ValueTask<Unit> NotifyAsync<T>(
         this IGattTypedClientCharacteristic<T, Notify> characteristic,
-        IGattClientPeer peer,
+        IGattClientPeer? clientPeer,
         T value
     )
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        return characteristic.NotifyValueAsync(clientPeer: peer, value: characteristic.Encode(value));
+        await characteristic
+            .NotifyValueAsync(clientPeer: clientPeer, value: characteristic.Encode(value))
+            .ConfigureAwait(false);
+        return Unit.Default;
     }
 
     /// <summary> Notify all connected peers of a new value </summary>
     /// <param name="characteristic"> The characteristic to be used for the notification </param>
     /// <param name="value"> The value to update </param>
-    public static ValueTask NotifyAllAsync(this IGattClientCharacteristic<Notify> characteristic, byte[] value)
+    public static ValueTask<Unit> NotifyAllAsync(this IGattClientCharacteristic<Notify> characteristic, byte[] value)
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        return characteristic.NotifyValueAsync(clientPeer: null, value: value);
+        return characteristic.NotifyAsync(clientPeer: null, value: value);
     }
 
     /// <summary> Notify all connected peers of a new value </summary>
     /// <param name="characteristic"> The characteristic to be used for the notification </param>
     /// <param name="value"> The value to update </param>
     /// <typeparam name="T"> The type of the value </typeparam>
-    public static ValueTask NotifyAllAsync<T>(this IGattTypedClientCharacteristic<T, Notify> characteristic, T value)
+    public static ValueTask<Unit> NotifyAllAsync<T>(
+        this IGattTypedClientCharacteristic<T, Notify> characteristic,
+        T value
+    )
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        return characteristic.NotifyValueAsync(clientPeer: null, value: characteristic.Encode(value));
+        return characteristic.NotifyAsync(clientPeer: null, value: value);
     }
 }

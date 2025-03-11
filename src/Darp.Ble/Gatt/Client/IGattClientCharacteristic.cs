@@ -39,6 +39,8 @@ public interface IGattClientCharacteristic
     /// <summary> Notify subscribers about a new value </summary>
     /// <param name="clientPeer"> The client peer to notify. If null, all subscribed clients will be taken into account </param>
     /// <param name="value"> The value to update with </param>
+    /// <returns> A value task that completes when the client was notified </returns>
+    // Note: Usage of ValueTask because the notification should be able to run synchronously if the value can be set
     ValueTask NotifyValueAsync(IGattClientPeer? clientPeer, byte[] value);
 
     /// <summary> Update the characteristic value </summary>

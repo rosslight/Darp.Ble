@@ -119,9 +119,9 @@ public sealed class BleCentralTests
             var notifyChar = service.AddCharacteristic<Properties.Notify>(0x1234);
             var writeChar = service.AddCharacteristic<Properties.Write>(
                 0x5678,
-                onWrite: (peer, bytes) =>
+                onWrite: async (peer, bytes) =>
                 {
-                    notifyChar.NotifyAsync(peer, bytes);
+                    await notifyChar.NotifyAsync(peer, bytes);
                     return GattProtocolStatus.Success;
                 }
             );
