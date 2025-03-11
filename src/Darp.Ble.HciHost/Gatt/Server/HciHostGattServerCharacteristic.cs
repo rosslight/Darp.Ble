@@ -65,7 +65,7 @@ internal sealed class HciHostGattServerCharacteristic(
                             );
                             return;
                         }
-                        var bleUuid = new BleUuid(uuid.Span);
+                        var bleUuid = BleUuid.Read(uuid.Span);
                         var descriptor = new HciHostGattServerDescriptor(
                             this,
                             bleUuid,

@@ -132,7 +132,7 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
                             StartingHandle = startingHandle,
                             EndingHandle = 0xFFFF,
                             AttributeType = 0x2800, // TODO discover both primary and secondary services
-                            AttributeValue = uuid.Value.ToByteArray()[..2], // TODO Don't treat all uuids as 16 bit uuids
+                            AttributeValue = uuid.Value.ToByteArray().AsMemory()[..2], // TODO Don't treat all uuids as 16 bit uuids
                         },
                         cancellationToken: token
                     )

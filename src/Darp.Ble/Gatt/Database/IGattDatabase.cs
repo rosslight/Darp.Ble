@@ -21,6 +21,11 @@ public interface IGattDatabase : IReadOnlyCollection<GattDatabaseEntry>
     /// <returns> True, if a handle could be found; False, otherwise </returns>
     bool TryGetHandle(IGattAttribute attribute, out ushort handle);
 
+    /// <summary> Searches the database for the end of a group if the attribute has a group type. </summary>
+    /// <param name="startHandle"> The start handle to start the search at </param>
+    /// <returns> The end group handle if the startHandle marks a group. The start handle otherwise </returns>
+    internal ushort GetGroupEndHandle(ushort startHandle);
+
     /// <summary> Tries to get the attribute of a given handle </summary>
     /// <param name="handle"> The handle to get the attribute for </param>
     /// <param name="attribute"> The attribute </param>

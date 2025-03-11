@@ -8,11 +8,12 @@ namespace Darp.Ble.Gatt.Database;
 /// <summary> A wrapper entry of the gatt database </summary>
 /// <param name="attribute"> The attribute </param>
 /// <param name="handle"> The handle of the attribute </param>
-public readonly struct GattDatabaseEntry(IGattAttribute attribute, ushort handle)
+public readonly struct GattDatabaseEntry(IGattDatabase gattDatabase, IGattAttribute attribute, ushort handle)
     : IGattAttribute,
         IEquatable<GattDatabaseEntry>,
         IEqualityOperators<GattDatabaseEntry, GattDatabaseEntry, bool>
 {
+    private readonly IGattDatabase _gattDatabase = gattDatabase;
     private readonly IGattAttribute _attribute = attribute;
 
     /// <inheritdoc />
@@ -24,6 +25,23 @@ public readonly struct GattDatabaseEntry(IGattAttribute attribute, ushort handle
     /// <inheritdoc />
     public PermissionCheckStatus CheckReadPermissions(IGattClientPeer clientPeer) =>
         _attribute.CheckReadPermissions(clientPeer);
+
+    /// <summary> True, if the attribute is a group type; False, otherwise </summary>
+    public bool IsGroupType => GattDatabaseCollection.IsGroupType(_attribute.AttributeType);
+
+    /// <summary> Tries to get the end group handle </summary>
+    /// <param name="endHandle"> The end handle if a group. The start handle otherwise </param>
+    /// <returns> True, if the attribute is a group type; False, otherwise </returns>
+    public bool TryGetGroupEndHandle(out ushort endHandle)
+    {
+        if (!IsGroupType)
+        {
+            endHandle = Handle;
+            return false;
+        }
+        endHandle = _gattDatabase.GetGroupEndHandle(Handle);
+        return true;
+    }
 
     /// <inheritdoc />
     public PermissionCheckStatus CheckWritePermissions(IGattClientPeer clientPeer) =>

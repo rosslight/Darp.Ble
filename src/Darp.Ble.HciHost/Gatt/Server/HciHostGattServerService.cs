@@ -64,7 +64,7 @@ internal sealed class HciHostGattServerService(
                             );
                         var properties = (GattProperty)memory.Span[0];
                         ushort characteristicHandle = BinaryPrimitives.ReadUInt16LittleEndian(memory.Span[1..]);
-                        var characteristicUuid = new BleUuid(memory.Span[3..]);
+                        var characteristicUuid = BleUuid.Read(memory.Span[3..]);
                         var characteristic = new HciHostGattServerCharacteristic(
                             this,
                             characteristicUuid,

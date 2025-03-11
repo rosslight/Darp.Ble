@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Runtime.InteropServices;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Att;
 using Darp.Ble.Gatt.Client;
@@ -190,6 +191,52 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
     }
 
     [MessageSink]
+    private async void HandleGroupTypeRequest(AttFindByTypeValueReq request)
+    {
+        BleUuid requestedAttributeType = BleUuid.FromUInt16(request.AttributeType);
+        ReadOnlyMemory<byte> requestedAttributeValue = request.AttributeValue;
+        int availablePduSpace = AttMtu - 2;
+
+        List<AttFindByTypeHandlesInformation> handlesInformation = [];
+        foreach (
+            GattDatabaseEntry attribute in Peripheral.GattDatabase.Where(x =>
+                x.AttributeType.Equals(requestedAttributeType)
+                && x.Handle >= request.StartingHandle
+                && x.Handle <= request.EndingHandle
+            )
+        )
+        {
+            ReadOnlyMemory<byte> value = await attribute.ReadValueAsync(this).ConfigureAwait(false);
+            if (!value.Span.SequenceEqual(requestedAttributeValue.Span))
+                continue;
+            // Check if there is enough space to hold this attribute
+            if (availablePduSpace < 4)
+                break;
+            attribute.TryGetGroupEndHandle(out ushort endHandle);
+            handlesInformation.Add(
+                new AttFindByTypeHandlesInformation
+                {
+                    FoundAttributeHandle = attribute.Handle,
+                    GroupEndHandle = endHandle,
+                }
+            );
+        }
+        if (handlesInformation.Count == 0)
+        {
+            var response = new AttErrorRsp
+            {
+                RequestOpCode = request.OpCode,
+                Handle = request.StartingHandle,
+                ErrorCode = AttErrorCode.AttributeNotFoundError,
+            };
+            this.EnqueueGattPacket(response);
+            return;
+        }
+        var rsp = new AttFindByTypeValueRsp { HandlesInformationList = handlesInformation.ToArray() };
+        this.EnqueueGattPacket(rsp);
+    }
+
+    [MessageSink]
     private async void HandleReadRequest(AttReadReq request)
     {
         if (!Peripheral.GattDatabase.TryGetAttribute(request.AttributeHandle, out IGattAttribute? attribute))
@@ -205,10 +252,18 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             return;
         }
 
-        byte[] value = await attribute.ReadValueAsync(this).ConfigureAwait(false);
-        int length = Math.Min(AttMtu - 1, value.Length);
-        var rsp = new AttReadRsp { AttributeValue = value.AsMemory()[..length] };
-        this.EnqueueGattPacket(rsp);
+        try
+        {
+            byte[] value = await attribute.ReadValueAsync(this).ConfigureAwait(false);
+            int length = Math.Min(AttMtu - 1, value.Length);
+            var rsp = new AttReadRsp { AttributeValue = value.AsMemory()[..length] };
+            this.EnqueueGattPacket(rsp);
+        }
+        catch (Exception e)
+        {
+            Logger.LogWarning(e, "Read failed because of {Message}", e.Message);
+            this.EnqueueGattErrorResponse(request.OpCode, request.AttributeHandle, AttErrorCode.UnlikelyErrorError);
+        }
     }
 
     [MessageSink]
@@ -283,12 +338,21 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             return;
         }
 
-        GattProtocolStatus status = await attribute
-            .WriteValueAsync(this, request.AttributeValue.ToArray())
-            .ConfigureAwait(false);
-        if (status is not GattProtocolStatus.Success)
+        try
         {
-            this.EnqueueGattErrorResponse(request.OpCode, request.AttributeHandle, (AttErrorCode)status);
+            GattProtocolStatus status = await attribute
+                .WriteValueAsync(this, request.AttributeValue.ToArray())
+                .ConfigureAwait(false);
+            if (status is not GattProtocolStatus.Success)
+            {
+                this.EnqueueGattErrorResponse(request.OpCode, request.AttributeHandle, (AttErrorCode)status);
+                return;
+            }
+        }
+        catch (Exception e)
+        {
+            Logger.LogWarning(e, "Write failed because of {Message}", e.Message);
+            this.EnqueueGattErrorResponse(request.OpCode, request.AttributeHandle, AttErrorCode.UnlikelyErrorError);
             return;
         }
         this.EnqueueGattPacket(new AttWriteRsp());

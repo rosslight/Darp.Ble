@@ -69,32 +69,11 @@ internal sealed class GattDatabaseCollection : IGattDatabase
         {
             ArgumentNullException.ThrowIfNull(characteristic);
             ushort serviceHandle = GetHandle(characteristic.Service.Declaration);
-            ushort serviceEndHandle = GetServiceEndHandle(serviceHandle);
+            ushort serviceEndHandle = GetGroupEndHandle(serviceHandle);
             int serviceEndIndex = serviceEndHandle - 1;
             _attributes.Insert(serviceEndIndex + 1, characteristic.Declaration);
             _attributes.Insert(serviceEndIndex + 2, characteristic.Value);
         }
-    }
-
-    /// <summary> Searches the database for the next service and returns the last handle before </summary>
-    /// <param name="serviceHandle"> The service handle to start at </param>
-    /// <returns> The end group handle of the service </returns>
-    private ushort GetServiceEndHandle(ushort serviceHandle)
-    {
-        var serviceEndIndex = (ushort)(serviceHandle - 1);
-        for (; serviceEndIndex < _attributes.Count - 1; serviceEndIndex++)
-        {
-            IGattAttribute attribute = _attributes[serviceEndIndex + 1];
-            if (
-                attribute.AttributeType.Equals(PrimaryServiceType)
-                || attribute.AttributeType.Equals(SecondaryServiceType)
-            )
-            {
-                // Break if the next service was found
-                break;
-            }
-        }
-        return (ushort)(serviceEndIndex + 1);
     }
 
     /// <inheritdoc />
@@ -104,30 +83,57 @@ internal sealed class GattDatabaseCollection : IGattDatabase
         {
             ArgumentNullException.ThrowIfNull(descriptor);
             ushort characteristicHandle = GetHandle(characteristic.Declaration);
-            ushort characteristicEndHandle = GetCharacteristicEndHandle(characteristicHandle);
+            ushort characteristicEndHandle = GetGroupEndHandle(characteristicHandle);
             int characteristicEndIndex = characteristicEndHandle - 1;
             _attributes.Insert(characteristicEndIndex + 1, descriptor);
         }
     }
 
-    /// <summary> Searches the database for the next characteristic and returns the last handle before </summary>
-    /// <param name="characteristicHandle"> The characteristic handle to start at </param>
-    /// <returns> The end group handle of the characteristic </returns>
-    private ushort GetCharacteristicEndHandle(ushort characteristicHandle)
-    {
-        // Start with offset of 1 to account for the characteristic value
-        var characteristicEndIndex = (ushort)(characteristicHandle - 1 + 1);
-        for (; characteristicEndIndex < _attributes.Count - 1; characteristicEndIndex++)
-        {
-            IGattAttribute attribute = _attributes[characteristicEndIndex + 1];
-            if (attribute.AttributeType.Equals(CharacteristicType))
-            {
-                // Break if the next characteristic was found
-                break;
-            }
-        }
+    internal static bool IsGroupType(BleUuid attributeType) =>
+        attributeType == CharacteristicType
+        || attributeType == PrimaryServiceType
+        || attributeType == SecondaryServiceType;
 
-        return (ushort)(characteristicEndIndex + 1);
+    /// <summary> Searches the database for the end of a group if the attribute has a group type. </summary>
+    /// <param name="startHandle"> The start handle to start the search at </param>
+    /// <returns> The end group handle if the startHandle marks a group. The start handle otherwise </returns>
+    public ushort GetGroupEndHandle(ushort startHandle)
+    {
+        lock (_lock)
+        {
+            // Retrieve stoppage criterion
+            if (!TryGetAttribute(startHandle, out IGattAttribute? attr))
+                return startHandle;
+            Func<BleUuid, bool> shouldStopPredicate;
+            if (attr.AttributeType == CharacteristicType)
+            {
+                // If attribute is a characteristic, the group ends with any characteristic / service declaration
+                shouldStopPredicate = uuid =>
+                    uuid == CharacteristicType || uuid == PrimaryServiceType || uuid == SecondaryServiceType;
+            }
+            else if (attr.AttributeType == PrimaryServiceType || attr.AttributeType == SecondaryServiceType)
+            {
+                // If attribute is a service, the group ends with any service declaration
+                shouldStopPredicate = uuid => uuid == PrimaryServiceType || uuid == SecondaryServiceType;
+            }
+            else
+            {
+                // The group should end immediately
+                shouldStopPredicate = _ => true;
+            }
+
+            var endIndex = (ushort)(startHandle - 1);
+            for (; endIndex < _attributes.Count - 1; endIndex++)
+            {
+                IGattAttribute attribute = _attributes[endIndex + 1];
+                if (shouldStopPredicate(attribute.AttributeType))
+                {
+                    // Break if the stopping criterion is fulfilled
+                    break;
+                }
+            }
+            return (ushort)(endIndex + 1);
+        }
     }
 
     /// <inheritdoc />
@@ -135,7 +141,7 @@ internal sealed class GattDatabaseCollection : IGattDatabase
     {
         lock (_lock)
         {
-            return _attributes.Select((x, i) => new GattDatabaseEntry(x, (ushort)(i + 1))).GetEnumerator();
+            return _attributes.Select((x, i) => new GattDatabaseEntry(this, x, (ushort)(i + 1))).GetEnumerator();
         }
     }
 
@@ -208,20 +214,15 @@ internal sealed class GattDatabaseCollection : IGattDatabase
             while (currentIndex < _attributes.Count)
             {
                 IGattAttribute attribute = _attributes[currentIndex];
-                if (
-                    !(
-                        attribute.AttributeType.Equals(PrimaryServiceType)
-                        || attribute.AttributeType.Equals(SecondaryServiceType)
-                    )
-                )
+                if (!IsGroupType(attribute.AttributeType))
                 {
                     currentIndex++;
                     continue;
                 }
 
-                var serviceHandle = (ushort)(currentIndex + 1);
-                ushort endGroupHandle = GetServiceEndHandle(serviceHandle);
-                yield return new GattDatabaseGroupEntry(attribute, serviceHandle, endGroupHandle);
+                var currentHandle = (ushort)(currentIndex + 1);
+                ushort endGroupHandle = GetGroupEndHandle(currentHandle);
+                yield return new GattDatabaseGroupEntry(attribute, currentHandle, endGroupHandle);
                 currentIndex = endGroupHandle;
             }
         }

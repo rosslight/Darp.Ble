@@ -1,4 +1,5 @@
 using Darp.Ble.Data;
+using Darp.Ble.Gatt.Att;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
 using Microsoft.Extensions.Logging;
