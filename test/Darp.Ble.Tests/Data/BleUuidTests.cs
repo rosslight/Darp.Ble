@@ -45,7 +45,7 @@ public sealed class BleUuidTests
     public void Constructor_WithByteSpanAndUShort_IsEquivalent(ushort value, string hexString)
     {
         byte[] bytes = Convert.FromHexString(hexString);
-        var bytesUuid = new BleUuid(bytes);
+        BleUuid bytesUuid = BleUuid.Read(bytes);
         BleUuid uint16Uuid = value;
 
         bytesUuid.Should().Be(uint16Uuid);
@@ -58,9 +58,9 @@ public sealed class BleUuidTests
     public void Constructor_WithByteSpan_SetsCorrectType(string hexString, BleUuidType expectedType)
     {
         byte[] bytes = Convert.FromHexString(hexString);
-        var uuid = new BleUuid(bytes);
+        BleUuid bytesUuid = BleUuid.Read(bytes);
 
-        uuid.Type.Should().Be(expectedType);
+        bytesUuid.Type.Should().Be(expectedType);
     }
 
     [Theory]
@@ -71,10 +71,7 @@ public sealed class BleUuidTests
     {
         byte[] bytes = Convert.FromHexString(hexString);
 
-        Action action = () =>
-        {
-            _ = new BleUuid(bytes);
-        };
+        Action action = () => _ = BleUuid.Read(bytes);
 
         action.Should().Throw<ArgumentOutOfRangeException>();
     }

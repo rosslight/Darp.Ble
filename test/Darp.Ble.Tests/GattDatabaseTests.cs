@@ -1,10 +1,9 @@
 using Darp.Ble.Data;
-using Darp.Ble.Gatt;
+using Darp.Ble.Gatt.Att;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Database;
 using FluentAssertions;
 using NSubstitute;
-using IGattCharacteristicDeclaration = Darp.Ble.Gatt.Client.IGattCharacteristicDeclaration;
 
 namespace Darp.Ble.Tests;
 
@@ -14,7 +13,7 @@ public sealed class GattDatabaseTests
     {
         var service = Substitute.For<IGattClientService>();
         service.Uuid.Returns(uuid);
-        var serviceDeclaration = Substitute.For<IGattCharacteristicDeclaration>();
+        var serviceDeclaration = Substitute.For<IGattServiceDeclaration>();
         serviceDeclaration.AttributeType.Returns(GattDatabaseCollection.PrimaryServiceType);
         serviceDeclaration.Handle.Returns(_ => database[serviceDeclaration]);
         service.Declaration.Returns(serviceDeclaration);
@@ -213,12 +212,29 @@ public sealed class GattDatabaseTests
         database.AddDescriptor(characteristic1, descriptor2);
         database.AddDescriptor(characteristic3, descriptor3);
 
-        GattDatabaseEntry firstEntry = database.First();
-        firstEntry.Handle.Should().Be(0x0001);
-        firstEntry.AttributeType.Should().Be(GattDatabaseCollection.PrimaryServiceType);
-        GattDatabaseEntry sixthEntry = database.Skip(5).First();
-        sixthEntry.Handle.Should().Be(0x0006);
-        sixthEntry.AttributeType.Should().Be(GattDatabaseCollection.CharacteristicType);
+        GattDatabaseEntry service1Entry = database.First();
+        service1Entry.Handle.Should().Be(0x0001);
+        service1Entry.AttributeType.Should().Be(GattDatabaseCollection.PrimaryServiceType);
+        service1Entry.IsGroupType.Should().BeTrue();
+        service1Entry.TryGetGroupEndHandle(out ushort firstGroupHandle).Should().BeTrue();
+        firstGroupHandle.Should().Be(0x0007);
+
+        GattDatabaseEntry characteristic1ValueEntry = database.Skip(2).First();
+        characteristic1ValueEntry.Handle.Should().Be(0x0003);
+        characteristic1ValueEntry.AttributeType.Should().Be(BleUuid.FromUInt16(0x2234));
+        characteristic1ValueEntry.IsGroupType.Should().BeFalse();
+        characteristic1ValueEntry
+            .TryGetGroupEndHandle(out ushort characteristic1ValueEndGroupHandle)
+            .Should()
+            .BeFalse();
+        characteristic1ValueEndGroupHandle.Should().Be(0x0003);
+
+        GattDatabaseEntry characteristic2Entry = database.Skip(5).First();
+        characteristic2Entry.Handle.Should().Be(0x0006);
+        characteristic2Entry.AttributeType.Should().Be(GattDatabaseCollection.CharacteristicType);
+        characteristic2Entry.IsGroupType.Should().BeTrue();
+        characteristic2Entry.TryGetGroupEndHandle(out ushort sixthGroupHandle).Should().BeTrue();
+        sixthGroupHandle.Should().Be(0x0007);
     }
 
     [Fact]

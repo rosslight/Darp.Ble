@@ -1,5 +1,7 @@
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Diagnostics.Contracts;
 using System.Globalization;
 
 namespace Darp.Ble.Data;
@@ -58,27 +60,6 @@ public sealed record BleUuid
     }
 
     private static Guid CreateGuid(uint a) => new(a, 0x0000, 0x1000, 0x80, 0x00, 0x00, 0x80, 0x5F, 0x9B, 0x34, 0xFB);
-
-    /// <summary> Initializes a BleUuid from a readonly span of bytes </summary>
-    /// <param name="source"> The source to be decoded. </param>
-    /// <returns> The bleUuid with type depending on length of source </returns>
-    /// <exception cref="ArgumentOutOfRangeException"> The source is not of length 2,4,16 </exception>
-    [SetsRequiredMembers]
-    public BleUuid(ReadOnlySpan<byte> source)
-    {
-        (BleUuidType Type, Guid Guid) tuple = source.Length switch
-        {
-            2 => (BleUuidType.Uuid16, CreateGuid(BinaryPrimitives.ReadUInt16LittleEndian(source))),
-            4 => (BleUuidType.Uuid32, CreateGuid(BinaryPrimitives.ReadUInt32LittleEndian(source))),
-            16 => (BleUuidType.Uuid128, new Guid(source)),
-            _ => throw new ArgumentOutOfRangeException(
-                nameof(source),
-                $"Provided invalid number of bytes for uuid: {source.Length}"
-            ),
-        };
-        Type = tuple.Type;
-        Value = tuple.Guid;
-    }
 
     /// <summary> Parses a string of suitable format and returns a ble uuid </summary>
     /// <param name="s">The string to parse.</param>
@@ -255,13 +236,47 @@ public sealed record BleUuid
         }
     }
 
+    /// <summary> Reads a BleUuid from a readonly span of bytes </summary>
+    /// <param name="source"> The source to be read. </param>
+    /// <returns> The bleUuid with type depending on length of source </returns>
+    /// <exception cref="ArgumentOutOfRangeException"> The source is not of length 2,4,16 </exception>
+    [Pure]
+    public static BleUuid Read(ReadOnlySpan<byte> source)
+    {
+        if (!TryRead(source, out BleUuid? uuid))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(source),
+                $"Provided invalid number of bytes for uuid: {source.Length}"
+            );
+        }
+        return uuid;
+    }
+
+    /// <summary> Tries to initialize a BleUuid from a readonly span of bytes </summary>
+    /// <param name="source"> The source to be read. </param>
+    /// <param name="uuid"> The bleUuid with type depending on length of source </param>
+    /// <returns> True, if reading was successful; False, otherwise </returns>
+    public static bool TryRead(ReadOnlySpan<byte> source, [NotNullWhen(true)] out BleUuid? uuid)
+    {
+        uuid = source.Length switch
+        {
+            2 => FromUInt16(BinaryPrimitives.ReadUInt16LittleEndian(source)),
+            4 => FromUInt32(BinaryPrimitives.ReadUInt32LittleEndian(source)),
+            16 => FromGuid(new Guid(source), inferType: false),
+            _ => null,
+        };
+        return uuid is not null;
+    }
+
     /// <summary> Write the ble uuid to a byte array </summary>
     /// <returns> The byte array. Length depends on the <see cref="Type"/> </returns>
+    [Pure]
     public byte[] ToByteArray()
     {
         var buffer = new byte[(int)Type];
         if (!TryWriteBytes(buffer))
-            throw new Exception("Ble uuid is corrupt. Could not write bytes");
+            throw new UnreachableException("Ble uuid is corrupt. Could not write bytes");
         return buffer;
     }
 
@@ -273,17 +288,20 @@ public sealed record BleUuid
     /// <summary> Creates a new BleUuid from a 16-bit integer </summary>
     /// <param name="value"> The 16-bit uuid </param>
     /// <returns> The bleUuid with type <see cref="BleUuidType.Uuid16"/> </returns>
+    [Pure]
     public static BleUuid FromUInt16(ushort value) => new(BleUuidType.Uuid16, CreateGuid(value));
 
     /// <summary> Creates a new BleUuid from a 32-bit integer </summary>
     /// <param name="value"> The 16-bit uuid </param>
     /// <returns> The bleUuid with type <see cref="BleUuidType.Uuid32"/> </returns>
+    [Pure]
     public static BleUuid FromUInt32(uint value) => new(BleUuidType.Uuid32, CreateGuid(value));
 
     /// <summary> Creates a newBleUuid from a guid </summary>
     /// <param name="value"> The uuid </param>
     /// <param name="inferType"> If true, the <see cref="BleUuidType"/> will be inferred from the given <paramref name="value"/>; <see cref="BleUuidType.Uuid128"/> otherwise </param>
     /// <returns> The bleUuid with type <see cref="BleUuidType.Uuid128"/> or inferred type </returns>
+    [Pure]
     public static BleUuid FromGuid(Guid value, bool inferType = false) =>
         new(inferType ? InferType(value) : BleUuidType.Uuid128, value);
 }
