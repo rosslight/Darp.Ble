@@ -110,5 +110,5 @@ public readonly record struct AttFindInformationRsp() : IAttPdu, IBinaryObject<A
     public bool TryWriteBigEndian(Span<byte> destination, out int bytesWritten) => throw new NotSupportedException();
 
     private static int GetInformationDataElementSize(AttFindInformationFormat format) =>
-        2 + format is AttFindInformationFormat.HandleAnd16BitUuid ? 2 : 16;
+        2 + (format is AttFindInformationFormat.HandleAnd16BitUuid ? 2 : 16);
 }
