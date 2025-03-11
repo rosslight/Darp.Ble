@@ -129,16 +129,16 @@ public static class GattDescriptorExtensions
 
         characteristic.AddDescriptor(
             DescriptorDeclaration.ClientCharacteristicConfiguration,
-            onRead: peer => peer is null ? [0x00, 0x00] : dictionary[peer],
-            onWrite: (peer, bytes) =>
+            onRead: peer => peer is not null && dictionary.TryGetValue(peer, out byte[]? value) ? value : [0x00, 0x00],
+            onWrite: (peer, value) =>
             {
-                if (peer is null || bytes.Length != 2)
+                if (peer is null || value.Length != 2)
                     return GattProtocolStatus.OutOfRange;
                 dictionary.AddOrUpdate(
                     peer,
-                    static (_, newBytes) => newBytes,
-                    static (_, _, newBytes) => newBytes,
-                    bytes
+                    static (_, newValue) => newValue,
+                    static (_, _, newValue) => newValue,
+                    value
                 );
                 return GattProtocolStatus.Success;
             }
