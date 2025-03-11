@@ -26,14 +26,15 @@ new ServiceCollection()
     .AddBleManager(builder => builder.AddHciHost());
 
 BleManager manager = new BleManagerBuilder()
-    // .AddHciHost()
+    .AddHciHost()
     // .AddWinRT()
     .AddMock(factory =>
         factory.AddPeripheral(
             async device =>
             {
                 await device.SetRandomAddressAsync(new BleAddress(BleAddressType.RandomStatic, (UInt48)0xF1F2F3F4F5F6));
-                await device.Peripheral.AddDeviceInformationServiceAsync(
+                GattClientGattService gattService = device.Peripheral.AddGattService();
+                device.Peripheral.AddDeviceInformationService(
                     manufacturerName: "rosslight GmbH",
                     modelNumber: "ABC-123",
                     serialNumber: "12345",
@@ -56,19 +57,58 @@ BleManager manager = new BleManagerBuilder()
     .SetLogger(new SerilogLoggerFactory(logger))
     .CreateManager();
 
-IBleDevice x = manager.EnumerateDevices().First();
-await x.InitializeAsync();
+IBleDevice device = manager.EnumerateDevices().First();
+await device.InitializeAsync();
+
+await device.SetRandomAddressAsync(new BleAddress(BleAddressType.RandomStatic, (UInt48)0xF2F2F3F4F5F6));
+device.Peripheral.AddGattService();
+device.Peripheral.AddDeviceInformationService(
+    manufacturerName: "rosslight GmbH",
+    modelNumber: "ABC-123",
+    serialNumber: "12345",
+    hardwareRevision: "0.1.2",
+    //firmwareRevision: "1.2.3",
+    softwareRevision: "2.3.4",
+    systemId: new SystemId(0x1234, 0x123456)
+);
+device.Peripheral.AddEchoService(0x1234, 0x1235, 0x1236, Observable.Return);
+GattClientBatteryService batteryService = device.Peripheral.AddBatteryService();
+_ = Observable
+    .Interval(TimeSpan.FromMilliseconds(500))
+    .SelectMany(async _ =>
+    {
+        int random = Random.Shared.Next(byte.MinValue, byte.MaxValue);
+        return await batteryService.BatteryLevel.NotifyAllAsync((byte)random);
+    })
+    .Subscribe();
+
+await device.Broadcaster.StartAdvertisingAsync(
+    type: BleEventType.AdvInd,
+    data: AdvertisingData
+        .Empty.WithCompleteLocalName(device.Name!)
+        .WithCompleteListOfServiceUuids(device.Peripheral.Services.Select(x => x.Uuid).ToArray()),
+    interval: ScanTiming.Ms1000,
+    autoRestart: true
+);
+
+await Task.Delay(10000000);
+
+return;
 
 //await x.SetRandomAddressAsync(new BleAddress(BleAddressType.RandomStatic, (UInt48)0xF0F1F2F3F4F5));
-IGattServerPeer connectedPeer = await ConnectToDevice(x);
-
+IGattServerPeer connectedPeer = await device
+    .Observer.RefCount()
+    .WhereConnectable()
+    .WhereService(BatteryServiceContract.BatteryService.Uuid)
+    .ConnectToPeripheral()
+    .FirstAsync();
 var service = await connectedPeer.DiscoverDeviceInformationServiceAsync();
 string name = await service.ManufacturerName!.ReadAsync();
 string number = await service.ModelNumber!.ReadAsync();
 var systemId = await service.SystemId!.ReadAsync();
 return;
 
-await Advertise(x);
+await Advertise(device);
 
 return;
 async Task<IGattServerPeer> ConnectToDevice(IBleDevice device)
@@ -76,13 +116,13 @@ async Task<IGattServerPeer> ConnectToDevice(IBleDevice device)
     var advertisement = await device.Observer.RefCount().WhereConnectable().FirstAsync();
     return await advertisement.ConnectToPeripheral().FirstAsync();
 }
-await Observe(x);
+await Observe(device);
 var counter = 0;
 for (int ii = 0; ii < 1000; ii++)
 {
     try
     {
-        var peer1 = await ConnectToDevice(x);
+        var peer1 = await ConnectToDevice(device);
         await peer1.DisposeAsync();
         Console.WriteLine($"Asd {ii}");
     }
@@ -135,7 +175,7 @@ async Task AdvertiseApi(IBleDevice device)
             EnergyExpended = (ushort)Math.Min((DateTimeOffset.UtcNow - resetPoint).TotalSeconds, 0xFFFF),
             IsSensorContactDetected = i % 2 is 0,
         });
-    var xx = await device.Peripheral.AddDeviceInformationServiceAsync(
+    var xx = device.Peripheral.AddDeviceInformationService(
         manufacturerName: "rosslight GmbH",
         modelNumber: "ABC-123",
         serialNumber: "12345",
@@ -144,13 +184,14 @@ async Task AdvertiseApi(IBleDevice device)
         softwareRevision: "2.3.4",
         systemId: new SystemId(0x1234, 0x123456)
     );
-    var heartRateService = await device.Peripheral.AddHeartRateServiceAsync(
+    var heartRateService = device.Peripheral.AddHeartRateService(
         HeartRateBodySensorLocation.Wrist,
         () => resetPoint = DateTimeOffset.UtcNow
     );
-    heartRateService.BodySensorLocation?.UpdateValue(HeartRateBodySensorLocation.Chest);
+    if (heartRateService.BodySensorLocation is not null)
+        await heartRateService.BodySensorLocation.UpdateValueAsync(HeartRateBodySensorLocation.Chest);
 
-    await device.Peripheral.AddEchoServiceAsync(serviceUuid: 0x1234, writeUuid: 0x1234, notifyUuid: 0x1234);
+    device.Peripheral.AddEchoService(serviceUuid: 0x1234, writeUuid: 0x1234, notifyUuid: 0x1234);
 
     await device.Broadcaster.StartAdvertisingAsync(
         BleEventType.Connectable,
@@ -162,13 +203,13 @@ async Task AdvertiseApi(IBleDevice device)
         ),
         interval: ScanTiming.Ms100
     );
-    IAdvertisingSet advertisingSet = await x.Broadcaster.CreateAdvertisingSetAsync();
-    IAdvertisingSet advertisingSet2 = await x.Broadcaster.CreateAdvertisingSetAsync();
+    IAdvertisingSet advertisingSet = await device.Broadcaster.CreateAdvertisingSetAsync();
+    IAdvertisingSet advertisingSet2 = await device.Broadcaster.CreateAdvertisingSetAsync();
     // IPeriodicAdvertisingSet periodicAdvertisingSet = await x.Broadcaster.CreatePeriodicAdvertisingSetAsync();
 
     IAsyncDisposable disp = await advertisingSet.StartAdvertisingAsync();
 
-    IAsyncDisposable disposable = await x.Broadcaster.StartAdvertisingAsync(advertisingSet, advertisingSet2);
+    IAsyncDisposable disposable = await device.Broadcaster.StartAdvertisingAsync(advertisingSet, advertisingSet2);
     await device.Broadcaster.StartAdvertisingAsync(
         type: BleEventType.AdvInd,
         peerAddress: new BleAddress((UInt48)0x1234),
