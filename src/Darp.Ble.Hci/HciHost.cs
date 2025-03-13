@@ -155,6 +155,11 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ILogger<HciH
     {
         switch (metaEvt.SubEventCode)
         {
+            case HciLeMetaSubEventType.HCI_LE_Connection_Update_Complete
+                when HciLeConnectionUpdateCompleteEvent.TryReadLittleEndian(metaEvt.Parameters.Span, out var evt):
+                PublishMessage(evt);
+                OnHciConnectionCompleteEvent(evt);
+                break;
             case HciLeMetaSubEventType.HCI_LE_Data_Length_Change
                 when HciLeDataLengthChangeEvent.TryReadLittleEndian(metaEvt.Parameters.Span, out var evt):
                 PublishMessage(evt);
@@ -176,6 +181,15 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ILogger<HciH
                 Logger.LogTrace("Unknown LE Meta event {SubEventCode}", metaEvt.SubEventCode);
                 break;
         }
+    }
+
+    private void OnHciConnectionCompleteEvent(HciLeConnectionUpdateCompleteEvent updateCompleteEvent)
+    {
+        Logger.LogTrace(
+            "Connection parameters updated for connection {Handle} {Event}",
+            updateCompleteEvent.ConnectionHandle,
+            updateCompleteEvent
+        );
     }
 
     /// <summary> Register a connection </summary>
