@@ -1,7 +1,9 @@
 using System.Buffers.Binary;
 using System.Collections;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Text;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Att;
 using Darp.Ble.Gatt.Client;
@@ -262,7 +264,39 @@ internal sealed class GattDatabaseCollection : IGattDatabase
 
             using var cmac = new AesCmac("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0"u8);
             byte[] hashBuffer = cmac.Encrypt(CollectionsMarshal.AsSpan(bytesToHash));
-            return BinaryPrimitives.ReadUInt16LittleEndian(hashBuffer);
+            return BinaryPrimitives.ReadUInt128LittleEndian(hashBuffer);
         }
+    }
+
+    /// <inheritdoc />
+    public override string ToString()
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine(CultureInfo.InvariantCulture, $"GattDatabase 0x{CreateHash():X16}");
+        foreach (GattDatabaseEntry entry in this)
+        {
+            if (entry.AttributeType == PrimaryServiceType || entry.AttributeType == SecondaryServiceType)
+            {
+                // Read the value.
+                ValueTask<byte[]> readTask = entry.ReadValueAsync(clientPeer: null);
+                byte[] value = readTask.IsCompletedSuccessfully
+                    ? readTask.Result
+                    : readTask.AsTask().GetAwaiter().GetResult();
+                BleUuid uuid = BleUuid.Read(value);
+                builder.AppendLine(CultureInfo.InvariantCulture, $"[{entry.Handle:X4}] Service {uuid}");
+            }
+            else if (entry.AttributeType == CharacteristicType)
+            {
+                builder.AppendLine(CultureInfo.InvariantCulture, $"[{entry.Handle:X4}]   Characteristic");
+            }
+            else
+            {
+                builder.AppendLine(
+                    CultureInfo.InvariantCulture,
+                    $"[{entry.Handle:X4}]     Attribute {entry.AttributeType}"
+                );
+            }
+        }
+        return builder.ToString();
     }
 }

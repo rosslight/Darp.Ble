@@ -216,18 +216,15 @@ public sealed class GattDatabaseTests
         service1Entry.Handle.Should().Be(0x0001);
         service1Entry.AttributeType.Should().Be(GattDatabaseCollection.PrimaryServiceType);
         service1Entry.IsGroupType.Should().BeTrue();
-        service1Entry.TryGetGroupEndHandle(out ushort firstGroupHandle).Should().BeTrue();
-        firstGroupHandle.Should().Be(0x0007);
+        service1Entry.TryGetGroupEndHandle(out ushort service1EndHandle).Should().BeTrue();
+        service1EndHandle.Should().Be(0x0007);
 
         GattDatabaseEntry characteristic1ValueEntry = database.Skip(2).First();
         characteristic1ValueEntry.Handle.Should().Be(0x0003);
         characteristic1ValueEntry.AttributeType.Should().Be(BleUuid.FromUInt16(0x2234));
         characteristic1ValueEntry.IsGroupType.Should().BeFalse();
-        characteristic1ValueEntry
-            .TryGetGroupEndHandle(out ushort characteristic1ValueEndGroupHandle)
-            .Should()
-            .BeFalse();
-        characteristic1ValueEndGroupHandle.Should().Be(0x0003);
+        characteristic1ValueEntry.TryGetGroupEndHandle(out ushort characteristic1ValueEndHandle).Should().BeFalse();
+        characteristic1ValueEndHandle.Should().Be(0x0003);
 
         GattDatabaseEntry characteristic2Entry = database.Skip(5).First();
         characteristic2Entry.Handle.Should().Be(0x0006);
@@ -235,6 +232,20 @@ public sealed class GattDatabaseTests
         characteristic2Entry.IsGroupType.Should().BeTrue();
         characteristic2Entry.TryGetGroupEndHandle(out ushort sixthGroupHandle).Should().BeTrue();
         sixthGroupHandle.Should().Be(0x0007);
+
+        GattDatabaseEntry service2Entry = database.Skip(7).First();
+        service2Entry.Handle.Should().Be(0x0008);
+        service2Entry.AttributeType.Should().Be(GattDatabaseCollection.PrimaryServiceType);
+        service2Entry.IsGroupType.Should().BeTrue();
+        service2Entry.TryGetGroupEndHandle(out ushort service2EndHandle).Should().BeTrue();
+        service2EndHandle.Should().Be(0x000B);
+
+        GattDatabaseEntry characteristic3Entry = database.Skip(8).First();
+        characteristic3Entry.Handle.Should().Be(0x0009);
+        characteristic3Entry.AttributeType.Should().Be(GattDatabaseCollection.CharacteristicType);
+        characteristic3Entry.IsGroupType.Should().BeTrue();
+        characteristic3Entry.TryGetGroupEndHandle(out ushort characteristic3EndHandle).Should().BeTrue();
+        characteristic3EndHandle.Should().Be(0x000B);
     }
 
     [Fact]

@@ -27,12 +27,12 @@ public interface IGattAttribute
     PermissionCheckStatus CheckWritePermissions(IGattClientPeer clientPeer);
 
     /// <summary> Get the current value of the characteristic </summary>
-    /// <param name="clientPeer"> The client peer to get the value for. If null, all subscribed clients will be taken into account </param>
+    /// <param name="clientPeer"> The client peer to get the value for </param>
     /// <returns> The current value </returns>
     ValueTask<byte[]> ReadValueAsync(IGattClientPeer? clientPeer);
 
     /// <summary> Update the characteristic value </summary>
-    /// <param name="clientPeer"> The client peer to update the value for. If null, all subscribed clients will be taken into account </param>
+    /// <param name="clientPeer"> The client peer to update the value for </param>
     /// <param name="value"> The value to update with </param>
     /// <returns> The status of the update operation </returns>
     ValueTask<GattProtocolStatus> WriteValueAsync(IGattClientPeer? clientPeer, byte[] value);

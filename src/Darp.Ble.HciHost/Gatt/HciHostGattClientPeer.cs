@@ -48,6 +48,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
         _assemblerSubscription = _assembler.Subscribe(this);
         _hostSubscription = Host.Subscribe(this);
         Host.RegisterConnection(this);
+        Logger.LogInformation("Database: {Database}", peripheral.GattDatabase.ToString());
     }
 
     [MessageSink]
@@ -137,29 +138,29 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
     }
 
     [MessageSink]
-    private async void HandleGroupTypeRequest(AttReadByGroupTypeReq<ushort> attribute)
+    private async void HandleGroupTypeRequest(AttReadByGroupTypeReq<ushort> request)
     {
-        if (attribute.AttributeGroupType is not (0x2800 or 0x2801))
+        if (request.AttributeGroupType is not (0x2800 or 0x2801))
         {
             var response = new AttErrorRsp
             {
-                RequestOpCode = attribute.OpCode,
-                Handle = attribute.StartingHandle,
+                RequestOpCode = request.OpCode,
+                Handle = request.StartingHandle,
                 ErrorCode = AttErrorCode.UnsupportedGroupTypeError,
             };
             this.EnqueueGattPacket(response);
         }
 
-        BleUuid attributeType = BleUuid.FromUInt16(attribute.AttributeGroupType);
+        BleUuid attributeType = BleUuid.FromUInt16(request.AttributeGroupType);
 
         int availablePduSpace = AttMtu - 2;
         int maxNumberOfAttributes = availablePduSpace / 6;
         AttGroupTypeData<ushort>[] serviceAttributes = await Peripheral
-            .GattDatabase.GetServiceEntries(attribute.StartingHandle)
+            .GattDatabase.GetServiceEntries(request.StartingHandle)
             .Where(x =>
                 x.AttributeType.Equals(attributeType)
-                && x.Handle >= attribute.StartingHandle
-                && x.Handle <= attribute.EndingHandle
+                && x.Handle >= request.StartingHandle
+                && x.Handle <= request.EndingHandle
             )
             .ToAsyncEnumerable()
             .SelectAwait(async x => new AttGroupTypeData<ushort>
@@ -175,8 +176,8 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
         {
             var response = new AttErrorRsp
             {
-                RequestOpCode = attribute.OpCode,
-                Handle = attribute.StartingHandle,
+                RequestOpCode = request.OpCode,
+                Handle = request.StartingHandle,
                 ErrorCode = AttErrorCode.AttributeNotFoundError,
             };
             this.EnqueueGattPacket(response);
