@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Darp.Ble.HciHost;
 
 /// <summary> Extension methods for easier addition of a <see cref="HciHostBleFactory"/> </summary>
@@ -10,6 +12,7 @@ public static class HciHostBleFactoryExtensions
     /// <param name="builder"> An optional callback to configure the factory </param>
     /// <param name="configure"> The callback to configure the factory </param>
     /// <returns> The <paramref name="builder"/> </returns>
+    [RequiresDynamicCode("Some dependencies might require dynamic code")]
     public static BleManagerBuilder AddHciHost(
         this BleManagerBuilder builder,
         Action<HciHostBleFactory>? configure = null

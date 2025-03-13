@@ -1,7 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace Darp.Ble.HciHost.Usb;
 
+/// <summary> Helpers when working with USB ports </summary>
 public static class UsbPort
 {
     /// <summary>
@@ -9,11 +11,12 @@ public static class UsbPort
     /// </summary>
     /// <returns>An enumerable with information about connected usb ports</returns>
     /// <exception cref="NotSupportedException">This code was executed on an operating system which is not supported</exception>
+    [RequiresDynamicCode("Some dependencies might require dynamic code")]
     public static IEnumerable<UsbPortInfo> GetPortInfos()
     {
-        if (OperatingSystem.IsOSPlatform("windows"))
+        if (OperatingSystem.IsWindows())
             return UsbPortWin.GetPortInfos();
-        if (OperatingSystem.IsOSPlatform("linux"))
+        if (OperatingSystem.IsLinux())
             return UsbPortLinux.GetPortInfos();
         throw new NotSupportedException($"Invalid operating system {RuntimeInformation.OSDescription}");
     }
@@ -26,9 +29,9 @@ public static class UsbPort
     /// <exception cref="NotSupportedException">This code was executed on an operating system which is not supported</exception>
     public static bool IsOpen(string portName)
     {
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        if (OperatingSystem.IsWindows())
             return UsbPortWin.IsOpen(portName);
-        if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+        if (OperatingSystem.IsLinux())
             return UsbPortLinux.IsOpen(portName);
         throw new NotSupportedException($"Invalid operating system {RuntimeInformation.OSDescription}");
     }

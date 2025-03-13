@@ -2,6 +2,9 @@
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <LangVersion>13</LangVersion>
+    <IsAotCompatible>true</IsAotCompatible>
+    <!-- Required for DLL import source generation -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Darp.Ble.Hci\Darp.Ble.Hci.csproj" />

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Management;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -8,6 +9,7 @@ namespace Darp.Ble.HciHost.Usb;
 
 internal static partial class UsbPortWin
 {
+    [RequiresDynamicCode("Uses System.Management under the hood. This does not work then trimmed")]
     [SupportedOSPlatform("windows")]
     public static IEnumerable<UsbPortInfo> GetPortInfos()
     {
@@ -87,8 +89,9 @@ internal static partial class UsbPortWin
     }
 
     [SupportedOSPlatform("windows")]
-    [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
-    private static extern SafeFileHandle CreateFile(
+    [LibraryImport("kernel32.dll", StringMarshalling = StringMarshalling.Utf16, SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.UserDirectories)]
+    private static partial SafeFileHandle CreateFile(
         string lpFileName,
         int dwDesiredAccess,
         int dwShareMode,
