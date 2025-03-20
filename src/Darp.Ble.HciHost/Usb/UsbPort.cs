@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
 namespace Darp.Ble.HciHost.Usb;
@@ -11,7 +10,6 @@ public static class UsbPort
     /// </summary>
     /// <returns>An enumerable with information about connected usb ports</returns>
     /// <exception cref="NotSupportedException">This code was executed on an operating system which is not supported</exception>
-    [RequiresDynamicCode("Some dependencies might require dynamic code")]
     public static IEnumerable<UsbPortInfo> GetPortInfos()
     {
         if (OperatingSystem.IsWindows())

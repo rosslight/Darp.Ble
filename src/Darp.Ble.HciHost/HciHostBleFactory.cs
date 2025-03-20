@@ -1,4 +1,3 @@
-using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data;
 using Darp.Ble.HciHost.Usb;
 using Microsoft.Extensions.Logging;
@@ -6,7 +5,6 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.HciHost;
 
 /// <summary> A factory searching for all available hci devices </summary>
-[RequiresDynamicCode("Some dependencies might require dynamic code")]
 public sealed class HciHostBleFactory : IBleFactory
 {
     /// <summary> The random address of the device </summary>
