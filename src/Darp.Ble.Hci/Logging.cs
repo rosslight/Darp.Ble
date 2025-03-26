@@ -1,12 +1,35 @@
-using Darp.BinaryObjects;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Hci.Package;
-using Darp.Ble.Hci.Payload;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci;
 
+[SuppressMessage("ReSharper", "ExplicitCallerInfoArgument")]
 internal static partial class Logging
 {
+    private static readonly ActivitySource HciActivity = new(HciLoggingStrings.ActivityName);
+    private static readonly ActivitySource HciTracingActivity = new(HciLoggingStrings.ActivityTracingName);
+
+    public static Activity? StartInitializeHciHostActivity()
+    {
+        return HciActivity.StartActivity("Initialize HciHost");
+    }
+
+    public static Activity? StartCommandResponseActivity(HciOpCode commandOpCode)
+    {
+        Activity? activity = HciActivity.StartActivity("Query command {Name}");
+        activity?.SetTag("Name", commandOpCode.ToString().ToUpperInvariant());
+        return activity;
+    }
+
+    public static Activity? StartSendCommandActivity(HciOpCode commandOpCode)
+    {
+        Activity? activity = HciTracingActivity.StartActivity("Enqueue command {Name}");
+        activity?.SetTag("Name", commandOpCode.ToString().ToUpperInvariant());
+        return activity;
+    }
+
     [LoggerMessage(Level = LogLevel.Trace, Message = "Enqueueing packet {@Packet}")]
     public static partial void LogEnqueuePacket(this ILogger logger, IHciPacket packet);
 
@@ -64,38 +87,4 @@ internal static partial class Logging
         Message = "H4Transport: Received unknown hci packet of type 0x{Type:X2}. Reading remaining buffer ..."
     )]
     public static partial void LogPacketReceivingUnknownPacket(this ILogger logger, byte type);
-
-    [LoggerMessage(
-        Level = LogLevel.Trace,
-        Message = "HciHost: Query {@Command} from client completed successfully: Received {EventCode} {@Packet}"
-    )]
-    public static partial void LogQueryCompleted(
-        this ILogger logger,
-        IBinaryWritable command,
-        HciEventCode eventCode,
-        object packet
-    );
-
-    [LoggerMessage(
-        Level = LogLevel.Error,
-        Message = "HciHost: Query {@Command} from client failed because of {Reason}"
-    )]
-    public static partial void LogQueryWithException(
-        this ILogger logger,
-        Exception ex,
-        IBinaryWritable command,
-        string reason
-    );
-
-    [LoggerMessage(
-        Level = LogLevel.Trace,
-        Message = "HciHost: Query {@Command} from client started with status {Status}: Received {EventCode} {@Packet}"
-    )]
-    public static partial void LogQueryStarted(
-        this ILogger logger,
-        IBinaryWritable command,
-        HciCommandStatus status,
-        HciEventCode eventCode,
-        HciEventPacket packet
-    );
 }

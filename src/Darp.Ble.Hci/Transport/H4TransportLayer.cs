@@ -56,7 +56,6 @@ public sealed class H4TransportLayer : ITransportLayer
                     continue;
                 }
 
-                _logger?.LogPacketSending(packet, bytes);
                 await _serialPort.BaseStream.WriteAsync(bytes, _cancelToken).ConfigureAwait(false);
             }
         }
@@ -103,11 +102,6 @@ public sealed class H4TransportLayer : ITransportLayer
             );
             return;
         }
-        _logger.LogTrace(
-            "Received packet of type {Type} and Pdu 0x{Pdu:X}",
-            TPacket.Type,
-            buffer[..(TPacket.HeaderLength + payloadLength)].ToArray()
-        );
         onReceived(new HciPacket(TPacket.Type, buffer[..(TPacket.HeaderLength + payloadLength)].Span));
     }
 

@@ -24,7 +24,6 @@ internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger<HciHost
         var scanInterval = (ushort)scanParameters.ScanInterval;
         var scanWindow = (ushort)scanParameters.ScanWindow;
         var interval = (ushort)connectionParameters.ConnectionInterval;
-        TimeSpan timeout = TimeSpan.FromSeconds(10);
         return Observable.FromAsync<GattServerPeer>(async token =>
         {
             var packet = new HciLeExtendedCreateConnectionV1Command
@@ -46,7 +45,7 @@ internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger<HciHost
             HciLeEnhancedConnectionCompleteV1Event completeEvent = await _host
                 .QueryCommandAsync<HciLeExtendedCreateConnectionV1Command, HciLeEnhancedConnectionCompleteV1Event>(
                     packet,
-                    timeout,
+                    timeout: TimeSpan.FromSeconds(10),
                     cancellationToken: token
                 )
                 .ConfigureAwait(false);

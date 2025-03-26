@@ -27,12 +27,7 @@ public static class CommandPackageExtensions
     {
         ArgumentNullException.ThrowIfNull(hciHost);
         HciCommandCompleteEvent response = await hciHost
-            .QueryCommandAsync<TCommand, HciCommandCompleteEvent>(
-                command,
-                timeout: timeout,
-                evt => evt.CommandOpCode == TCommand.OpCode,
-                cancellationToken
-            )
+            .QueryCommandAsync<TCommand, HciCommandCompleteEvent>(command, timeout: timeout, cancellationToken)
             .ConfigureAwait(false);
         if (!TResponse.TryReadLittleEndian(response.ReturnParameters.Span, out TResponse? parameters))
             throw new HciException("Command failed because response could not be read");
@@ -80,7 +75,7 @@ public static class CommandPackageExtensions
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <typeparam name="TCommand"> The type of the command </typeparam>
     /// <returns> The command status </returns>
-    public static Task<HciCommandStatus> QueryCommandStatusAsync<TCommand>(
+    public static async Task<HciCommandStatus> QueryCommandStatusAsync<TCommand>(
         this HciHost hciHost,
         TCommand command = default,
         CancellationToken cancellationToken = default
@@ -88,6 +83,13 @@ public static class CommandPackageExtensions
         where TCommand : unmanaged, IHciCommand
     {
         ArgumentNullException.ThrowIfNull(hciHost);
-        return hciHost.QueryCommandStatusAsync(command, cancellationToken: cancellationToken);
+        HciCommandStatusEvent response = await hciHost
+            .QueryCommandAsync<TCommand, HciCommandStatusEvent>(
+                command,
+                timeout: null,
+                cancellationToken: cancellationToken
+            )
+            .ConfigureAwait(false);
+        return response.Status;
     }
 }
