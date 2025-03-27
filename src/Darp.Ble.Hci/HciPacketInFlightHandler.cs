@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Darp.Ble.Hci.Exceptions;
 using Darp.Ble.Hci.Package;
@@ -8,8 +9,12 @@ using Darp.Utils.Messaging;
 
 namespace Darp.Ble.Hci;
 
-internal sealed partial class HciPacketInFlightHandler<TCommand, TResponse> : IDisposable
+internal sealed partial class HciPacketInFlightHandler<
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TCommand,
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TResponse
+> : IDisposable
     where TCommand : IHciCommand
+    where TResponse : IHciEvent<TResponse>
 {
     private readonly HciHost _host;
     private readonly SemaphoreSlim _packetInFlightSemaphore;
@@ -27,13 +32,17 @@ internal sealed partial class HciPacketInFlightHandler<TCommand, TResponse> : ID
         _waitingForCommandStatus = typeof(TResponse) == typeof(HciCommandStatusEvent);
     }
 
-    public async Task<TResponse> QueryAsync(TCommand command, TimeSpan timeout, CancellationToken cancellationToken)
+    public async Task<(TResponse Response, Activity? Activity)> QueryAsync(
+        TCommand command,
+        TimeSpan timeout,
+        CancellationToken cancellationToken
+    )
     {
         DateTimeOffset startTime = DateTimeOffset.UtcNow;
-        Activity? activity = Logging.StartCommandResponseActivity(TCommand.OpCode);
+        Activity? activity = Logging.StartCommandResponseActivity(command, _host.Address);
         try
         {
-            Activity? sendActivity = Logging.StartSendCommandActivity(TCommand.OpCode);
+            Activity? sendActivity = Logging.StartSendCommandActivity(TCommand.OpCode, _host.Address);
             try
             {
                 await _packetInFlightSemaphore.WaitAsync(timeout, cancellationToken).ConfigureAwait(false);
@@ -48,25 +57,38 @@ internal sealed partial class HciPacketInFlightHandler<TCommand, TResponse> : ID
             }
             finally
             {
-                sendActivity?.SetStatus(ActivityStatusCode.Ok);
                 sendActivity?.Dispose();
             }
-            TimeSpan waitTime = DateTimeOffset.UtcNow - startTime;
-            TimeSpan timeoutAfterWait = timeout > waitTime ? timeout - waitTime : TimeSpan.Zero;
-            TResponse result = await _completionSource
-                .Task.WaitAsync(timeoutAfterWait, cancellationToken)
-                .ConfigureAwait(false);
-            return result;
+
+            Activity? receiveActivity = Logging.StartWaitForEventActivity(TResponse.EventCode, _host.Address);
+            try
+            {
+                TimeSpan waitTime = DateTimeOffset.UtcNow - startTime;
+                TimeSpan timeoutAfterWait = timeout > waitTime ? timeout - waitTime : TimeSpan.Zero;
+                TResponse result = await _completionSource
+                    .Task.WaitAsync(timeoutAfterWait, cancellationToken)
+                    .ConfigureAwait(false);
+                activity?.SetTag("Response.OpCode", $"{TResponse.EventCode.ToString().ToUpperInvariant()}_EVENT");
+                activity?.SetDeconstructedTags("Response", result, orderEntries: true);
+                return (result, activity);
+            }
+            catch (Exception e)
+            {
+                receiveActivity?.AddException(e);
+                receiveActivity?.SetStatus(ActivityStatusCode.Error, e.Message);
+                throw;
+            }
+            finally
+            {
+                receiveActivity?.Dispose();
+            }
         }
         catch (Exception e)
         {
             activity?.AddException(e);
             activity?.SetStatus(ActivityStatusCode.Error, e.Message);
-            throw;
-        }
-        finally
-        {
             activity?.Dispose();
+            throw;
         }
     }
 

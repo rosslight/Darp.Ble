@@ -7,6 +7,7 @@ using Darp.Ble.Hci.Payload.Result;
 using Darp.Ble.Hci.Transport;
 using Darp.Ble.Implementation;
 using Microsoft.Extensions.Logging;
+using UInt48 = Darp.Ble.Data.UInt48;
 
 namespace Darp.Ble.HciHost;
 
@@ -21,13 +22,14 @@ internal sealed class HciHostBleDevice(
     public Hci.HciHost Host { get; } =
         new(
             new H4TransportLayer(port, logger: loggerFactory.CreateLogger<H4TransportLayer>()),
+            randomAddress ?? BleAddress.NewRandomStaticAddress().Value,
             logger: loggerFactory.CreateLogger<Hci.HciHost>()
         );
 
     public override string Name { get; } = name;
     public override AppearanceValues Appearance => AppearanceValues.Unknown;
 
-    public BleAddress RandomAddress { get; private set; } = randomAddress ?? BleAddress.NewRandomStaticAddress();
+    public BleAddress RandomAddress => new(BleAddressType.RandomStatic, (UInt48)Host.Address);
 
     /// <inheritdoc />
     protected override async Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
@@ -58,13 +60,8 @@ internal sealed class HciHostBleDevice(
         CancellationToken cancellationToken
     )
     {
-        var addressValue = randomAddress.Value.ToUInt64();
-        await Host.QueryCommandCompletionAsync<HciLeSetRandomAddressCommand, HciLeSetRandomAddressResult>(
-                new HciLeSetRandomAddressCommand(addressValue),
-                cancellationToken: cancellationToken
-            )
+        await Host.SetRandomAddressAsync(randomAddress.Value, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
-        RandomAddress = randomAddress;
     }
 
     /// <inheritdoc />

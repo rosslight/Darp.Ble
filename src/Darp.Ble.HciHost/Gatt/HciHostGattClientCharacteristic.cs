@@ -24,7 +24,10 @@ internal sealed class HciHostGattClientCharacteristic(
         byte[] cccdValue = await cccd.ReadValueAsync(clientPeer).ConfigureAwait(false);
         if ((cccdValue[0] & 0b1) != 0b1)
             return;
-        hciHostClientPeer.EnqueueGattPacket(new AttHandleValueNtf { Handle = Value.Handle, Value = value });
+        hciHostClientPeer.EnqueueGattPacket(
+            new AttHandleValueNtf { Handle = Value.Handle, Value = value },
+            activity: null
+        );
     }
 
     protected override Task IndicateAsyncCore(

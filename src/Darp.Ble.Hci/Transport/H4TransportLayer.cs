@@ -87,21 +87,6 @@ public sealed class H4TransportLayer : ITransportLayer
         // Read Payload
         Memory<byte> payloadBuffer = buffer[TPacket.HeaderLength..(TPacket.HeaderLength + payloadLength)];
         await _serialPort.BaseStream.ReadExactlyAsync(payloadBuffer, _cancelToken).ConfigureAwait(false);
-        if (
-            !TPacket.TryReadLittleEndian(
-                buffer[..(TPacket.HeaderLength + payloadLength)].Span,
-                out TPacket? packet,
-                out _
-            )
-        )
-        {
-            _logger.LogPacketReceivingDecodingFailed(
-                (byte)TPacket.Type,
-                buffer[..(TPacket.HeaderLength + payloadLength)].ToArray(),
-                typeof(TPacket).Name
-            );
-            return;
-        }
         onReceived(new HciPacket(TPacket.Type, buffer[..(TPacket.HeaderLength + payloadLength)].Span));
     }
 

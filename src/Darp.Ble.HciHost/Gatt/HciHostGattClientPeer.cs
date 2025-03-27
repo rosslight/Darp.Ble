@@ -1,8 +1,8 @@
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Runtime.InteropServices;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Att;
 using Darp.Ble.Gatt.Client;
@@ -63,9 +63,11 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
     [MessageSink]
     private void HandleExchangeMtuRequest(AttExchangeMtuReq request)
     {
+        using Activity? activity = Logging.StartHandleAttRequestActivity(request, this);
+
         ushort newMtu = Math.Min(request.ClientRxMtu, MaxMtu);
         AttMtu = newMtu;
-        this.EnqueueGattPacket(new AttExchangeMtuRsp { ServerRxMtu = newMtu });
+        this.EnqueueGattPacket(new AttExchangeMtuRsp { ServerRxMtu = newMtu }, activity);
     }
 
     [MessageSink]
@@ -89,6 +91,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
     [MessageSink]
     private async void HandleTypeRequest(AttReadByTypeReq<ushort> request)
     {
+        using Activity? activity = Logging.StartHandleAttRequestActivity(request, this);
         BleUuid attributeType = BleUuid.FromUInt16(request.AttributeType);
         int availablePduSpace = AttMtu - 2;
         int maxAttributeSize = Math.Min(AttMtu - 4, 253);
@@ -120,13 +123,12 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
         }
         if (attributes.Count == 0)
         {
-            var response = new AttErrorRsp
-            {
-                RequestOpCode = request.OpCode,
-                Handle = request.StartingHandle,
-                ErrorCode = AttErrorCode.AttributeNotFoundError,
-            };
-            this.EnqueueGattPacket(response);
+            this.EnqueueGattErrorResponse(
+                request.OpCode,
+                request.StartingHandle,
+                AttErrorCode.AttributeNotFoundError,
+                activity
+            );
             return;
         }
         var rsp = new AttReadByTypeRsp
@@ -134,21 +136,21 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             Length = (byte)attributes[0].GetByteCount(),
             AttributeDataList = attributes.ToArray(),
         };
-        this.EnqueueGattPacket(rsp);
+        this.EnqueueGattPacket(rsp, activity);
     }
 
     [MessageSink]
     private async void HandleGroupTypeRequest(AttReadByGroupTypeReq<ushort> request)
     {
+        using Activity? activity = Logging.StartHandleAttRequestActivity(request, this);
         if (request.AttributeGroupType is not (0x2800 or 0x2801))
         {
-            var response = new AttErrorRsp
-            {
-                RequestOpCode = request.OpCode,
-                Handle = request.StartingHandle,
-                ErrorCode = AttErrorCode.UnsupportedGroupTypeError,
-            };
-            this.EnqueueGattPacket(response);
+            this.EnqueueGattErrorResponse(
+                request.OpCode,
+                request.StartingHandle,
+                AttErrorCode.UnsupportedGroupTypeError,
+                activity
+            );
         }
 
         BleUuid attributeType = BleUuid.FromUInt16(request.AttributeGroupType);
@@ -174,13 +176,12 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             .ConfigureAwait(false);
         if (serviceAttributes.Length == 0)
         {
-            var response = new AttErrorRsp
-            {
-                RequestOpCode = request.OpCode,
-                Handle = request.StartingHandle,
-                ErrorCode = AttErrorCode.AttributeNotFoundError,
-            };
-            this.EnqueueGattPacket(response);
+            this.EnqueueGattErrorResponse(
+                request.OpCode,
+                request.StartingHandle,
+                AttErrorCode.AttributeNotFoundError,
+                activity
+            );
             return;
         }
         var rsp = new AttReadByGroupTypeRsp<ushort>
@@ -188,12 +189,14 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             Length = (byte)serviceAttributes[0].GetByteCount(),
             AttributeDataList = serviceAttributes,
         };
-        this.EnqueueGattPacket(rsp);
+        this.EnqueueGattPacket(rsp, activity);
     }
 
     [MessageSink]
     private async void HandleGroupTypeRequest(AttFindByTypeValueReq request)
     {
+        using Activity? activity = Logging.StartHandleAttRequestActivity(request, this);
+
         BleUuid requestedAttributeType = BleUuid.FromUInt16(request.AttributeType);
         ReadOnlyMemory<byte> requestedAttributeValue = request.AttributeValue;
         int availablePduSpace = AttMtu - 2;
@@ -224,32 +227,43 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
         }
         if (handlesInformation.Count == 0)
         {
-            var response = new AttErrorRsp
-            {
-                RequestOpCode = request.OpCode,
-                Handle = request.StartingHandle,
-                ErrorCode = AttErrorCode.AttributeNotFoundError,
-            };
-            this.EnqueueGattPacket(response);
+            this.EnqueueGattErrorResponse(
+                request.OpCode,
+                request.StartingHandle,
+                AttErrorCode.AttributeNotFoundError,
+                activity
+            );
             return;
         }
         var rsp = new AttFindByTypeValueRsp { HandlesInformationList = handlesInformation.ToArray() };
-        this.EnqueueGattPacket(rsp);
+        this.EnqueueGattPacket(rsp, activity);
     }
 
     [MessageSink]
     private async void HandleReadRequest(AttReadReq request)
     {
+        using Activity? activity = Logging.StartHandleAttRequestActivity(request, this);
+
         if (!Peripheral.GattDatabase.TryGetAttribute(request.AttributeHandle, out IGattAttribute? attribute))
         {
-            this.EnqueueGattErrorResponse(request.OpCode, request.AttributeHandle, AttErrorCode.InvalidHandle);
+            this.EnqueueGattErrorResponse(
+                request.OpCode,
+                request.AttributeHandle,
+                AttErrorCode.InvalidHandle,
+                activity
+            );
             return;
         }
 
         PermissionCheckStatus permissionStatus = attribute.CheckReadPermissions(this);
         if (permissionStatus is not PermissionCheckStatus.Success)
         {
-            this.EnqueueGattErrorResponse(request.OpCode, request.AttributeHandle, (AttErrorCode)permissionStatus);
+            this.EnqueueGattErrorResponse(
+                request.OpCode,
+                request.AttributeHandle,
+                (AttErrorCode)permissionStatus,
+                activity
+            );
             return;
         }
 
@@ -258,21 +272,28 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             byte[] value = await attribute.ReadValueAsync(this).ConfigureAwait(false);
             int length = Math.Min(AttMtu - 1, value.Length);
             var rsp = new AttReadRsp { AttributeValue = value.AsMemory()[..length] };
-            this.EnqueueGattPacket(rsp);
+            this.EnqueueGattPacket(rsp, activity);
         }
         catch (Exception e)
         {
-            Logger.LogWarning(e, "Read failed because of {Message}", e.Message);
-            this.EnqueueGattErrorResponse(request.OpCode, request.AttributeHandle, AttErrorCode.UnlikelyErrorError);
+            this.EnqueueGattErrorResponse(
+                e,
+                request.OpCode,
+                request.AttributeHandle,
+                AttErrorCode.UnlikelyErrorError,
+                activity
+            );
         }
     }
 
     [MessageSink]
     private void HandleFindInformationRequest(AttFindInformationReq request)
     {
+        using Activity? activity = Logging.StartHandleAttRequestActivity(request, this);
+
         if (request.StartingHandle is 0 || request.EndingHandle < request.StartingHandle)
         {
-            this.EnqueueGattErrorResponse(request.OpCode, request.StartingHandle, AttErrorCode.InvalidHandle);
+            this.EnqueueGattErrorResponse(request.OpCode, request.StartingHandle, AttErrorCode.InvalidHandle, activity);
             return;
         }
 
@@ -301,7 +322,12 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
         }
         if (attributes.Count == 0 || attributeLength is null)
         {
-            this.EnqueueGattErrorResponse(request.OpCode, request.StartingHandle, AttErrorCode.AttributeNotFoundError);
+            this.EnqueueGattErrorResponse(
+                request.OpCode,
+                request.StartingHandle,
+                AttErrorCode.AttributeNotFoundError,
+                activity
+            );
             return;
         }
         var response = new AttFindInformationRsp
@@ -311,15 +337,22 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
                 : AttFindInformationFormat.HandleAnd128BitUuid,
             InformationData = attributes.ToArray(),
         };
-        this.EnqueueGattPacket(response);
+        this.EnqueueGattPacket(response, activity);
     }
 
     [MessageSink]
     private async void HandleAttWriteRequest(AttWriteReq request)
     {
+        using Activity? activity = Logging.StartHandleAttRequestActivity(request, this);
+
         if (!Peripheral.GattDatabase.TryGetAttribute(request.AttributeHandle, out IGattAttribute? attribute))
         {
-            this.EnqueueGattErrorResponse(request.OpCode, request.AttributeHandle, AttErrorCode.InvalidHandle);
+            this.EnqueueGattErrorResponse(
+                request.OpCode,
+                request.AttributeHandle,
+                AttErrorCode.InvalidHandle,
+                activity
+            );
             return;
         }
         if (request.AttributeValue.Length > GattMaxAttributeValueSize)
@@ -327,7 +360,8 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             this.EnqueueGattErrorResponse(
                 request.OpCode,
                 request.AttributeHandle,
-                AttErrorCode.InvalidAttributeLengthError
+                AttErrorCode.InvalidAttributeLengthError,
+                activity
             );
             return;
         }
@@ -335,7 +369,12 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
         PermissionCheckStatus permissionStatus = attribute.CheckWritePermissions(this);
         if (permissionStatus is not PermissionCheckStatus.Success)
         {
-            this.EnqueueGattErrorResponse(request.OpCode, request.AttributeHandle, (AttErrorCode)permissionStatus);
+            this.EnqueueGattErrorResponse(
+                request.OpCode,
+                request.AttributeHandle,
+                (AttErrorCode)permissionStatus,
+                activity
+            );
             return;
         }
 
@@ -346,17 +385,22 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
                 .ConfigureAwait(false);
             if (status is not GattProtocolStatus.Success)
             {
-                this.EnqueueGattErrorResponse(request.OpCode, request.AttributeHandle, (AttErrorCode)status);
+                this.EnqueueGattErrorResponse(request.OpCode, request.AttributeHandle, (AttErrorCode)status, activity);
                 return;
             }
         }
         catch (Exception e)
         {
-            Logger.LogWarning(e, "Write failed because of {Message}", e.Message);
-            this.EnqueueGattErrorResponse(request.OpCode, request.AttributeHandle, AttErrorCode.UnlikelyErrorError);
+            this.EnqueueGattErrorResponse(
+                e,
+                request.OpCode,
+                request.AttributeHandle,
+                AttErrorCode.UnlikelyErrorError,
+                activity
+            );
             return;
         }
-        this.EnqueueGattPacket(new AttWriteRsp());
+        this.EnqueueGattPacket(new AttWriteRsp(), activity);
     }
 
     public override bool IsConnected => !_disconnectedBehavior.Value;

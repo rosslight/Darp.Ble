@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using Darp.BinaryObjects;
 
@@ -45,4 +46,7 @@ public readonly partial struct UInt48(byte byte0, byte byte1, byte byte2, byte b
     /// <param name="value"> The uint48 </param>
     /// <returns> The ulong </returns>
     public static implicit operator ulong(UInt48 value) => value.ToUInt64();
+
+    /// <inheritdoc />
+    public override string ToString() => ToUInt64().ToString(CultureInfo.InvariantCulture);
 }

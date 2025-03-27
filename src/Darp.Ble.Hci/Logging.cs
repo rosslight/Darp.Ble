@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Hci.Package;
+using Darp.Ble.Hci.Payload;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci;
@@ -9,24 +10,44 @@ namespace Darp.Ble.Hci;
 internal static partial class Logging
 {
     private static readonly ActivitySource HciActivity = new(HciLoggingStrings.ActivityName);
-    private static readonly ActivitySource HciTracingActivity = new(HciLoggingStrings.ActivityTracingName);
+    private static readonly ActivitySource HciTracingActivity = new(HciLoggingStrings.TracingActivityName);
 
     public static Activity? StartInitializeHciHostActivity()
     {
         return HciActivity.StartActivity("Initialize HciHost");
     }
 
-    public static Activity? StartCommandResponseActivity(HciOpCode commandOpCode)
+    public static Activity? StartCommandResponseActivity<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TCommand
+    >(TCommand command, ulong deviceAddress)
+        where TCommand : IHciCommand
     {
         Activity? activity = HciActivity.StartActivity("Query command {Name}");
-        activity?.SetTag("Name", commandOpCode.ToString().ToUpperInvariant());
+        if (activity is null)
+            return activity;
+
+        string commandName = TCommand.OpCode.ToString().ToUpperInvariant();
+        activity.SetTag("Name", commandName);
+        activity.SetTag("DeviceAddress", $"{deviceAddress:X12}");
+
+        activity.SetDeconstructedTags("Request", command, orderEntries: true);
+        activity.SetTag("Request.OpCode", $"{commandName}_COMMAND");
         return activity;
     }
 
-    public static Activity? StartSendCommandActivity(HciOpCode commandOpCode)
+    public static Activity? StartSendCommandActivity(HciOpCode commandOpCode, ulong deviceAddress)
     {
         Activity? activity = HciTracingActivity.StartActivity("Enqueue command {Name}");
         activity?.SetTag("Name", commandOpCode.ToString().ToUpperInvariant());
+        activity?.SetTag("DeviceAddress", $"{deviceAddress:X12}");
+        return activity;
+    }
+
+    public static Activity? StartWaitForEventActivity(HciEventCode eventCode, ulong deviceAddress)
+    {
+        Activity? activity = HciTracingActivity.StartActivity("Wait for event {Name}");
+        activity?.SetTag("Name", eventCode.ToString().ToUpperInvariant());
+        activity?.SetTag("DeviceAddress", $"{deviceAddress:X12}");
         return activity;
     }
 

@@ -1,10 +1,12 @@
 using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.AssignedNumbers;
+using Darp.Ble.Hci.Exceptions;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Att;
@@ -47,12 +49,19 @@ public readonly partial struct HciPacketEvent
 /// <param name="transportLayer"> The transport layer </param>
 /// <param name="logger"> An optional logger </param>
 [MessageSource]
-public sealed partial class HciHost(ITransportLayer transportLayer, ILogger<HciHost> logger) : IDisposable
+public sealed partial class HciHost(ITransportLayer transportLayer, ulong randomAddress, ILogger<HciHost> logger)
+    : IDisposable
 {
     private readonly ITransportLayer _transportLayer = transportLayer;
     internal ILogger Logger { get; } = logger;
     private AclPacketQueue? _aclPacketQueue;
+
+    /// <summary> The ACL Packet queue </summary>
     public IAclPacketQueue AclPacketQueue => _aclPacketQueue ?? throw new Exception("Not initialized yet");
+
+    /// <summary> The random address </summary>
+    public ulong Address { get; private set; } = randomAddress;
+
     private readonly ConcurrentDictionary<ushort, IAclConnection> _connections = [];
     private readonly SemaphoreSlim _packetInFlightSemaphore = new(1);
 
@@ -60,10 +69,10 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ILogger<HciH
     /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
+        _transportLayer.Initialize(OnReceivedPacket);
         Activity? activity = Logging.StartInitializeHciHostActivity();
         try
         {
-            _transportLayer.Initialize(OnReceivedPacket);
             // Reset the controller
             await this.QueryCommandCompletionAsync<HciResetCommand, HciResetResult>(cancellationToken)
                 .ConfigureAwait(false);
@@ -218,7 +227,7 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ILogger<HciH
     /// <param name="packet"> The packet to be enqueued </param>
     internal void EnqueuePacket(IHciPacket packet)
     {
-        Logger.LogEnqueuePacket(packet);
+        //Logger.LogEnqueuePacket(packet);
         _transportLayer.Enqueue(packet);
     }
 
@@ -229,17 +238,62 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ILogger<HciH
     /// <typeparam name="TCommand"> The type of the command </typeparam>
     /// <typeparam name="TEvent"> The type of the event packet </typeparam>
     /// <returns> The parameters of the response packet </returns>
-    public async Task<TEvent> QueryCommandAsync<TCommand, TEvent>(
-        TCommand command,
-        TimeSpan? timeout,
-        CancellationToken cancellationToken
-    )
+    public async Task<TEvent> QueryCommandAsync<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TCommand,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TEvent
+    >(TCommand command, TimeSpan? timeout, CancellationToken cancellationToken)
         where TCommand : IHciCommand
         where TEvent : IHciEvent<TEvent>
     {
-        using var handler = new HciPacketInFlightHandler<TCommand, TEvent>(this, _packetInFlightSemaphore);
         timeout ??= TimeSpan.FromSeconds(5);
-        return await handler.QueryAsync(command, timeout.Value, cancellationToken).ConfigureAwait(false);
+        using var handler = new HciPacketInFlightHandler<TCommand, TEvent>(this, _packetInFlightSemaphore);
+        (TEvent response, Activity? activity) = await handler
+            .QueryAsync(command, timeout.Value, cancellationToken)
+            .ConfigureAwait(false);
+        activity?.Dispose();
+        return response;
+    }
+
+    /// <summary> Query a command expecting a <see cref="HciCommandCompleteEvent{TParameters}"/> </summary>
+    /// <param name="command"> The command to be sent </param>
+    /// <param name="timeout"> The timeout waiting for the response </param>
+    /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
+    /// <typeparam name="TCommand"> The type of the command </typeparam>
+    /// <typeparam name="TResponse"> The type of the parameters of the response packet </typeparam>
+    /// <returns> The parameters of the response packet </returns>
+    public async Task<TResponse> QueryCommandCompletionAsync<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TCommand,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TResponse
+    >(TCommand command, TimeSpan? timeout, CancellationToken cancellationToken)
+        where TCommand : IHciCommand
+        where TResponse : IBinaryReadable<TResponse>
+    {
+        timeout ??= TimeSpan.FromSeconds(5);
+        using var handler = new HciPacketInFlightHandler<TCommand, HciCommandCompleteEvent>(
+            this,
+            _packetInFlightSemaphore
+        );
+        (HciCommandCompleteEvent response, Activity? activity) = await handler
+            .QueryAsync(command, timeout.Value, cancellationToken)
+            .ConfigureAwait(false);
+        if (!TResponse.TryReadLittleEndian(response.ReturnParameters.Span, out TResponse? parameters))
+            throw new HciException("Command failed because response could not be read");
+        activity?.SetDeconstructedTags("Response.Parameters", parameters, orderEntries: true, writeRawBytes: false);
+        activity?.Dispose();
+        return parameters;
+    }
+
+    /// <summary> Writes a new, random address to the host </summary>
+    /// <param name="randomAddress"></param>
+    /// <param name="cancellationToken"></param>
+    public async Task SetRandomAddressAsync(ulong randomAddress, CancellationToken cancellationToken)
+    {
+        await this.QueryCommandCompletionAsync<HciLeSetRandomAddressCommand, HciLeSetRandomAddressResult>(
+                new HciLeSetRandomAddressCommand(randomAddress),
+                cancellationToken: cancellationToken
+            )
+            .ConfigureAwait(false);
+        Address = randomAddress;
     }
 
     /// <inheritdoc />
@@ -301,15 +355,34 @@ public static class L2CapHelpers
     /// <summary> Enqueue a new acl packet </summary>
     /// <param name="connection"> The connection to send this packet to </param>
     /// <param name="attPdu"> The packet to be enqueued </param>
-    public static void EnqueueGattPacket<TAttPdu>(this IAclConnection connection, TAttPdu attPdu)
+    /// <param name="activity"></param>
+    public static void EnqueueGattPacket<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TAttPdu
+    >(this IAclConnection connection, TAttPdu attPdu, Activity? activity)
         where TAttPdu : IAttPdu, IBinaryWritable
     {
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(connection);
         const ushort attCId = 0x0004;
         byte[] payloadBytes = attPdu.ToArrayLittleEndian();
-        connection.Logger.LogTrace("Enqueued att response {@Packet} on channel {CId}", attPdu, attCId);
+        activity?.SetDeconstructedTags("Response", attPdu, orderEntries: true);
+
+        using (connection.Logger.BeginDeconstructedScope(LogLevel.Trace, "Packet", attPdu, orderEntries: true))
+        {
+            connection.Logger.LogTrace("Enqueued att response {OpCode} on channel {CId}", attPdu.OpCode, attCId);
+        }
         connection.AclPacketQueue.EnqueueL2CapBasic(connection.ConnectionHandle, attCId, payloadBytes);
+    }
+
+    public static void EnqueueGattErrorResponse(
+        this IAclConnection connection,
+        AttOpCode requestOpCode,
+        ushort handle,
+        AttErrorCode errorCode,
+        Activity? activity
+    )
+    {
+        connection.EnqueueGattErrorResponse(exception: null, requestOpCode, handle, errorCode, activity);
     }
 
     /// <summary> Enqueue a new acl packet </summary>
@@ -317,18 +390,26 @@ public static class L2CapHelpers
     /// <param name="attPdu"> The packet to be enqueued </param>
     public static void EnqueueGattErrorResponse(
         this IAclConnection connection,
+        Exception? exception,
         AttOpCode requestOpCode,
         ushort handle,
-        AttErrorCode errorCode
+        AttErrorCode errorCode,
+        Activity? activity
     )
     {
+        activity?.SetStatus(ActivityStatusCode.Error);
+        exception = exception is null
+            ? new HciException($"Enqueued error response because of {errorCode}")
+            : new HciException($"Enqueued error response because of {exception.Message}", exception);
+        activity?.AddException(exception);
         connection.EnqueueGattPacket(
             new AttErrorRsp
             {
                 RequestOpCode = requestOpCode,
                 Handle = handle,
                 ErrorCode = errorCode,
-            }
+            },
+            activity
         );
     }
 
