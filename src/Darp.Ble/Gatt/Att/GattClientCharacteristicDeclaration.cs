@@ -37,7 +37,7 @@ public sealed class GattClientCharacteristicDeclaration(
         PermissionCheckStatus.WriteNotPermittedError;
 
     /// <inheritdoc />
-    public ValueTask<byte[]> ReadValueAsync(IGattClientPeer? clientPeer)
+    public ValueTask<byte[]> ReadValueAsync(IGattClientPeer? clientPeer, IServiceProvider _)
     {
         var bytes = new byte[3 + (int)_value.AttributeType.Type];
         Span<byte> buffer = bytes;
@@ -49,6 +49,9 @@ public sealed class GattClientCharacteristicDeclaration(
     }
 
     /// <inheritdoc />
-    public ValueTask<GattProtocolStatus> WriteValueAsync(IGattClientPeer? clientPeer, byte[] value) =>
-        ValueTask.FromResult(GattProtocolStatus.WriteRequestRejected);
+    public ValueTask<GattProtocolStatus> WriteValueAsync(
+        IGattClientPeer? clientPeer,
+        byte[] value,
+        IServiceProvider _
+    ) => ValueTask.FromResult(GattProtocolStatus.WriteRequestRejected);
 }

@@ -25,7 +25,7 @@ internal sealed class MockGattClientService(
             this,
             properties,
             value,
-            LoggerFactory.CreateLogger<MockGattClientCharacteristic>()
+            ServiceProvider.GetLogger<MockGattClientCharacteristic>()
         );
     }
 }

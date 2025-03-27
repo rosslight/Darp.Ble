@@ -50,7 +50,7 @@ internal sealed partial class HciHostBlePeripheral : BlePeripheral
                 this,
                 peerDeviceAddress,
                 connectionCompleteEvent.ConnectionHandle,
-                LoggerFactory.CreateLogger<HciHostGattClientPeer>()
+                ServiceProvider.GetLogger<HciHostGattClientPeer>()
             );
             OnConnectedCentral(peerDevice);
         }
@@ -62,7 +62,7 @@ internal sealed partial class HciHostBlePeripheral : BlePeripheral
             this,
             uuid,
             isPrimary ? GattServiceType.Primary : GattServiceType.Secondary,
-            LoggerFactory.CreateLogger<HciHostGattClientService>()
+            ServiceProvider.GetLogger<HciHostGattClientService>()
         );
     }
 

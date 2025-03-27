@@ -9,20 +9,21 @@ namespace Darp.Ble.Implementation;
 
 /// <inheritdoc />
 /// <param name="logger"> The logger </param>
-/// <param name="loggerFactory"> The logger factory </param>
-public abstract class BleDevice(ILoggerFactory loggerFactory, ILogger<BleDevice> logger) : IBleDevice
+/// <param name="serviceProvider"> The service provider </param>
+public abstract class BleDevice(IServiceProvider serviceProvider, ILogger<BleDevice> logger) : IBleDevice
 {
-    /// <summary> The logger </summary>
-    protected ILogger<BleDevice> Logger { get; } = logger;
-
-    /// <summary> The logger factory </summary>
-    public ILoggerFactory LoggerFactory { get; } = loggerFactory;
     private bool _isInitializing;
     private bool _isDisposing;
     private IBleObserver? _bleObserver;
     private IBleCentral? _bleCentral;
     private IBleBroadcaster? _bleBroadcaster;
     private IBlePeripheral? _blePeripheral;
+
+    /// <summary> The logger </summary>
+    protected ILogger<BleDevice> Logger { get; } = logger;
+
+    /// <summary> The logger factory </summary>
+    public IServiceProvider ServiceProvider { get; } = serviceProvider;
 
     /// <inheritdoc />
     public bool IsInitialized { get; private set; }

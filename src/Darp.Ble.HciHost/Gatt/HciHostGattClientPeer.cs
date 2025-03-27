@@ -44,7 +44,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
     {
         ConnectionHandle = connectionHandle;
         Peripheral = peripheral;
-        _assembler = new L2CapAssembler(Host, connectionHandle, LoggerFactory.CreateLogger<L2CapAssembler>());
+        _assembler = new L2CapAssembler(Host, connectionHandle, ServiceProvider.GetLogger<L2CapAssembler>());
         _assemblerSubscription = _assembler.Subscribe(this);
         _hostSubscription = Host.Subscribe(this);
         Host.RegisterConnection(this);
@@ -106,7 +106,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             )
         )
         {
-            ReadOnlyMemory<byte> value = await attribute.ReadValueAsync(this).ConfigureAwait(false);
+            ReadOnlyMemory<byte> value = await attribute.ReadValueAsync(this, ServiceProvider).ConfigureAwait(false);
             if (value.Length > maxAttributeSize)
             {
                 value = value[..maxAttributeSize];
@@ -167,7 +167,9 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             .ToAsyncEnumerable()
             .SelectAwait(async x => new AttGroupTypeData<ushort>
             {
-                Value = BinaryPrimitives.ReadUInt16LittleEndian(await x.ReadValueAsync(this).ConfigureAwait(false)),
+                Value = BinaryPrimitives.ReadUInt16LittleEndian(
+                    await x.ReadValueAsync(this, ServiceProvider).ConfigureAwait(false)
+                ),
                 Handle = x.Handle,
                 EndGroup = x.EndGroupHandle,
             })
@@ -210,7 +212,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             )
         )
         {
-            ReadOnlyMemory<byte> value = await attribute.ReadValueAsync(this).ConfigureAwait(false);
+            ReadOnlyMemory<byte> value = await attribute.ReadValueAsync(this, ServiceProvider).ConfigureAwait(false);
             if (!value.Span.SequenceEqual(requestedAttributeValue.Span))
                 continue;
             // Check if there is enough space to hold this attribute
@@ -269,7 +271,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
 
         try
         {
-            byte[] value = await attribute.ReadValueAsync(this).ConfigureAwait(false);
+            byte[] value = await attribute.ReadValueAsync(this, ServiceProvider).ConfigureAwait(false);
             int length = Math.Min(AttMtu - 1, value.Length);
             var rsp = new AttReadRsp { AttributeValue = value.AsMemory()[..length] };
             this.EnqueueGattPacket(rsp, activity);
@@ -381,7 +383,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
         try
         {
             GattProtocolStatus status = await attribute
-                .WriteValueAsync(this, request.AttributeValue.ToArray())
+                .WriteValueAsync(this, request.AttributeValue.ToArray(), ServiceProvider)
                 .ConfigureAwait(false);
             if (status is not GattProtocolStatus.Success)
             {

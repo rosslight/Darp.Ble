@@ -1,5 +1,4 @@
 using System.Diagnostics.CodeAnalysis;
-using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
 
 namespace Darp.Ble.Gatt;

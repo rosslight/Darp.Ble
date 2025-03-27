@@ -35,8 +35,8 @@ public abstract class GattServerPeer : IGattServerPeer
     /// <summary> The logger </summary>
     protected ILogger<GattServerPeer> Logger { get; }
 
-    /// <summary> The logger factory </summary>
-    protected ILoggerFactory LoggerFactory => Central.Device.LoggerFactory;
+    /// <summary> The service provider </summary>
+    protected IServiceProvider ServiceProvider => Central.Device.ServiceProvider;
 
     /// <inheritdoc />
     public BleAddress Address { get; }

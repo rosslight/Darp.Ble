@@ -28,58 +28,82 @@ public interface IGattAttribute
 
     /// <summary> Get the current value of the characteristic </summary>
     /// <param name="clientPeer"> The client peer to get the value for </param>
+    /// <param name="serviceProvider"> The service provider to resolve objects from </param>
     /// <returns> The current value </returns>
-    ValueTask<byte[]> ReadValueAsync(IGattClientPeer? clientPeer);
+    ValueTask<byte[]> ReadValueAsync(IGattClientPeer? clientPeer, IServiceProvider serviceProvider);
 
     /// <summary> Update the characteristic value </summary>
     /// <param name="clientPeer"> The client peer to update the value for </param>
     /// <param name="value"> The value to update with </param>
+    /// <param name="serviceProvider"> The service provider to resolve objects from </param>
     /// <returns> The status of the update operation </returns>
-    ValueTask<GattProtocolStatus> WriteValueAsync(IGattClientPeer? clientPeer, byte[] value);
-
-    #region Delegate Defintions
-    /// <summary> Defines the callback when the value should be read from the characteristic </summary>
-    /// <param name="clientPeer"> The client who issued the read request. If null, the request was caused not caused by a remote client but by the darp ble stack </param>
-    /// <returns> A valueTask which holds the bytes of the characteristic value when completed </returns>
-    public delegate ValueTask<byte[]> OnReadAsyncCallback(IGattClientPeer? clientPeer);
-
-    /// <summary> Defines the callback when the value should be read from the characteristic </summary>
-    /// <param name="clientPeer"> The client who issued the read request. If null, the request was caused not caused by a remote client but by the darp ble stack </param>
-    /// <returns> A valueTask which holds the characteristic value when completed </returns>
-    public delegate ValueTask<T> OnReadAsyncCallback<T>(IGattClientPeer? clientPeer);
-
-    /// <summary> Defines the callback when the value should be read from the characteristic </summary>
-    /// <param name="clientPeer"> The client who issued the read request. If null, the request was caused not caused by a remote client but by the darp ble stack </param>
-    /// <param name="value"> The value to be written to the characteristic </param>
-    /// <returns> A valueTask which holds the status of the write operation when completed </returns>
-    public delegate ValueTask<GattProtocolStatus> OnWriteAsyncCallback(IGattClientPeer? clientPeer, byte[] value);
-
-    /// <summary> Defines the callback when the value should be read from the characteristic </summary>
-    /// <param name="clientPeer"> The client who issued the read request. If null, the request was caused not caused by a remote client but by the darp ble stack </param>
-    /// <param name="value"> The value to be written to the characteristic </param>
-    /// <returns> A valueTask which holds the status of the write operation when completed </returns>
-    public delegate ValueTask<GattProtocolStatus> OnWriteAsyncCallback<in T>(IGattClientPeer? clientPeer, T value);
-
-    /// <summary> Defines the callback when the value should be read from the characteristic </summary>
-    /// <param name="clientPeer"> The client who issued the read request. If null, the request was caused not caused by a remote client but by the darp ble stack </param>
-    /// <returns> The attribute value </returns>
-    public delegate byte[] OnReadCallback(IGattClientPeer? clientPeer);
-
-    /// <summary> Defines the callback when the value should be read from the characteristic </summary>
-    /// <param name="clientPeer"> The client who issued the read request. If null, the request was caused not caused by a remote client but by the darp ble stack </param>
-    /// <returns> The attribute value </returns>
-    public delegate T OnReadCallback<out T>(IGattClientPeer? clientPeer);
-
-    /// <summary> Defines the callback when the value should be read from the characteristic </summary>
-    /// <param name="clientPeer"> The client who issued the read request. If null, the request was caused not caused by a remote client but by the darp ble stack </param>
-    /// <param name="value"> The value to be written to the characteristic </param>
-    /// <returns> The status of the write operation </returns>
-    public delegate GattProtocolStatus OnWriteCallback(IGattClientPeer? clientPeer, byte[] value);
-
-    /// <summary> Defines the callback when the value should be read from the characteristic </summary>
-    /// <param name="clientPeer"> The client who issued the read request. If null, the request was caused not caused by a remote client but by the darp ble stack </param>
-    /// <param name="value"> The value to be written to the characteristic </param>
-    /// <returns> The status of the write operation </returns>
-    public delegate GattProtocolStatus OnWriteCallback<in T>(IGattClientPeer? clientPeer, T value);
-    #endregion
+    ValueTask<GattProtocolStatus> WriteValueAsync(
+        IGattClientPeer? clientPeer,
+        byte[] value,
+        IServiceProvider serviceProvider
+    );
 }
+
+#region Delegate Defintions
+#pragma warning disable MA0048
+
+/// <summary> Defines the callback when the value should be read from the characteristic </summary>
+/// <param name="clientPeer"> The client who issued the read request. If null, the request was caused not caused by a remote client but by the darp ble stack </param>
+/// <returns> A valueTask which holds the bytes of the characteristic value when completed </returns>
+public delegate ValueTask<byte[]> OnReadAsyncCallback(IGattClientPeer? clientPeer, IServiceProvider serviceProvider);
+
+/// <summary> Defines the callback when the value should be read from the characteristic </summary>
+/// <param name="clientPeer"> The client who issued the read request. If null, the request was caused not caused by a remote client but by the darp ble stack </param>
+/// <returns> A valueTask which holds the characteristic value when completed </returns>
+public delegate ValueTask<T> OnReadAsyncCallback<T>(IGattClientPeer? clientPeer, IServiceProvider serviceProvider);
+
+/// <summary> Defines the callback when the value should be read from the characteristic </summary>
+/// <param name="clientPeer"> The client who issued the read request. If null, the request was caused not caused by a remote client but by the darp ble stack </param>
+/// <param name="value"> The value to be written to the characteristic </param>
+/// <returns> A valueTask which holds the status of the write operation when completed </returns>
+public delegate ValueTask<GattProtocolStatus> OnWriteAsyncCallback(
+    IGattClientPeer? clientPeer,
+    byte[] value,
+    IServiceProvider serviceProvider
+);
+
+/// <summary> Defines the callback when the value should be read from the characteristic </summary>
+/// <param name="clientPeer"> The client who issued the read request. If null, the request was caused not caused by a remote client but by the darp ble stack </param>
+/// <param name="value"> The value to be written to the characteristic </param>
+/// <returns> A valueTask which holds the status of the write operation when completed </returns>
+public delegate ValueTask<GattProtocolStatus> OnWriteAsyncCallback<in T>(
+    IGattClientPeer? clientPeer,
+    T value,
+    IServiceProvider serviceProvider
+);
+
+/// <summary> Defines the callback when the value should be read from the characteristic </summary>
+/// <param name="clientPeer"> The client who issued the read request. If null, the request was caused not caused by a remote client but by the darp ble stack </param>
+/// <returns> The attribute value </returns>
+public delegate byte[] OnReadCallback(IGattClientPeer? clientPeer, IServiceProvider serviceProvider);
+
+/// <summary> Defines the callback when the value should be read from the characteristic </summary>
+/// <param name="clientPeer"> The client who issued the read request. If null, the request was caused not caused by a remote client but by the darp ble stack </param>
+/// <returns> The attribute value </returns>
+public delegate T OnReadCallback<out T>(IGattClientPeer? clientPeer, IServiceProvider serviceProvider);
+
+/// <summary> Defines the callback when the value should be read from the characteristic </summary>
+/// <param name="clientPeer"> The client who issued the read request. If null, the request was caused not caused by a remote client but by the darp ble stack </param>
+/// <param name="value"> The value to be written to the characteristic </param>
+/// <returns> The status of the write operation </returns>
+public delegate GattProtocolStatus OnWriteCallback(
+    IGattClientPeer? clientPeer,
+    byte[] value,
+    IServiceProvider serviceProvider
+);
+
+/// <summary> Defines the callback when the value should be read from the characteristic </summary>
+/// <param name="clientPeer"> The client who issued the read request. If null, the request was caused not caused by a remote client but by the darp ble stack </param>
+/// <param name="value"> The value to be written to the characteristic </param>
+/// <returns> The status of the write operation </returns>
+public delegate GattProtocolStatus OnWriteCallback<in T>(
+    IGattClientPeer? clientPeer,
+    T value,
+    IServiceProvider serviceProvider
+);
+#endregion

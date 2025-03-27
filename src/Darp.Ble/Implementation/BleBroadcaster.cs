@@ -13,8 +13,8 @@ public abstract class BleBroadcaster(IBleDevice device, ILogger<BleBroadcaster> 
     /// <summary> The logger </summary>
     protected ILogger<BleBroadcaster> Logger { get; } = logger;
 
-    /// <summary> The logger factory </summary>
-    protected ILoggerFactory LoggerFactory => Device.LoggerFactory;
+    /// <summary> The service provider </summary>
+    protected IServiceProvider ServiceProvider => Device.ServiceProvider;
 
     public IReadOnlyCollection<IAdvertisingSet> AdvertisingSets => _advertisingSets.AsReadOnly();
 

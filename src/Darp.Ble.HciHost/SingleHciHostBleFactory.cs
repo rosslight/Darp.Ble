@@ -1,5 +1,4 @@
 using Darp.Ble.Data;
-using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost;
 
@@ -17,13 +16,13 @@ public sealed class SingleHciHostBleFactory(string portName) : IBleFactory
     public BleAddress? RandomAddress { get; set; }
 
     /// <inheritdoc />
-    public IEnumerable<IBleDevice> EnumerateDevices(ILoggerFactory loggerFactory)
+    public IEnumerable<IBleDevice> EnumerateDevices(IServiceProvider serviceProvider)
     {
         yield return new HciHostBleDevice(
             PortName,
             DeviceName ?? PortName,
             randomAddress: RandomAddress,
-            loggerFactory
+            serviceProvider
         );
     }
 }

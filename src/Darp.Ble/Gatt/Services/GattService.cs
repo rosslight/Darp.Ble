@@ -43,7 +43,7 @@ public static class GattServiceContract
         );
         GattTypedClientCharacteristic<UInt128, Read> databaseHashChar = service.AddCharacteristic(
             DatabaseHashCharacteristic,
-            onRead: _ => peripheral.GattDatabase.CreateHash()
+            onRead: (_, _) => peripheral.GattDatabase.CreateHash()
         );
 
         return new GattClientGattService(service)

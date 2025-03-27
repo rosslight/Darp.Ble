@@ -56,7 +56,7 @@ internal sealed class WinGattServerService(
                                     new WinGattServerCharacteristic(
                                         this,
                                         gattCharacteristic,
-                                        LoggerFactory.CreateLogger<WinGattServerCharacteristic>()
+                                        ServiceProvider.GetLogger<WinGattServerCharacteristic>()
                                     )
                                 );
                             }

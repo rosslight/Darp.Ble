@@ -15,8 +15,8 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
     /// <summary> The logger </summary>
     protected ILogger<BleObserver> Logger { get; } = logger;
 
-    /// <summary> The logger factory </summary>
-    protected ILoggerFactory LoggerFactory => Device.LoggerFactory;
+    /// <summary> The service provider </summary>
+    protected IServiceProvider ServiceProvider => Device.ServiceProvider;
 
     private readonly object _lockObject = new();
     private readonly List<IObserver<IGapAdvertisement>> _observers = [];

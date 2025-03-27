@@ -70,7 +70,7 @@ internal sealed class HciHostGattServerService(
                             characteristicUuid,
                             characteristicHandle,
                             properties,
-                            LoggerFactory.CreateLogger<HciHostGattServerCharacteristic>()
+                            ServiceProvider.GetLogger<HciHostGattServerCharacteristic>()
                         );
                         discoveredCharacteristics.Add(characteristic);
                         if (lastCharacteristic is not null)

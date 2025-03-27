@@ -1,14 +1,13 @@
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Implementation;
-using Microsoft.Extensions.Logging;
 using Windows.Devices.Bluetooth;
 
 namespace Darp.Ble.WinRT;
 
 /// <summary> Provides windows specific implementation of a ble device </summary>
-internal sealed class WinBleDevice(ILoggerFactory loggerFactory)
-    : BleDevice(loggerFactory, loggerFactory.CreateLogger<WinBleDevice>())
+internal sealed class WinBleDevice(IServiceProvider serviceProvider)
+    : BleDevice(serviceProvider, serviceProvider.GetLogger<WinBleDevice>())
 {
     protected override Task SetRandomAddressAsyncCore(BleAddress randomAddress, CancellationToken cancellationToken)
     {
@@ -21,13 +20,13 @@ internal sealed class WinBleDevice(ILoggerFactory loggerFactory)
         BluetoothAdapter adapter = await BluetoothAdapter.GetDefaultAsync();
         if (!adapter.IsLowEnergySupported)
             return InitializeResult.DeviceVersionUnsupported;
-        Observer = new WinBleObserver(this, LoggerFactory.CreateLogger<WinBleObserver>());
+        Observer = new WinBleObserver(this, ServiceProvider.GetLogger<WinBleObserver>());
         if (adapter.IsCentralRoleSupported)
-            Central = new WinBleCentral(this, LoggerFactory.CreateLogger<WinBleCentral>());
+            Central = new WinBleCentral(this, ServiceProvider.GetLogger<WinBleCentral>());
         if (adapter.IsAdvertisementOffloadSupported)
-            Broadcaster = new WinBleBroadcaster(this, LoggerFactory.CreateLogger<WinBleBroadcaster>());
+            Broadcaster = new WinBleBroadcaster(this, ServiceProvider.GetLogger<WinBleBroadcaster>());
         if (adapter.IsPeripheralRoleSupported)
-            Peripheral = new WinBlePeripheral(this, LoggerFactory.CreateLogger<WinBlePeripheral>());
+            Peripheral = new WinBlePeripheral(this, ServiceProvider.GetLogger<WinBlePeripheral>());
         return InitializeResult.Success;
     }
 

@@ -32,7 +32,7 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
             try
             {
                 IGattClientPeer peerClient = Service.Peripheral.GetOrRegisterSession(args.Session);
-                byte[] readValue = await Value.ReadValueAsync(peerClient).ConfigureAwait(false);
+                byte[] readValue = await Value.ReadValueAsync(peerClient, ServiceProvider).ConfigureAwait(false);
                 request.RespondWithValue(readValue.AsBuffer());
             }
             catch
@@ -49,7 +49,9 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
                 IGattClientPeer peerClient = Service.Peripheral.GetOrRegisterSession(args.Session);
                 DataReader reader = DataReader.FromBuffer(request.Value);
                 byte[] bytes = reader.DetachBuffer().ToArray();
-                GattProtocolStatus status = await Value.WriteValueAsync(peerClient, bytes).ConfigureAwait(false);
+                GattProtocolStatus status = await Value
+                    .WriteValueAsync(peerClient, bytes, ServiceProvider)
+                    .ConfigureAwait(false);
                 if (request.Option == GattWriteOption.WriteWithResponse)
                 {
                     if (status is GattProtocolStatus.Success)
@@ -81,7 +83,7 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
             try
             {
                 IGattClientPeer peerClient = Service.Peripheral.GetOrRegisterSession(args.Session);
-                byte[] readValue = await Value.ReadValueAsync(peerClient).ConfigureAwait(false);
+                byte[] readValue = await Value.ReadValueAsync(peerClient, ServiceProvider).ConfigureAwait(false);
                 request.RespondWithValue(readValue.AsBuffer());
             }
             catch
@@ -98,7 +100,9 @@ internal sealed class WinGattClientCharacteristic : GattClientCharacteristic
                 IGattClientPeer peerClient = Service.Peripheral.GetOrRegisterSession(args.Session);
                 DataReader reader = DataReader.FromBuffer(request.Value);
                 byte[] bytes = reader.DetachBuffer().ToArray();
-                GattProtocolStatus status = await Value.WriteValueAsync(peerClient, bytes).ConfigureAwait(false);
+                GattProtocolStatus status = await Value
+                    .WriteValueAsync(peerClient, bytes, ServiceProvider)
+                    .ConfigureAwait(false);
                 if (request.Option == GattWriteOption.WriteWithResponse)
                 {
                     if (status is GattProtocolStatus.Success)

@@ -32,8 +32,8 @@ public abstract class GattServerService(
     /// <summary> The logger </summary>
     public ILogger<GattServerService> Logger { get; } = logger;
 
-    /// <summary> The logger factory </summary>
-    protected ILoggerFactory LoggerFactory => Peer.Central.Device.LoggerFactory;
+    /// <summary> The service provider </summary>
+    protected IServiceProvider ServiceProvider => Peer.Central.Device.ServiceProvider;
 
     /// <inheritdoc />
     public async Task DiscoverCharacteristicsAsync(CancellationToken cancellationToken = default)

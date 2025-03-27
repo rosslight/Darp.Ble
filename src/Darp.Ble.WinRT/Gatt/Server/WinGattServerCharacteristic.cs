@@ -51,7 +51,7 @@ internal sealed class WinGattServerCharacteristic(
                             new WinGattServerDescriptor(
                                 this,
                                 descriptor,
-                                LoggerFactory.CreateLogger<WinGattServerDescriptor>()
+                                ServiceProvider.GetLogger<WinGattServerDescriptor>()
                             )
                         );
                     }

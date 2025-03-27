@@ -54,7 +54,7 @@ internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger<HciHost
                 _host,
                 completeEvent,
                 address,
-                LoggerFactory.CreateLogger<HciHostGattServerPeer>()
+                ServiceProvider.GetLogger<HciHostGattServerPeer>()
             );
         });
     }

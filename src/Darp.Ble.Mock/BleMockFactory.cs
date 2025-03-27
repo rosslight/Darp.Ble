@@ -1,5 +1,4 @@
 ﻿using System.Reactive.Concurrency;
-using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock;
 
@@ -52,13 +51,13 @@ public sealed class BleMockFactory : IBleFactory
     public IScheduler? Scheduler { get; set; }
 
     /// <inheritdoc />
-    public IEnumerable<IBleDevice> EnumerateDevices(ILoggerFactory loggerFactory)
+    public IEnumerable<IBleDevice> EnumerateDevices(IServiceProvider serviceProvider)
     {
         yield return new MockBleDevice(
             _configuredPeripherals,
             Name,
             Scheduler ?? System.Reactive.Concurrency.Scheduler.Default,
-            loggerFactory
+            serviceProvider
         );
     }
 }

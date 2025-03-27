@@ -69,7 +69,7 @@ internal sealed class WinGattServerPeer : GattServerPeer
                                     new WinGattServerService(
                                         this,
                                         gattDeviceService,
-                                        LoggerFactory.CreateLogger<WinGattServerService>()
+                                        ServiceProvider.GetLogger<WinGattServerService>()
                                     )
                                 );
                             }

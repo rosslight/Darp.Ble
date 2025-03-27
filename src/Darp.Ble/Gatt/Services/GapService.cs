@@ -40,11 +40,11 @@ public static class GapServiceContract
         // Add the characteristics
         GattTypedClientCharacteristic<string, Read> deviceNameCharacteristic = service.AddCharacteristic(
             DeviceNameCharacteristic,
-            onRead: _ => peripheral.Device.Name ?? "n/a"
+            onRead: (_, _) => peripheral.Device.Name ?? "n/a"
         );
         GattTypedClientCharacteristic<AppearanceValues, Read> appearanceCharacteristic = service.AddCharacteristic(
             AppearanceCharacteristic,
-            onRead: _ => peripheral.Device.Appearance
+            onRead: (_, _) => peripheral.Device.Appearance
         );
 
         return new GattClientGapService(service)

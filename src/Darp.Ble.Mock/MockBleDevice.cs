@@ -2,7 +2,6 @@ using System.Reactive.Concurrency;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Implementation;
-using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock;
 
@@ -11,8 +10,8 @@ internal sealed class MockBleDevice(
     IReadOnlyList<(BleMockFactory.InitializeAsync OnInitialize, string? Name)> deviceConfigurations,
     string name,
     IScheduler scheduler,
-    ILoggerFactory loggerFactory
-) : BleDevice(loggerFactory, loggerFactory.CreateLogger<MockBleDevice>())
+    IServiceProvider serviceProvider
+) : BleDevice(serviceProvider, serviceProvider.GetLogger<MockBleDevice>())
 {
     private readonly IReadOnlyList<(BleMockFactory.InitializeAsync OnInitialize, string? Name)> _deviceConfigurations =
         deviceConfigurations;
@@ -41,13 +40,13 @@ internal sealed class MockBleDevice(
     {
         foreach ((BleMockFactory.InitializeAsync onInitialize, string? peripheralName) in _deviceConfigurations)
         {
-            var device = new MockedBleDevice(peripheralName, onInitialize, Scheduler, LoggerFactory);
+            var device = new MockedBleDevice(peripheralName, onInitialize, Scheduler, ServiceProvider);
             await device.InitializeAsync(cancellationToken).ConfigureAwait(false);
             _mockedDevices.Add(device);
         }
 
-        Observer = new MockBleObserver(this, LoggerFactory.CreateLogger<MockBleObserver>());
-        Central = new MockBleCentral(this, LoggerFactory.CreateLogger<MockBleCentral>());
+        Observer = new MockBleObserver(this, ServiceProvider.GetLogger<MockBleObserver>());
+        Central = new MockBleCentral(this, ServiceProvider.GetLogger<MockBleCentral>());
         return InitializeResult.Success;
     }
 

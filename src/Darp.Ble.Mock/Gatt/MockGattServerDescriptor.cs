@@ -1,6 +1,5 @@
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Att;
-using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
 using Microsoft.Extensions.Logging;
 
@@ -19,12 +18,14 @@ internal sealed class MockGattServerDescriptor(
 
     public override async Task<byte[]> ReadAsync(CancellationToken cancellationToken = default)
     {
-        return await _mockDescriptor.ReadValueAsync(_clientPeer).ConfigureAwait(false);
+        return await _mockDescriptor.ReadValueAsync(_clientPeer, ServiceProvider).ConfigureAwait(false);
     }
 
     public override async Task<bool> WriteAsync(byte[] bytes, CancellationToken cancellationToken = default)
     {
-        GattProtocolStatus result = await _mockDescriptor.WriteValueAsync(_clientPeer, bytes).ConfigureAwait(false);
+        GattProtocolStatus result = await _mockDescriptor
+            .WriteValueAsync(_clientPeer, bytes, ServiceProvider)
+            .ConfigureAwait(false);
         return result is GattProtocolStatus.Success;
     }
 }

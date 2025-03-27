@@ -22,7 +22,7 @@ internal sealed class HciHostGattClientService(
             this,
             properties,
             value,
-            LoggerFactory.CreateLogger<HciHostGattClientCharacteristic>()
+            ServiceProvider.GetLogger<HciHostGattClientCharacteristic>()
         );
     }
 }

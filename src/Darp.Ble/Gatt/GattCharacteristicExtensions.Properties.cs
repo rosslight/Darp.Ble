@@ -13,7 +13,7 @@ public static partial class GattCharacteristicExtensions
     public static ValueTask<byte[]> GetValueAsync(this IGattClientCharacteristic<Write> characteristic)
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        return characteristic.Value.ReadValueAsync(clientPeer: null);
+        return characteristic.Value.ReadValueAsync(clientPeer: null, characteristic.ServiceProvider);
     }
 
     /// <summary> Get the value of the characteristic with a <see cref="Properties.Write"/> property by manually reading from it </summary>
@@ -24,7 +24,9 @@ public static partial class GattCharacteristicExtensions
         where T : unmanaged
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        byte[] bytes = await characteristic.Value.ReadValueAsync(clientPeer: null).ConfigureAwait(false);
+        byte[] bytes = await characteristic
+            .Value.ReadValueAsync(clientPeer: null, characteristic.ServiceProvider)
+            .ConfigureAwait(false);
         return characteristic.Decode(bytes);
     }
 
@@ -38,7 +40,7 @@ public static partial class GattCharacteristicExtensions
     )
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        return characteristic.Value.WriteValueAsync(clientPeer: null, value);
+        return characteristic.Value.WriteValueAsync(clientPeer: null, value, characteristic.ServiceProvider);
     }
 
     /// <summary> Update a specific value of the characteristic with a <see cref="Properties.Read"/> property by manually writing to it </summary>
@@ -52,7 +54,11 @@ public static partial class GattCharacteristicExtensions
         where T : unmanaged
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        return characteristic.Value.WriteValueAsync(clientPeer: null, characteristic.Encode(value));
+        return characteristic.Value.WriteValueAsync(
+            clientPeer: null,
+            characteristic.Encode(value),
+            characteristic.ServiceProvider
+        );
     }
 
     /// <summary> Notify a connected peer of a new value </summary>

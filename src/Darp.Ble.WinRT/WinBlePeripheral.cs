@@ -19,7 +19,7 @@ internal sealed class WinBlePeripheral(WinBleDevice device, ILogger<WinBlePeriph
         if (result.Error is not BluetoothError.Success)
             throw new Exception("Nope");
         GattServiceProvider provider = result.ServiceProvider;
-        return new WinGattClientService(this, provider, LoggerFactory.CreateLogger<WinGattClientService>());
+        return new WinGattClientService(this, provider, ServiceProvider.GetLogger<WinGattClientService>());
     }
 
     internal IGattClientPeer GetOrRegisterSession(GattSession gattSession)
@@ -29,7 +29,7 @@ internal sealed class WinBlePeripheral(WinBleDevice device, ILogger<WinBlePeriph
         {
             return clientPeer;
         }
-        clientPeer = new WinGattClientPeer(this, gattSession, address, LoggerFactory.CreateLogger<WinGattClientPeer>());
+        clientPeer = new WinGattClientPeer(this, gattSession, address, ServiceProvider.GetLogger<WinGattClientPeer>());
         OnConnectedCentral(clientPeer);
         return clientPeer;
     }

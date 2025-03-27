@@ -31,13 +31,14 @@ internal sealed class WinBleCentral(BleDevice device, ILogger<WinBleCentral> log
                             _ => BluetoothAddressType.Random,
                         }
                     )
-                    .AsTask(cancellationToken);
+                    .AsTask(cancellationToken)
+                    .ConfigureAwait(false);
                 if (winDev is null)
                 {
                     observer.OnError(new Exception("PeripheralConnection: Failed!"));
                     return;
                 }
-                observer.OnNext(new WinGattServerPeer(this, winDev, LoggerFactory.CreateLogger<WinGattServerPeer>()));
+                observer.OnNext(new WinGattServerPeer(this, winDev, ServiceProvider.GetLogger<WinGattServerPeer>()));
             }
         );
     }

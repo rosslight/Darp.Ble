@@ -24,8 +24,8 @@ public abstract class GattClientCharacteristic(
     /// <summary> The optional logger </summary>
     protected ILogger<GattClientCharacteristic> Logger { get; } = logger;
 
-    /// <summary> The logger factory </summary>
-    protected ILoggerFactory LoggerFactory => Service.Peripheral.Device.LoggerFactory;
+    /// <summary> The service provider </summary>
+    public IServiceProvider ServiceProvider => Service.Peripheral.Device.ServiceProvider;
 
     /// <inheritdoc />
     public IGattClientService Service { get; } = clientService;
@@ -90,7 +90,7 @@ public abstract class GattClientCharacteristic(
         {
             if (Value.CheckReadPermissions(clientPeer) is PermissionCheckStatus.Success)
             {
-                await Value.WriteValueAsync(clientPeer, value).ConfigureAwait(false);
+                await Value.WriteValueAsync(clientPeer, value, ServiceProvider).ConfigureAwait(false);
             }
             await NotifyAsyncCore(clientPeer, value).ConfigureAwait(false);
         }
@@ -100,7 +100,7 @@ public abstract class GattClientCharacteristic(
             {
                 if (Value.CheckReadPermissions(connectedPeer) is PermissionCheckStatus.Success)
                 {
-                    await Value.WriteValueAsync(clientPeer, value).ConfigureAwait(false);
+                    await Value.WriteValueAsync(clientPeer, value, ServiceProvider).ConfigureAwait(false);
                 }
                 await NotifyAsyncCore(connectedPeer, value).ConfigureAwait(false);
             }
@@ -114,7 +114,7 @@ public abstract class GattClientCharacteristic(
         {
             if (Value.CheckReadPermissions(clientPeer) is PermissionCheckStatus.Success)
             {
-                await Value.WriteValueAsync(clientPeer, value).ConfigureAwait(false);
+                await Value.WriteValueAsync(clientPeer, value, ServiceProvider).ConfigureAwait(false);
             }
             await IndicateAsyncCore(clientPeer, value, cancellationToken).ConfigureAwait(false);
         }
@@ -125,7 +125,7 @@ public abstract class GattClientCharacteristic(
                 cancellationToken.ThrowIfCancellationRequested();
                 if (Value.CheckReadPermissions(connectedPeer) is PermissionCheckStatus.Success)
                 {
-                    ValueTask<GattProtocolStatus> valueTask = Value.WriteValueAsync(clientPeer, value);
+                    ValueTask<GattProtocolStatus> valueTask = Value.WriteValueAsync(clientPeer, value, ServiceProvider);
                     if (!valueTask.IsCompletedSuccessfully)
                     {
                         _ = valueTask.AsTask();
@@ -170,6 +170,8 @@ public class GattClientCharacteristic<TProp1>(IGattClientCharacteristic characte
 {
     /// <summary> The underlying characteristic </summary>
     protected IGattClientCharacteristic Characteristic { get; } = characteristic;
+
+    IServiceProvider IGattClientCharacteristic.ServiceProvider => Characteristic.ServiceProvider;
 
     /// <inheritdoc />
     public IGattClientService Service => Characteristic.Service;

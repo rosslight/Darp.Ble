@@ -46,7 +46,7 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
         _assembler = new L2CapAssembler(
             Host,
             connectionCompleteEvent.ConnectionHandle,
-            LoggerFactory.CreateLogger<L2CapAssembler>()
+            ServiceProvider.GetLogger<L2CapAssembler>()
         );
         _assemblerSubscription = _assembler.Subscribe(this);
         _hostSubscription = Host.Subscribe(this);
@@ -106,7 +106,7 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
                                 handle,
                                 endGroup,
                                 this,
-                                LoggerFactory.CreateLogger<HciHostGattServerService>()
+                                ServiceProvider.GetLogger<HciHostGattServerService>()
                             )
                         );
                     }
@@ -154,7 +154,7 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
                         handle,
                         endGroup,
                         this,
-                        LoggerFactory.CreateLogger<HciHostGattServerService>()
+                        ServiceProvider.GetLogger<HciHostGattServerService>()
                     );
                 }
                 startingHandle = rsp.HandlesInformationList[^1].GroupEndHandle;

@@ -15,26 +15,22 @@ public sealed class FuncCharacteristicValue(
     BleUuid attributeType,
     IGattDatabase gattDatabase,
     Func<IGattClientPeer, PermissionCheckStatus> checkReadPermissions,
-    IGattAttribute.OnReadAsyncCallback? onRead,
+    OnReadAsyncCallback? onRead,
     Func<IGattClientPeer, PermissionCheckStatus> checkWritePermissions,
-    IGattAttribute.OnWriteAsyncCallback? onWrite
+    OnWriteAsyncCallback? onWrite
 ) : IGattCharacteristicValue
 {
     private readonly IGattDatabase _gattDatabase = gattDatabase;
     private readonly Func<IGattClientPeer, PermissionCheckStatus> _checkReadPermissions = checkReadPermissions;
-    private readonly IGattAttribute.OnReadAsyncCallback? _onRead = onRead;
+    private readonly OnReadAsyncCallback? _onRead = onRead;
     private readonly Func<IGattClientPeer, PermissionCheckStatus> _checkWritePermissions = checkWritePermissions;
-    private readonly IGattAttribute.OnWriteAsyncCallback? _onWrite = onWrite;
+    private readonly OnWriteAsyncCallback? _onWrite = onWrite;
 
     /// <summary> An attribute value which is readable </summary>
     /// <param name="attributeType"> The AttributeType </param>
     /// <param name="gattDatabase"> The Database this attribute will be added to </param>
     /// <param name="onRead"> A callback to read the bytes </param>
-    public FuncCharacteristicValue(
-        BleUuid attributeType,
-        IGattDatabase gattDatabase,
-        IGattAttribute.OnReadAsyncCallback onRead
-    )
+    public FuncCharacteristicValue(BleUuid attributeType, IGattDatabase gattDatabase, OnReadAsyncCallback onRead)
         : this(
             attributeType,
             gattDatabase,
@@ -48,11 +44,7 @@ public sealed class FuncCharacteristicValue(
     /// <param name="attributeType"> The AttributeType </param>
     /// <param name="gattDatabase"> The Database this attribute will be added to </param>
     /// <param name="onWrite"> A callback to write the bytes </param>
-    public FuncCharacteristicValue(
-        BleUuid attributeType,
-        IGattDatabase gattDatabase,
-        IGattAttribute.OnWriteAsyncCallback onWrite
-    )
+    public FuncCharacteristicValue(BleUuid attributeType, IGattDatabase gattDatabase, OnWriteAsyncCallback onWrite)
         : this(
             attributeType,
             gattDatabase,
@@ -76,14 +68,19 @@ public sealed class FuncCharacteristicValue(
         _checkWritePermissions(clientPeer);
 
     /// <inheritdoc />
-    public ValueTask<byte[]> ReadValueAsync(IGattClientPeer? clientPeer)
+    public ValueTask<byte[]> ReadValueAsync(IGattClientPeer? clientPeer, IServiceProvider serviceProvider)
     {
-        return _onRead?.Invoke(clientPeer) ?? ValueTask.FromResult<byte[]>([]);
+        return _onRead?.Invoke(clientPeer, serviceProvider) ?? ValueTask.FromResult<byte[]>([]);
     }
 
     /// <inheritdoc />
-    public ValueTask<GattProtocolStatus> WriteValueAsync(IGattClientPeer? clientPeer, byte[] value)
+    public ValueTask<GattProtocolStatus> WriteValueAsync(
+        IGattClientPeer? clientPeer,
+        byte[] value,
+        IServiceProvider serviceProvider
+    )
     {
-        return _onWrite?.Invoke(clientPeer, value) ?? ValueTask.FromResult(GattProtocolStatus.WriteRequestRejected);
+        return _onWrite?.Invoke(clientPeer, value, serviceProvider)
+            ?? ValueTask.FromResult(GattProtocolStatus.WriteRequestRejected);
     }
 }

@@ -32,7 +32,7 @@ internal sealed class MockBleCentral(MockBleDevice device, ILogger<MockBleCentra
                 this,
                 address,
                 clientPeer,
-                LoggerFactory.CreateLogger<MockGattServerPeer>()
+                ServiceProvider.GetLogger<MockGattServerPeer>()
             );
             observer.OnNext(mockDevice);
             return Disposable.Empty;

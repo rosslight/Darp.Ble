@@ -1,6 +1,5 @@
 using Darp.Ble.Data;
 using Darp.Ble.HciHost.Usb;
-using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost;
 
@@ -15,7 +14,7 @@ public sealed class HciHostBleFactory : IBleFactory
         new Dictionary<(ushort VendorId, ushort ProductId), string> { [(0x2FE3, 0x0004)] = "nrf52840 dongle" };
 
     /// <inheritdoc />
-    public IEnumerable<IBleDevice> EnumerateDevices(ILoggerFactory loggerFactory)
+    public IEnumerable<IBleDevice> EnumerateDevices(IServiceProvider serviceProvider)
     {
         // Using vendorId of NordicSemiconductor and productId self defined
         foreach (UsbPortInfo portInfo in UsbPort.GetPortInfos())
@@ -28,7 +27,7 @@ public sealed class HciHostBleFactory : IBleFactory
                 portInfo.Port,
                 $"{deviceName} ({portInfo.Port})",
                 randomAddress: RandomAddress,
-                loggerFactory
+                serviceProvider
             );
         }
     }

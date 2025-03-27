@@ -1,6 +1,5 @@
 using Android.Bluetooth;
 using Android.Content.PM;
-using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Android;
 
@@ -14,13 +13,13 @@ public sealed class AndroidBleFactory(BluetoothManager manager) : IBleFactory
         ?? throw new ArgumentNullException(nameof(manager), "The android bluetooth manager provided cannot be null.");
 
     /// <inheritdoc />
-    public IEnumerable<IBleDevice> EnumerateDevices(ILoggerFactory loggerFactory)
+    public IEnumerable<IBleDevice> EnumerateDevices(IServiceProvider serviceProvider)
     {
         if (_bluetoothManager.Adapter is null)
             yield break;
         if (Application.Context.PackageManager?.HasSystemFeature(PackageManager.FeatureBluetoothLe) == false)
             yield break;
 
-        yield return new AndroidBleDevice(_bluetoothManager, loggerFactory);
+        yield return new AndroidBleDevice(_bluetoothManager, serviceProvider);
     }
 }

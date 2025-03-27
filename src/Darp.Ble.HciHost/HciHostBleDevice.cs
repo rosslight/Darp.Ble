@@ -6,7 +6,6 @@ using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Result;
 using Darp.Ble.Hci.Transport;
 using Darp.Ble.Implementation;
-using Microsoft.Extensions.Logging;
 using UInt48 = Darp.Ble.Data.UInt48;
 
 namespace Darp.Ble.HciHost;
@@ -16,14 +15,14 @@ internal sealed class HciHostBleDevice(
     string port,
     string name,
     BleAddress? randomAddress,
-    ILoggerFactory loggerFactory
-) : BleDevice(loggerFactory, loggerFactory.CreateLogger<HciHostBleDevice>())
+    IServiceProvider serviceProvider
+) : BleDevice(serviceProvider, serviceProvider.GetLogger<HciHostBleDevice>())
 {
     public Hci.HciHost Host { get; } =
         new(
-            new H4TransportLayer(port, logger: loggerFactory.CreateLogger<H4TransportLayer>()),
+            new H4TransportLayer(port, logger: serviceProvider.GetLogger<H4TransportLayer>()),
             randomAddress ?? BleAddress.NewRandomStaticAddress().Value,
-            logger: loggerFactory.CreateLogger<Hci.HciHost>()
+            logger: serviceProvider.GetLogger<Hci.HciHost>()
         );
 
     public override string Name { get; } = name;
@@ -37,8 +36,8 @@ internal sealed class HciHostBleDevice(
         await Host.InitializeAsync(cancellationToken).ConfigureAwait(false);
         await SetRandomAddressAsync(RandomAddress, cancellationToken).ConfigureAwait(false);
 
-        Observer = new HciHostBleObserver(this, LoggerFactory.CreateLogger<HciHostBleObserver>());
-        Central = new HciHostBleCentral(this, LoggerFactory.CreateLogger<HciHostBleCentral>());
+        Observer = new HciHostBleObserver(this, ServiceProvider.GetLogger<HciHostBleObserver>());
+        Central = new HciHostBleCentral(this, ServiceProvider.GetLogger<HciHostBleCentral>());
 
         HciLeReadMaximumAdvertisingDataLengthResult result = await Host.QueryCommandCompletionAsync<
             HciLeReadMaximumAdvertisingDataLengthCommand,
@@ -48,9 +47,9 @@ internal sealed class HciHostBleDevice(
         Broadcaster = new HciHostBleBroadcaster(
             this,
             result.MaxAdvertisingDataLength,
-            LoggerFactory.CreateLogger<HciHostBleBroadcaster>()
+            ServiceProvider.GetLogger<HciHostBleBroadcaster>()
         );
-        Peripheral = new HciHostBlePeripheral(this, LoggerFactory.CreateLogger<HciHostBlePeripheral>());
+        Peripheral = new HciHostBlePeripheral(this, ServiceProvider.GetLogger<HciHostBlePeripheral>());
         Peripheral.AddGapService();
         return InitializeResult.Success;
     }

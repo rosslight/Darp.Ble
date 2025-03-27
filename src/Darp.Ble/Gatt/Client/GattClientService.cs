@@ -22,8 +22,8 @@ public abstract class GattClientService(
     /// <summary> The optional logger </summary>
     protected ILogger<GattClientService> Logger { get; } = logger;
 
-    /// <summary> The logger factory </summary>
-    protected ILoggerFactory LoggerFactory => Peripheral.Device.LoggerFactory;
+    /// <summary> The service provider </summary>
+    protected IServiceProvider ServiceProvider => Peripheral.Device.ServiceProvider;
 
     /// <summary> The peripheral of the service </summary>
     public IBlePeripheral Peripheral { get; } = blePeripheral;

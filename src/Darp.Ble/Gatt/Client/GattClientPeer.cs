@@ -18,8 +18,8 @@ public abstract class GattClientPeer(BlePeripheral peripheral, BleAddress addres
     /// <summary> The logger </summary>
     protected ILogger<GattClientPeer> Logger { get; } = logger;
 
-    /// <summary> The logger factory </summary>
-    protected ILoggerFactory LoggerFactory => Peripheral.Device.LoggerFactory;
+    /// <summary> The service provider </summary>
+    protected IServiceProvider ServiceProvider => Peripheral.Device.ServiceProvider;
 
     /// <inheritdoc />
     public abstract bool IsConnected { get; }

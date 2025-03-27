@@ -4,10 +4,15 @@ using Microsoft.Extensions.Logging.Abstractions;
 namespace Darp.Ble;
 
 /// <summary> Configure the ble manager. Add new implementations or specify logging behavior </summary>
-public sealed class BleManagerBuilder
+public sealed class BleManagerBuilder(IServiceProvider? serviceProvider)
 {
     private readonly List<IBleFactory> _factories = [];
     private ILoggerFactory? _loggerFactory;
+    private readonly IServiceProvider? _serviceProvider = serviceProvider;
+
+    /// <inheritdoc />
+    public BleManagerBuilder()
+        : this(serviceProvider: null) { }
 
     /// <summary> Add a new factory </summary>
     /// <param name="config"> An optional callback to modify the implementation config </param>
@@ -35,6 +40,10 @@ public sealed class BleManagerBuilder
     /// <returns> The current builder </returns>
     public BleManagerBuilder SetLogger(ILoggerFactory? loggerFactory)
     {
+        if (_serviceProvider is not null)
+            throw new InvalidOperationException(
+                "The BleManagerBuilder was initialized with a service provider. Use the provider to initialize logging instead"
+            );
         _loggerFactory = loggerFactory;
         return this;
     }
@@ -43,6 +52,23 @@ public sealed class BleManagerBuilder
     /// <returns> The new ble manager </returns>
     public BleManager CreateManager()
     {
-        return new BleManager(_factories, _loggerFactory ?? NullLoggerFactory.Instance);
+        return new BleManager(_factories, _serviceProvider ?? new BleManagerServiceProvider(_loggerFactory));
+    }
+}
+
+file sealed class BleManagerServiceProvider(ILoggerFactory? loggerFactory) : IServiceProvider
+{
+    private readonly ILoggerFactory? _loggerFactory = loggerFactory;
+
+    public object? GetService(Type serviceType)
+    {
+        // Ensure our calls for loggers are always handled correctly
+        if (serviceType == typeof(ILoggerFactory))
+            return _loggerFactory ?? NullLoggerFactory.Instance;
+        if (serviceType == typeof(ILogger))
+            return _loggerFactory?.CreateLogger("Darp.Ble") ?? NullLogger.Instance;
+        if (serviceType == typeof(ILogger<>))
+            return _loggerFactory?.CreateLogger(serviceType.GenericTypeArguments[0]) ?? NullLogger.Instance;
+        return null;
     }
 }

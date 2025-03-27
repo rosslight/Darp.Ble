@@ -31,6 +31,8 @@ public class GattTypedClientCharacteristic<T, TProp1>(
     private readonly IGattTypedCharacteristic<T>.DecodeFunc _onDecode = onDecode;
     private readonly IGattTypedCharacteristic<T>.EncodeFunc _onEncode = onEncode;
 
+    IServiceProvider IGattClientCharacteristic.ServiceProvider => Characteristic.ServiceProvider;
+
     /// <inheritdoc />
     public IGattClientService Service => Characteristic.Service;
 

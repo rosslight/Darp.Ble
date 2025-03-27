@@ -21,8 +21,8 @@ public abstract class BlePeripheral(BleDevice device, ILogger<BlePeripheral> log
     /// <summary> The logger </summary>
     protected ILogger<BlePeripheral> Logger { get; } = logger;
 
-    /// <summary> The logger factory </summary>
-    protected ILoggerFactory LoggerFactory => Device.LoggerFactory;
+    /// <summary> The service provider </summary>
+    protected IServiceProvider ServiceProvider => Device.ServiceProvider;
 
     /// <inheritdoc />
     public IGattDatabase GattDatabase { get; } = new GattDatabaseCollection();

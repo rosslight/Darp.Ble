@@ -70,7 +70,7 @@ internal sealed class HciHostGattServerCharacteristic(
                             this,
                             bleUuid,
                             handle,
-                            LoggerFactory.CreateLogger<HciHostGattServerDescriptor>()
+                            ServiceProvider.GetLogger<HciHostGattServerDescriptor>()
                         );
                         observer.OnNext(descriptor);
                     }

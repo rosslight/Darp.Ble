@@ -1,15 +1,14 @@
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Exceptions;
-using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble;
 
 /// <summary> The base interface of a ble device. </summary>
 public interface IBleDevice : IAsyncDisposable
 {
-    /// <summary> The logger factory to be used to create new loggers </summary>
-    protected internal ILoggerFactory LoggerFactory { get; }
+    /// <summary> The service provider used to retrieve services from </summary>
+    protected internal IServiceProvider ServiceProvider { get; }
 
     /// <summary> True if the device was successfully initialized </summary>
     public bool IsInitialized { get; }

@@ -3,6 +3,8 @@ using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Gatt.Services;
 
@@ -11,23 +13,38 @@ namespace Darp.Ble.Gatt.Services;
 /// <summary> The service contract for an echo service </summary>
 public static class EchoServiceContract
 {
+    /// <summary> Represents a simple request </summary>
+    public delegate ValueTask<byte[]> SimpleRequestHandler(byte[] byteArray);
+
+    /// <summary> Represents a request handler with the serviceProvider specified </summary>
+    private delegate ValueTask<byte[]> RequestHandler(byte[] byteArray, IServiceProvider serviceProvider);
+
+    /// <summary> Represents a request handler with one parameter resolved from DI </summary>
+    public delegate ValueTask<byte[]> RequestHandler<in T1>(byte[] byteArray, T1 param1)
+        where T1 : notnull;
+
+    /// <summary> Represents a request handler with two parameters resolved from DI </summary>
+    public delegate ValueTask<byte[]> RequestHandler<in T1, in T2>(byte[] byteArray, T1 param1, T2 param2)
+        where T1 : notnull
+        where T2 : notnull;
+
     /// <summary> Add an echo service to the peripheral </summary>
     /// <param name="peripheral"> The peripheral to add the service to </param>
     /// <param name="serviceUuid"> The uuid of the service </param>
     /// <param name="writeUuid"> The uuid of the write characteristic </param>
     /// <param name="notifyUuid"> The uuid of the notify characteristic </param>
-    /// <param name="handleRequest"> A function which defines how a request is handled. Defaults to <see cref="Observable.Return{TResult}(TResult)"/> </param>
+    /// <param name="handleRequest"> A function which defines how a request is handled. Defaults to just returning the received bytes </param>
     /// <returns> A wrapper with the discovered characteristics </returns>
-    public static GattClientEchoService AddEchoService(
+    private static GattClientEchoService AddEchoService(
         this IBlePeripheral peripheral,
         BleUuid serviceUuid,
         BleUuid writeUuid,
         BleUuid notifyUuid,
-        Func<byte[], IObservable<byte[]>>? handleRequest = null
+        RequestHandler? handleRequest = null
     )
     {
         ArgumentNullException.ThrowIfNull(peripheral);
-        handleRequest ??= Observable.Return;
+        handleRequest ??= (bytes, _) => ValueTask.FromResult(bytes);
 
         // Add the client service
         IGattClientService service = peripheral.AddService(serviceUuid, isPrimary: true);
@@ -36,17 +53,13 @@ public static class EchoServiceContract
         GattClientCharacteristic<Properties.Notify> notifyCharacteristic = null!;
         GattClientCharacteristic<Properties.Write> writeCharacteristic = service.AddCharacteristic<Properties.Write>(
             writeUuid,
-            onWrite: (peer, bytes) =>
+            onWrite: (peer, bytes, provider) =>
             {
-                IObservable<byte[]> responseObservable = handleRequest(bytes);
+                ValueTask<byte[]> valueTask = handleRequest(bytes, provider);
                 // ReSharper disable once AccessToModifiedClosure
                 // We expect onWrite to not execute before the notify characteristic was added
-                _ = responseObservable
-                    .SelectMany(async responseBytes =>
-                        await notifyCharacteristic.NotifyAsync(peer, responseBytes).ConfigureAwait(false)
-                    )
-                    .Subscribe();
-                return GattProtocolStatus.Success;
+                RespondToRequest(peer, notifyCharacteristic, valueTask, provider);
+                return ValueTask.FromResult(GattProtocolStatus.Success);
             }
         );
 
@@ -54,6 +67,102 @@ public static class EchoServiceContract
         notifyCharacteristic = service.AddCharacteristic<Properties.Notify>(notifyUuid);
 
         return new GattClientEchoService(service) { Write = writeCharacteristic, Notify = notifyCharacteristic };
+    }
+
+    /// <summary> Add an echo service to the peripheral </summary>
+    /// <param name="peripheral"> The peripheral to add the service to </param>
+    /// <param name="serviceUuid"> The uuid of the service </param>
+    /// <param name="writeUuid"> The uuid of the write characteristic </param>
+    /// <param name="notifyUuid"> The uuid of the notify characteristic </param>
+    /// <param name="handleRequest"> A function which defines how a request is handled. Defaults to just returning the received bytes </param>
+    /// <returns> A wrapper with the discovered characteristics </returns>
+    public static GattClientEchoService AddEchoService(
+        this IBlePeripheral peripheral,
+        BleUuid serviceUuid,
+        BleUuid writeUuid,
+        BleUuid notifyUuid,
+        SimpleRequestHandler? handleRequest = null
+    )
+    {
+        return peripheral.AddEchoService(
+            serviceUuid,
+            writeUuid,
+            notifyUuid,
+            handleRequest is null ? null : (bytes, _) => handleRequest(bytes)
+        );
+    }
+
+    /// <summary> Add an echo service to the peripheral </summary>
+    /// <param name="peripheral"> The peripheral to add the service to </param>
+    /// <param name="serviceUuid"> The uuid of the service </param>
+    /// <param name="writeUuid"> The uuid of the write characteristic </param>
+    /// <param name="notifyUuid"> The uuid of the notify characteristic </param>
+    /// <param name="handleRequest"> A function which defines how a request is handled. Defaults to just returning the received bytes </param>
+    /// <returns> A wrapper with the discovered characteristics </returns>
+    public static GattClientEchoService AddEchoService<T1>(
+        this IBlePeripheral peripheral,
+        BleUuid serviceUuid,
+        BleUuid writeUuid,
+        BleUuid notifyUuid,
+        RequestHandler<T1> handleRequest
+    )
+        where T1 : notnull
+    {
+        return peripheral.AddEchoService(
+            serviceUuid,
+            writeUuid,
+            notifyUuid,
+            (bytes, provider) => handleRequest(bytes, provider.GetRequiredService<T1>())
+        );
+    }
+
+    /// <summary> Add an echo service to the peripheral </summary>
+    /// <param name="peripheral"> The peripheral to add the service to </param>
+    /// <param name="serviceUuid"> The uuid of the service </param>
+    /// <param name="writeUuid"> The uuid of the write characteristic </param>
+    /// <param name="notifyUuid"> The uuid of the notify characteristic </param>
+    /// <param name="handleRequest"> A function which defines how a request is handled. Defaults to just returning the received bytes </param>
+    /// <returns> A wrapper with the discovered characteristics </returns>
+    public static GattClientEchoService AddEchoService<T1, T2>(
+        this IBlePeripheral peripheral,
+        BleUuid serviceUuid,
+        BleUuid writeUuid,
+        BleUuid notifyUuid,
+        RequestHandler<T1, T2> handleRequest
+    )
+        where T1 : notnull
+        where T2 : notnull
+    {
+        return peripheral.AddEchoService(
+            serviceUuid,
+            writeUuid,
+            notifyUuid,
+            (bytes, provider) =>
+            {
+                var param1 = provider.GetRequiredService<T1>();
+                var param2 = provider.GetRequiredService<T2>();
+                return handleRequest(bytes, param1, param2);
+            }
+        );
+    }
+
+    private static async void RespondToRequest(
+        IGattClientPeer? peer,
+        GattClientCharacteristic<Properties.Notify> notifyCharacteristic,
+        ValueTask<byte[]> valueTask,
+        IServiceProvider provider
+    )
+    {
+        try
+        {
+            byte[] responseBytes = await valueTask.ConfigureAwait(false);
+            await notifyCharacteristic.NotifyAsync(peer, responseBytes).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            var logger = provider.GetRequiredService<ILogger<GattClientEchoService>>();
+            logger.LogError(e, "Handler has thrown");
+        }
     }
 
     /// <summary> Discover the echo server </summary>

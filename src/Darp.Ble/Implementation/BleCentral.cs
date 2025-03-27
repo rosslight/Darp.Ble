@@ -18,8 +18,8 @@ public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) :
     /// <summary> The logger </summary>
     protected ILogger<BleCentral> Logger { get; } = logger;
 
-    /// <summary> The logger factory </summary>
-    protected ILoggerFactory LoggerFactory => Device.LoggerFactory;
+    /// <summary> The service provider </summary>
+    protected IServiceProvider ServiceProvider => Device.ServiceProvider;
 
     /// <inheritdoc />
     public IBleDevice Device { get; } = device;

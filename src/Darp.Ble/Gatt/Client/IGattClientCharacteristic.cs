@@ -6,6 +6,8 @@ namespace Darp.Ble.Gatt.Client;
 /// <summary> A gatt client characteristic </summary>
 public interface IGattClientCharacteristic
 {
+    internal IServiceProvider ServiceProvider { get; }
+
     /// <summary> The service this characteristic was added to </summary>
     IGattClientService Service { get; }
 

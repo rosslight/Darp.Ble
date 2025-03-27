@@ -1,8 +1,8 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble;
 
+/// <summary> Extensions setting up the BleManager with DI </summary>
 public static class BleManagerServiceCollectionExtensions
 {
     /// <summary> Add a ble manager to the DI container and provide an action to configure it </summary>
@@ -28,10 +28,7 @@ public static class BleManagerServiceCollectionExtensions
     {
         return serviceCollection.AddSingleton(provider =>
         {
-            var builder = new BleManagerBuilder();
-            var loggerProvider = provider.GetService<ILoggerFactory>();
-            if (loggerProvider is not null)
-                builder.SetLogger(loggerProvider);
+            var builder = new BleManagerBuilder(provider);
             configure.Invoke(provider, builder);
             return builder.CreateManager();
         });

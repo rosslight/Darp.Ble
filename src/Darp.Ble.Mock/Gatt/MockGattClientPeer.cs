@@ -26,7 +26,7 @@ internal sealed class MockGattClientPeer(
                 this,
                 serverPeer,
                 (MockGattClientService)clientService,
-                LoggerFactory.CreateLogger<MockGattServerService>()
+                ServiceProvider.GetLogger<MockGattServerService>()
             ))
             .ToArray()
             .ToObservable();

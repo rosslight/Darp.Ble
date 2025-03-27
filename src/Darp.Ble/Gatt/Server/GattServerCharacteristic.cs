@@ -21,8 +21,8 @@ public abstract class GattServerCharacteristic(
     /// <summary> The optional logger </summary>
     protected ILogger<GattServerCharacteristic> Logger { get; } = logger;
 
-    /// <summary> The logger factory </summary>
-    protected ILoggerFactory LoggerFactory => Service.Peer.Central.Device.LoggerFactory;
+    /// <summary> The service provider </summary>
+    protected IServiceProvider ServiceProvider => Service.Peer.Central.Device.ServiceProvider;
 
     /// <inheritdoc />
     public IGattServerService Service { get; } = service;

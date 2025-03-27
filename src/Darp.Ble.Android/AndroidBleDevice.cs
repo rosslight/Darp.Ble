@@ -5,12 +5,11 @@ using Android.Content.PM;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Implementation;
-using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Android;
 
-public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, ILoggerFactory loggerFactory)
-    : BleDevice(loggerFactory, loggerFactory.CreateLogger<AndroidBleDevice>())
+public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, IServiceProvider serviceProvider)
+    : BleDevice(serviceProvider, serviceProvider.GetLogger<AndroidBleDevice>())
 {
     private readonly BluetoothManager _bluetoothManager = bluetoothManager;
     private BluetoothAdapter? BluetoothAdapter => _bluetoothManager.Adapter;
@@ -40,7 +39,7 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, ILoggerF
             Observer = new AndroidBleObserver(
                 this,
                 BluetoothAdapter.BluetoothLeScanner,
-                LoggerFactory.CreateLogger<AndroidBleObserver>()
+                ServiceProvider.GetLogger<AndroidBleObserver>()
             );
         }
         return Task.FromResult(InitializeResult.Success);

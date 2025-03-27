@@ -1,4 +1,3 @@
-using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using System.Text;
@@ -20,8 +19,8 @@ public static class GattDescriptorExtensions
     public static void AddDescriptor(
         this IGattClientCharacteristic characteristic,
         BleUuid uuid,
-        IGattAttribute.OnReadAsyncCallback? onRead = null,
-        IGattAttribute.OnWriteAsyncCallback? onWrite = null
+        OnReadAsyncCallback? onRead = null,
+        OnWriteAsyncCallback? onWrite = null
     )
     {
         ArgumentNullException.ThrowIfNull(characteristic);
@@ -45,17 +44,17 @@ public static class GattDescriptorExtensions
     public static void AddDescriptor(
         this IGattClientCharacteristic characteristic,
         BleUuid uuid,
-        IGattAttribute.OnReadCallback? onRead = null,
-        IGattAttribute.OnWriteCallback? onWrite = null
+        OnReadCallback? onRead = null,
+        OnWriteCallback? onWrite = null
     )
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        IGattAttribute.OnReadAsyncCallback? onAsyncRead = onRead is null
+        OnReadAsyncCallback? onAsyncRead = onRead is null
             ? null
-            : peer => ValueTask.FromResult(onRead(peer));
-        IGattAttribute.OnWriteAsyncCallback? onAsyncWrite = onWrite is null
+            : (peer, provider) => ValueTask.FromResult(onRead(peer, provider));
+        OnWriteAsyncCallback? onAsyncWrite = onWrite is null
             ? null
-            : (peer, bytes) => ValueTask.FromResult(onWrite(peer, bytes));
+            : (peer, bytes, provider) => ValueTask.FromResult(onWrite(peer, bytes, provider));
         characteristic.AddDescriptor(uuid, onAsyncRead, onAsyncWrite);
     }
 
@@ -67,8 +66,8 @@ public static class GattDescriptorExtensions
     public static void AddDescriptor(
         this IGattClientCharacteristic characteristic,
         DescriptorDeclaration descriptorDeclaration,
-        IGattAttribute.OnReadCallback? onRead = null,
-        IGattAttribute.OnWriteCallback? onWrite = null
+        OnReadCallback? onRead = null,
+        OnWriteCallback? onWrite = null
     )
     {
         ArgumentNullException.ThrowIfNull(characteristic);
@@ -100,8 +99,8 @@ public static class GattDescriptorExtensions
         ArgumentNullException.ThrowIfNull(characteristic);
         characteristic.AddDescriptor(
             uuid,
-            _ => ValueTask.FromResult(staticValue),
-            (_, value) =>
+            (_, _) => ValueTask.FromResult(staticValue),
+            (_, value, _) =>
             {
                 staticValue = value.ToArray();
                 return ValueTask.FromResult(GattProtocolStatus.Success);
@@ -129,8 +128,9 @@ public static class GattDescriptorExtensions
 
         characteristic.AddDescriptor(
             DescriptorDeclaration.ClientCharacteristicConfiguration,
-            onRead: peer => peer is not null && dictionary.TryGetValue(peer, out byte[]? value) ? value : [0x00, 0x00],
-            onWrite: (peer, value) =>
+            onRead: (peer, _) =>
+                peer is not null && dictionary.TryGetValue(peer, out byte[]? value) ? value : [0x00, 0x00],
+            onWrite: (peer, value, _) =>
             {
                 if (peer is null || value.Length != 2)
                     return GattProtocolStatus.OutOfRange;

@@ -14,7 +14,7 @@ internal sealed class MockedBlePeripheral(MockedBleDevice device, ILogger<Mocked
 
     public MockGattClientPeer OnCentralConnection(BleAddress address)
     {
-        var clientPeer = new MockGattClientPeer(this, address, LoggerFactory.CreateLogger<MockGattClientPeer>());
+        var clientPeer = new MockGattClientPeer(this, address, ServiceProvider.GetLogger<MockGattClientPeer>());
         OnConnectedCentral(clientPeer);
         return clientPeer;
     }
@@ -26,7 +26,7 @@ internal sealed class MockedBlePeripheral(MockedBleDevice device, ILogger<Mocked
             uuid,
             isPrimary ? GattServiceType.Primary : GattServiceType.Secondary,
             this,
-            LoggerFactory.CreateLogger<MockGattClientService>()
+            ServiceProvider.GetLogger<MockGattClientService>()
         );
     }
 }

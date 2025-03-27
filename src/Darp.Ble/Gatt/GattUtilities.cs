@@ -6,7 +6,7 @@ namespace Darp.Ble.Gatt;
 internal static class GattUtilities
 {
     public static Func<IGattClientPeer, PermissionCheckStatus> CreateReadAccessPermissionFunc(
-        this IGattAttribute.OnReadAsyncCallback? nullable
+        this OnReadAsyncCallback? nullable
     )
     {
         if (nullable is null)
@@ -15,7 +15,7 @@ internal static class GattUtilities
     }
 
     public static Func<IGattClientPeer, PermissionCheckStatus> CreateWriteAccessPermissionFunc(
-        this IGattAttribute.OnWriteAsyncCallback? nullable
+        this OnWriteAsyncCallback? nullable
     )
     {
         if (nullable is null)

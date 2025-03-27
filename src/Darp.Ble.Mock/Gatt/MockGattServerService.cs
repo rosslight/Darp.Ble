@@ -25,7 +25,7 @@ internal sealed class MockGattServerService(
                 x.Uuid,
                 (MockGattClientCharacteristic)x,
                 GattClient,
-                LoggerFactory.CreateLogger<MockGattServerCharacteristic>()
+                ServiceProvider.GetLogger<MockGattServerCharacteristic>()
             ));
 
     /// <inheritdoc />
