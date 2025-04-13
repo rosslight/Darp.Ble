@@ -1,0 +1,23 @@
+<Solution>
+  <Folder Name="/examples/">
+    <Project Path="examples/Darp.Ble.Examples.Android/Darp.Ble.Examples.Android.csproj" />
+    <Project Path="examples/Darp.Ble.Examples.Unix/Darp.Ble.Examples.Unix.csproj" />
+    <Project Path="examples/Darp.Ble.Examples/Darp.Ble.Examples.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Darp.Ble.Android/Darp.Ble.Android.csproj" />
+    <Project Path="src/Darp.Ble.Hci/Darp.Ble.Hci.csproj" />
+    <Project Path="src/Darp.Ble.HciHost/Darp.Ble.HciHost.csproj" />
+    <Project Path="src/Darp.Ble.Mock/Darp.Ble.Mock.csproj" />
+    <Project Path="src/Darp.Ble.WinRT/Darp.Ble.WinRT.csproj" />
+    <Project Path="src/Darp.Ble/Darp.Ble.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/Darp.Ble.Hci.Tests/Darp.Ble.Hci.Tests.csproj" />
+    <Project Path="test/Darp.Ble.Mock.Tests/Darp.Ble.Mock.Tests.csproj" />
+    <Project Path="test/Darp.Ble.Tests/Darp.Ble.Tests.csproj" />
+  </Folder>
+  <Folder Name="/tools/">
+    <Project Path="tools/AssignedNumbersCrawler/AssignedNumbersCrawler.csproj" />
+  </Folder>
+</Solution>
