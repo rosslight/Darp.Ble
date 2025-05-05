@@ -164,9 +164,28 @@ public static class CharacteristicDeclaration
     private static byte[] ToByteArray<T>(this T value)
         where T : unmanaged
     {
-        int size = typeof(T).IsEnum ? Marshal.SizeOf(Enum.GetUnderlyingType(typeof(T))) : Marshal.SizeOf<T>();
+        int size = GetSizeOfTOrEnum<T>();
         var buffer = new byte[size];
         MemoryMarshal.Write(buffer, value);
         return buffer;
+    }
+
+    private static int GetSizeOfTOrEnum<T>()
+        where T : unmanaged
+    {
+        if (!typeof(T).IsEnum)
+            return Marshal.SizeOf<T>();
+        Type enumType = typeof(T).GetEnumUnderlyingType();
+        if (enumType == typeof(byte) || enumType == typeof(sbyte))
+            return 1;
+        if (enumType == typeof(ushort) || enumType == typeof(short))
+            return 2;
+        if (enumType == typeof(uint) || enumType == typeof(int))
+            return 4;
+        if (enumType == typeof(ulong) || enumType == typeof(long))
+            return 8;
+        throw new NotSupportedException(
+            $"Underlying type {enumType.AssemblyQualifiedName} for enum {typeof(T).AssemblyQualifiedName} is unsupported"
+        );
     }
 }
