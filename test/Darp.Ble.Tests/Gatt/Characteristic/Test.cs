@@ -39,7 +39,7 @@ public sealed class Test
     {
         IGattClientService service = null!;
         var x = service.AddCharacteristic<Read>(SomeUuid, SomeBytes);
-        service.AddCharacteristic<Read>(SomeUuid, onRead: _ => SomeBytes);
+        service.AddCharacteristic<Read>(SomeUuid, _ => SomeBytes);
         service.AddCharacteristic(ReadChar);
         var aa = service.AddCharacteristic(ReadChar, 2);
         await aa.UpdateValueAsync(123);

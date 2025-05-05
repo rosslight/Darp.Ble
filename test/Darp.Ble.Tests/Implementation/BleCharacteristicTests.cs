@@ -7,6 +7,7 @@ using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Mock;
 using Darp.Ble.Mock.Gatt;
+using Darp.Ble.Tests.TestUtils;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -38,7 +39,7 @@ public sealed class BleCharacteristicTests
                         []
                     );
             })
-            .EnumerateDevices(NullLoggerFactory.Instance)
+            .EnumerateDevices(NullServiceProvider.Instance)
             .First();
         device.InitializeAsync().GetAwaiter().GetResult();
         var mockClientPeer = new MockGattClientPeer(

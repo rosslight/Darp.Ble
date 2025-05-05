@@ -10,10 +10,7 @@ namespace Darp.Ble.Tests.Gap;
 
 public sealed class GapAdvertisementTests(ILoggerFactory loggerFactory)
 {
-    private readonly BleManager _manager = new BleManagerBuilder()
-        .SetLogger(loggerFactory)
-        .Add<BleMockFactory>()
-        .CreateManager();
+    private readonly BleManager _manager = new BleManagerBuilder().SetLogger(loggerFactory).AddMock().CreateManager();
 
     [Theory]
     [InlineData(
