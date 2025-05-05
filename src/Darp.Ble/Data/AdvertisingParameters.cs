@@ -29,8 +29,10 @@ public enum AdvertisingChannelMap : byte
     Channel39 = 1 << 2,
 }
 
-/// <summary> Advertisement parameters to configure advertisement </summary>
-public sealed class AdvertisingParameters
+/// <summary>
+/// Represents configuration parameters for Bluetooth Low Energy (BLE) advertising operations.
+/// </summary>
+public sealed record AdvertisingParameters
 {
     /// <summary> The default advertising parameters </summary>
     public static AdvertisingParameters Default { get; } = new();
@@ -38,9 +40,13 @@ public sealed class AdvertisingParameters
     /// <summary> The <see cref="BleEventType"/> to be used when sending the advertisement </summary>
     public BleEventType Type { get; init; } = BleEventType.AdvNonConnInd;
 
+    /// <summary> The minimum time interval between advertising events on the primary phy. </summary>
     public ScanTiming MinPrimaryAdvertisingInterval { get; init; } = ScanTiming.Ms1000;
+
+    /// <summary> The maximum time interval between advertising events on the primary phy. </summary>
     public ScanTiming MaxPrimaryAdvertisingInterval { get; init; } = ScanTiming.Ms1000;
 
+    /// <summary> The advertising channel map of the primary phy. </summary>
     public AdvertisingChannelMap PrimaryAdvertisingChannelMap { get; init; } =
         AdvertisingChannelMap.Channel37 | AdvertisingChannelMap.Channel38 | AdvertisingChannelMap.Channel39;
 

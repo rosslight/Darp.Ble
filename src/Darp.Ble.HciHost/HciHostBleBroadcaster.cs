@@ -1,8 +1,10 @@
 using System.Collections.Concurrent;
 using Darp.Ble.Data;
+using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Hci.Package;
+using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Result;
 using Darp.Ble.Implementation;
@@ -21,7 +23,7 @@ internal sealed class HciHostBleBroadcaster(
 ) : BleBroadcaster(device, logger)
 {
     private readonly HciHostBleDevice _device = device;
-    private readonly ConcurrentDictionary<byte, IAdvertisingSet> _advertisingSets = [];
+    private readonly ConcurrentDictionary<byte, HciAdvertisingSet> _advertisingSets = [];
 
     public ushort MaxAdvertisingDataLength { get; } = maxAdvertisingDataLength;
     public Hci.HciHost Host => _device.Host;
@@ -74,7 +76,7 @@ internal sealed class HciHostBleBroadcaster(
             }
             if (scanResponseData is not null)
             {
-                await set.SetAdvertisingParametersAsync(parameters, cancellationToken).ConfigureAwait(false);
+                await set.SetScanResponseDataAsync(scanResponseData, cancellationToken).ConfigureAwait(false);
             }
         }
         catch (Exception)
@@ -108,7 +110,7 @@ internal sealed class HciHostBleBroadcaster(
             numberOfEventsArray[i] = numberOfEvents;
             i++;
         }
-        await Host.QueryCommandCompletionAsync<
+        HciLeSetExtendedAdvertisingEnableResult enableResult = await Host.QueryCommandCompletionAsync<
             HciLeSetExtendedAdvertisingEnableCommand,
             HciLeSetExtendedAdvertisingEnableResult
         >(
@@ -123,9 +125,21 @@ internal sealed class HciHostBleBroadcaster(
                 cancellationToken: cancellationToken
             )
             .ConfigureAwait(false);
+        if (enableResult.Status is not HciCommandStatus.Success)
+        {
+            throw new BleBroadcasterException(
+                this,
+                $"Could not enable advertising sets because of {enableResult.Status}"
+            );
+        }
+        foreach (var tuple in advertisingSets)
+        {
+            if (tuple.AdvertisingSet is HciAdvertisingSet hciAdvertisingSet)
+                hciAdvertisingSet.SetAdvertisingStatus(isEnabled: true);
+        }
         return AsyncDisposable.Create(async () =>
         {
-            await Host.QueryCommandCompletionAsync<
+            HciLeSetExtendedAdvertisingEnableResult result = await Host.QueryCommandCompletionAsync<
                 HciLeSetExtendedAdvertisingEnableCommand,
                 HciLeSetExtendedAdvertisingEnableResult
             >(
@@ -140,6 +154,48 @@ internal sealed class HciHostBleBroadcaster(
                     cancellationToken: cancellationToken
                 )
                 .ConfigureAwait(false);
+            if (result.Status is HciCommandStatus.Success)
+            {
+                foreach (var tuple in advertisingSets)
+                {
+                    if (tuple.AdvertisingSet is HciAdvertisingSet hciAdvertisingSet)
+                        hciAdvertisingSet.SetAdvertisingStatus(isEnabled: false);
+                }
+            }
         });
+    }
+
+    protected override async Task<bool> StopAdvertisingCoreAsync(
+        IReadOnlyCollection<IAdvertisingSet> advertisingSets,
+        CancellationToken cancellationToken
+    )
+    {
+        byte[] advertisingHandles = advertisingSets
+            .OfType<HciAdvertisingSet>()
+            .Select(x => x.AdvertisingHandle)
+            .ToArray();
+        HciLeSetExtendedAdvertisingEnableResult result = await Host.QueryCommandCompletionAsync<
+            HciLeSetExtendedAdvertisingEnableCommand,
+            HciLeSetExtendedAdvertisingEnableResult
+        >(
+                new HciLeSetExtendedAdvertisingEnableCommand
+                {
+                    Enable = 0x00,
+                    NumSets = (byte)advertisingHandles.Length,
+                    AdvertisingHandle = advertisingHandles,
+                    Duration = new ushort[advertisingHandles.Length],
+                    MaxExtendedAdvertisingEvents = new byte[advertisingHandles.Length],
+                },
+                cancellationToken: cancellationToken
+            )
+            .ConfigureAwait(false);
+        if (result.Status is not HciCommandStatus.Success)
+            return false;
+        foreach (var set in advertisingSets)
+        {
+            if (set is HciAdvertisingSet hciAdvertisingSet)
+                hciAdvertisingSet.SetAdvertisingStatus(isEnabled: false);
+        }
+        return true;
     }
 }

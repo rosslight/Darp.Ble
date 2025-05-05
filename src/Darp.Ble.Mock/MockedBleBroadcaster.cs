@@ -84,6 +84,14 @@ internal sealed class MockedBleBroadcaster(MockedBleDevice bleDevice, ILogger<Mo
 #pragma warning restore CA2000
         return Task.FromResult(asyncDisposable);
     }
+
+    protected override Task<bool> StopAdvertisingCoreAsync(
+        IReadOnlyCollection<IAdvertisingSet> advertisingSets,
+        CancellationToken cancellationToken
+    )
+    {
+        throw new NotImplementedException();
+    }
 }
 
-internal sealed class MockAdvertisingSet(MockedBleBroadcaster broadcaster) : AdvertisingSet(broadcaster) { }
+internal sealed class MockAdvertisingSet(MockedBleBroadcaster broadcaster) : AdvertisingSet(broadcaster);

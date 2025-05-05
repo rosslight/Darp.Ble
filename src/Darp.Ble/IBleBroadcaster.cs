@@ -36,4 +36,13 @@ public interface IBleBroadcaster
         IReadOnlyCollection<AdvertisingStartInfo> advertisingSetStartInfo,
         CancellationToken cancellationToken
     );
+
+    /// <summary> Stop advertising multiple advertising sets. </summary>
+    /// <param name="advertisingSets"> A collection of advertising sets </param>
+    /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
+    /// <returns> A task </returns>
+    public Task<bool> StopAdvertisingAsync(
+        IReadOnlyCollection<IAdvertisingSet> advertisingSets,
+        CancellationToken cancellationToken
+    );
 }

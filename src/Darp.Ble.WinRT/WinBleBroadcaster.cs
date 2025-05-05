@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
@@ -15,6 +16,7 @@ internal sealed class WinBleBroadcaster(WinBleDevice winBleDevice, ILogger<WinBl
     : BleBroadcaster(winBleDevice, logger)
 {
     private readonly WinBleDevice _winBleDevice = winBleDevice;
+    private readonly ConcurrentDictionary<IAdvertisingSet, BluetoothLEAdvertisementPublisher> _publishers = new();
 
     protected override Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(
         AdvertisingParameters? parameters,
@@ -34,6 +36,8 @@ internal sealed class WinBleBroadcaster(WinBleDevice winBleDevice, ILogger<WinBl
         List<IAsyncDisposable> disposables = [];
         foreach ((IAdvertisingSet advertisingSet, TimeSpan duration, int numberOfEvents) in advertisingSets)
         {
+            if (_publishers.ContainsKey(advertisingSet))
+                continue;
             if (_winBleDevice.Capabilities.HasFlag(Capabilities.Peripheral))
             {
                 var peripheral = (WinBlePeripheral)_winBleDevice.Peripheral;
@@ -121,8 +125,11 @@ internal sealed class WinBleBroadcaster(WinBleDevice winBleDevice, ILogger<WinBl
                 Logger?.LogPublisherChangedToError(args.Status, args.Error);
                 await disposable.DisposeAsync().ConfigureAwait(false);
             };
-            publisher.Start();
-            disposables.Add(disposable);
+            if (_publishers.TryAdd(advertisingSet, publisher))
+            {
+                publisher.Start();
+                disposables.Add(disposable);
+            }
         }
         IAsyncDisposable combinedDisposable = AsyncDisposable.Create(
             disposables,
@@ -135,5 +142,20 @@ internal sealed class WinBleBroadcaster(WinBleDevice winBleDevice, ILogger<WinBl
             }
         );
         return Task.FromResult(combinedDisposable);
+    }
+
+    protected override Task<bool> StopAdvertisingCoreAsync(
+        IReadOnlyCollection<IAdvertisingSet> advertisingSets,
+        CancellationToken cancellationToken
+    )
+    {
+        foreach (IAdvertisingSet advertisingSet in advertisingSets)
+        {
+            if (_publishers.TryGetValue(advertisingSet, out BluetoothLEAdvertisementPublisher? publisher))
+            {
+                publisher.Stop();
+            }
+        }
+        return Task.FromResult(true);
     }
 }

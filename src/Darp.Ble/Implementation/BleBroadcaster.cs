@@ -101,12 +101,31 @@ public abstract class BleBroadcaster(IBleDevice device, ILogger<BleBroadcaster> 
         return StartAdvertisingCoreAsync(advertisingSetStartInfo, cancellationToken);
     }
 
+    /// <inheritdoc />
+    public Task<bool> StopAdvertisingAsync(
+        IReadOnlyCollection<IAdvertisingSet> advertisingSets,
+        CancellationToken cancellationToken
+    )
+    {
+        ArgumentNullException.ThrowIfNull(advertisingSets);
+        return StopAdvertisingCoreAsync(advertisingSets, cancellationToken);
+    }
+
     /// <summary> Start advertising multiple advertising sets </summary>
     /// <param name="advertisingSets"> A collection of advertising sets together with information on how to start them </param>
     /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
     /// <returns> An async disposable to stop advertising </returns>
     protected abstract Task<IAsyncDisposable> StartAdvertisingCoreAsync(
         IReadOnlyCollection<(IAdvertisingSet AdvertisingSet, TimeSpan Duration, byte NumberOfEvents)> advertisingSets,
+        CancellationToken cancellationToken
+    );
+
+    /// <summary> Stop advertising multiple advertising sets. </summary>
+    /// <param name="advertisingSets"> A collection of advertising sets </param>
+    /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
+    /// <returns> A task </returns>
+    protected abstract Task<bool> StopAdvertisingCoreAsync(
+        IReadOnlyCollection<IAdvertisingSet> advertisingSets,
         CancellationToken cancellationToken
     );
 

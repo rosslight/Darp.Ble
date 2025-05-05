@@ -48,6 +48,7 @@ internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster) : Adv
     )
     {
         ArgumentNullException.ThrowIfNull(parameters);
+        var wasEnabled = IsAdvertising;
         HciLeSetExtendedAdvertisingParametersResult result = await _host
             .QueryCommandCompletionAsync<
                 HciLeSetExtendedAdvertisingParametersV1Command,
@@ -149,5 +150,11 @@ internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster) : Adv
                 cancellationToken: CancellationToken.None
             )
             .ConfigureAwait(false);
+        IsAdvertising = false;
+    }
+
+    internal void SetAdvertisingStatus(bool isEnabled)
+    {
+        IsAdvertising = isEnabled;
     }
 }

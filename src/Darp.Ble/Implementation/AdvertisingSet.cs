@@ -29,7 +29,7 @@ public abstract class AdvertisingSet(BleBroadcaster broadcaster) : IAdvertisingS
     public TxPowerLevel SelectedTxPower { get; protected set; } = TxPowerLevel.NotAvailable;
 
     /// <inheritdoc />
-    public bool IsAdvertising { get; }
+    public bool IsAdvertising { get; protected set; }
 
     /// <inheritdoc />
     public virtual Task SetRandomAddressAsync(BleAddress randomAddress, CancellationToken cancellationToken = default)
