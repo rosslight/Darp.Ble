@@ -4,7 +4,6 @@ using Darp.Ble.HciHost;
 using Darp.Ble.Mock;
 using Serilog;
 using Serilog.Extensions.Logging;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Darp.Ble.Examples.Unix;
 

@@ -1,5 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
-
+﻿using System.Diagnostics;
 using System.Globalization;
 using System.Reactive.Linq;
 using Darp.Ble;
@@ -9,55 +8,111 @@ using Darp.Ble.Gap;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Gatt.Services;
+using Darp.Ble.Hci;
+using Darp.Ble.Hci.Transport;
 using Darp.Ble.HciHost;
 using Darp.Ble.Mock;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Core;
-using Serilog.Extensions.Logging;
+using Serilog.Events;
+using Serilog.Templates.Themes;
+using SerilogTracing;
+using SerilogTracing.Expressions;
 
-Logger logger = new LoggerConfiguration()
+await using Logger logger = new LoggerConfiguration()
     .MinimumLevel.Verbose()
-    .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
+    .WriteTo.Console(
+        formatter: Formatters.CreateConsoleTextFormatter(TemplateTheme.Code)
+    //        outputTemplate: "[{Timestamp:HH:mm:ss.fff} {Level:u3}] {Message:lj}{NewLine}{Exception}",
+    //        formatProvider: CultureInfo.InvariantCulture
+    )
+    .WriteTo.Seq("http://localhost:5341", formatProvider: CultureInfo.InvariantCulture)
     .CreateLogger();
 
-new ServiceCollection()
+var source = new ActivitySource("Darp.Ble.Examples", "1.0.0");
+
+using var listener = new ActivityListenerConfiguration()
+    .InitialLevel.Override("Darp.Ble.Examples", LogEventLevel.Debug)
+    .InitialLevel.Override(HciLoggingStrings.ActivityName, LogEventLevel.Debug)
+    .TraceTo(logger);
+
+var provider = new ServiceCollection()
     .AddLogging(builder => builder.AddSerilog(logger))
-    .AddBleManager(builder => builder.AddHciHost());
-
-BleManager manager = new BleManagerBuilder()
-    .AddHciHost()
-    // .AddWinRT()
-    .AddMock(factory =>
-        factory.AddPeripheral(
-            async device =>
+    .AddBleManager(builder =>
+        builder
+            .AddSerialHciHost("COM11", factory => factory.DeviceName = "Wooooowo")
+            .AddSerialHciHost(factory =>
             {
-                await device.SetRandomAddressAsync(new BleAddress(BleAddressType.RandomStatic, (UInt48)0xF1F2F3F4F5F6));
-                GattClientGattService gattService = device.Peripheral.AddGattService();
-                device.Peripheral.AddDeviceInformationService(
-                    manufacturerName: "rosslight GmbH",
-                    modelNumber: "ABC-123",
-                    serialNumber: "12345",
-                    hardwareRevision: "0.1.2",
-                    firmwareRevision: "1.2.3",
-                    softwareRevision: "2.3.4",
-                    systemId: new SystemId(0x1234, 0x123456)
+                // Configure TimeProvider
+                factory.TimeProvider = TimeProvider.System;
+            })
+            .AddMock(factory =>
+            {
+                // factory.TimeProvider = TimeProvider.System;
+                // factory.DeviceName = "Local device";
+                factory.AddPeripheral(
+                    onInitialize: async device =>
+                    {
+                        await device.SetRandomAddressAsync(
+                            new BleAddress(BleAddressType.RandomStatic, (UInt48)0xF1F2F3F4F5F6)
+                        );
+                        GattClientGattService gattService = device.Peripheral.AddGattService();
+                        device.Peripheral.AddDeviceInformationService(
+                            manufacturerName: "rosslight GmbH",
+                            modelNumber: "ABC-123",
+                            serialNumber: "12345",
+                            hardwareRevision: "0.1.2",
+                            firmwareRevision: "1.2.3",
+                            softwareRevision: "2.3.4",
+                            systemId: new SystemId(0x1234, 0x123456)
+                        );
+                        await device.Broadcaster.StartAdvertisingAsync(
+                            type: BleEventType.AdvInd,
+                            data: AdvertisingData
+                                .Empty.WithCompleteLocalName(device.Name!)
+                                .WithCompleteListOfServiceUuids(
+                                    device.Peripheral.Services.Select(x => x.Uuid).ToArray()
+                                ),
+                            interval: ScanTiming.Ms1000
+                        );
+                    },
+                    "Mock1"
                 );
-                await device.Broadcaster.StartAdvertisingAsync(
-                    type: BleEventType.AdvInd,
-                    data: AdvertisingData
-                        .Empty.WithCompleteLocalName(device.Name!)
-                        .WithCompleteListOfServiceUuids(device.Peripheral.Services.Select(x => x.Uuid).ToArray()),
-                    interval: ScanTiming.Ms1000
+                factory.AddPeripheral(
+                    onInitialize: async device =>
+                    {
+                        await device.SetRandomAddressAsync(
+                            new BleAddress(BleAddressType.RandomStatic, (UInt48)0xF2F3F4F5F6F7)
+                        );
+                        await device.Broadcaster.StartAdvertisingAsync(
+                            type: BleEventType.AdvNonConnInd,
+                            data: AdvertisingData.Empty.WithCompleteLocalName(device.Name!),
+                            interval: ScanTiming.Ms1000
+                        );
+                    },
+                    "Mock2"
                 );
-            },
-            "Mock1"
-        )
+                /*
+                factory.AddPeerCentral(onInitialized: async device =>
+                {
+                    await using IGattServerPeer connectedPeer = await device
+                        .Observer.RefCount()
+                        .WhereConnectable()
+                        .WhereService(BatteryServiceContract.BatteryService.Uuid)
+                        .ConnectToPeripheral()
+                        .FirstAsync();
+                    var service = await connectedPeer.DiscoverDeviceInformationServiceAsync();
+                    string name = await service.ManufacturerName!.ReadAsync();
+                    string number = await service.ModelNumber!.ReadAsync();
+                    var systemId = await service.SystemId!.ReadAsync();
+                });*/
+            })
+    // .AddWinRT()
     )
-    .SetLogger(new SerilogLoggerFactory(logger))
-    .CreateManager();
+    .BuildServiceProvider();
 
-IBleDevice device = manager.EnumerateDevices().First();
+IBleDevice device = provider.GetRequiredService<BleManager>().EnumerateDevices().First();
 await device.InitializeAsync();
 
 await device.SetRandomAddressAsync(new BleAddress(BleAddressType.RandomStatic, (UInt48)0xF2F2F3F4F5F6));
@@ -71,7 +126,7 @@ device.Peripheral.AddDeviceInformationService(
     softwareRevision: "2.3.4",
     systemId: new SystemId(0x1234, 0x123456)
 );
-device.Peripheral.AddEchoService(0x1234, 0x1235, 0x1236, Observable.Return);
+device.Peripheral.AddEchoService(0x1234, 0x1235, 0x1236);
 GattClientBatteryService batteryService = device.Peripheral.AddBatteryService();
 _ = Observable
     .Interval(TimeSpan.FromMilliseconds(500))
@@ -87,7 +142,7 @@ await device.Broadcaster.StartAdvertisingAsync(
     data: AdvertisingData
         .Empty.WithCompleteLocalName(device.Name!)
         .WithCompleteListOfServiceUuids(device.Peripheral.Services.Select(x => x.Uuid).ToArray()),
-    interval: ScanTiming.Ms1000,
+    interval: ScanTiming.Ms100,
     autoRestart: true
 );
 

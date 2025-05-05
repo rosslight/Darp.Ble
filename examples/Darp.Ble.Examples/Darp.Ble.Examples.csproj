@@ -14,5 +14,8 @@
   <ItemGroup>
     <PackageReference Include="Serilog.Extensions.Logging" />
     <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Serilog.Sinks.Seq" />
+    <PackageReference Include="SerilogTracing" />
+    <PackageReference Include="SerilogTracing.Expressions" />
   </ItemGroup>
 </Project>
