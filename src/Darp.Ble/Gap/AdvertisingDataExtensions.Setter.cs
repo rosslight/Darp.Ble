@@ -34,6 +34,17 @@ public static partial class AdvertisingDataExtensions
         return advertisingData.With(AdTypes.Flags, [(byte)flags]);
     }
 
+    /// <summary> Create a new <see cref="AdvertisingData"/> object with the <see cref="AdTypes.TxPowerLevel"/> section created or updated </summary>
+    /// <param name="advertisingData"> The advertising data to base on </param>
+    /// <param name="powerLevel"> The power level to set </param>
+    /// <returns> The new advertising data </returns>
+    [Pure]
+    public static AdvertisingData WithTxPower(this AdvertisingData advertisingData, TxPowerLevel powerLevel)
+    {
+        ArgumentNullException.ThrowIfNull(advertisingData);
+        return advertisingData.With(AdTypes.TxPowerLevel, [(byte)powerLevel]);
+    }
+
     /// <summary> Create a new <see cref="AdvertisingData"/> object with the <see cref="AdTypes.CompleteLocalName"/> section created or updated </summary>
     /// <param name="advertisingData"> The advertising data to base on </param>
     /// <param name="completeLocalName"> The complete local name to set </param>

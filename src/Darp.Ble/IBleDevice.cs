@@ -20,7 +20,7 @@ public interface IBleDevice : IAsyncDisposable
     public string Identifier { get; }
 
     /// <summary> An optional name </summary>
-    public string? Name { get; }
+    public string? Name { get; set; }
 
     /// <summary> An optional appearance of the device </summary>
     public AppearanceValues Appearance { get; }
@@ -49,6 +49,9 @@ public interface IBleDevice : IAsyncDisposable
     /// <exception cref="NotInitializedException"> Thrown when the device has not been initialized </exception>
     /// <exception cref="NotSupportedException"> Thrown when the role is not supported </exception>
     IBlePeripheral Peripheral { get; }
+
+    /// <summary> The random address of the device </summary>
+    BleAddress RandomAddress { get; }
 
     /// <summary> Initializes the ble device </summary>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>

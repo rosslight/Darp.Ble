@@ -9,6 +9,12 @@ namespace Darp.Ble.WinRT;
 internal sealed class WinBleDevice(IServiceProvider serviceProvider)
     : BleDevice(serviceProvider, serviceProvider.GetLogger<WinBleDevice>())
 {
+    private BluetoothAdapter? _adapter;
+    public override BleAddress RandomAddress =>
+        _adapter?.BluetoothAddress is null
+            ? BleAddress.NotAvailable
+            : new BleAddress(BleAddressType.RandomStatic, (UInt48)_adapter.BluetoothAddress);
+
     protected override Task SetRandomAddressAsyncCore(BleAddress randomAddress, CancellationToken cancellationToken)
     {
         throw new NotSupportedException();
@@ -17,21 +23,21 @@ internal sealed class WinBleDevice(IServiceProvider serviceProvider)
     /// <inheritdoc />
     protected override async Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
     {
-        BluetoothAdapter adapter = await BluetoothAdapter.GetDefaultAsync();
-        if (!adapter.IsLowEnergySupported)
+        _adapter = await BluetoothAdapter.GetDefaultAsync();
+        if (!_adapter.IsLowEnergySupported)
             return InitializeResult.DeviceVersionUnsupported;
         Observer = new WinBleObserver(this, ServiceProvider.GetLogger<WinBleObserver>());
-        if (adapter.IsCentralRoleSupported)
+        if (_adapter.IsCentralRoleSupported)
             Central = new WinBleCentral(this, ServiceProvider.GetLogger<WinBleCentral>());
-        if (adapter.IsAdvertisementOffloadSupported)
+        if (_adapter.IsAdvertisementOffloadSupported)
             Broadcaster = new WinBleBroadcaster(this, ServiceProvider.GetLogger<WinBleBroadcaster>());
-        if (adapter.IsPeripheralRoleSupported)
+        if (_adapter.IsPeripheralRoleSupported)
             Peripheral = new WinBlePeripheral(this, ServiceProvider.GetLogger<WinBlePeripheral>());
         return InitializeResult.Success;
     }
 
     /// <inheritdoc />
-    public override string Name => "Windows";
+    public override string? Name { get; set; } = "Windows";
 
     /// <inheritdoc />
     public override AppearanceValues Appearance => AppearanceValues.Computer;

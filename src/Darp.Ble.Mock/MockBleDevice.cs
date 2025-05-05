@@ -16,11 +16,12 @@ internal sealed class MockBleDevice(
     private readonly IReadOnlyList<(BleMockFactory.InitializeAsync OnInitialize, string? Name)> _deviceConfigurations =
         deviceConfigurations;
     private readonly List<MockedBleDevice> _mockedDevices = [];
+    private BleAddress _randomAddress = BleAddress.NewRandomStaticAddress();
 
     public IReadOnlyCollection<MockedBleDevice> MockedDevices => _mockedDevices;
 
     /// <inheritdoc />
-    public override string Name { get; } = name;
+    public override string? Name { get; set; } = name;
 
     /// <inheritdoc />
     public override AppearanceValues Appearance => AppearanceValues.Unknown;
@@ -30,9 +31,13 @@ internal sealed class MockBleDevice(
     /// <inheritdoc />
     public override string Identifier => BleDeviceIdentifiers.Mock;
 
+    /// <inheritdoc />
+    public override BleAddress RandomAddress => _randomAddress;
+
     protected override Task SetRandomAddressAsyncCore(BleAddress randomAddress, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        _randomAddress = randomAddress;
+        return Task.CompletedTask;
     }
 
     /// <inheritdoc />

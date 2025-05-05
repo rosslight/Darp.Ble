@@ -15,8 +15,10 @@ internal sealed class MockedBleDevice(
 ) : BleDevice(serviceProvider, serviceProvider.GetLogger<MockedBleDevice>())
 {
     private readonly BleMockFactory.InitializeAsync _onInitialize = onInitialize;
+    private BleAddress _randomAddress = BleAddress.NewRandomStaticAddress();
+
     public override string Identifier => BleDeviceIdentifiers.MockDevice;
-    public override string? Name { get; } = name;
+    public override string? Name { get; set; } = name;
     public override AppearanceValues Appearance => AppearanceValues.Unknown;
     public IScheduler Scheduler { get; } = scheduler;
 
@@ -33,11 +35,11 @@ internal sealed class MockedBleDevice(
         set => base.Broadcaster = value;
     }
 
-    public BleAddress RandomAddress { get; private set; } = BleAddress.NewRandomStaticAddress();
+    public override BleAddress RandomAddress => _randomAddress;
 
     protected override Task SetRandomAddressAsyncCore(BleAddress randomAddress, CancellationToken cancellationToken)
     {
-        RandomAddress = randomAddress;
+        _randomAddress = randomAddress;
         return Task.CompletedTask;
     }
 

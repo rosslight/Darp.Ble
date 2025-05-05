@@ -12,23 +12,23 @@ namespace Darp.Ble.HciHost;
 
 /// <summary> Provides windows specific implementation of a ble device </summary>
 internal sealed class HciHostBleDevice(
-    string port,
     string name,
     BleAddress? randomAddress,
+    ITransportLayer transportLayer,
     IServiceProvider serviceProvider
 ) : BleDevice(serviceProvider, serviceProvider.GetLogger<HciHostBleDevice>())
 {
     public Hci.HciHost Host { get; } =
         new(
-            new H4TransportLayer(port, logger: serviceProvider.GetLogger<H4TransportLayer>()),
+            transportLayer,
             randomAddress ?? BleAddress.NewRandomStaticAddress().Value,
             logger: serviceProvider.GetLogger<Hci.HciHost>()
         );
 
-    public override string Name { get; } = name;
+    public override string? Name { get; set; } = name;
     public override AppearanceValues Appearance => AppearanceValues.Unknown;
 
-    public BleAddress RandomAddress => new(BleAddressType.RandomStatic, (UInt48)Host.Address);
+    public override BleAddress RandomAddress => new(BleAddressType.RandomStatic, (UInt48)Host.Address);
 
     /// <inheritdoc />
     protected override async Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)

@@ -35,7 +35,7 @@ public abstract class BleDevice(IServiceProvider serviceProvider, ILogger<BleDev
     public abstract string Identifier { get; }
 
     /// <inheritdoc />
-    public abstract string? Name { get; }
+    public abstract string? Name { get; set; }
 
     /// <inheritdoc />
     public abstract AppearanceValues Appearance { get; }
@@ -75,6 +75,9 @@ public abstract class BleDevice(IServiceProvider serviceProvider, ILogger<BleDev
         get => ThrowIfNull(_blePeripheral);
         protected set => _blePeripheral = value;
     }
+
+    /// <inheritdoc />
+    public abstract BleAddress RandomAddress { get; }
 
     /// <inheritdoc />
     public async Task<InitializeResult> InitializeAsync(CancellationToken cancellationToken = default)
