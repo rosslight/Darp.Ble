@@ -17,8 +17,15 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, IService
     [MemberNotNullWhen(true, nameof(BluetoothAdapter))]
     public bool IsAvailable => BluetoothAdapter?.IsEnabled == true;
 
-    public override string? Name => BluetoothAdapter?.Name;
+    public override string? Name
+    {
+        get => BluetoothAdapter?.Name;
+        set => BluetoothAdapter?.SetName(value);
+    }
+
     public override AppearanceValues Appearance => AppearanceValues.Unknown;
+
+    public override BleAddress RandomAddress => InternalHelpers.ParseBleAddress(BluetoothAdapter?.Address);
 
     protected override Task SetRandomAddressAsyncCore(BleAddress randomAddress, CancellationToken cancellationToken)
     {

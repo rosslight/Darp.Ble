@@ -68,9 +68,7 @@ public sealed class AndroidBleObserver(
 
         // Assume address string is hex
         string? addressString = scanResult.Device?.Address;
-        BleAddress address = addressString is not null
-            ? BleAddress.Parse(addressString, provider: null)
-            : new BleAddress(BleAddressType.NotAvailable, (UInt48)0x00);
+        BleAddress address = InternalHelpers.ParseBleAddress(addressString);
 
         AdvertisingData advertisingData = AdvertisingData.From(scanResult.ScanRecord?.GetBytes());
 
