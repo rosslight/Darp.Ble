@@ -1,12 +1,13 @@
 using Darp.Ble.Data;
+using Darp.Ble.Hci.Transport;
 using Darp.Ble.HciHost.Usb;
 
 namespace Darp.Ble.HciHost;
 
 /// <summary> A factory searching for all available hci devices </summary>
-public sealed class HciHostBleFactory : IBleFactory
+public sealed class HciHostBleFactory : IHciHostBleFactory
 {
-    /// <summary> The random address of the device </summary>
+    /// <inheritdoc />
     public BleAddress? RandomAddress { get; set; }
 
     /// <summary> A simple mapping of vendorId and productId to the name of the device </summary>
@@ -14,7 +15,9 @@ public sealed class HciHostBleFactory : IBleFactory
         new Dictionary<(ushort VendorId, ushort ProductId), string> { [(0x2FE3, 0x0004)] = "nrf52840 dongle" };
 
     /// <inheritdoc />
-    public IEnumerable<IBleDevice> EnumerateDevices(IServiceProvider serviceProvider)
+    public TimeProvider TimeProvider { get; set; } = TimeProvider.System;
+
+    IEnumerable<IBleDevice> IBleFactory.EnumerateDevices(IServiceProvider serviceProvider)
     {
         // Using vendorId of NordicSemiconductor and productId self defined
         foreach (UsbPortInfo portInfo in UsbPort.GetPortInfos())
@@ -23,10 +26,14 @@ public sealed class HciHostBleFactory : IBleFactory
                 continue;
             if (!DeviceNameMapping.TryGetValue((portInfo.VendorId, portInfo.ProductId), out string? deviceName))
                 continue;
+
+#pragma warning disable CA2000 // Dispose objects before losing scope -> False positive
+            var transportLayer = new H4TransportLayer(portInfo.Port, serviceProvider.GetLogger<H4TransportLayer>());
+#pragma warning restore CA2000
             yield return new HciHostBleDevice(
-                portInfo.Port,
                 $"{deviceName} ({portInfo.Port})",
                 randomAddress: RandomAddress,
+                transportLayer,
                 serviceProvider
             );
         }

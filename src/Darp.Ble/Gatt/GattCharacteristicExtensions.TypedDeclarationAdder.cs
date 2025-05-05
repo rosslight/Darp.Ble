@@ -29,14 +29,14 @@ public static partial class GattCharacteristicExtensions
         ArgumentNullException.ThrowIfNull(characteristicDeclaration);
         OnReadAsyncCallback? onAsyncRead = onRead is null
             ? null
-            : async (peer, provider) =>
+            : async peer =>
             {
-                T value = await onRead(peer, provider).ConfigureAwait(false);
+                T value = await onRead(peer).ConfigureAwait(false);
                 return characteristicDeclaration.WriteValue(value);
             };
         OnWriteAsyncCallback? onAsyncWrite = onWrite is null
             ? null
-            : (peer, bytes, provider) => onWrite(peer, characteristicDeclaration.ReadValue(bytes), provider);
+            : (peer, bytes) => onWrite(peer, characteristicDeclaration.ReadValue(bytes));
         IGattClientCharacteristic characteristic = service.AddCharacteristic(
             TProp1.GattProperty,
             new FuncCharacteristicValue(
@@ -73,16 +73,14 @@ public static partial class GattCharacteristicExtensions
         where TProp1 : IBleProperty
     {
         ArgumentNullException.ThrowIfNull(service);
-        OnReadAsyncCallback<T>? onAsyncRead = onRead is null
-            ? null
-            : (peer, provider) => ValueTask.FromResult(onRead(peer, provider));
+        OnReadAsyncCallback<T>? onAsyncRead = onRead is null ? null : peer => ValueTask.FromResult(onRead(peer));
         OnWriteAsyncCallback<T>? onAsyncWrite = onWrite is null
             ? null
-            : (peer, bytes, provider) =>
+            : (peer, bytes) =>
             {
                 if (bytes == null)
                     throw new ArgumentNullException(nameof(bytes));
-                return ValueTask.FromResult(onWrite(peer, bytes, provider));
+                return ValueTask.FromResult(onWrite(peer, bytes));
             };
         return service.AddCharacteristic(characteristicDeclaration, onAsyncRead, onAsyncWrite);
     }
@@ -110,14 +108,14 @@ public static partial class GattCharacteristicExtensions
         ArgumentNullException.ThrowIfNull(characteristicDeclaration);
         OnReadAsyncCallback? onAsyncRead = onRead is null
             ? null
-            : async (peer, provider) =>
+            : async peer =>
             {
-                T value = await onRead(peer, provider).ConfigureAwait(false);
+                T value = await onRead(peer).ConfigureAwait(false);
                 return characteristicDeclaration.WriteValue(value);
             };
         OnWriteAsyncCallback? onAsyncWrite = onWrite is null
             ? null
-            : (peer, bytes, provider) => onWrite(peer, characteristicDeclaration.ReadValue(bytes), provider);
+            : (peer, bytes) => onWrite(peer, characteristicDeclaration.ReadValue(bytes));
         IGattClientCharacteristic characteristic = service.AddCharacteristic(
             TProp1.GattProperty | TProp2.GattProperty,
             new FuncCharacteristicValue(
@@ -154,8 +152,8 @@ public static partial class GattCharacteristicExtensions
         ArgumentNullException.ThrowIfNull(service);
         return service.AddCharacteristic(
             characteristicDeclaration,
-            onRead: (_, _) => ValueTask.FromResult(staticValue),
-            onWrite: (_, bytesToWrite, _) =>
+            onRead: _ => ValueTask.FromResult(staticValue),
+            onWrite: (_, bytesToWrite) =>
             {
                 staticValue = bytesToWrite;
                 return ValueTask.FromResult(GattProtocolStatus.Success);
@@ -182,8 +180,8 @@ public static partial class GattCharacteristicExtensions
         ArgumentNullException.ThrowIfNull(service);
         return service.AddCharacteristic(
             characteristicDeclaration,
-            onRead: (_, _) => ValueTask.FromResult(staticValue),
-            onWrite: (_, bytesToWrite, _) =>
+            onRead: _ => ValueTask.FromResult(staticValue),
+            onWrite: (_, bytesToWrite) =>
             {
                 staticValue = bytesToWrite;
                 return ValueTask.FromResult(GattProtocolStatus.Success);

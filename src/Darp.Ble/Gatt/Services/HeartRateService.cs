@@ -195,7 +195,7 @@ public static class HeartRateServiceContract
         {
             heartRateControlPointCharacteristic = service.AddCharacteristic<Properties.Write>(
                 HeartRateControlPointCharacteristic.Uuid,
-                onWrite: (_, bytes, _) =>
+                onWrite: (_, bytes) =>
                 {
                     if (bytes.Length < 1 || bytes[0] is not ResetEnergyExpended)
                         return ControlPointNotSupported;

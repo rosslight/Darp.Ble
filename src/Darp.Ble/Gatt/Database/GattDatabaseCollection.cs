@@ -278,7 +278,7 @@ internal sealed class GattDatabaseCollection : IGattDatabase
             if (entry.AttributeType == PrimaryServiceType || entry.AttributeType == SecondaryServiceType)
             {
                 // Read the value.
-                ValueTask<byte[]> readTask = entry.ReadValueAsync(clientPeer: null, null!);
+                ValueTask<byte[]> readTask = entry.ReadValueAsync(clientPeer: null);
                 byte[] value = readTask.IsCompletedSuccessfully
                     ? readTask.Result
                     : readTask.AsTask().GetAwaiter().GetResult();

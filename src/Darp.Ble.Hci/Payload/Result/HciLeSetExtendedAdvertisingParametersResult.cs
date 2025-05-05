@@ -5,9 +5,9 @@ namespace Darp.Ble.Hci.Payload.Result;
 
 /// <summary> Response to <see cref="HciLeSetExtendedAdvertisingParametersV1Command"/> </summary>
 [BinaryObject]
-public readonly partial record struct HciLeSetExtendedAdvertisingParametersResult
+public readonly partial record struct HciLeSetExtendedAdvertisingParametersResult : ICommandStatusResult
 {
-    /// <summary> The <see cref="HciCommandStatus"/> </summary>
+    /// <inheritdoc />
     public required HciCommandStatus Status { get; init; }
 
     /// <summary> Selected_TX_Power </summary>

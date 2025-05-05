@@ -5,8 +5,8 @@ namespace Darp.Ble.Hci.Payload.Result;
 
 /// <summary> Response to <see cref="HciLeRemoveAdvertisingSetCommand"/> </summary>
 [BinaryObject]
-public readonly partial record struct HciLeRemoveAdvertisingSetResult
+public readonly partial record struct HciLeRemoveAdvertisingSetResult : ICommandStatusResult
 {
-    /// <summary> The <see cref="HciCommandStatus"/> </summary>
+    /// <inheritdoc />
     public required HciCommandStatus Status { get; init; }
 }

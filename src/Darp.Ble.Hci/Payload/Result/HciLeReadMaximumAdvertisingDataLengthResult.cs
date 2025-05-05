@@ -5,9 +5,9 @@ namespace Darp.Ble.Hci.Payload.Result;
 
 /// <summary> Response to <see cref="HciLeReadMaximumAdvertisingDataLengthCommand"/> </summary>
 [BinaryObject]
-public readonly partial record struct HciLeReadMaximumAdvertisingDataLengthResult
+public readonly partial record struct HciLeReadMaximumAdvertisingDataLengthResult : ICommandStatusResult
 {
-    /// <summary> The <see cref="HciCommandStatus"/> </summary>
+    /// <inheritdoc />
     public required HciCommandStatus Status { get; init; }
 
     /// <summary> Max_Advertising_Data_Length </summary>

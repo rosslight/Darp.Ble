@@ -69,7 +69,7 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ulong random
     /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
-        _transportLayer.Initialize(OnReceivedPacket);
+        await _transportLayer.InitializeAsync(OnReceivedPacket, cancellationToken).ConfigureAwait(false);
         Activity? activity = Logging.StartInitializeHciHostActivity();
         try
         {
@@ -266,7 +266,7 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ulong random
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TResponse
     >(TCommand command, TimeSpan? timeout, CancellationToken cancellationToken)
         where TCommand : IHciCommand
-        where TResponse : IBinaryReadable<TResponse>
+        where TResponse : ICommandStatusResult, IBinaryReadable<TResponse>
     {
         timeout ??= TimeSpan.FromSeconds(5);
         using var handler = new HciPacketInFlightHandler<TCommand, HciCommandCompleteEvent>(
@@ -279,6 +279,8 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ulong random
         if (!TResponse.TryReadLittleEndian(response.ReturnParameters.Span, out TResponse? parameters))
             throw new HciException("Command failed because response could not be read");
         activity?.SetDeconstructedTags("Response.Parameters", parameters, orderEntries: true, writeRawBytes: false);
+        if (parameters.Status is not HciCommandStatus.Success)
+            activity?.SetStatus(ActivityStatusCode.Error);
         activity?.Dispose();
         return parameters;
     }

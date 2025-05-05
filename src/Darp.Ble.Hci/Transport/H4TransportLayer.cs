@@ -18,7 +18,7 @@ public readonly ref struct HciPacket(HciPacketType packetType, ReadOnlySpan<byte
 /// <summary> A transport layer which sends HCI packets via a <see cref="SerialPort"/> </summary>
 public sealed class H4TransportLayer : ITransportLayer
 {
-    private readonly ILogger _logger;
+    private readonly ILogger<H4TransportLayer> _logger;
     private readonly SerialPort _serialPort;
     private readonly ConcurrentQueue<IHciPacket> _txQueue;
     private readonly CancellationTokenSource _cancelSource;
@@ -133,11 +133,12 @@ public sealed class H4TransportLayer : ITransportLayer
     }
 
     /// <inheritdoc />
-    public void Initialize(Action<HciPacket> onReceived)
+    public ValueTask InitializeAsync(Action<HciPacket> onReceived, CancellationToken cancellationToken)
     {
         _ = Task.Run(RunTx, _cancelToken);
         _ = Task.Run(() => RunRx(onReceived), _cancelToken);
         _serialPort.Open();
+        return ValueTask.CompletedTask;
     }
 
     /// <inheritdoc />

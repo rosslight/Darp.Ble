@@ -2,6 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Event;
+using Darp.Ble.Hci.Payload.Result;
 
 namespace Darp.Ble.Hci.Package;
 
@@ -19,7 +20,7 @@ public static class CommandPackageExtensions
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TResponse
     >(this HciHost hciHost, CancellationToken cancellationToken = default)
         where TCommand : unmanaged, IHciCommand
-        where TResponse : unmanaged, IBinaryReadable<TResponse>
+        where TResponse : unmanaged, ICommandStatusResult, IBinaryReadable<TResponse>
     {
         ArgumentNullException.ThrowIfNull(hciHost);
         return hciHost.QueryCommandCompletionAsync<TCommand, TResponse>(default, timeout: null, cancellationToken);
@@ -37,7 +38,7 @@ public static class CommandPackageExtensions
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TParameters
     >(this HciHost hciHost, TCommand command, CancellationToken cancellationToken = default)
         where TCommand : IHciCommand
-        where TParameters : unmanaged, IBinaryReadable<TParameters>
+        where TParameters : unmanaged, ICommandStatusResult, IBinaryReadable<TParameters>
     {
         ArgumentNullException.ThrowIfNull(hciHost);
         return hciHost.QueryCommandCompletionAsync<TCommand, TParameters>(command, timeout: null, cancellationToken);

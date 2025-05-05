@@ -49,12 +49,10 @@ public static class GattDescriptorExtensions
     )
     {
         ArgumentNullException.ThrowIfNull(characteristic);
-        OnReadAsyncCallback? onAsyncRead = onRead is null
-            ? null
-            : (peer, provider) => ValueTask.FromResult(onRead(peer, provider));
+        OnReadAsyncCallback? onAsyncRead = onRead is null ? null : peer => ValueTask.FromResult(onRead(peer));
         OnWriteAsyncCallback? onAsyncWrite = onWrite is null
             ? null
-            : (peer, bytes, provider) => ValueTask.FromResult(onWrite(peer, bytes, provider));
+            : (peer, bytes) => ValueTask.FromResult(onWrite(peer, bytes));
         characteristic.AddDescriptor(uuid, onAsyncRead, onAsyncWrite);
     }
 
@@ -99,8 +97,8 @@ public static class GattDescriptorExtensions
         ArgumentNullException.ThrowIfNull(characteristic);
         characteristic.AddDescriptor(
             uuid,
-            (_, _) => ValueTask.FromResult(staticValue),
-            (_, value, _) =>
+            _ => ValueTask.FromResult(staticValue),
+            (_, value) =>
             {
                 staticValue = value.ToArray();
                 return ValueTask.FromResult(GattProtocolStatus.Success);
@@ -128,9 +126,8 @@ public static class GattDescriptorExtensions
 
         characteristic.AddDescriptor(
             DescriptorDeclaration.ClientCharacteristicConfiguration,
-            onRead: (peer, _) =>
-                peer is not null && dictionary.TryGetValue(peer, out byte[]? value) ? value : [0x00, 0x00],
-            onWrite: (peer, value, _) =>
+            onRead: peer => peer is not null && dictionary.TryGetValue(peer, out byte[]? value) ? value : [0x00, 0x00],
+            onWrite: (peer, value) =>
             {
                 if (peer is null || value.Length != 2)
                     return GattProtocolStatus.OutOfRange;

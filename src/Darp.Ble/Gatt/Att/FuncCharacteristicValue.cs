@@ -68,19 +68,14 @@ public sealed class FuncCharacteristicValue(
         _checkWritePermissions(clientPeer);
 
     /// <inheritdoc />
-    public ValueTask<byte[]> ReadValueAsync(IGattClientPeer? clientPeer, IServiceProvider serviceProvider)
+    public ValueTask<byte[]> ReadValueAsync(IGattClientPeer? clientPeer)
     {
-        return _onRead?.Invoke(clientPeer, serviceProvider) ?? ValueTask.FromResult<byte[]>([]);
+        return _onRead?.Invoke(clientPeer) ?? ValueTask.FromResult<byte[]>([]);
     }
 
     /// <inheritdoc />
-    public ValueTask<GattProtocolStatus> WriteValueAsync(
-        IGattClientPeer? clientPeer,
-        byte[] value,
-        IServiceProvider serviceProvider
-    )
+    public ValueTask<GattProtocolStatus> WriteValueAsync(IGattClientPeer? clientPeer, byte[] value)
     {
-        return _onWrite?.Invoke(clientPeer, value, serviceProvider)
-            ?? ValueTask.FromResult(GattProtocolStatus.WriteRequestRejected);
+        return _onWrite?.Invoke(clientPeer, value) ?? ValueTask.FromResult(GattProtocolStatus.WriteRequestRejected);
     }
 }

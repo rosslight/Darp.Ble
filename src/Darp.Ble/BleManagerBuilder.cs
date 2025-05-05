@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
@@ -60,6 +61,12 @@ file sealed class BleManagerServiceProvider(ILoggerFactory? loggerFactory) : ISe
 {
     private readonly ILoggerFactory? _loggerFactory = loggerFactory;
 
+    [UnconditionalSuppressMessage(
+        "AOT",
+        "IL3050:Calling members annotated with 'RequiresDynamicCodeAttribute' may break functionality when AOT compiling.",
+        Justification = "GenericTypeArgument has to be specified outside and will always be present"
+    )]
+    [DynamicDependency(DynamicallyAccessedMemberTypes.All, typeof(Logger<>))]
     public object? GetService(Type serviceType)
     {
         // Ensure our calls for loggers are always handled correctly
@@ -67,8 +74,13 @@ file sealed class BleManagerServiceProvider(ILoggerFactory? loggerFactory) : ISe
             return _loggerFactory ?? NullLoggerFactory.Instance;
         if (serviceType == typeof(ILogger))
             return _loggerFactory?.CreateLogger("Darp.Ble") ?? NullLogger.Instance;
-        if (serviceType == typeof(ILogger<>))
-            return _loggerFactory?.CreateLogger(serviceType.GenericTypeArguments[0]) ?? NullLogger.Instance;
+        if (serviceType.GetGenericTypeDefinition() == typeof(ILogger<>))
+        {
+            Type openGeneric = typeof(Logger<>);
+            Type closedGeneric = openGeneric.MakeGenericType(serviceType.GenericTypeArguments[0]);
+            return Activator.CreateInstance(closedGeneric, _loggerFactory ?? NullLoggerFactory.Instance);
+        }
+
         return null;
     }
 }

@@ -31,17 +31,17 @@ internal sealed class MockGattServerCharacteristic(
     /// <inheritdoc />
     protected override Task WriteAsyncCore(byte[] bytes, CancellationToken cancellationToken)
     {
-        return _characteristic.Value.WriteValueAsync(_gattClient, bytes, ServiceProvider).AsTask();
+        return _characteristic.Value.WriteValueAsync(_gattClient, bytes).AsTask();
     }
 
     protected override void WriteWithoutResponseCore(byte[] bytes)
     {
-        _ = Task.Run(() => _characteristic.Value.WriteValueAsync(_gattClient, bytes, ServiceProvider));
+        _ = Task.Run(() => _characteristic.Value.WriteValueAsync(_gattClient, bytes));
     }
 
     protected override async Task<byte[]> ReadAsyncCore(CancellationToken cancellationToken)
     {
-        return await _characteristic.Value.ReadValueAsync(_gattClient, ServiceProvider).ConfigureAwait(false);
+        return await _characteristic.Value.ReadValueAsync(_gattClient).ConfigureAwait(false);
     }
 
     protected override async Task<IDisposable> EnableNotificationsAsync<TState>(

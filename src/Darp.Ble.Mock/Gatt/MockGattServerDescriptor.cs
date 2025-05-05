@@ -18,14 +18,12 @@ internal sealed class MockGattServerDescriptor(
 
     public override async Task<byte[]> ReadAsync(CancellationToken cancellationToken = default)
     {
-        return await _mockDescriptor.ReadValueAsync(_clientPeer, ServiceProvider).ConfigureAwait(false);
+        return await _mockDescriptor.ReadValueAsync(_clientPeer).ConfigureAwait(false);
     }
 
     public override async Task<bool> WriteAsync(byte[] bytes, CancellationToken cancellationToken = default)
     {
-        GattProtocolStatus result = await _mockDescriptor
-            .WriteValueAsync(_clientPeer, bytes, ServiceProvider)
-            .ConfigureAwait(false);
+        GattProtocolStatus result = await _mockDescriptor.WriteValueAsync(_clientPeer, bytes).ConfigureAwait(false);
         return result is GattProtocolStatus.Success;
     }
 }

@@ -56,12 +56,10 @@ public static partial class GattCharacteristicExtensions
         where TProp1 : IBleProperty
     {
         ArgumentNullException.ThrowIfNull(service);
-        OnReadAsyncCallback? onAsyncRead = onRead is null
-            ? null
-            : (peer, provider) => ValueTask.FromResult(onRead(peer, provider));
+        OnReadAsyncCallback? onAsyncRead = onRead is null ? null : peer => ValueTask.FromResult(onRead(peer));
         OnWriteAsyncCallback? onAsyncWrite = onWrite is null
             ? null
-            : (peer, bytes, provider) => ValueTask.FromResult(onWrite(peer, bytes, provider));
+            : (peer, bytes) => ValueTask.FromResult(onWrite(peer, bytes));
         return service.AddCharacteristic<TProp1>(uuid, onAsyncRead, onAsyncWrite);
     }
 
@@ -115,8 +113,8 @@ public static partial class GattCharacteristicExtensions
         ArgumentNullException.ThrowIfNull(service);
         return service.AddCharacteristic<TProp1>(
             uuid,
-            onRead: (_, _) => ValueTask.FromResult(staticValue),
-            onWrite: (_, bytesToWrite, _) =>
+            onRead: _ => ValueTask.FromResult(staticValue),
+            onWrite: (_, bytesToWrite) =>
             {
                 staticValue = bytesToWrite.ToArray();
                 return ValueTask.FromResult(GattProtocolStatus.Success);
@@ -142,8 +140,8 @@ public static partial class GattCharacteristicExtensions
         ArgumentNullException.ThrowIfNull(service);
         return service.AddCharacteristic<TProp1, TProp2>(
             uuid,
-            onRead: (_, _) => ValueTask.FromResult(staticValue),
-            onWrite: (_, bytesToWrite, _) =>
+            onRead: _ => ValueTask.FromResult(staticValue),
+            onWrite: (_, bytesToWrite) =>
             {
                 staticValue = bytesToWrite.ToArray();
                 return ValueTask.FromResult(GattProtocolStatus.Success);

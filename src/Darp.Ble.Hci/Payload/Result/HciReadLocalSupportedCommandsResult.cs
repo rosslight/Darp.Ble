@@ -44,7 +44,7 @@ public readonly partial record struct HciReadLocalSupportedCommandsResult(
     ulong Bits5,
     ulong Bits6,
     ulong Bits7
-)
+) : ICommandStatusResult
 {
     /// <summary> The supported commands </summary>
     /// <remarks> <see href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-d5f3af07-8495-3fe6-8afe-c6e6db371233"/> </remarks>

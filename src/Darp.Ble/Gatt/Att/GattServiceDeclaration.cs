@@ -22,12 +22,8 @@ internal sealed class GattServiceDeclaration(IGattDatabase gattDatabase, BleUuid
     public PermissionCheckStatus CheckWritePermissions(IGattClientPeer clientPeer) =>
         PermissionCheckStatus.WriteNotPermittedError;
 
-    public ValueTask<byte[]> ReadValueAsync(IGattClientPeer? clientPeer, IServiceProvider _) =>
-        ValueTask.FromResult(_uuid.ToByteArray());
+    public ValueTask<byte[]> ReadValueAsync(IGattClientPeer? clientPeer) => ValueTask.FromResult(_uuid.ToByteArray());
 
-    public ValueTask<GattProtocolStatus> WriteValueAsync(
-        IGattClientPeer? clientPeer,
-        byte[] value,
-        IServiceProvider _
-    ) => ValueTask.FromResult(GattProtocolStatus.WriteRequestRejected);
+    public ValueTask<GattProtocolStatus> WriteValueAsync(IGattClientPeer? clientPeer, byte[] value) =>
+        ValueTask.FromResult(GattProtocolStatus.WriteRequestRejected);
 }

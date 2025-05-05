@@ -34,15 +34,11 @@ public readonly struct GattDatabaseGroupEntry(IGattAttribute attribute, ushort h
         _attribute.CheckWritePermissions(clientPeer);
 
     /// <inheritdoc />
-    public ValueTask<GattProtocolStatus> WriteValueAsync(
-        IGattClientPeer? clientPeer,
-        byte[] value,
-        IServiceProvider serviceProvider
-    ) => _attribute.WriteValueAsync(clientPeer, value, serviceProvider);
+    public ValueTask<GattProtocolStatus> WriteValueAsync(IGattClientPeer? clientPeer, byte[] value) =>
+        _attribute.WriteValueAsync(clientPeer, value);
 
     /// <inheritdoc />
-    public ValueTask<byte[]> ReadValueAsync(IGattClientPeer? clientPeer, IServiceProvider serviceProvider) =>
-        _attribute.ReadValueAsync(clientPeer, serviceProvider);
+    public ValueTask<byte[]> ReadValueAsync(IGattClientPeer? clientPeer) => _attribute.ReadValueAsync(clientPeer);
 
     /// <inheritdoc />
     public bool Equals(GattDatabaseGroupEntry other)

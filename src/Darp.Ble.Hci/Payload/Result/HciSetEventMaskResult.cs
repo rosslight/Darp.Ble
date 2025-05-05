@@ -5,8 +5,8 @@ namespace Darp.Ble.Hci.Payload.Result;
 
 /// <summary> Response to <see cref="HciSetEventMaskCommand"/> </summary>
 [BinaryObject]
-public readonly partial record struct HciSetEventMaskResult
+public readonly partial record struct HciSetEventMaskResult : ICommandStatusResult
 {
-    /// <summary> The <see cref="HciCommandStatus"/> </summary>
+    /// <inheritdoc />
     public required HciCommandStatus Status { get; init; }
 }

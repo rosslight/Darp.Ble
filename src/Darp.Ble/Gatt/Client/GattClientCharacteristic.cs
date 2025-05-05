@@ -90,7 +90,7 @@ public abstract class GattClientCharacteristic(
         {
             if (Value.CheckReadPermissions(clientPeer) is PermissionCheckStatus.Success)
             {
-                await Value.WriteValueAsync(clientPeer, value, ServiceProvider).ConfigureAwait(false);
+                await Value.WriteValueAsync(clientPeer, value).ConfigureAwait(false);
             }
             await NotifyAsyncCore(clientPeer, value).ConfigureAwait(false);
         }
@@ -100,7 +100,7 @@ public abstract class GattClientCharacteristic(
             {
                 if (Value.CheckReadPermissions(connectedPeer) is PermissionCheckStatus.Success)
                 {
-                    await Value.WriteValueAsync(clientPeer, value, ServiceProvider).ConfigureAwait(false);
+                    await Value.WriteValueAsync(clientPeer, value).ConfigureAwait(false);
                 }
                 await NotifyAsyncCore(connectedPeer, value).ConfigureAwait(false);
             }
@@ -114,7 +114,7 @@ public abstract class GattClientCharacteristic(
         {
             if (Value.CheckReadPermissions(clientPeer) is PermissionCheckStatus.Success)
             {
-                await Value.WriteValueAsync(clientPeer, value, ServiceProvider).ConfigureAwait(false);
+                await Value.WriteValueAsync(clientPeer, value).ConfigureAwait(false);
             }
             await IndicateAsyncCore(clientPeer, value, cancellationToken).ConfigureAwait(false);
         }
@@ -125,7 +125,7 @@ public abstract class GattClientCharacteristic(
                 cancellationToken.ThrowIfCancellationRequested();
                 if (Value.CheckReadPermissions(connectedPeer) is PermissionCheckStatus.Success)
                 {
-                    ValueTask<GattProtocolStatus> valueTask = Value.WriteValueAsync(clientPeer, value, ServiceProvider);
+                    ValueTask<GattProtocolStatus> valueTask = Value.WriteValueAsync(clientPeer, value);
                     if (!valueTask.IsCompletedSuccessfully)
                     {
                         _ = valueTask.AsTask();

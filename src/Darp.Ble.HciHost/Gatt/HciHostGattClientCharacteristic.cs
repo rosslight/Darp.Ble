@@ -21,7 +21,7 @@ internal sealed class HciHostGattClientCharacteristic(
             return;
         if (!Descriptors.TryGet(DescriptorDeclaration.ClientCharacteristicConfiguration.Uuid, out var cccd))
             throw new NotSupportedException();
-        byte[] cccdValue = await cccd.ReadValueAsync(clientPeer, ServiceProvider).ConfigureAwait(false);
+        byte[] cccdValue = await cccd.ReadValueAsync(clientPeer).ConfigureAwait(false);
         if ((cccdValue[0] & 0b1) != 0b1)
             return;
         hciHostClientPeer.EnqueueGattPacket(
