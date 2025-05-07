@@ -23,7 +23,7 @@ public sealed class AndroidBleDevice(BluetoothManager bluetoothManager, IService
         set => BluetoothAdapter?.SetName(value);
     }
 
-    public override AppearanceValues Appearance => AppearanceValues.Unknown;
+    public override AppearanceValues Appearance { get; set; } = AppearanceValues.Unknown;
 
     public override BleAddress RandomAddress => InternalHelpers.ParseBleAddress(BluetoothAdapter?.Address);
 

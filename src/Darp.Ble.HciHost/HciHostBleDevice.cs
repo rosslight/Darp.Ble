@@ -26,7 +26,7 @@ internal sealed class HciHostBleDevice(
         );
 
     public override string? Name { get; set; } = name;
-    public override AppearanceValues Appearance => AppearanceValues.Unknown;
+    public override AppearanceValues Appearance { get; set; } = AppearanceValues.Unknown;
 
     public override BleAddress RandomAddress => BleAddress.CreateRandomAddress((UInt48)Host.Address);
 

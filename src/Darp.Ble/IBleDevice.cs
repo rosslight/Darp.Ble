@@ -1,6 +1,7 @@
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Exceptions;
+using Darp.Ble.Gatt.Services;
 
 namespace Darp.Ble;
 
@@ -23,7 +24,10 @@ public interface IBleDevice : IAsyncDisposable
     public string? Name { get; set; }
 
     /// <summary> An optional appearance of the device </summary>
-    public AppearanceValues Appearance { get; }
+    /// <remarks> The default value depends on the implementation. </remarks>
+    /// <remarks> When set, make sure to notify depending services (e.g. <see cref="GapServiceContract"/> or the advertising data) of the change </remarks>
+    /// <exception cref="NotSupportedException"> Some implementations might not support setting the appearance </exception>
+    public AppearanceValues Appearance { get; set; }
 
     /// <summary>
     /// Gives back capabilities of this device. Before the device was successfully initialized, the capabilities are unknown

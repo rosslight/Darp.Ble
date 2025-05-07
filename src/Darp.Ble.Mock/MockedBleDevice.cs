@@ -19,7 +19,7 @@ internal sealed class MockedBleDevice(
 
     public override string Identifier => BleDeviceIdentifiers.MockDevice;
     public override string? Name { get; set; } = name;
-    public override AppearanceValues Appearance => AppearanceValues.Unknown;
+    public override AppearanceValues Appearance { get; set; } = AppearanceValues.Unknown;
     public IScheduler Scheduler { get; } = scheduler;
 
     public MockDeviceSettings Settings { get; } = new();

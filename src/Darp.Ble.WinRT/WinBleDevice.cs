@@ -40,7 +40,7 @@ internal sealed class WinBleDevice(IServiceProvider serviceProvider)
     public override string? Name { get; set; } = "Windows";
 
     /// <inheritdoc />
-    public override AppearanceValues Appearance => AppearanceValues.Computer;
+    public override AppearanceValues Appearance { get; set; } = AppearanceValues.Computer;
 
     /// <inheritdoc />
     public override string Identifier => BleDeviceIdentifiers.WinRT;

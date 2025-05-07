@@ -24,7 +24,7 @@ internal sealed class MockBleDevice(
     public override string? Name { get; set; } = name;
 
     /// <inheritdoc />
-    public override AppearanceValues Appearance => AppearanceValues.Unknown;
+    public override AppearanceValues Appearance { get; set; } = AppearanceValues.Unknown;
 
     public IScheduler Scheduler { get; } = scheduler;
 

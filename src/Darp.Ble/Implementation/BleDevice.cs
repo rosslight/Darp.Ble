@@ -38,7 +38,7 @@ public abstract class BleDevice(IServiceProvider serviceProvider, ILogger<BleDev
     public abstract string? Name { get; set; }
 
     /// <inheritdoc />
-    public abstract AppearanceValues Appearance { get; }
+    public abstract AppearanceValues Appearance { get; set; }
 
     /// <inheritdoc />
     public Capabilities Capabilities =>
