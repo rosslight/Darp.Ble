@@ -175,7 +175,7 @@ public sealed record BleAddress : ISpanParsable<BleAddress>, IEquatable<UInt48>,
     /// <summary> Create BleAddress from a uint48 and inter the random <see cref="BleAddressType"/> </summary>
     /// <param name="value"> The value to base the address on </param>
     /// <returns> The BleAddress with the type inferred </returns>
-    /// <exception cref="ArgumentOutOfRangeException"> Thrown, if MSB of provided <paramref name="value"/> are 0b10 which are reserved </exception>
+    /// <remarks> If the MSB bits of the provided <paramref name="value"/> are 0b10, the address type will be <see cref="NotAvailable"/> </remarks>
     public static BleAddress CreateRandomAddress(UInt48 value)
     {
         ulong addressTypeBits = (value >> 46) & 0b11;
@@ -183,10 +183,6 @@ public sealed record BleAddress : ISpanParsable<BleAddress>, IEquatable<UInt48>,
         {
             0b00 => BleAddressType.RandomPrivateNonResolvable,
             0b01 => BleAddressType.RandomPrivateResolvable,
-            0b10 => throw new ArgumentOutOfRangeException(
-                nameof(value),
-                "Invalid address type. Bits 0b10 are reserved"
-            ),
             0b11 => BleAddressType.RandomStatic,
             _ => BleAddressType.NotAvailable,
         };

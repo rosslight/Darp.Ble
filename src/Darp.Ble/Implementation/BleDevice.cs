@@ -106,17 +106,6 @@ public abstract class BleDevice(IServiceProvider serviceProvider, ILogger<BleDev
     public Task SetRandomAddressAsync(BleAddress randomAddress, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(randomAddress);
-        if (
-            randomAddress.Type
-            is not (
-                BleAddressType.RandomStatic
-                or BleAddressType.RandomPrivateResolvable
-                or BleAddressType.RandomPrivateNonResolvable
-            )
-        )
-        {
-            throw new ArgumentOutOfRangeException(nameof(randomAddress), "The address provided has to be random");
-        }
         return SetRandomAddressAsyncCore(randomAddress, cancellationToken);
     }
 

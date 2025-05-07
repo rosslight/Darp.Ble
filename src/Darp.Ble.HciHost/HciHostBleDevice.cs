@@ -28,7 +28,7 @@ internal sealed class HciHostBleDevice(
     public override string? Name { get; set; } = name;
     public override AppearanceValues Appearance => AppearanceValues.Unknown;
 
-    public override BleAddress RandomAddress => new(BleAddressType.RandomStatic, (UInt48)Host.Address);
+    public override BleAddress RandomAddress => BleAddress.CreateRandomAddress((UInt48)Host.Address);
 
     /// <inheritdoc />
     protected override async Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)

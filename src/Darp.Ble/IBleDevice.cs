@@ -51,6 +51,7 @@ public interface IBleDevice : IAsyncDisposable
     IBlePeripheral Peripheral { get; }
 
     /// <summary> The random address of the device </summary>
+    /// <remarks> Settable by calling <see cref="SetRandomAddressAsync"/> </remarks>
     BleAddress RandomAddress { get; }
 
     /// <summary> Initializes the ble device </summary>
@@ -62,5 +63,6 @@ public interface IBleDevice : IAsyncDisposable
     /// <param name="randomAddress"> The new, random address </param>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <returns> A task that completes when the address was updated </returns>
+    /// <remarks> Behavior when setting an address with Non-Random <see cref="BleAddressType"/> is not specified </remarks>
     Task SetRandomAddressAsync(BleAddress randomAddress, CancellationToken cancellationToken = default);
 }
