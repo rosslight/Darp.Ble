@@ -34,7 +34,9 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
         IBleDevice device = manager.EnumerateDevices().First();
         await device.InitializeAsync();
 
-        IGapAdvertisement advertisement = await device.Observer.RefCount().FirstAsync();
+        await using IDisposableObservable<IGapAdvertisement> advObservable =
+            await device.Observer.StartObservingAsync();
+        IGapAdvertisement advertisement = await advObservable.FirstAsync();
         await using IGattServerPeer peer = await advertisement.ConnectToPeripheral().FirstAsync();
 
         GattServerGapService service = await peer.DiscoverGapServiceAsync();
@@ -61,7 +63,9 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
         IBleDevice device = manager.EnumerateDevices().First();
         await device.InitializeAsync();
 
-        IGapAdvertisement advertisement = await device.Observer.RefCount().FirstAsync();
+        await using IDisposableObservable<IGapAdvertisement> advObservable =
+            await device.Observer.StartObservingAsync();
+        IGapAdvertisement advertisement = await advObservable.FirstAsync();
         IGattServerPeer peer = await advertisement.ConnectToPeripheral().FirstAsync();
         var service = await peer.DiscoverDeviceInformationServiceAsync();
 
@@ -97,7 +101,9 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
         IBleDevice device = manager.EnumerateDevices().First();
         await device.InitializeAsync();
 
-        IGapAdvertisement advertisement = await device.Observer.RefCount().FirstAsync();
+        await using IDisposableObservable<IGapAdvertisement> advObservable =
+            await device.Observer.StartObservingAsync();
+        IGapAdvertisement advertisement = await advObservable.FirstAsync();
         await using IGattServerPeer peer = await advertisement.ConnectToPeripheral().FirstAsync();
         GattServerEchoService service = await peer.DiscoverEchoServiceAsync(serviceUuid, writeUuid, notifyUuid);
 
@@ -149,7 +155,9 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
         IBleDevice device = manager.EnumerateDevices().First();
         await device.InitializeAsync();
 
-        IGapAdvertisement advertisement = await device.Observer.RefCount().Take(2).LastAsync();
+        await using IDisposableObservable<IGapAdvertisement> advObservable =
+            await device.Observer.StartObservingAsync();
+        IGapAdvertisement advertisement = await advObservable.Take(2).LastAsync();
         await using IGattServerPeer peer = await advertisement.ConnectToPeripheral().FirstAsync();
         GattServerHeartRateService service = await peer.DiscoverHeartRateServiceAsync();
 
@@ -202,7 +210,9 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
         IBleDevice device = manager.EnumerateDevices().First();
         await device.InitializeAsync();
 
-        IGapAdvertisement advertisement = await device.Observer.RefCount().FirstAsync();
+        await using IDisposableObservable<IGapAdvertisement> advObservable =
+            await device.Observer.StartObservingAsync();
+        IGapAdvertisement advertisement = await advObservable.FirstAsync();
         await using IGattServerPeer peer = await advertisement.ConnectToPeripheral().FirstAsync();
         GattServerBatteryService service = await peer.DiscoverBatteryServiceAsync();
         string userDescription = await service.BatteryLevel.ReadUserDescriptionAsync();

@@ -1,8 +1,7 @@
-using System.Reactive.Disposables;
-using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
+using Darp.Ble.Utils;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Implementation;
@@ -12,21 +11,21 @@ namespace Darp.Ble.Implementation;
 /// <param name="logger"> The logger </param>
 public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger) : IBleObserver
 {
+    private readonly BleDevice _bleDevice = device;
+    private readonly SemaphoreSlim _observationSemaphore = new(1, 1);
+
+    /// <summary> Usage should always be inside a wait-statement of <see cref="_observationSemaphore"/> </summary>
+    private readonly List<(Action<IGapAdvertisement> OnAdvertisement, Action OnStopped)> _actions = [];
+    private IDisposable? _observationDisposable;
+
     /// <summary> The logger </summary>
     protected ILogger<BleObserver> Logger { get; } = logger;
 
     /// <summary> The service provider </summary>
     protected IServiceProvider ServiceProvider => Device.ServiceProvider;
 
-    private readonly object _lockObject = new();
-    private readonly List<IObserver<IGapAdvertisement>> _observers = [];
-    private bool _isDisposing;
-    private bool _stopping;
-    private IObservable<IGapAdvertisement>? _scanObservable;
-    private IDisposable? _scanDisposable;
-
     /// <inheritdoc />
-    public IBleDevice Device { get; } = device;
+    public IBleDevice Device => _bleDevice;
 
     /// <inheritdoc />
     public BleScanParameters Parameters { get; private set; } =
@@ -38,7 +37,7 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
         };
 
     /// <inheritdoc />
-    public bool IsScanning => _scanDisposable is not null;
+    public bool IsScanning => _observationDisposable is not null;
 
     /// <inheritdoc />
     public bool Configure(BleScanParameters parameters)
@@ -49,123 +48,115 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
         return true;
     }
 
-    /// <summary>
-    /// Subscribe to the ble observer. Will not start the observation until <see cref="Connect"/> was called.
-    /// </summary>
-    /// <param name="observer">The object that is to receive notifications.</param>
-    /// <returns>A reference to an interface that allows observers to stop receiving notifications before the provider has finished sending them.</returns>
-    /// <exception cref="ObjectDisposedException"> Thrown if the <see cref="BleObserver"/> was disposed </exception>
-    public IDisposable Subscribe(IObserver<IGapAdvertisement> observer)
+    /// <inheritdoc />
+    public async Task<IAsyncDisposable> StartObservingAsync(
+        Action<IGapAdvertisement> onAdvertisement,
+        Action onStopped,
+        CancellationToken cancellationToken
+    )
     {
-        ObjectDisposedException.ThrowIf(_isDisposing, nameof(BleObserver));
-        lock (_lockObject)
+        ObjectDisposedException.ThrowIf(_bleDevice.IsDisposing, nameof(BleObserver));
+        await _observationSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        (Action<IGapAdvertisement> onAdvertisement, Action onStopped) action = (onAdvertisement, onStopped);
+        try
         {
-            IDisposable? optDisposable = _scanObservable?.Subscribe(observer);
-            _observers.Add(observer);
-            return Disposable.Create(
-                (This: this, Observer: observer, Disposable: optDisposable),
-                state =>
+            if (_observationDisposable is null)
+            {
+                try
                 {
-                    state.Disposable?.Dispose();
-                    state.This._observers.Remove(state.Observer);
-                    if (state.This._observers.Count == 0)
-                        state.This.StopScan();
+                    _observationDisposable = await StartObservingAsyncCore(
+                            this,
+                            static (self, advertisement) =>
+                            {
+                                // Reversed for loop. Actions might be removed from the list on Invoke
+                                for (int index = self._actions.Count - 1; index >= 0; index--)
+                                {
+                                    if (self._actions.Count is 0)
+                                        return;
+                                    Action<IGapAdvertisement> onAdvertisement = self._actions[index].OnAdvertisement;
+                                    onAdvertisement(advertisement);
+                                }
+                            },
+                            cancellationToken
+                        )
+                        .ConfigureAwait(false);
                 }
-            );
+                catch (Exception e) when (e is not BleObservationStartException)
+                {
+                    throw new BleObservationStartException(this, e.Message, e);
+                }
+
+                Logger.LogTrace("Started observation");
+            }
+            _actions.Add(action);
+        }
+        finally
+        {
+            _observationSemaphore.Release();
+        }
+        return AsyncDisposable.Create(
+            (Self: this, Action: action),
+            static async state =>
+            {
+                BleObserver self = state.Self;
+                await self._observationSemaphore.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+                try
+                {
+                    self._actions.Remove(state.Action);
+                    if (self._actions.Count > 0)
+                        return;
+                    await self.StopObservingUnsafeAsync().ConfigureAwait(false);
+                }
+                finally
+                {
+                    self._observationSemaphore.Release();
+                }
+            }
+        );
+    }
+
+    protected abstract Task<IDisposable> StartObservingAsyncCore<TState>(
+        TState state,
+        Action<TState, IGapAdvertisement> onAdvertisement,
+        CancellationToken cancellationToken
+    );
+
+    /// <inheritdoc />
+    public async Task StopObservingAsync()
+    {
+        try
+        {
+            await _observationSemaphore.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+            await StopObservingUnsafeAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            _observationSemaphore.Release();
         }
     }
 
-    /// <summary>
-    /// Start a new connection. All observers will receive advertisement events.
-    /// If called while an observation is running nothing happens and the disposable to cancel the scan is returned
-    /// </summary>
-    /// <returns> Disposable used to stop the advertisement scan. Subscribed observables will be completed. </returns>
-    /// <exception cref="ObjectDisposedException"> Thrown if the <see cref="BleObserver"/> was disposed </exception>
-    public IDisposable Connect()
+    /// <summary> Only intended to be called when synchronized using <see cref="_observationSemaphore"/> </summary>
+    private async Task StopObservingUnsafeAsync()
     {
-        if (_isDisposing)
-            return Disposable.Empty;
-        lock (_lockObject)
+        for (int index = _actions.Count - 1; index >= 0; index--)
         {
-            if (_scanDisposable is not null)
-                return _scanDisposable;
-            bool startScanSuccessful = TryStartScanCore(out IObservable<IGapAdvertisement> observable);
-
-            observable = observable.Catch(
-                (Exception exception) =>
-                    Observable.Throw<IGapAdvertisement>(
-                        exception switch
-                        {
-                            BleObservationException e => e,
-                            _ => new BleObservationException(this, message: null, exception),
-                        }
-                    )
-            );
-            // Use for loop to be resilient to disconnections on first connection
-            for (int index = _observers.Count - 1; index >= 0; index--)
-            {
-                observable.Subscribe(_observers[index]);
-            }
-
-            if (!startScanSuccessful)
-                return Disposable.Empty;
-
-            _scanObservable = observable;
-            _scanDisposable = Disposable.Create(this, self => self.StopScan());
-            return _scanDisposable;
+            Action onStopped = _actions[index].OnStopped;
+            onStopped();
         }
-    }
-
-    /// <summary> Core implementation of scan start </summary>
-    /// <param name="observable"> The resulting observable. Should be failing if there was an error </param>
-    /// <returns> True, if the start was successful </returns>
-    protected abstract bool TryStartScanCore(out IObservable<IGapAdvertisement> observable);
-
-    void IBleObserver.StopScan() => StopScan(reason: null);
-
-    /// <inheritdoc cref="IBleObserver.StopScan"/>
-    /// <param name="reason">
-    /// Supply optional reason for stoppage. Supplying the reason will cause subscribers to complete with an error
-    /// </param>
-    public void StopScan(Exception? reason = null)
-    {
-        lock (_lockObject)
-        {
-            if (_stopping)
-                return;
-            _stopping = true;
-            try
-            {
-                for (int index = _observers.Count - 1; index >= 0; index--)
-                {
-                    IObserver<IGapAdvertisement> obs = _observers[index];
-                    if (reason is not null)
-                        obs.OnError(reason);
-                    else
-                        obs.OnCompleted();
-                }
-                _observers.Clear();
-                StopScanCore();
-                _scanDisposable?.Dispose();
-                _scanDisposable = null;
-            }
-            finally
-            {
-                _stopping = false;
-            }
-        }
+        _actions.Clear();
+        await StopObservingAsyncCore().ConfigureAwait(false);
+        Logger.LogTrace("Stopped advertising observation");
+        _observationDisposable?.Dispose();
+        _observationDisposable = null;
     }
 
     /// <summary> Core implementation of stopping </summary>
-    protected abstract void StopScanCore();
+    protected abstract Task StopObservingAsyncCore();
 
     /// <summary> A method that can be used to clean up all resources. </summary>
     /// <remarks> This method is not glued to the <see cref="IAsyncDisposable"/> interface. All disposes should be done using the  </remarks>
     public async ValueTask DisposeAsync()
     {
-        if (_isDisposing)
-            return;
-        _isDisposing = true;
         await DisposeAsyncCore().ConfigureAwait(false);
         Dispose(disposing: false);
     }

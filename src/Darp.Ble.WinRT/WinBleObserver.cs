@@ -36,55 +36,49 @@ internal sealed class WinBleObserver(BleDevice device, ILogger<WinBleObserver> l
         _watcher.Stopped += (_, _) => { };
     }
 
-    /// <inheritdoc />
-    protected override bool TryStartScanCore(out IObservable<IGapAdvertisement> observable)
+    protected override Task<IDisposable> StartObservingAsyncCore<TState>(
+        TState state,
+        Action<TState, IGapAdvertisement> onAdvertisement,
+        CancellationToken cancellationToken
+    )
     {
         CreateScanners(ScanType.Active);
-        try
-        {
-            _watcher.Start();
-        }
-        catch (Exception e)
-        {
-            observable = Observable.Throw<IGapAdvertisement>(e);
-            return false;
-        }
+        _watcher.Start();
         if (_watcher.Status is BluetoothLEAdvertisementWatcherStatus.Aborted)
         {
-            var exception = new BleObservationStartException(
+            throw new BleObservationStartException(
                 this,
                 $"Watcher status is '{_watcher.Status}' but should be 'Created'.\nTry restarting the bluetooth adapter!"
             );
-            observable = Observable.Throw<IGapAdvertisement>(exception);
-            return false;
         }
-        _watcher.Stopped += (_, args) =>
+        _watcher.Stopped += async (_, args) =>
         {
             if (args.Error is BluetoothError.Success)
                 return;
-            var exception = new BleObservationStopException(this, $"Watcher stopped with error {args.Error}");
-            StopScan(exception);
+            Logger.LogError("Watcher stopped with error {Error}", args.Error);
+            await StopObservingAsync().ConfigureAwait(false);
         };
-        observable = Observable
+        IDisposable disposable = Observable
             .FromEventPattern<
                 TypedEventHandler<BluetoothLEAdvertisementWatcher, BluetoothLEAdvertisementReceivedEventArgs>,
                 BluetoothLEAdvertisementWatcher,
                 BluetoothLEAdvertisementReceivedEventArgs
             >(addHandler => _watcher.Received += addHandler, removeHandler => _watcher.Received -= removeHandler)
-            .Select(adv => OnAdvertisementReport(this, adv));
-        return true;
+            .Select(adv => OnAdvertisementReport(this, adv))
+            .Subscribe(advertisement => onAdvertisement(state, advertisement));
+        return Task.FromResult(disposable);
     }
 
-    /// <inheritdoc />
-    protected override void StopScanCore()
+    protected override Task StopObservingAsyncCore()
     {
         _watcher?.Stop();
         _watcher = null;
+        return Task.CompletedTask;
     }
 
     private static GapAdvertisement OnAdvertisementReport(
         BleObserver bleObserver,
-        IEventPattern<BluetoothLEAdvertisementWatcher, BluetoothLEAdvertisementReceivedEventArgs> gapEvt
+        EventPattern<BluetoothLEAdvertisementWatcher, BluetoothLEAdvertisementReceivedEventArgs> gapEvt
     )
     {
         BluetoothLEAdvertisementReceivedEventArgs eventArgs = gapEvt.EventArgs;

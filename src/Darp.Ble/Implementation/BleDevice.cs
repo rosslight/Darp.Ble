@@ -13,7 +13,6 @@ namespace Darp.Ble.Implementation;
 public abstract class BleDevice(IServiceProvider serviceProvider, ILogger<BleDevice> logger) : IBleDevice
 {
     private bool _isInitializing;
-    private bool _isDisposing;
     private IBleObserver? _bleObserver;
     private IBleCentral? _bleCentral;
     private IBleBroadcaster? _bleBroadcaster;
@@ -27,6 +26,9 @@ public abstract class BleDevice(IServiceProvider serviceProvider, ILogger<BleDev
 
     /// <inheritdoc />
     public bool IsInitialized { get; private set; }
+
+    /// <summary> True, if the device started disposing or is already disposed </summary>
+    internal bool IsDisposing { get; private set; }
 
     /// <inheritdoc />
     public bool IsDisposed { get; private set; }
@@ -133,9 +135,9 @@ public abstract class BleDevice(IServiceProvider serviceProvider, ILogger<BleDev
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
-        if (_isDisposing || IsDisposed)
+        if (IsDisposing || IsDisposed)
             return;
-        _isDisposing = true;
+        IsDisposing = true;
         await DisposeAsyncCore().ConfigureAwait(false);
         Dispose(disposing: false);
         GC.SuppressFinalize(this);

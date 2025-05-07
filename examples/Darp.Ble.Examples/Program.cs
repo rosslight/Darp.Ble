@@ -115,6 +115,9 @@ var provider = new ServiceCollection()
 IBleDevice device = provider.GetRequiredService<BleManager>().EnumerateDevices().First();
 await device.InitializeAsync();
 
+await Observe(device);
+return;
+
 await device.SetRandomAddressAsync(new BleAddress(BleAddressType.RandomStatic, (UInt48)0xF2F2F3F4F5F6));
 device.Peripheral.AddGattService();
 device.Peripheral.AddDeviceInformationService(
@@ -151,8 +154,7 @@ await Task.Delay(10000000);
 return;
 
 //await x.SetRandomAddressAsync(new BleAddress(BleAddressType.RandomStatic, (UInt48)0xF0F1F2F3F4F5));
-IGattServerPeer connectedPeer = await device
-    .Observer.RefCount()
+IGattServerPeer connectedPeer = await (await device.Observer.StartObservingAsync())
     .WhereConnectable()
     .WhereService(BatteryServiceContract.BatteryService.Uuid)
     .ConnectToPeripheral()
@@ -168,7 +170,7 @@ await Advertise(device);
 return;
 async Task<IGattServerPeer> ConnectToDevice(IBleDevice device)
 {
-    var advertisement = await device.Observer.RefCount().WhereConnectable().FirstAsync();
+    var advertisement = await (await device.Observer.StartObservingAsync()).WhereConnectable().FirstAsync();
     return await advertisement.ConnectToPeripheral().FirstAsync();
 }
 await Observe(device);
@@ -190,8 +192,7 @@ int i = 0;
 
 async Task Observe(IBleDevice device)
 {
-    var advertisement = await device
-        .Observer.RefCount()
+    var advertisement = await (await device.Observer.StartObservingAsync())
         .WhereConnectable()
         .Where(a => a.Data.TryGetManufacturerSpecificData(CompanyIdentifiers.AampOfAmerica, out ReadOnlyMemory<byte> _))
         .FirstAsync();

@@ -37,8 +37,7 @@ public sealed class BleTests(ILoggerFactory loggerFactory)
 
         IBleObserver observer = device.Observer;
 
-        IGapAdvertisement<string> adv = await observer
-            .RefCount()
+        IGapAdvertisement<string> adv = await (await observer.StartObservingAsync())
             .Select(x => x.WithUserData(""))
             .Where(x => x.UserData.Length == 0)
             .Timeout(TimeSpan.FromSeconds(1))

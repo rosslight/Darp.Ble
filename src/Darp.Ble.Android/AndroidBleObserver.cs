@@ -19,7 +19,11 @@ public sealed class AndroidBleObserver(
     private readonly BluetoothLeScanner _bluetoothLeScanner = bluetoothLeScanner;
     private BleObserverScanCallback? _scanCallback;
 
-    protected override bool TryStartScanCore(out IObservable<IGapAdvertisement> observable)
+    protected override Task<IDisposable> StartObservingAsyncCore<TState>(
+        TState state,
+        Action<TState, IGapAdvertisement> onAdvertisement,
+        CancellationToken cancellationToken
+    )
     {
         // Android versions before Android12 (API version <= 30) did have to Location services at all times,
         // when targeting >= 31, there is an option to assert that there is no usage of location in the manifest
@@ -27,13 +31,10 @@ public sealed class AndroidBleObserver(
         // TODO Best case: We do not throw and just warn the user about possibly inappropriate usage. How to do that in a cross-platform way?
         if (!AreLocationServicesEnabled())
         {
-            observable = Observable.Throw<IGapAdvertisement>(
-                new BleObservationStartException(
-                    this,
-                    "Location services are not enabled. Please check in the settings"
-                )
+            throw new BleObservationStartException(
+                this,
+                "Location services are not enabled. Please check in the settings"
             );
-            return false;
         }
         _scanCallback = new BleObserverScanCallback(this);
         using var settingsBuilder = new ScanSettings.Builder();
@@ -43,18 +44,21 @@ public sealed class AndroidBleObserver(
             ?.SetReportDelay(0)
             ?.Build();
         _bluetoothLeScanner.StartScan(filters: null, scanSettings, _scanCallback);
-        observable = _scanCallback.Select(x => OnAdvertisementReport(this, x));
-        return true;
+        IDisposable disposable = _scanCallback
+            .Select(x => OnAdvertisementReport(this, x))
+            .Subscribe(adv => onAdvertisement(state, adv));
+        return Task.FromResult(disposable);
     }
 
-    protected override void StopScanCore()
+    protected override Task StopObservingAsyncCore()
     {
         if (_scanCallback is null)
-            return;
+            return Task.CompletedTask;
         _bluetoothLeScanner.StopScan(_scanCallback);
         _bluetoothLeScanner.FlushPendingScanResults(_scanCallback);
         _scanCallback.Dispose();
         _scanCallback = null;
+        return Task.CompletedTask;
     }
 
     private static GapAdvertisement OnAdvertisementReport(BleObserver bleObserver, ScanResult scanResult)

@@ -2,9 +2,25 @@
 using System.Globalization;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
+using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Transport;
 
 namespace Darp.Ble.HciHost.Verify;
+
+/*
+public sealed class ReplayTransportBuilder
+{
+    public ReplayTransportLayer RespondWith(Func<HciMessage, (HciMessage?, TimeSpan)> onResponse) { }
+
+    public ReplayTransportLayer RespondWithEvent(HciEventCode eventCode, byte[] resultBytes, TimeSpan? delay = null) { }
+
+    public ReplayTransportLayer RespondWithCommandCompleteEvent(string resultHexString, TimeSpan? delay = null)
+    {
+        byte[] resultBytes = Convert.FromHexString(resultHexString);
+        return RespondWithEvent(HciEventCode.HCI_Command_Complete, resultBytes, delay);
+    }
+}
+*/
 
 /// <summary> A replay transport layer </summary>
 /// <param name="responseBuilder"> A callback to build response messages </param>
@@ -46,6 +62,11 @@ public sealed class ReplayTransportLayer(
         }
 
         return (messages[i], TimeSpan.Zero);
+    }
+
+    public void Push(HciMessage message)
+    {
+        _onReceived?.Invoke(new HciPacket(message.Type, message.PduBytes));
     }
 
     void ITransportLayer.Enqueue(IHciPacket packet)

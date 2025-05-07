@@ -36,7 +36,7 @@ public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) :
     {
         connectionParameters ??= new BleConnectionParameters();
         scanParameters ??= Device.Observer.Parameters;
-        return Observable.Create<IGattServerPeer>(observer =>
+        return Observable.Create<IGattServerPeer>(async observer =>
         {
             if (connectionParameters.ConnectionInterval is < ConnectionTiming.MinValue or > ConnectionTiming.MaxValue)
             {
@@ -53,7 +53,7 @@ public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) :
                 observer.OnError(new BleCentralConnectionFailedException(this, "Supplied invalid scanWindow"));
                 return Disposable.Empty;
             }
-            _device.Observer.StopScan();
+            await _device.Observer.StopObservingAsync().ConfigureAwait(false);
             return DoAfterConnection(
                     ConnectToPeripheralCore(address, connectionParameters, scanParameters)
                         .Do(peer =>

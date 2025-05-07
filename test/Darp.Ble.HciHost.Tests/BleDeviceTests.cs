@@ -1,11 +1,13 @@
-﻿using Darp.Ble.Data;
+﻿using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
+using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
-using Darp.Ble.Hci.Transport;
+using Darp.Ble.Gap;
+using Darp.Ble.Gatt.Server;
+using Darp.Ble.Hci.Payload;
 using Darp.Ble.HciHost.Verify;
-using Microsoft.Extensions.Logging;
 using Shouldly;
 using VerifyTUnit;
-using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace Darp.Ble.HciHost.Tests;
 
@@ -24,7 +26,7 @@ public sealed class BleDeviceTests
             HciMessage.CommandCompleteEventToHost("01052000"),
             HciMessage.CommandCompleteEventToHost("013A20003E00")
         );
-        await using IBleDevice device = await GetBleDeviceAsync(replayTransportLayer);
+        await using IBleDevice device = await Helpers.GetBleDeviceAsync(replayTransportLayer);
         await device.InitializeAsync();
 
         device.IsInitialized.ShouldBeTrue();
@@ -41,7 +43,7 @@ public sealed class BleDeviceTests
         ReplayTransportLayer replayTransportLayer = ReplayTransportLayer.ReplayAfterInitialization(
             HciMessage.CommandCompleteEventToHost("01052000")
         );
-        await using IBleDevice device = await GetAndInitializeBleDeviceAsync(replayTransportLayer);
+        await using IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(replayTransportLayer);
 
         await device.SetRandomAddressAsync(newAddress);
 
@@ -49,34 +51,30 @@ public sealed class BleDeviceTests
         await Verifier.Verify(replayTransportLayer.MessagesToController);
     }
 
-    private static async Task<IBleDevice> GetAndInitializeBleDeviceAsync(
-        ITransportLayer transportLayer,
-        BleAddress? deviceAddress = null,
-        CancellationToken cancellationToken = default
-    )
+    [Test]
+    //[Timeout(5000)]
+    public async Task StartObserving(CancellationToken cancellationToken)
     {
-        deviceAddress ??= BleAddress.CreateRandomAddress((UInt48)0xE0C5AA968B6E);
-        IBleDevice device = await GetBleDeviceAsync(transportLayer, deviceAddress, cancellationToken);
-        await device.InitializeAsync(cancellationToken);
-        return device;
-    }
-
-    private static async Task<IBleDevice> GetBleDeviceAsync(
-        ITransportLayer transportLayer,
-        BleAddress? deviceAddress = null,
-        CancellationToken cancellation = default
-    )
-    {
-        deviceAddress ??= BleAddress.CreateRandomAddress((UInt48)0xE0C5AA968B6E);
-        ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
-            builder.AddConsole().SetMinimumLevel(LogLevel.Warning)
+        ReplayTransportLayer replayTransportLayer = ReplayTransportLayer.ReplayAfterInitialization(
+            HciMessage.CommandCompleteEventToHost("01000100A000A000"),
+            HciMessage.CommandCompleteEventToHost("010000000000"),
+            HciMessage.CommandCompleteEventToHost("010000000000")
         );
-        BleManager manager = new BleManagerBuilder()
-            .AddHciHost(transportLayer)
-            .SetLogger(loggerFactory)
-            .CreateManager();
-        IBleDevice device = manager.EnumerateDevices().First();
-        await device.SetRandomAddressAsync(deviceAddress, cancellation);
-        return device;
+        await using IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(
+            replayTransportLayer,
+            cancellationToken: cancellationToken
+        );
+        IBleObserver observer = device.Observer;
+
+        IDisposableObservable<IGapAdvertisement> advObservable = await observer.StartObservingAsync(cancellationToken);
+        Task<IGapAdvertisement> observationTask = advObservable.FirstAsync().ToTask(cancellationToken);
+        replayTransportLayer.Push(
+            HciMessage.LeEventToHost("0D0110000115C4911966EE0100FF7FB40000FF0000000000000807FF4C0012020000")
+        );
+        IGapAdvertisement advertisement = await observationTask;
+        await advObservable.DisposeAsync();
+
+        advertisement.Address.ShouldBe(new BleAddress(BleAddressType.RandomStatic, UInt48.Zero));
+        await Verifier.Verify(replayTransportLayer.MessagesToController);
     }
 }

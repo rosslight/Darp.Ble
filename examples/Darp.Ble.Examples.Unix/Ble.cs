@@ -11,7 +11,7 @@ internal sealed class Ble : IDisposable
     private IBleObserver? m_observer;
     private IBleDevice? m_adapter;
     private IDisposable? m_subscriptionForObserver;
-    private IDisposable? m_subscriptionForConnect;
+    private IAsyncDisposable? m_subscriptionForConnect;
     private AdvGenerator? m_generator;
 
     public async Task StartScanAsync(IBleDevice adapter, Action<IGapAdvertisement> onNextAdvertisement)
@@ -32,20 +32,21 @@ internal sealed class Ble : IDisposable
                 ScanInterval = ScanTiming.Ms100,
             }
         );
-        m_subscriptionForObserver = m_observer.Subscribe(onNextAdvertisement);
-
-        m_subscriptionForConnect = m_observer.Connect();
+        IDisposableObservable<IGapAdvertisement> advertisementObservable = await m_observer.StartObservingAsync();
+        m_subscriptionForObserver = advertisementObservable.Subscribe(onNextAdvertisement);
+        m_subscriptionForConnect = advertisementObservable;
     }
 
     public void StopScan()
     {
-        m_subscriptionForConnect?.Dispose();
+        _ = m_subscriptionForConnect?.DisposeAsync().AsTask();
         m_subscriptionForConnect = null;
 
         m_subscriptionForObserver?.Dispose();
         m_subscriptionForObserver = null;
 
-        m_observer?.StopScan();
+        if (m_observer is not null)
+            _ = m_observer.StopObservingAsync();
         m_observer = null;
 
         m_adapter?.DisposeAsync().AsTask().Wait();

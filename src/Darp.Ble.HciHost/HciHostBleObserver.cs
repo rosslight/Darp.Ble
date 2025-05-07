@@ -20,6 +20,7 @@ internal sealed class HciHostBleObserver(HciHostBleDevice device, ILogger<HciHos
     : BleObserver(device, logger)
 {
     private readonly HciHostBleDevice _device = device;
+    private Hci.HciHost Host => _device.Host;
 
     private static (HciLeSetExtendedScanParametersCommand, HciLeSetExtendedScanEnableCommand) CreateConfiguration(
         BleScanParameters parameters
@@ -46,58 +47,43 @@ internal sealed class HciHostBleObserver(HciHostBleDevice device, ILogger<HciHos
         );
     }
 
-    /// <inheritdoc />
-    protected override bool TryStartScanCore(out IObservable<IGapAdvertisement> observable)
+    protected override async Task<IDisposable> StartObservingAsyncCore<TState>(
+        TState state,
+        Action<TState, IGapAdvertisement> onAdvertisement,
+        CancellationToken cancellationToken
+    )
     {
         (HciLeSetExtendedScanParametersCommand Parameters, HciLeSetExtendedScanEnableCommand Enable) commands =
             CreateConfiguration(Parameters);
-        //Logger.Verbose("AdvertisingScanner: Using scan params {@ScanParams} and enable params {@EnableParams}", commands.Parameters, commands.Enable);
-        observable = Observable.Create<IGapAdvertisement>(
-            async (observer, token) =>
-            {
-                HciSetExtendedScanParametersResult paramSetResult = await _device
-                    .Host.QueryCommandCompletionAsync<
-                        HciLeSetExtendedScanParametersCommand,
-                        HciSetExtendedScanParametersResult
-                    >(commands.Parameters, cancellationToken: token)
-                    .ConfigureAwait(false);
-                if (paramSetResult.Status is not HciCommandStatus.Success)
-                {
-                    observer.OnError(
-                        new BleObservationStartException(
-                            this,
-                            $"Could not set scan parameters: {paramSetResult.Status}"
-                        )
-                    );
-                    return Disposable.Empty;
-                }
-                HciSetExtendedScanEnableResult enableResult = await _device
-                    .Host.QueryCommandCompletionAsync<
-                        HciLeSetExtendedScanEnableCommand,
-                        HciSetExtendedScanEnableResult
-                    >(commands.Enable, cancellationToken: token)
-                    .ConfigureAwait(false);
-                if (enableResult.Status is not HciCommandStatus.Success)
-                {
-                    observer.OnError(
-                        new BleObservationStartException(this, $"Could not enable scan: {enableResult.Status}")
-                    );
-                    return Disposable.Empty;
-                }
 
-                return _device
-                    .Host.AsObservable<HciLeExtendedAdvertisingReportEvent>()
-                    .SelectMany(x => x.Reports)
-                    .Select(x => OnAdvertisementReport(this, x))
-                    .AsObservable()
-                    .Subscribe(observer);
-            }
-        );
-        return true;
+        HciSetExtendedScanParametersResult paramSetResult = await Host.QueryCommandCompletionAsync<
+            HciLeSetExtendedScanParametersCommand,
+            HciSetExtendedScanParametersResult
+        >(commands.Parameters, cancellationToken)
+            .ConfigureAwait(false);
+        if (paramSetResult.Status is not HciCommandStatus.Success)
+        {
+            throw new BleObservationStartException(this, $"Could not set scan parameters: {paramSetResult.Status}");
+        }
+
+        HciSetExtendedScanEnableResult enableResult = await Host.QueryCommandCompletionAsync<
+            HciLeSetExtendedScanEnableCommand,
+            HciSetExtendedScanEnableResult
+        >(commands.Enable, cancellationToken)
+            .ConfigureAwait(false);
+        if (enableResult.Status is not HciCommandStatus.Success)
+        {
+            throw new BleObservationStartException(this, $"Could not enable scan: {enableResult.Status}");
+        }
+
+        return Host.AsObservable<HciLeExtendedAdvertisingReportEvent>()
+            .SelectMany(x => x.Reports)
+            .Select(x => OnAdvertisementReport(this, x))
+            .Subscribe(advertisement => onAdvertisement(state, advertisement));
     }
 
     /// <inheritdoc />
-    protected override void StopScanCore()
+    protected override async Task StopObservingAsyncCore()
     {
         var stopScanCommand = new HciLeSetExtendedScanEnableCommand
         {
@@ -106,9 +92,10 @@ internal sealed class HciHostBleObserver(HciHostBleDevice device, ILogger<HciHos
             Duration = 0x0000,
             Period = 0x0000,
         };
-        _ = _device.Host.QueryCommandCompletionAsync<HciLeSetExtendedScanEnableCommand, HciSetExtendedScanEnableResult>(
-            stopScanCommand
-        );
+        await Host.QueryCommandCompletionAsync<HciLeSetExtendedScanEnableCommand, HciSetExtendedScanEnableResult>(
+                stopScanCommand
+            )
+            .ConfigureAwait(false);
     }
 
     private static GapAdvertisement OnAdvertisementReport(

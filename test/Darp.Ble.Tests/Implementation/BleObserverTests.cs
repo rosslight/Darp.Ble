@@ -67,7 +67,9 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
         IBleDevice device = await Get1000MsAdvertisementMockDeviceAsync(scheduler);
 
         // Act
-        Task<IGapAdvertisement> task = device.Observer.RefCount().FirstAsync().ToTask();
+        await using IDisposableObservable<IGapAdvertisement> advObservable =
+            await device.Observer.StartObservingAsync();
+        Task<IGapAdvertisement> task = advObservable.FirstAsync().ToTask();
         scheduler.AdvanceTo(TimeSpan.FromMilliseconds(999).Ticks);
         task.IsCompleted.Should().BeFalse();
         scheduler.AdvanceTo(TimeSpan.FromMilliseconds(1000).Ticks);
@@ -87,10 +89,10 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
         IBleDevice device = await Get1000MsAdvertisementMockDeviceAsync(scheduler);
 
         // Act
-        Task<IGapAdvertisement> task1 = device.Observer.RefCount().ToTask();
-        Task<IGapAdvertisement> task2 = device.Observer.RefCount().ToTask();
+        Task<IGapAdvertisement> task1 = (await device.Observer.StartObservingAsync()).ToTask();
+        Task<IGapAdvertisement> task2 = (await device.Observer.StartObservingAsync()).ToTask();
 
-        device.Observer.StopScan();
+        await device.Observer.StopObservingAsync();
         task1.Status.Should().Be(TaskStatus.Faulted);
         task2.Status.Should().Be(TaskStatus.Faulted);
         device.Observer.IsScanning.Should().BeFalse();
@@ -99,7 +101,7 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
     [Fact]
     [SuppressMessage("Non-substitutable member", "NS1000:Non-virtual setup specification.")]
     [SuppressMessage("Argument specification", "NS3005:Could not set argument.")]
-    public void Observer_WhenFailedWithAnyException_ShouldReturnException()
+    public async Task Observer_WhenFailedWithAnyException_ShouldReturnException()
     {
         var observer = Substitute.For<BleObserver>(null, null);
         observer
@@ -110,17 +112,17 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
                 return false;
             });
 
-        Action act = () => _ = observer.RefCount().FirstAsync().Subscribe();
+        Func<Task> act = async () => _ = (await observer.StartObservingAsync()).FirstAsync().Subscribe();
 
-        act.Should()
-            .Throw<BleObservationException>()
+        await act.Should()
+            .ThrowAsync<BleObservationException>()
             .Where(x => typeof(DummyException).IsAssignableTo(x.InnerException!.GetType()));
     }
 
     [Fact]
     [SuppressMessage("Non-substitutable member", "NS1000:Non-virtual setup specification.")]
     [SuppressMessage("Argument specification", "NS3005:Could not set argument.")]
-    public void Observer_WhenFailedWithBleObservationException_ShouldReturnException()
+    public async Task Observer_WhenFailedWithBleObservationException_ShouldReturnException()
     {
         var observer = Substitute.For<BleObserver>(null, null);
         observer
@@ -133,15 +135,15 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
                 return false;
             });
 
-        Action act = () => _ = observer.RefCount().FirstAsync().Subscribe();
+        Func<Task> act = async () => _ = (await observer.StartObservingAsync()).FirstAsync().Subscribe();
 
-        act.Should().Throw<BleObservationException>();
+        await act.Should().ThrowAsync<BleObservationException>();
     }
 
     [Fact]
     [SuppressMessage("Non-substitutable member", "NS1000:Non-virtual setup specification.")]
     [SuppressMessage("Argument specification", "NS3005:Could not set argument.")]
-    public void Connect_WhenFailed_ShouldFaultAndReturnEmptyDisposable()
+    public async Task Connect_WhenFailed_ShouldFaultAndReturnEmptyDisposable()
     {
         var observer = Substitute.For<BleObserver>(null, null);
         observer
@@ -152,12 +154,12 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
                 return false;
             });
 
-        Task<IGapAdvertisement> task = observer.FirstAsync().ToTask();
-        IDisposable disposable = observer.Connect();
+        await using IDisposableObservable<IGapAdvertisement> advObservable = await observer.StartObservingAsync();
+        Task<IGapAdvertisement> task = advObservable.FirstAsync().ToTask();
         task.Status.Should().Be(TaskStatus.Faulted);
         task.Exception?.InnerException.Should().BeOfType<BleObservationException>();
         task.Exception?.InnerException?.InnerException.Should().BeOfType<DummyException>();
-        disposable.Should().Be(Disposable.Empty);
+        advObservable.Should().Be(Disposable.Empty);
     }
 
     [Fact]
@@ -186,8 +188,8 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
     {
         IBleDevice device = await GetMockDeviceAsync();
 
-        IDisposable disposable1 = device.Observer.Connect();
-        IDisposable disposable2 = device.Observer.Connect();
+        IAsyncDisposable disposable1 = await device.Observer.StartObservingAsync();
+        IAsyncDisposable disposable2 = await device.Observer.StartObservingAsync();
 
         disposable1.Should().Be(disposable2);
     }
@@ -198,8 +200,8 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
         IBleDevice device = await GetMockDeviceAsync();
 
         await device.DisposeAsync();
-        Action xx = () => _ = device.Observer.Subscribe();
-        xx.Should().Throw<ObjectDisposedException>();
+        Func<Task> xx = async () => _ = await device.Observer.StartObservingAsync();
+        await xx.Should().ThrowAsync<ObjectDisposedException>();
     }
 
     [Fact]
@@ -209,7 +211,7 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
 
         await device.DisposeAsync();
 
-        IDisposable disposable = device.Observer.Connect();
+        IAsyncDisposable disposable = await device.Observer.StartObservingAsync();
         disposable.Should().Be(Disposable.Empty);
     }
 }

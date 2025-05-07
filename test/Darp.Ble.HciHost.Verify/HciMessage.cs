@@ -50,6 +50,28 @@ public sealed record HciMessage(HciDirection Direction, HciPacketType Type, byte
         return new HciMessage(HciDirection.ControllerToHost, HciPacketType.HciEvent, evt.ToArrayLittleEndian());
     }
 
+    /// <summary> Constructs an HCI le event message sent to the host </summary>
+    /// <param name="parameterBytes"> The parameter bytes of the event sent </param>
+    /// <returns> The representation of the HCI message </returns>
+    public static HciMessage LeEventToHost(byte[] parameterBytes)
+    {
+        var evt = new HciPacketEvent
+        {
+            EventCode = HciEventCode.HCI_LE_Meta,
+            ParameterTotalLength = (byte)parameterBytes.Length,
+            DataBytes = parameterBytes,
+        };
+        return new HciMessage(HciDirection.ControllerToHost, HciPacketType.HciEvent, evt.ToArrayLittleEndian());
+    }
+
+    /// <summary> Constructs an HCI le event message sent to the host </summary>
+    /// <param name="parameterHexString"> The hex string of the event parameter bytes </param>
+    /// <returns> The representation of the HCI message </returns>
+    public static HciMessage LeEventToHost(string parameterHexString)
+    {
+        return LeEventToHost(Convert.FromHexString(parameterHexString));
+    }
+
     /// <summary> Constructs an HCI command complete event message sent to the host </summary>
     /// <param name="opCode"> The OpCode of the command sent </param>
     /// <param name="parameters"> The parameters of the complete event </param>
@@ -74,11 +96,11 @@ public sealed record HciMessage(HciDirection Direction, HciPacketType Type, byte
     }
 
     /// <summary> Constructs an HCI command complete event message sent to the host </summary>
-    /// <param name="resultHexString"> The hex string of the event parameter bytes </param>
+    /// <param name="parameterHexString"> The hex string of the event parameter bytes </param>
     /// <returns> The representation of the HCI message </returns>
-    public static HciMessage CommandCompleteEventToHost(string resultHexString)
+    public static HciMessage CommandCompleteEventToHost(string parameterHexString)
     {
-        return EventToHost(HciEventCode.HCI_Command_Complete, Convert.FromHexString(resultHexString));
+        return EventToHost(HciEventCode.HCI_Command_Complete, Convert.FromHexString(parameterHexString));
     }
 
     /// <summary> Constructs an HCI ACL message sent to the host </summary>
