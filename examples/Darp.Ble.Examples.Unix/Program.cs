@@ -22,7 +22,7 @@ internal sealed class Program
         using var ble = new Ble();
 
         BleManager manager = new BleManagerBuilder()
-            .Add(new HciHostBleFactory())
+            .AddSerialHciHost()
             .AddMock(factory => factory.AddPeripheral(ble.Initialize))
             .SetLogger(extensionsLogger)
             .CreateManager();
