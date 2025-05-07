@@ -12,7 +12,7 @@ namespace Darp.Ble.HciHost;
 
 /// <summary> Provides windows specific implementation of a ble device </summary>
 internal sealed class HciHostBleDevice(
-    string name,
+    string? name,
     BleAddress? randomAddress,
     ITransportLayer transportLayer,
     IServiceProvider serviceProvider

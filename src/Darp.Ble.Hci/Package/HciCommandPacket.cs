@@ -1,6 +1,24 @@
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Payload;
 
 namespace Darp.Ble.Hci.Package;
+
+[BinaryObject]
+public readonly partial struct HciCommandPacket : IHciPacket<HciCommandPacket>
+{
+    /// <inheritdoc />
+    public static int HeaderLength => 3;
+
+    /// <inheritdoc />
+    public static HciPacketType Type => HciPacketType.HciCommand;
+
+    public required HciOpCode OpCode { get; init; }
+
+    public required byte ParameterTotalLength { get; init; }
+
+    [BinaryLength(nameof(ParameterTotalLength))]
+    public required ReadOnlyMemory<byte> DataBytes { get; init; }
+}
 
 /// <summary> The HCI Command packet is used to send commands to the Controller from the Host </summary>
 /// <typeparam name="TParameters"> The type of the parameters of the command </typeparam>

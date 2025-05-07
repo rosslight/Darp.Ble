@@ -55,6 +55,7 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ulong random
     private readonly ITransportLayer _transportLayer = transportLayer;
     internal ILogger Logger { get; } = logger;
     private AclPacketQueue? _aclPacketQueue;
+    private bool _isInitialized;
 
     /// <summary> The ACL Packet queue </summary>
     public IAclPacketQueue AclPacketQueue => _aclPacketQueue ?? throw new Exception("Not initialized yet");
@@ -69,6 +70,9 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ulong random
     /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
+        if (_isInitialized)
+            throw new Exception("Already initialized");
+        _isInitialized = true;
         await _transportLayer.InitializeAsync(OnReceivedPacket, cancellationToken).ConfigureAwait(false);
         Activity? activity = Logging.StartInitializeHciHostActivity();
         try
@@ -159,7 +163,7 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ulong random
                         break;
                     case HciEventCode.None:
                     default:
-                        Logger.LogTrace("Unknown Hci event {SubEventCode}", x.EventCode);
+                        Logger.LogWarning("Unknown Hci event {SubEventCode}", x.EventCode);
                         break;
                 }
                 break;
@@ -168,7 +172,7 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ulong random
                 PublishMessage(x);
                 break;
             default:
-                Logger.LogTrace("Unknown packet type {PacketType}", packet.PacketType);
+                Logger.LogWarning("Unknown packet type {PacketType}", packet.PacketType);
                 break;
         }
     }
@@ -290,6 +294,11 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ulong random
     /// <param name="cancellationToken"></param>
     public async Task SetRandomAddressAsync(ulong randomAddress, CancellationToken cancellationToken)
     {
+        if (!_isInitialized)
+        {
+            Address = randomAddress;
+            return;
+        }
         await this.QueryCommandCompletionAsync<HciLeSetRandomAddressCommand, HciLeSetRandomAddressResult>(
                 new HciLeSetRandomAddressCommand(randomAddress),
                 cancellationToken: cancellationToken

@@ -5,7 +5,7 @@ namespace Darp.Ble.HciHost;
 
 /// <summary> A factory searching for a single, specified hci host </summary>
 /// <param name="portName"> The port name to be scanned for a hci host </param>
-public sealed class SingleHciHostBleFactory(string portName) : IHciHostBleFactory
+public sealed class SingleSerialHciHostBleFactory(string portName) : IHciHostBleFactory
 {
     /// <summary> A hardcoded serial port </summary>
     public string PortName { get; } = portName;
@@ -33,13 +33,3 @@ public sealed class SingleHciHostBleFactory(string portName) : IHciHostBleFactor
         );
     }
 }
-
-#pragma warning disable MA0048
-/// <summary> Delegate which describes configuration using a broadcaster and a peripheral </summary>
-/// <param name="bleDevice"> The mocked bleDevice </param>
-public delegate Task InitializeSimpleAsync(IBleDevice bleDevice);
-
-/// <summary> Delegate which describes configuration using a broadcaster and a peripheral </summary>
-/// <param name="bleDevice"> The mocked bleDevice </param>
-/// <param name="deviceSettings"> Settings specific to the mock device </param>
-public delegate Task InitializeAsync(IBleDevice bleDevice, string deviceSettings); //, MockDeviceSettings deviceSettings);
