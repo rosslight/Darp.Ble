@@ -18,11 +18,11 @@ internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger<HciHost
     protected override IObservable<GattServerPeer> ConnectToPeripheralCore(
         BleAddress address,
         BleConnectionParameters connectionParameters,
-        BleScanParameters scanParameters
+        BleObservationParameters observationParameters
     )
     {
-        var scanInterval = (ushort)scanParameters.ScanInterval;
-        var scanWindow = (ushort)scanParameters.ScanWindow;
+        var scanInterval = (ushort)observationParameters.ScanInterval;
+        var scanWindow = (ushort)observationParameters.ScanWindow;
         var interval = (ushort)connectionParameters.ConnectionInterval;
         return Observable.FromAsync<GattServerPeer>(async token =>
         {

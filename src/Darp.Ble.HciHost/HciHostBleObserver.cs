@@ -53,7 +53,7 @@ internal sealed partial class HciHostBleObserver : BleObserver
     }
 
     private static (HciLeSetExtendedScanParametersCommand, HciLeSetExtendedScanEnableCommand) CreateConfiguration(
-        BleScanParameters parameters
+        BleObservationParameters parameters
     )
     {
         bool isInActiveMode = parameters.ScanType is ScanType.Active;

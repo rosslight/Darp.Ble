@@ -11,14 +11,27 @@ public static class BleObserverExtensions
     /// <summary>
     /// Observes advertisements broadcast by BLE devices using the provided <see cref="IBleObserver"/>.
     /// </summary>
-    /// <param name="bleObserver">The instance of <see cref="IBleObserver"/> that will monitor BLE advertisements.</param>
+    /// <param name="observer">The instance of <see cref="IBleObserver"/> that will monitor BLE advertisements.</param>
     /// <returns>An observable sequence of <see cref="IGapAdvertisement"/> instances representing BLE advertisements.</returns>
-    public static IObservable<IGapAdvertisement> Observe(this IBleObserver bleObserver)
+    public static IObservable<IGapAdvertisement> Observe(this IBleObserver observer)
+    {
+        ArgumentNullException.ThrowIfNull(observer);
+        return Observable.Create<IGapAdvertisement>(advObserver =>
+            observer.OnAdvertisement(
+                advObserver,
+                static (advObserver, advertisement) => advObserver.OnNext(advertisement)
+            )
+        );
+    }
+
+    /// <summary> Register a callback called when an advertisement was received </summary>
+    /// <param name="bleObserver">The instance of <see cref="IBleObserver"/> that will monitor BLE advertisements.</param>
+    /// <param name="onAdvertisement"> The callback </param>
+    /// <returns> A disposable to unsubscribe the callback </returns>
+    public static IDisposable OnAdvertisement(this IBleObserver bleObserver, Action<IGapAdvertisement> onAdvertisement)
     {
         ArgumentNullException.ThrowIfNull(bleObserver);
-        return Observable.Create<IGapAdvertisement>(advObserver =>
-            bleObserver.OnAdvertisement(advObserver, (x, advertisement) => x.OnNext(advertisement))
-        );
+        return bleObserver.OnAdvertisement(onAdvertisement, static (action, advertisement) => action(advertisement));
     }
 }
 

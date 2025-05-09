@@ -20,6 +20,6 @@ public interface IBleCentral
     IObservable<IGattServerPeer> ConnectToPeripheral(
         BleAddress address,
         BleConnectionParameters? connectionParameters = null,
-        BleScanParameters? scanParameters = null
+        BleObservationParameters? scanParameters = null
     );
 }

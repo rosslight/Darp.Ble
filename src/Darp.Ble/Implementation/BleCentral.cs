@@ -31,7 +31,7 @@ public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) :
     public IObservable<IGattServerPeer> ConnectToPeripheral(
         BleAddress address,
         BleConnectionParameters? connectionParameters = null,
-        BleScanParameters? scanParameters = null
+        BleObservationParameters? scanParameters = null
     )
     {
         connectionParameters ??= new BleConnectionParameters();
@@ -79,12 +79,12 @@ public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) :
     /// <summary> The core implementation of connecting to the peripheral </summary>
     /// <param name="address"> The address to be connected to </param>
     /// <param name="connectionParameters"> The connection parameters to be used </param>
-    /// <param name="scanParameters"> The scan parameters to be used for initial discovery </param>
+    /// <param name="observationParameters"> The scan parameters to be used for initial discovery </param>
     /// <returns> An observable notifying when a gatt server was connected </returns>
     protected abstract IObservable<GattServerPeer> ConnectToPeripheralCore(
         BleAddress address,
         BleConnectionParameters connectionParameters,
-        BleScanParameters scanParameters
+        BleObservationParameters observationParameters
     );
 
     /// <summary> Remove a specific peer from the central </summary>

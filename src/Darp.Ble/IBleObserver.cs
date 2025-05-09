@@ -14,27 +14,29 @@ public interface IBleObserver
     bool IsObserving { get; }
 
     /// <summary> The parameters used for the current scan </summary>
-    BleScanParameters Parameters { get; }
+    BleObservationParameters Parameters { get; }
 
     /// <summary>
     /// Set a new configuration for advertising observation. Setting is only allowed while the observer is not scanning
     /// </summary>
     /// <param name="parameters"> The configuration to set </param>
+    /// <remarks>  </remarks>
     /// <returns> True, if setting parameters was successful </returns>
-    bool Configure(BleScanParameters parameters);
+    bool Configure(BleObservationParameters parameters);
 
     /// <summary> Register a callback called when an advertisement was received </summary>
     /// <param name="state"> A state to be passed to the callback </param>
     /// <param name="onAdvertisement"> The callback </param>
     /// <typeparam name="T"> The type of the state </typeparam>
     /// <returns> A disposable to unsubscribe the callback </returns>
-    IDisposable OnAdvertisement<T>(T state, Action<T, IGapAdvertisement> onAdvertisement);
+    IDisposable OnAdvertisement<T>(T state, Action<T, IGapAdvertisement> onAdvertisement)
+        where T : class;
 
     /// <summary> Start observing for advertisements. </summary>
     /// <param name="cancellationToken"> The CancellationToken to cancel the initial starting process </param>
     /// <returns> A task which completes when observing has started. </returns>
     /// <exception cref="BleObservationStartException"> Thrown if the observation could not be started </exception>
-    Task StartObservingAsync(CancellationToken cancellationToken);
+    Task StartObservingAsync(CancellationToken cancellationToken = default);
 
     /// <summary> Stop the scan that is currently running </summary>
     Task StopObservingAsync();

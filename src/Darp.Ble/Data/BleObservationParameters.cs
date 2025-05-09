@@ -1,7 +1,7 @@
 namespace Darp.Ble.Data;
 
 /// <summary> The parameters used when configuring a ble scan </summary>
-public sealed record BleScanParameters
+public sealed record BleObservationParameters
 {
     /// <summary> The scan type </summary>
     public ScanType ScanType { get; init; } = ScanType.Passive;

@@ -9,15 +9,13 @@ using Lock = System.Object;
 
 namespace Darp.Ble.Implementation;
 
-using AdvertisementCallback = (object? State, Action<object?, IGapAdvertisement> OnAdvertisement);
-
 /// <summary> The ble observer </summary>
 /// <param name="device"> The ble device </param>
 /// <param name="logger"> The logger </param>
 public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger) : IBleObserver
 {
     private readonly BleDevice _bleDevice = device;
-    private readonly List<AdvertisementCallback> _actions = [];
+    private readonly List<Action<IGapAdvertisement>> _actions = [];
     private readonly Lock _lock = new();
     private readonly SemaphoreSlim _observationStartSemaphore = new(1, 1);
 
@@ -31,7 +29,7 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
     public IBleDevice Device => _bleDevice;
 
     /// <inheritdoc />
-    public BleScanParameters Parameters { get; private set; } =
+    public BleObservationParameters Parameters { get; private set; } =
         new()
         {
             ScanType = ScanType.Passive,
@@ -43,7 +41,7 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
     public bool IsObserving { get; private set; }
 
     /// <inheritdoc />
-    public bool Configure(BleScanParameters parameters)
+    public bool Configure(BleObservationParameters parameters)
     {
         if (IsObserving)
             return false;
@@ -52,7 +50,7 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
     }
 
     /// <inheritdoc />
-    public async Task StartObservingAsync(CancellationToken cancellationToken)
+    public async Task StartObservingAsync(CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_bleDevice.IsDisposing, nameof(BleObserver));
         if (IsObserving)
@@ -75,8 +73,9 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
 
     /// <inheritdoc />
     public IDisposable OnAdvertisement<T>(T state, Action<T, IGapAdvertisement> onAdvertisement)
+        where T : class
     {
-        AdvertisementCallback action = ((state, onAdvertisement), CastedOnAdvertisement);
+        Action<IGapAdvertisement> action = advertisement => onAdvertisement(state, advertisement);
         lock (_lock)
         {
             _actions.Add(action);
@@ -84,21 +83,15 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
 
         return Disposable.Create(
             (this, action),
-            tuple =>
+            static tuple =>
             {
-                (BleObserver bleObserver, AdvertisementCallback valueTuple) = tuple;
-                lock (_lock)
+                (BleObserver bleObserver, Action<IGapAdvertisement> action) = tuple;
+                lock (bleObserver._lock)
                 {
-                    bleObserver._actions.Remove(valueTuple);
+                    bleObserver._actions.Remove(action);
                 }
             }
         );
-
-        void CastedOnAdvertisement(object? o, IGapAdvertisement advertisement)
-        {
-            (T s, Action<T, IGapAdvertisement> onAdv) = ((T, Action<T, IGapAdvertisement>))o!;
-            onAdv(s, advertisement);
-        }
     }
 
     /// <summary> Notify subscribers of a new advertisement </summary>
@@ -109,10 +102,10 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
         {
             for (int i = _actions.Count - 1; i >= 0; i--)
             {
-                (object? state, Action<object?, IGapAdvertisement> onAdvertisement) = _actions[i];
                 try
                 {
-                    onAdvertisement(state, advertisement);
+                    var onAdvertisement = _actions[i];
+                    onAdvertisement(advertisement);
                 }
                 catch (Exception e)
                 {
