@@ -1,5 +1,3 @@
-using System.Reactive.Disposables;
-using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
@@ -15,12 +13,44 @@ using UInt48 = Darp.Ble.Data.UInt48;
 
 namespace Darp.Ble.HciHost;
 
-/// <inheritdoc />
-internal sealed class HciHostBleObserver(HciHostBleDevice device, ILogger<HciHostBleObserver> logger)
-    : BleObserver(device, logger)
+/// <inheritdoc cref="BleObserver" />
+internal sealed partial class HciHostBleObserver : BleObserver
 {
-    private readonly HciHostBleDevice _device = device;
+    private readonly HciHostBleDevice _device;
+    private readonly IDisposable _subscription;
+
     private Hci.HciHost Host => _device.Host;
+
+    /// <inheritdoc />
+    public HciHostBleObserver(HciHostBleDevice device, ILogger<HciHostBleObserver> logger)
+        : base(device, logger)
+    {
+        _device = device;
+        _subscription = Host.Subscribe(this);
+    }
+
+    [MessageSink]
+    private void OnAdvertisementReport(HciLeExtendedAdvertisingReportEvent advEvent)
+    {
+        foreach (HciLeExtendedAdvertisingReport report in advEvent.Reports)
+        {
+            GapAdvertisement advertisement = GapAdvertisement.FromExtendedAdvertisingReport(
+                this,
+                DateTimeOffset.UtcNow,
+                (BleEventType)report.EventType,
+                new BleAddress((BleAddressType)report.AddressType, (UInt48)report.Address.ToUInt64()),
+                (Physical)report.PrimaryPhy,
+                (Physical)report.SecondaryPhy,
+                (AdvertisingSId)report.AdvertisingSId,
+                (TxPowerLevel)report.TxPower,
+                (Rssi)report.Rssi,
+                (PeriodicAdvertisingInterval)report.PeriodicAdvertisingInterval,
+                new BleAddress((BleAddressType)report.DirectAddressType, (UInt48)report.DirectAddress.ToUInt64()),
+                AdvertisingData.From(report.Data)
+            );
+            OnNext(advertisement);
+        }
+    }
 
     private static (HciLeSetExtendedScanParametersCommand, HciLeSetExtendedScanEnableCommand) CreateConfiguration(
         BleScanParameters parameters
@@ -47,11 +77,7 @@ internal sealed class HciHostBleObserver(HciHostBleDevice device, ILogger<HciHos
         );
     }
 
-    protected override async Task<IDisposable> StartObservingAsyncCore<TState>(
-        TState state,
-        Action<TState, IGapAdvertisement> onAdvertisement,
-        CancellationToken cancellationToken
-    )
+    protected override async Task StartObservingAsyncCore(CancellationToken cancellationToken)
     {
         (HciLeSetExtendedScanParametersCommand Parameters, HciLeSetExtendedScanEnableCommand Enable) commands =
             CreateConfiguration(Parameters);
@@ -75,11 +101,6 @@ internal sealed class HciHostBleObserver(HciHostBleDevice device, ILogger<HciHos
         {
             throw new BleObservationStartException(this, $"Could not enable scan: {enableResult.Status}");
         }
-
-        return Host.AsObservable<HciLeExtendedAdvertisingReportEvent>()
-            .SelectMany(x => x.Reports)
-            .Select(x => OnAdvertisementReport(this, x))
-            .Subscribe(advertisement => onAdvertisement(state, advertisement));
     }
 
     /// <inheritdoc />
@@ -98,26 +119,9 @@ internal sealed class HciHostBleObserver(HciHostBleDevice device, ILogger<HciHos
             .ConfigureAwait(false);
     }
 
-    private static GapAdvertisement OnAdvertisementReport(
-        BleObserver bleObserver,
-        HciLeExtendedAdvertisingReport report
-    )
+    protected override ValueTask DisposeAsyncCore()
     {
-        GapAdvertisement advertisement = GapAdvertisement.FromExtendedAdvertisingReport(
-            bleObserver,
-            DateTimeOffset.UtcNow,
-            (BleEventType)report.EventType,
-            new BleAddress((BleAddressType)report.AddressType, (UInt48)report.Address.ToUInt64()),
-            (Physical)report.PrimaryPhy,
-            (Physical)report.SecondaryPhy,
-            (AdvertisingSId)report.AdvertisingSId,
-            (TxPowerLevel)report.TxPower,
-            (Rssi)report.Rssi,
-            (PeriodicAdvertisingInterval)report.PeriodicAdvertisingInterval,
-            new BleAddress((BleAddressType)report.DirectAddressType, (UInt48)report.DirectAddress.ToUInt64()),
-            AdvertisingData.From(report.Data)
-        );
-
-        return advertisement;
+        _subscription.Dispose();
+        return base.DisposeAsyncCore();
     }
 }
