@@ -136,8 +136,9 @@ public sealed class BleDeviceTests
                 .EnumerateDevices(NullServiceProvider.Instance)
                 .First();
         await device.InitializeAsync();
-        await using IDisposableObservable<IGapAdvertisement> advObservable =
-            await device.Observer.StartObservingAsync();
+
+        IObservable<IGapAdvertisement> advObservable = device.Observer.OnAdvertisement();
+        await device.Observer.StartObservingAsync();
         IGattServerPeer peer = await advObservable.ConnectToPeripheral().FirstAsync();
         await peer.DisposeAsync();
     }

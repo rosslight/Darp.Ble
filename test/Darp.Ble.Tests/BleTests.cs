@@ -1,4 +1,5 @@
 using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Darp.Ble.Linq;
@@ -37,13 +38,17 @@ public sealed class BleTests(ILoggerFactory loggerFactory)
 
         IBleObserver observer = device.Observer;
 
-        IGapAdvertisement<string> adv = await (await observer.StartObservingAsync())
+        Task<IGapAdvertisement<string>> advTask = observer
+            .OnAdvertisement()
             .Select(x => x.WithUserData(""))
             .Where(x => x.UserData.Length == 0)
             .Timeout(TimeSpan.FromSeconds(1))
-            .FirstAsync();
+            .FirstAsync()
+            .ToTask();
+        await observer.StartObservingAsync();
+        IGapAdvertisement<string> adv = await advTask;
 
-        observer.IsScanning.Should().BeFalse();
+        observer.IsObserving.Should().BeFalse();
 
         adv.AsByteArray().Should().BeEquivalentTo(AdvBytes);
         ((ulong)adv.Address.Value).Should().Be(0xAABBCCDDEEFF);

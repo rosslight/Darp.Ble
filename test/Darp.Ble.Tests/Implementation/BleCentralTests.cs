@@ -92,7 +92,7 @@ public sealed class BleCentralTests
         IBleDevice device = await GetMockDeviceAsync(async device => await device.SetRandomAddressAsync(address));
         IObservable<IGattServerPeer> observable = device.Central.ConnectToPeripheral(
             address,
-            scanParameters: new BleScanParameters() { ScanInterval = scanInterval, ScanWindow = scanWindow }
+            scanParameters: new BleObservationParameters() { ScanInterval = scanInterval, ScanWindow = scanWindow }
         );
 
         var testObserver = observable.Observe();

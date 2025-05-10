@@ -1,6 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reactive.Concurrency;
-using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
@@ -67,9 +66,8 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
         IBleDevice device = await Get1000MsAdvertisementMockDeviceAsync(scheduler);
 
         // Act
-        await using IDisposableObservable<IGapAdvertisement> advObservable =
-            await device.Observer.StartObservingAsync();
-        Task<IGapAdvertisement> task = advObservable.FirstAsync().ToTask();
+        Task<IGapAdvertisement> task = device.Observer.OnAdvertisement().FirstAsync().ToTask();
+        await device.Observer.StartObservingAsync();
         scheduler.AdvanceTo(TimeSpan.FromMilliseconds(999).Ticks);
         task.IsCompleted.Should().BeFalse();
         scheduler.AdvanceTo(TimeSpan.FromMilliseconds(1000).Ticks);
@@ -82,20 +80,21 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
     }
 
     [Fact]
-    public async Task StopScan_MultipleConnections_ShouldHaltAll()
+    public async Task StopScan_MultipleConnections_ShouldNotHaltAll()
     {
         // Arrange
         var scheduler = new TestScheduler();
         IBleDevice device = await Get1000MsAdvertisementMockDeviceAsync(scheduler);
 
         // Act
-        Task<IGapAdvertisement> task1 = (await device.Observer.StartObservingAsync()).ToTask();
-        Task<IGapAdvertisement> task2 = (await device.Observer.StartObservingAsync()).ToTask();
+        Task<IGapAdvertisement> task1 = device.Observer.OnAdvertisement().FirstAsync().ToTask();
+        Task<IGapAdvertisement> task2 = device.Observer.OnAdvertisement().FirstAsync().ToTask();
+        await device.Observer.StartObservingAsync();
 
         await device.Observer.StopObservingAsync();
-        task1.Status.Should().Be(TaskStatus.Faulted);
-        task2.Status.Should().Be(TaskStatus.Faulted);
-        device.Observer.IsScanning.Should().BeFalse();
+        task1.Status.Should().Be(TaskStatus.WaitingForActivation);
+        task2.Status.Should().Be(TaskStatus.WaitingForActivation);
+        device.Observer.IsObserving.Should().BeFalse();
     }
 
     [Fact]
@@ -103,19 +102,16 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
     [SuppressMessage("Argument specification", "NS3005:Could not set argument.")]
     public async Task Observer_WhenFailedWithAnyException_ShouldReturnException()
     {
-        var observer = Substitute.For<BleObserver>(null, null);
+        var device = Substitute.For<BleDevice>(null!, null!);
+        var observer = Substitute.For<BleObserver>(device, null);
         observer
-            .InvokeNonPublicMethod("TryStartScanCore", Observable.Empty<IGapAdvertisement>())
-            .ReturnsForAnyArgs(info =>
-            {
-                info[0] = Observable.Throw<IGapAdvertisement>(new DummyException("Dummy"));
-                return false;
-            });
+            .InvokeNonPublicMethod("StartObservingAsyncCore", CancellationToken.None)
+            .ReturnsForAnyArgs(_ => throw new DummyException("Lorem ipsum"));
 
-        Func<Task> act = async () => _ = (await observer.StartObservingAsync()).FirstAsync().Subscribe();
+        Func<Task> act = async () => await observer.StartObservingAsync();
 
         await act.Should()
-            .ThrowAsync<BleObservationException>()
+            .ThrowAsync<BleObservationStartException>()
             .Where(x => typeof(DummyException).IsAssignableTo(x.InnerException!.GetType()));
     }
 
@@ -124,48 +120,21 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
     [SuppressMessage("Argument specification", "NS3005:Could not set argument.")]
     public async Task Observer_WhenFailedWithBleObservationException_ShouldReturnException()
     {
-        var observer = Substitute.For<BleObserver>(null, null);
+        var device = Substitute.For<BleDevice>(null!, null!);
+        var observer = Substitute.For<BleObserver>(device, null);
         observer
-            .InvokeNonPublicMethod("TryStartScanCore", Observable.Empty<IGapAdvertisement>())
-            .ReturnsForAnyArgs(info =>
-            {
-                info[0] = Observable.Throw<IGapAdvertisement>(
-                    new BleObservationException(observer!, message: null, innerException: null)
-                );
-                return false;
-            });
+            .InvokeNonPublicMethod("StartObservingAsyncCore", CancellationToken.None)
+            .ReturnsForAnyArgs(_ => throw new BleObservationException(observer!, message: null, innerException: null));
 
-        Func<Task> act = async () => _ = (await observer.StartObservingAsync()).FirstAsync().Subscribe();
+        Func<Task> act = async () => await observer.StartObservingAsync();
 
         await act.Should().ThrowAsync<BleObservationException>();
     }
 
     [Fact]
-    [SuppressMessage("Non-substitutable member", "NS1000:Non-virtual setup specification.")]
-    [SuppressMessage("Argument specification", "NS3005:Could not set argument.")]
-    public async Task Connect_WhenFailed_ShouldFaultAndReturnEmptyDisposable()
-    {
-        var observer = Substitute.For<BleObserver>(null, null);
-        observer
-            .InvokeNonPublicMethod("TryStartScanCore", Observable.Empty<IGapAdvertisement>())
-            .ReturnsForAnyArgs(info =>
-            {
-                info[0] = Observable.Throw<IGapAdvertisement>(new DummyException("Dummy"));
-                return false;
-            });
-
-        await using IDisposableObservable<IGapAdvertisement> advObservable = await observer.StartObservingAsync();
-        Task<IGapAdvertisement> task = advObservable.FirstAsync().ToTask();
-        task.Status.Should().Be(TaskStatus.Faulted);
-        task.Exception?.InnerException.Should().BeOfType<BleObservationException>();
-        task.Exception?.InnerException?.InnerException.Should().BeOfType<DummyException>();
-        advObservable.Should().Be(Disposable.Empty);
-    }
-
-    [Fact]
     public async Task Configure_WhenCalled_ShouldSetParameters()
     {
-        var targetParameters = new BleScanParameters { ScanType = ScanType.Active };
+        var targetParameters = new BleObservationParameters { ScanType = ScanType.Active };
         IBleDevice device = await GetMockDeviceAsync();
 
         device.Observer.Parameters.Should().NotBe(targetParameters);
@@ -184,34 +153,22 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
     }
 
     [Fact]
-    public async Task Connect_WhenConnectedTwice_ShouldReturnSame()
-    {
-        IBleDevice device = await GetMockDeviceAsync();
-
-        IAsyncDisposable disposable1 = await device.Observer.StartObservingAsync();
-        IAsyncDisposable disposable2 = await device.Observer.StartObservingAsync();
-
-        disposable1.Should().Be(disposable2);
-    }
-
-    [Fact]
-    public async Task Subscribe_WhenDisposed_ShouldThrowException()
+    public async Task StartObservingAsync_WhenDisposed_ShouldThrowException()
     {
         IBleDevice device = await GetMockDeviceAsync();
 
         await device.DisposeAsync();
-        Func<Task> xx = async () => _ = await device.Observer.StartObservingAsync();
+        Func<Task> xx = async () => await device.Observer.StartObservingAsync();
         await xx.Should().ThrowAsync<ObjectDisposedException>();
     }
 
     [Fact]
-    public async Task Connect_WhenDisposed_ShouldReturnEmpty()
+    public async Task OnAdvertisement_WhenDisposed_ShouldThrowException()
     {
         IBleDevice device = await GetMockDeviceAsync();
 
         await device.DisposeAsync();
-
-        IAsyncDisposable disposable = await device.Observer.StartObservingAsync();
-        disposable.Should().Be(Disposable.Empty);
+        Action xx = () => device.Observer.OnAdvertisement(_ => { });
+        xx.Should().Throw<ObjectDisposedException>();
     }
 }
