@@ -1,0 +1,12 @@
+﻿[
+  {
+    Type: HciCommand,
+    OpCode: HCI_LE_Set_Extended_Scan_Parameters,
+    PduBytes: 41200801000100A000A000
+  },
+  {
+    Type: HciCommand,
+    OpCode: HCI_LE_Set_Extended_Scan_Enable,
+    PduBytes: 422006010000000000
+  }
+]
