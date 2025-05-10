@@ -12,7 +12,7 @@ namespace Darp.Ble.Implementation;
 /// <summary> The ble observer </summary>
 /// <param name="device"> The ble device </param>
 /// <param name="logger"> The logger </param>
-public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger) : IBleObserver
+public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger) : IAsyncDisposable, IBleObserver
 {
     private readonly BleDevice _bleDevice = device;
     private readonly List<Action<IGapAdvertisement>> _actions = [];
@@ -73,8 +73,8 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
 
     /// <inheritdoc />
     public IDisposable OnAdvertisement<T>(T state, Action<T, IGapAdvertisement> onAdvertisement)
-        where T : class
     {
+        ObjectDisposedException.ThrowIf(_bleDevice.IsDisposing, nameof(BleObserver));
         Action<IGapAdvertisement> action = advertisement => onAdvertisement(state, advertisement);
         lock (_lock)
         {
@@ -145,6 +145,7 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
     /// <remarks> This method is not glued to the <see cref="IAsyncDisposable"/> interface. All disposes should be done using the  </remarks>
     public async ValueTask DisposeAsync()
     {
+        GC.SuppressFinalize(this);
         await StopObservingAsync().ConfigureAwait(false);
         lock (_lock)
         {

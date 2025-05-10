@@ -13,7 +13,7 @@ public static class BleObserverExtensions
     /// </summary>
     /// <param name="observer">The instance of <see cref="IBleObserver"/> that will monitor BLE advertisements.</param>
     /// <returns>An observable sequence of <see cref="IGapAdvertisement"/> instances representing BLE advertisements.</returns>
-    public static IObservable<IGapAdvertisement> Observe(this IBleObserver observer)
+    public static IObservable<IGapAdvertisement> OnAdvertisement(this IBleObserver observer)
     {
         ArgumentNullException.ThrowIfNull(observer);
         return Observable.Create<IGapAdvertisement>(advObserver =>

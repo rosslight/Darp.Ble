@@ -29,8 +29,7 @@ public interface IBleObserver
     /// <param name="onAdvertisement"> The callback </param>
     /// <typeparam name="T"> The type of the state </typeparam>
     /// <returns> A disposable to unsubscribe the callback </returns>
-    IDisposable OnAdvertisement<T>(T state, Action<T, IGapAdvertisement> onAdvertisement)
-        where T : class;
+    IDisposable OnAdvertisement<T>(T state, Action<T, IGapAdvertisement> onAdvertisement);
 
     /// <summary> Start observing for advertisements. </summary>
     /// <param name="cancellationToken"> The CancellationToken to cancel the initial starting process </param>
