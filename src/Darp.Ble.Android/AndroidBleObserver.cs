@@ -19,11 +19,7 @@ public sealed class AndroidBleObserver(
     private readonly BluetoothLeScanner _bluetoothLeScanner = bluetoothLeScanner;
     private BleObserverScanCallback? _scanCallback;
 
-    protected override Task<IDisposable> StartObservingAsyncCore<TState>(
-        TState state,
-        Action<TState, IGapAdvertisement> onAdvertisement,
-        CancellationToken cancellationToken
-    )
+    protected override Task StartObservingAsyncCore(CancellationToken cancellationToken)
     {
         // Android versions before Android12 (API version <= 30) did have to Location services at all times,
         // when targeting >= 31, there is an option to assert that there is no usage of location in the manifest
@@ -36,7 +32,18 @@ public sealed class AndroidBleObserver(
                 "Location services are not enabled. Please check in the settings"
             );
         }
-        _scanCallback = new BleObserverScanCallback(this);
+        _scanCallback = new BleObserverScanCallback(
+            result =>
+            {
+                GapAdvertisement adv = OnAdvertisementReport(this, result);
+                OnNext(adv);
+            },
+            failure =>
+            {
+                Logger.LogError("Scan failure because of {Failure}", failure);
+                _ = StopObservingAsync();
+            }
+        );
         using var settingsBuilder = new ScanSettings.Builder();
         ScanSettings? scanSettings = settingsBuilder
             .SetCallbackType(ScanCallbackType.AllMatches)
@@ -44,10 +51,7 @@ public sealed class AndroidBleObserver(
             ?.SetReportDelay(0)
             ?.Build();
         _bluetoothLeScanner.StartScan(filters: null, scanSettings, _scanCallback);
-        IDisposable disposable = _scanCallback
-            .Select(x => OnAdvertisementReport(this, x))
-            .Subscribe(adv => onAdvertisement(state, adv));
-        return Task.FromResult(disposable);
+        return Task.CompletedTask;
     }
 
     protected override Task StopObservingAsyncCore()

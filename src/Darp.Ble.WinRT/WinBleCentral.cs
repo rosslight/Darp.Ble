@@ -15,7 +15,7 @@ internal sealed class WinBleCentral(BleDevice device, ILogger<WinBleCentral> log
     protected override IObservable<GattServerPeer> ConnectToPeripheralCore(
         BleAddress address,
         BleConnectionParameters connectionParameters,
-        BleScanParameters scanParameters
+        BleObservationParameters observationParameters
     )
     {
         return Observable.Create<GattServerPeer>(

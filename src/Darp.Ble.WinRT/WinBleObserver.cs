@@ -18,6 +18,7 @@ namespace Darp.Ble.WinRT;
 internal sealed class WinBleObserver(BleDevice device, ILogger<WinBleObserver> logger) : BleObserver(device, logger)
 {
     private BluetoothLEAdvertisementWatcher? _watcher;
+    private IDisposable? _observableSubscription;
 
     [MemberNotNull(nameof(_watcher))]
     private void CreateScanners(ScanType mode)
@@ -36,11 +37,7 @@ internal sealed class WinBleObserver(BleDevice device, ILogger<WinBleObserver> l
         _watcher.Stopped += (_, _) => { };
     }
 
-    protected override Task<IDisposable> StartObservingAsyncCore<TState>(
-        TState state,
-        Action<TState, IGapAdvertisement> onAdvertisement,
-        CancellationToken cancellationToken
-    )
+    protected override Task StartObservingAsyncCore(CancellationToken cancellationToken)
     {
         CreateScanners(ScanType.Active);
         _watcher.Start();
@@ -58,21 +55,22 @@ internal sealed class WinBleObserver(BleDevice device, ILogger<WinBleObserver> l
             Logger.LogError("Watcher stopped with error {Error}", args.Error);
             await StopObservingAsync().ConfigureAwait(false);
         };
-        IDisposable disposable = Observable
+        _observableSubscription = Observable
             .FromEventPattern<
                 TypedEventHandler<BluetoothLEAdvertisementWatcher, BluetoothLEAdvertisementReceivedEventArgs>,
                 BluetoothLEAdvertisementWatcher,
                 BluetoothLEAdvertisementReceivedEventArgs
             >(addHandler => _watcher.Received += addHandler, removeHandler => _watcher.Received -= removeHandler)
             .Select(adv => OnAdvertisementReport(this, adv))
-            .Subscribe(advertisement => onAdvertisement(state, advertisement));
-        return Task.FromResult(disposable);
+            .Subscribe(OnNext);
+        return Task.CompletedTask;
     }
 
     protected override Task StopObservingAsyncCore()
     {
         _watcher?.Stop();
         _watcher = null;
+        _observableSubscription?.Dispose();
         return Task.CompletedTask;
     }
 

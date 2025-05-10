@@ -16,7 +16,7 @@ internal sealed class MockBleCentral(MockBleDevice device, ILogger<MockBleCentra
     protected override IObservable<GattServerPeer> ConnectToPeripheralCore(
         BleAddress address,
         BleConnectionParameters connectionParameters,
-        BleScanParameters scanParameters
+        BleObservationParameters observationParameters
     )
     {
         MockedBleDevice? peerDevice = _device.MockedDevices.FirstOrDefault(x => x.RandomAddress == address);

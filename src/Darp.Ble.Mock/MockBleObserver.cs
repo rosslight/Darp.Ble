@@ -12,24 +12,22 @@ internal sealed class MockBleObserver(MockBleDevice device, ILogger<MockBleObser
 {
     private readonly MockBleDevice _device = device;
     private readonly Subject<Unit> _stopRequestedSubject = new();
+    private IDisposable? _observableSubscription;
 
-    protected override Task<IDisposable> StartObservingAsyncCore<TState>(
-        TState state,
-        Action<TState, IGapAdvertisement> onAdvertisement,
-        CancellationToken cancellationToken
-    )
+    protected override Task StartObservingAsyncCore(CancellationToken cancellationToken)
     {
-        IDisposable disposable = _device
+        _observableSubscription = _device
             .MockedDevices.Select(x => x.GetAdvertisements(this))
             .Merge()
             .TakeUntil(_stopRequestedSubject)
-            .Subscribe(advertisement => onAdvertisement(state, advertisement));
-        return Task.FromResult(disposable);
+            .Subscribe(OnNext);
+        return Task.CompletedTask;
     }
 
     protected override Task StopObservingAsyncCore()
     {
         _stopRequestedSubject.OnNext(Unit.Default);
+        _observableSubscription?.Dispose();
         return Task.CompletedTask;
     }
 }
