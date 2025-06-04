@@ -60,6 +60,7 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
         {
             await StartObservingAsyncCore(cancellationToken).ConfigureAwait(false);
             IsObserving = true;
+            Logger.LogTrace("Started advertising observation");
         }
         catch (Exception e) when (e is not BleObservationStartException)
         {

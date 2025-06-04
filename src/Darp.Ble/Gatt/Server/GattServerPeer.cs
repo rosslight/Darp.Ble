@@ -62,6 +62,7 @@ public abstract class GattServerPeer : IGattServerPeer
         )
         {
             _services.Add(service);
+            Logger.LogTrace("Discovered service {Uuid}", service.Uuid);
         }
     }
 
@@ -82,6 +83,7 @@ public abstract class GattServerPeer : IGattServerPeer
         {
             serviceToReturn ??= service;
             _services.Add(service);
+            Logger.LogTrace("Discovered service {Uuid}", service.Uuid);
         }
         return serviceToReturn ?? throw new Exception($"No service with Uuid {uuid} was discovered");
     }

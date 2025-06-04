@@ -47,6 +47,12 @@ public abstract class GattServerService(
         {
             await characteristic.DiscoverDescriptorsAsync(cancellationToken).ConfigureAwait(false);
             _characteristics[characteristic.AttributeHandle] = characteristic;
+            Logger.LogTrace(
+                "Discovered characteristic {Uuid} on {AttributeHandle} with properties {Properties}",
+                characteristic.Uuid,
+                characteristic.AttributeHandle,
+                characteristic.Properties
+            );
         }
     }
 
@@ -76,6 +82,12 @@ public abstract class GattServerService(
             await characteristic.DiscoverDescriptorsAsync(cancellationToken).ConfigureAwait(false);
             characteristicToReturn ??= characteristic;
             _characteristics[characteristic.AttributeHandle] = characteristic;
+            Logger.LogTrace(
+                "Discovered characteristic {Uuid} on {AttributeHandle} with properties {Properties}",
+                characteristic.Uuid,
+                characteristic.AttributeHandle,
+                characteristic.Properties
+            );
         }
         return characteristicToReturn ?? throw new Exception($"No characteristic with Uuid {uuid} was discovered");
     }

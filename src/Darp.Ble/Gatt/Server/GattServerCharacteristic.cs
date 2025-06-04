@@ -52,6 +52,7 @@ public abstract class GattServerCharacteristic(
         )
         {
             _descriptors[descriptor.Uuid] = descriptor;
+            Logger.LogTrace("Discovered descriptor {Uuid}", descriptor.Uuid);
         }
     }
 
