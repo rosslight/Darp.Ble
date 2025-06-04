@@ -34,28 +34,32 @@ internal sealed class WinGattServerCharacteristic(
             return _gattCharacteristic
                 .GetDescriptorsAsync()
                 .ToObservable()
-                .Subscribe(result =>
-                {
-                    if (result.Status is not GattCommunicationStatus.Success)
+                .Subscribe(
+                    result =>
                     {
-                        observer.OnError(
-                            new Exception(
-                                $"Could not query new descriptor for characteristic - got result {result.Status} ({result.ProtocolError})"
-                            )
-                        );
-                        return;
-                    }
-                    foreach (GattDescriptor descriptor in result.Descriptors)
-                    {
-                        observer.OnNext(
-                            new WinGattServerDescriptor(
-                                this,
-                                descriptor,
-                                ServiceProvider.GetLogger<WinGattServerDescriptor>()
-                            )
-                        );
-                    }
-                });
+                        if (result.Status is not GattCommunicationStatus.Success)
+                        {
+                            observer.OnError(
+                                new Exception(
+                                    $"Could not query new descriptor for characteristic - got result {result.Status} ({result.ProtocolError})"
+                                )
+                            );
+                            return;
+                        }
+                        foreach (GattDescriptor descriptor in result.Descriptors)
+                        {
+                            observer.OnNext(
+                                new WinGattServerDescriptor(
+                                    this,
+                                    descriptor,
+                                    ServiceProvider.GetLogger<WinGattServerDescriptor>()
+                                )
+                            );
+                        }
+                    },
+                    observer.OnError,
+                    observer.OnCompleted
+                );
         });
     }
 

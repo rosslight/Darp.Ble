@@ -79,4 +79,7 @@ internal sealed class WinGattServerService(
     {
         return DiscoverCharacteristic(() => _winService.GetCharacteristicsForUuidAsync(uuid.Value));
     }
+
+    /// <summary> Dispose the underlying Windows service. Required for successful disconnection! </summary>
+    internal void Dispose() => _winService.Dispose();
 }

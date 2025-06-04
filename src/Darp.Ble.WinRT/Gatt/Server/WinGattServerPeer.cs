@@ -93,8 +93,12 @@ internal sealed class WinGattServerPeer : GattServerPeer
         return DiscoverService(() => _winDev.GetGattServicesForUuidAsync(uuid.Value, BluetoothCacheMode.Uncached));
     }
 
-    protected override void DisposeCore()
+    /// <summary> Disposes of all Services and the Device. Completes when a disconnection event was received </summary>
+    protected override async ValueTask DisposeAsyncCore()
     {
+        await base.DisposeAsyncCore().ConfigureAwait(false);
+        foreach (WinGattServerService service in Services.OfType<WinGattServerService>())
+            service.Dispose();
         _winDev.Dispose();
         ConnectionSubject.OnNext(ConnectionStatus.Disconnected);
     }

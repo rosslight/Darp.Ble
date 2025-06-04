@@ -68,10 +68,17 @@ internal sealed class WinBleObserver(BleDevice device, ILogger<WinBleObserver> l
 
     protected override Task StopObservingAsyncCore()
     {
+        _observableSubscription?.Dispose();
         _watcher?.Stop();
         _watcher = null;
-        _observableSubscription?.Dispose();
         return Task.CompletedTask;
+    }
+
+    protected override async ValueTask DisposeAsyncCore()
+    {
+        _observableSubscription?.Dispose();
+        _watcher?.Stop();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 
     private static GapAdvertisement OnAdvertisementReport(

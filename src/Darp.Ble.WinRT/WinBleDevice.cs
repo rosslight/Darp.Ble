@@ -6,7 +6,7 @@ using Windows.Devices.Bluetooth;
 namespace Darp.Ble.WinRT;
 
 /// <summary> Provides windows specific implementation of a ble device </summary>
-internal sealed class WinBleDevice(IServiceProvider serviceProvider)
+internal sealed class WinBleDevice(IServiceProvider serviceProvider, string name)
     : BleDevice(serviceProvider, serviceProvider.GetLogger<WinBleDevice>())
 {
     private BluetoothAdapter? _adapter;
@@ -37,7 +37,7 @@ internal sealed class WinBleDevice(IServiceProvider serviceProvider)
     }
 
     /// <inheritdoc />
-    public override string? Name { get; set; } = "Windows";
+    public override string? Name { get; set; } = name;
 
     /// <inheritdoc />
     public override AppearanceValues Appearance { get; set; } = AppearanceValues.Computer;
