@@ -1,7 +1,7 @@
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using Darp.Ble.Gap;
-using Darp.Ble.Gatt.Server;
 
 namespace Darp.Ble;
 
@@ -33,64 +33,45 @@ public static class BleObserverExtensions
         ArgumentNullException.ThrowIfNull(bleObserver);
         return bleObserver.OnAdvertisement(onAdvertisement, static (action, advertisement) => action(advertisement));
     }
-}
 
-file sealed class AdvertisementObservable : IObservable<IGapAdvertisement>
-{
-    private readonly object _lock = new();
-    private readonly List<IObserver<IGapAdvertisement>> _observers = [];
-    internal IAsyncDisposable? ScanDisposable { get; set; }
-
-    public void OnNext(IGapAdvertisement advertisement)
+    /// <summary> Publish the observer to allow observing advertisements without having to start/stop observation manually </summary>
+    /// <param name="bleObserver"> The observer to publish </param>
+    /// <returns> A connectable observable which supports scanning on subscription </returns>
+    public static IConnectableObservable<IGapAdvertisement> Publish(this IBleObserver bleObserver)
     {
-        lock (_lock)
+        ArgumentNullException.ThrowIfNull(bleObserver);
+
+        IObservable<IGapAdvertisement> inner = Observable.Create<IGapAdvertisement>(observer =>
         {
-            for (int index = _observers.Count - 1; index >= 0; index--)
+            IDisposable unhook = bleObserver.OnAdvertisement(
+                observer,
+                onAdvertisement: static (observer, adv) => observer.OnNext(adv)
+            );
+
+            bleObserver.StartObservingAsync().FireAndForget(observer.OnError);
+
+            return Disposable.Create(() =>
             {
-                IObserver<IGapAdvertisement> observer = _observers[index];
-                observer.OnNext(advertisement);
-            }
-        }
+                unhook.Dispose();
+                // If task fails, there is nothing we can do - the observer already unsubscribed
+                bleObserver.StopObservingAsync().FireAndForget(_ => { });
+            });
+        });
+
+        return inner.Publish();
     }
 
-    public void OnCompleted()
+    private static async void FireAndForget(this Task task, Action<Exception> onError)
     {
-        lock (_lock)
+        try
         {
-            for (int index = _observers.Count - 1; index >= 0; index--)
-            {
-                IObserver<IGapAdvertisement> observer = _observers[index];
-                observer.OnCompleted();
-            }
-
-            _observers.Clear();
+            await task.ConfigureAwait(false);
         }
-    }
-
-    public IDisposable Subscribe(IObserver<IGapAdvertisement> observer)
-    {
-        lock (_lock)
+#pragma warning disable CA1031 // Do not catch general exception types
+        catch (Exception e)
+#pragma warning restore CA1031 // Do not catch general exception types
         {
-            _observers.Add(observer);
+            onError(e);
         }
-        return Disposable.Create(
-            (this, observer),
-            state =>
-            {
-                lock (_lock)
-                {
-                    state.Item1._observers.Remove(state.observer);
-                    if (ScanDisposable is null)
-                        return;
-                    ValueTask task = ScanDisposable.DisposeAsync();
-                    if (!task.IsCompletedSuccessfully)
-                    {
-                        // Fire valueTask if not completed
-                        _ = task.AsTask();
-                    }
-                    ScanDisposable = null;
-                }
-            }
-        );
     }
 }

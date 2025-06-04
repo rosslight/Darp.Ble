@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Reactive.Disposables;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
@@ -9,6 +10,15 @@ using Lock = System.Object;
 
 namespace Darp.Ble.Implementation;
 
+/// <summary> The observer state </summary>
+internal enum ObserverState
+{
+    Stopped,
+    Starting,
+    Observing,
+    Stopping,
+}
+
 /// <summary> The ble observer </summary>
 /// <param name="device"> The ble device </param>
 /// <param name="logger"> The logger </param>
@@ -18,6 +28,7 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
     private readonly List<Action<IGapAdvertisement>> _actions = [];
     private readonly Lock _lock = new();
     private readonly SemaphoreSlim _observationStartSemaphore = new(1, 1);
+    private ObserverState _observerState = ObserverState.Stopped;
 
     /// <summary> The logger </summary>
     protected ILogger<BleObserver> Logger { get; } = logger;
@@ -38,12 +49,12 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
         };
 
     /// <inheritdoc />
-    public bool IsObserving { get; private set; }
+    public bool IsObserving => _observerState is ObserverState.Observing;
 
     /// <inheritdoc />
     public bool Configure(BleObservationParameters parameters)
     {
-        if (IsObserving)
+        if (_observerState is not ObserverState.Stopped)
             return false;
         Parameters = parameters;
         return true;
@@ -53,17 +64,23 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
     public async Task StartObservingAsync(CancellationToken cancellationToken = default)
     {
         ObjectDisposedException.ThrowIf(_bleDevice.IsDisposing, nameof(BleObserver));
-        if (IsObserving)
-            return;
+
         await _observationStartSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            if (_observerState is ObserverState.Observing)
+                return;
+
+            Debug.Assert(_observerState == ObserverState.Stopped);
+            _observerState = ObserverState.Starting;
             await StartObservingAsyncCore(cancellationToken).ConfigureAwait(false);
-            IsObserving = true;
+            _observerState = ObserverState.Observing;
             Logger.LogTrace("Started advertising observation");
         }
         catch (Exception e) when (e is not BleObservationStartException)
         {
+            // Clean up the state
+            _observerState = ObserverState.Stopped;
             throw new BleObservationStartException(this, e.Message, e);
         }
         finally
@@ -124,14 +141,20 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
     /// <inheritdoc />
     public async Task StopObservingAsync()
     {
-        if (!IsObserving)
-            return;
         await _observationStartSemaphore.WaitAsync().ConfigureAwait(false);
         try
         {
+            // Return early if
+            // Stopped -> Nothing to do
+            // Stopping -> Some recursive call has lead to us being here
+            if (_observerState is ObserverState.Stopping or ObserverState.Stopped)
+                return;
+
+            Debug.Assert(_observerState == ObserverState.Observing);
+            _observerState = ObserverState.Stopping;
             await StopObservingAsyncCore().ConfigureAwait(false);
             Logger.LogTrace("Stopped advertising observation");
-            IsObserving = false;
+            _observerState = ObserverState.Stopped;
         }
         finally
         {
