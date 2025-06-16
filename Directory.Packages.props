@@ -10,25 +10,25 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
     <PackageVersion Include="Darp.BinaryObjects" Version="0.6.0" />
-    <PackageVersion Include="Darp.Utils.Messaging" Version="1.13.0" />
+    <PackageVersion Include="Darp.Utils.Messaging" Version="1.17.0" />
     <PackageVersion Include="FluentAssertions" Version="[7.1.0,8.0.0)" />
     <PackageVersion Include="FluentAssertions.Analyzers" Version="0.34.1" />
     <PackageVersion Include="FluentAssertions.Reactive" Version="0.2.0" />
-    <PackageVersion Include="Meziantou.Analyzer" Version="2.0.186">
+    <PackageVersion Include="Meziantou.Analyzer" Version="2.0.201">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
-    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.1" />
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="9.0.6" />
     <PackageVersion Include="Microsoft.Extensions.Logging.Console" Version="9.0.1" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
     <PackageVersion Include="NSubstitute" Version="5.3.0" />
     <PackageVersion Include="NSubstitute.Analyzers.CSharp" Version="1.0.17" />
     <PackageVersion Include="PolySharp" Version="1.15.0" />
-    <PackageVersion Include="roslynator.analyzers" Version="4.12.11">
+    <PackageVersion Include="roslynator.analyzers" Version="4.13.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
-    <PackageVersion Include="roslynator.formatting.analyzers" Version="4.12.11">
+    <PackageVersion Include="roslynator.formatting.analyzers" Version="4.13.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
@@ -40,10 +40,10 @@
     <PackageVersion Include="SerilogTracing" Version="2.3.1" />
     <PackageVersion Include="SerilogTracing.Expressions" Version="2.3.1" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
-    <PackageVersion Include="System.IO.Ports" Version="9.0.1" />
+    <PackageVersion Include="System.IO.Ports" Version="9.0.6" />
     <PackageVersion Include="System.Linq.Async" Version="6.0.1" />
     <PackageVersion Include="System.Management" Version="9.0.1" />
-    <PackageVersion Include="System.Numerics.Tensors" Version="9.0.2" />
+    <PackageVersion Include="System.Numerics.Tensors" Version="9.0.6" />
     <PackageVersion Include="System.Reactive" Version="6.0.1" />
     <PackageVersion Include="System.Reactive.Linq" Version="6.0.1" />
     <PackageVersion Include="System.Text.Json" Version="9.0.1" />

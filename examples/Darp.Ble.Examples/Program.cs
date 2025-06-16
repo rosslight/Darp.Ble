@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Globalization;
 using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
 using Darp.Ble;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
@@ -9,9 +10,9 @@ using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Gatt.Services;
 using Darp.Ble.Hci;
-using Darp.Ble.Hci.Transport;
 using Darp.Ble.HciHost;
 using Darp.Ble.Mock;
+using Darp.Ble.WinRT;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using Serilog.Core;
@@ -30,6 +31,39 @@ await using Logger logger = new LoggerConfiguration()
     .WriteTo.Seq("http://localhost:5341", formatProvider: CultureInfo.InvariantCulture)
     .CreateLogger();
 
+var d = new ServiceCollection()
+    .AddLogging(builder => builder.AddSerilog(logger))
+    .AddBleManager(builder => builder.AddWinRT())
+    .BuildServiceProvider()
+    .GetRequiredService<BleManager>()
+    .EnumerateDevices()
+    .First();
+await d.InitializeAsync();
+
+var myObservable = d.Observer.Publish().RefCount();
+
+for (var ii = 0; ii < 10; ii++)
+{
+    var resultTask = X(myObservable.WhereConnectable()).FirstAsync().ToTask();
+    var peer = await resultTask;
+    logger.Information("Woo {@Peer}", peer);
+    await peer.DisposeAsync();
+}
+
+static IObservable<IGattServerPeer> X(IObservable<IGapAdvertisement> source)
+{
+    return Observable.Create<IGattServerPeer>(observer =>
+    {
+        return source
+            .SelectMany(async x =>
+            {
+                return await x.ConnectToPeripheral().FirstAsync();
+            })
+            .Subscribe(observer);
+    });
+}
+
+return;
 var source = new ActivitySource("Darp.Ble.Examples", "1.0.0");
 
 using var listener = new ActivityListenerConfiguration()

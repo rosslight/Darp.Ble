@@ -48,7 +48,6 @@ internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster) : Adv
     )
     {
         ArgumentNullException.ThrowIfNull(parameters);
-        var wasEnabled = IsAdvertising;
         HciLeSetExtendedAdvertisingParametersResult result = await _host
             .QueryCommandCompletionAsync<
                 HciLeSetExtendedAdvertisingParametersV1Command,

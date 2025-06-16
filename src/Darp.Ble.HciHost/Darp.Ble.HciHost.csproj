@@ -12,6 +12,5 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="System.IO.Ports" />
-    <PackageReference Include="System.Management" />
   </ItemGroup>
 </Project>
