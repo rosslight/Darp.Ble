@@ -17,7 +17,7 @@ This package is under heavy development. Huge changes to the API are to be expec
 |------------------|----------|---------|-------------|------------|------------------------------------------------------------------------------------------------------------------------------|
 | Darp.Ble.WinRT   | X        | X       | X           | X          | [![Darp.Ble.WinRT](https://img.shields.io/nuget/v/Darp.Ble.WinRT.svg)](https://www.nuget.org/packages/Darp.Ble.WinRT/)       |
 | Darp.Ble.Android | X        | X       |             |            | [![Darp.Ble.Android](https://img.shields.io/nuget/v/Darp.Ble.Android.svg)](https://www.nuget.org/packages/Darp.Ble.Android/) |
-| Darp.Ble.HciHost | X        | X       |             |            | [![Darp.Ble.HciHost](https://img.shields.io/nuget/v/Darp.Ble.HciHost.svg)](https://www.nuget.org/packages/Darp.Ble.HciHost/) |
+| Darp.Ble.HciHost | X        | X       | x           | x          | [![Darp.Ble.HciHost](https://img.shields.io/nuget/v/Darp.Ble.HciHost.svg)](https://www.nuget.org/packages/Darp.Ble.HciHost/) |
 | Darp.Ble.iOS     |          |         |             |            | planned                                                                                                                      |
 | Darp.Ble.Mac     |          |         |             |            | planned                                                                                                                      |
 | Darp.Ble.BlueZ   |          |         |             |            | planned                                                                                                                      |
@@ -37,7 +37,7 @@ To release resources call `DisposeAsync`.
 ```csharp
 var bleManager = new BleManagerBuilder()
     .AddWinRT()
-    .AddSingleHciHost("COM7"))
+    .AddSerialHciHost())
     .CreateManager();
 
 var bleDevice = bleManager.EnumerateDevices().First();
@@ -62,11 +62,12 @@ observer.Configure(new BleScanParameters
     ScanInterval = ScanTiming.Ms100,
     ScanWindow = ScanTiming.Ms100,
 });
-observer.Subscribe(advertisement =>
+var connectableObservable = observer.Publish();
+connectableObservable.Subscribe(advertisement =>
 {
     Console.WriteLine($"Received advertisement from {advertisement.Address}");
 });
-var disposable = observer.Connect();
+var disposable = connectableObservable.Connect();
 ```
 
 ### Central
@@ -84,9 +85,9 @@ var peerDevice = await central
     .ConnectToPeripheral(new BleAddress(BleAddressType.Public, (UInt48)0xAABBCCDDEEFF))
     .FirstAsync();
 
-var service = await peerDevice.DiscoverServiceAsync(new BleUuid(0x1234));
-var writeChar = await service.DiscoverCharacteristicAsync<Properties.Write>(new BleUuid(0x5678));
-var notifyChar = await service.DiscoverCharacteristicAsync<Properties.Notify>(new BleUuid(0xABCD));
+var service = await peerDevice.DiscoverServiceAsync(0x1234);
+var writeChar = await service.DiscoverCharacteristicAsync<Properties.Write>(0x5678);
+var notifyChar = await service.DiscoverCharacteristicAsync<Properties.Notify>(0xABCD);
 
 await using var disposableObs = await notifyChar.OnNotifyAsync();
 var notifyTask = disposableObs.FirstAsync().ToTask();
