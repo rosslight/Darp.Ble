@@ -254,10 +254,7 @@ public static partial class AdvertisingDataExtensions
         this AdvertisingData advertisingData,
         CompanyIdentifiers companyIdentifier,
         byte[] manufacturerSpecificData
-    )
-    {
-        return advertisingData.WithManufacturerSpecificData(companyIdentifier, manufacturerSpecificData);
-    }
+    ) => advertisingData.WithManufacturerSpecificData(companyIdentifier, manufacturerSpecificData);
 
     /// <summary>
     /// Create a new <see cref="AdvertisingData"/> object with the <see cref="AdTypes.ManufacturerSpecificData"/> section created or updated </summary>
@@ -293,5 +290,54 @@ public static partial class AdvertisingDataExtensions
     {
         ArgumentNullException.ThrowIfNull(advertisingData);
         return advertisingData.With(AdTypes.ManufacturerSpecificData, sectionData);
+    }
+
+    /// <summary>
+    /// Create a new <see cref="AdvertisingData"/> object with the
+    /// <see cref="AdTypes.ServiceData16BitUuid"/> | <see cref="AdTypes.ServiceData32BitUuid"/> | <see cref="AdTypes.ServiceData128BitUuid"/>
+    /// section created or updated </summary>
+    /// <param name="advertisingData"> The advertising data to base on </param>
+    /// <param name="uuid"> The uuid of the service data </param>
+    /// <param name="serviceData"> The service data </param>
+    /// <returns> The new advertising data </returns>
+    [Pure]
+    public static AdvertisingData WithServiceData(
+        this AdvertisingData advertisingData,
+        BleUuid uuid,
+        byte[] serviceData
+    ) => WithServiceData(advertisingData, uuid, (ReadOnlyMemory<byte>)serviceData);
+
+    /// <summary>
+    /// Create a new <see cref="AdvertisingData"/> object with the
+    /// <see cref="AdTypes.ServiceData16BitUuid"/> | <see cref="AdTypes.ServiceData32BitUuid"/> | <see cref="AdTypes.ServiceData128BitUuid"/>
+    /// section created or updated </summary>
+    /// <param name="advertisingData"> The advertising data to base on </param>
+    /// <param name="uuid"> The uuid of the service data </param>
+    /// <param name="serviceData"> The service data </param>
+    /// <returns> The new advertising data </returns>
+    [OverloadResolutionPriority(1)]
+    [Pure]
+    public static AdvertisingData WithServiceData(
+        this AdvertisingData advertisingData,
+        BleUuid uuid,
+        ReadOnlyMemory<byte> serviceData
+    )
+    {
+        ArgumentNullException.ThrowIfNull(advertisingData);
+        ArgumentNullException.ThrowIfNull(uuid);
+
+        var uuidLength = (int)uuid.Type;
+        Memory<byte> sectionData = new byte[uuidLength + serviceData.Length];
+        if (!uuid.TryWriteBytes(sectionData.Span))
+            throw new InvalidOperationException("Could not write bytes of Uuid. This should not happen");
+        serviceData.CopyTo(sectionData[uuidLength..]);
+        AdTypes adType = uuid.Type switch
+        {
+            BleUuidType.Uuid16 => AdTypes.ServiceData16BitUuid,
+            BleUuidType.Uuid32 => AdTypes.ServiceData32BitUuid,
+            BleUuidType.Uuid128 => AdTypes.ServiceData128BitUuid,
+            _ => throw new ArgumentOutOfRangeException(nameof(uuid)),
+        };
+        return advertisingData.With(adType, sectionData);
     }
 }
