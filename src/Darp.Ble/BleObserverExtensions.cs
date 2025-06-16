@@ -41,14 +41,14 @@ public static class BleObserverExtensions
     {
         ArgumentNullException.ThrowIfNull(bleObserver);
 
-        IObservable<IGapAdvertisement> inner = Observable.Create<IGapAdvertisement>(observer =>
+        IObservable<IGapAdvertisement> inner = Observable.Create<IGapAdvertisement>(async observer =>
         {
             IDisposable unhook = bleObserver.OnAdvertisement(
                 observer,
                 onAdvertisement: static (observer, adv) => observer.OnNext(adv)
             );
 
-            bleObserver.StartObservingAsync().FireAndForget(observer.OnError);
+            await bleObserver.StartObservingAsync().ConfigureAwait(false);
 
             return Disposable.Create(() =>
             {

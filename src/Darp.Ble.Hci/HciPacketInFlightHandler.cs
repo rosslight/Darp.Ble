@@ -45,7 +45,13 @@ internal sealed partial class HciPacketInFlightHandler<
             Activity? sendActivity = Logging.StartSendCommandActivity(TCommand.OpCode, _host.Address);
             try
             {
-                await _packetInFlightSemaphore.WaitAsync(timeout, cancellationToken).ConfigureAwait(false);
+                bool enteredSlim = await _packetInFlightSemaphore
+                    .WaitAsync(timeout, cancellationToken)
+                    .ConfigureAwait(false);
+                if (!enteredSlim)
+                {
+                    throw new TimeoutException("Timeout while waiting for next command to be sent");
+                }
                 var packet = new HciCommandPacket<TCommand>(command);
                 _host.EnqueuePacket(packet);
             }

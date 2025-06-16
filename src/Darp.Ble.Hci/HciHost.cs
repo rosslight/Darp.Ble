@@ -56,6 +56,7 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ulong random
     internal ILogger Logger { get; } = logger;
     private AclPacketQueue? _aclPacketQueue;
     private bool _isInitialized;
+    private bool _isDisposed;
 
     /// <summary> The ACL Packet queue </summary>
     public IAclPacketQueue AclPacketQueue => _aclPacketQueue ?? throw new Exception("Not initialized yet");
@@ -70,6 +71,7 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ulong random
     /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
     public async Task InitializeAsync(CancellationToken cancellationToken)
     {
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
         if (_isInitialized)
             throw new Exception("Already initialized");
         _isInitialized = true;
@@ -249,6 +251,7 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ulong random
         where TCommand : IHciCommand
         where TEvent : IHciEvent<TEvent>
     {
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
         timeout ??= TimeSpan.FromSeconds(5);
         using var handler = new HciPacketInFlightHandler<TCommand, TEvent>(this, _packetInFlightSemaphore);
         (TEvent response, Activity? activity) = await handler
@@ -272,6 +275,7 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ulong random
         where TCommand : IHciCommand
         where TResponse : ICommandStatusResult, IBinaryReadable<TResponse>
     {
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
         timeout ??= TimeSpan.FromSeconds(5);
         using var handler = new HciPacketInFlightHandler<TCommand, HciCommandCompleteEvent>(
             this,
@@ -294,6 +298,7 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ulong random
     /// <param name="cancellationToken"></param>
     public async Task SetRandomAddressAsync(ulong randomAddress, CancellationToken cancellationToken)
     {
+        ObjectDisposedException.ThrowIf(_isDisposed, this);
         if (!_isInitialized)
         {
             Address = randomAddress;
@@ -310,6 +315,7 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ulong random
     /// <inheritdoc />
     public void Dispose()
     {
+        _isDisposed = true;
         _transportLayer.Dispose();
         _aclPacketQueue?.Dispose();
         _packetInFlightSemaphore.Dispose();
