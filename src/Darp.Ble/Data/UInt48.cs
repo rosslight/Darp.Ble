@@ -7,11 +7,12 @@ namespace Darp.Ble.Data;
 
 /// <summary> A 48 bit unsigned integer </summary>
 [StructLayout(LayoutKind.Sequential, Size = 6)]
-public readonly struct UInt48 : IComparable<UInt48>,
-    IEquatable<UInt48>,
-    IComparisonOperators<UInt48, UInt48, bool>,
-    IMinMaxValue<UInt48>,
-    ISpanFormattable
+public readonly struct UInt48
+    : IComparable<UInt48>,
+        IEquatable<UInt48>,
+        IComparisonOperators<UInt48, UInt48, bool>,
+        IMinMaxValue<UInt48>,
+        ISpanFormattable
 {
     private readonly byte _b0;
     private readonly byte _b1;
@@ -52,7 +53,8 @@ public readonly struct UInt48 : IComparable<UInt48>,
     /// <exception cref="ArgumentOutOfRangeException"> The source does not yield enough bytes </exception>
     public static UInt48 ReadLittleEndian(ReadOnlySpan<byte> source)
     {
-        if (source.Length < 6) throw new ArgumentOutOfRangeException(nameof(source), "Source has to be 6 bytes long");
+        if (source.Length < 6)
+            throw new ArgumentOutOfRangeException(nameof(source), "Source has to be 6 bytes long");
         var result = MemoryMarshal.Read<UInt48>(source);
         return BitConverter.IsLittleEndian ? result : ReverseEndianness(result);
     }
@@ -63,20 +65,31 @@ public readonly struct UInt48 : IComparable<UInt48>,
     /// <exception cref="ArgumentOutOfRangeException"> The destination is not long enough </exception>
     public static void WriteLittleEndian(Span<byte> destination, UInt48 uint48)
     {
-        if (destination.Length < 6) throw new ArgumentOutOfRangeException(nameof(destination), "Source has to be 6 bytes long");
+        if (destination.Length < 6)
+            throw new ArgumentOutOfRangeException(nameof(destination), "Source has to be 6 bytes long");
         UInt48 valueToWrite = BitConverter.IsLittleEndian ? uint48 : ReverseEndianness(uint48);
         MemoryMarshal.Write(destination, in valueToWrite);
     }
 
     /// <inheritdoc />
     public override string ToString() => ((ulong)this).ToString(CultureInfo.InvariantCulture);
+
     /// <inheritdoc />
-    public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
+    public string ToString(
+        [StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format,
+        IFormatProvider? formatProvider
+    )
     {
         return ((ulong)this).ToString(format, formatProvider);
     }
+
     /// <inheritdoc />
-    public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+    public bool TryFormat(
+        Span<char> destination,
+        out int charsWritten,
+        ReadOnlySpan<char> format,
+        IFormatProvider? provider
+    )
     {
         return ((ulong)this).TryFormat(destination, out charsWritten, format, provider);
     }
@@ -85,43 +98,62 @@ public readonly struct UInt48 : IComparable<UInt48>,
     public int CompareTo(UInt48 other)
     {
         int b0Comparison = _b0.CompareTo(other._b0);
-        if (b0Comparison != 0) return b0Comparison;
+        if (b0Comparison != 0)
+            return b0Comparison;
         int b1Comparison = _b1.CompareTo(other._b1);
-        if (b1Comparison != 0) return b1Comparison;
+        if (b1Comparison != 0)
+            return b1Comparison;
         int b2Comparison = _b2.CompareTo(other._b2);
-        if (b2Comparison != 0) return b2Comparison;
+        if (b2Comparison != 0)
+            return b2Comparison;
         int b3Comparison = _b3.CompareTo(other._b3);
-        if (b3Comparison != 0) return b3Comparison;
+        if (b3Comparison != 0)
+            return b3Comparison;
         int b4Comparison = _b4.CompareTo(other._b4);
-        if (b4Comparison != 0) return b4Comparison;
+        if (b4Comparison != 0)
+            return b4Comparison;
         return _b5.CompareTo(other._b5);
     }
 
     /// <inheritdoc cref="INumberBase{TSelf}.Zero"/>/>
-    public static UInt48 Zero { get; } = new(0x00,0x00,0x00,0x00,0x00,0x00);
+    public static UInt48 Zero { get; } = new(0x00, 0x00, 0x00, 0x00, 0x00, 0x00);
 
     /// <inheritdoc />
-    public static UInt48 MaxValue { get; } = new(0xFF,0xFF,0xFF,0xFF,0xFF,0xFF);
+    public static UInt48 MaxValue { get; } = new(0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF);
 
     /// <inheritdoc />
     public static UInt48 MinValue => Zero;
 
     /// <inheritdoc />
-    public bool Equals(UInt48 other) => _b0 == other._b0 && _b1 == other._b1 && _b2 == other._b2 && _b3 == other._b3 && _b4 == other._b4 && _b5 == other._b5;
+    public bool Equals(UInt48 other) =>
+        _b0 == other._b0
+        && _b1 == other._b1
+        && _b2 == other._b2
+        && _b3 == other._b3
+        && _b4 == other._b4
+        && _b5 == other._b5;
+
     /// <inheritdoc />
     public override bool Equals(object? obj) => obj is UInt48 other && Equals(other);
+
     /// <inheritdoc />
     public override int GetHashCode() => HashCode.Combine(_b0, _b1, _b2, _b3, _b4, _b5);
+
     /// <inheritdoc />
     public static bool operator ==(UInt48 left, UInt48 right) => left.Equals(right);
+
     /// <inheritdoc />
     public static bool operator !=(UInt48 left, UInt48 right) => !(left == right);
+
     /// <inheritdoc />
     public static bool operator <(UInt48 left, UInt48 right) => left.CompareTo(right) < 0;
+
     /// <inheritdoc />
     public static bool operator <=(UInt48 left, UInt48 right) => left.CompareTo(right) <= 0;
+
     /// <inheritdoc />
     public static bool operator >(UInt48 left, UInt48 right) => left.CompareTo(right) > 0;
+
     /// <inheritdoc />
     public static bool operator >=(UInt48 left, UInt48 right) => left.CompareTo(right) >= 0;
 

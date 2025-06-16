@@ -1,4 +1,3 @@
-using System.Runtime.InteropServices;
 using Darp.BinaryObjects;
 
 namespace Darp.Ble.Hci.Payload.Event;
@@ -11,6 +10,7 @@ public readonly partial record struct HciNumberOfCompletedPackets
     /// <summary> The Connection_Handle </summary>
     /// <remarks> Range: 0x0000 to 0x0EFF </remarks>
     public required ushort ConnectionHandle { get; init; }
+
     /// <summary> The Num_Completed_Packets </summary>
     public required ushort NumCompletedPackets { get; init; }
 }

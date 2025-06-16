@@ -1,46 +1,45 @@
 using Darp.Ble.Data;
-using Darp.Ble.Hci.Package;
+using Darp.Ble.Gatt.Server;
+using Darp.Ble.Hci;
 using Darp.Ble.Hci.Payload.Att;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost.Gatt.Server;
 
-internal sealed class HciHostGattServerDescriptor(HciHostGattServerPeer serverPeer, BleUuid uuid, ushort attHandle, ILogger? logger)
+internal sealed class HciHostGattServerDescriptor(
+    HciHostGattServerCharacteristic characteristic,
+    BleUuid uuid,
+    ushort attHandle,
+    ILogger<HciHostGattServerDescriptor> logger
+) : GattServerDescriptor(characteristic, uuid, logger)
 {
-    private readonly HciHostGattServerPeer _serverPeer = serverPeer;
-    private readonly BleUuid _uuid = uuid;
+    private readonly HciHostGattServerPeer _peer = characteristic.Service.Peer;
     private ushort AttHandle { get; } = attHandle;
-    private readonly ILogger? _logger = logger;
 
     public void WriteWithoutResponse(byte[] bytes)
     {
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(bytes.Length, _serverPeer.AttMtu, nameof(bytes));
-        _serverPeer.SendAttMtuCommand(new AttWriteCmd
-        {
-            Handle = AttHandle,
-            Value = bytes,
-        });
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(bytes.Length, _peer.AttMtu, nameof(bytes));
+        _peer.EnqueueGattPacket(new AttWriteCmd { Handle = AttHandle, Value = bytes }, activity: null);
     }
 
-    public async Task<bool> WriteAsync(byte[] bytes, CancellationToken cancellationToken)
+    public override async Task<bool> WriteAsync(byte[] bytes, CancellationToken cancellationToken = default)
     {
-        AttReadResult response = await _serverPeer.QueryAttPduAsync<AttWriteReq, AttWriteRsp>(
-            new AttWriteReq
-            {
-                Handle = AttHandle,
-                Value = bytes,
-            }, cancellationToken: cancellationToken).ConfigureAwait(false);
-        if (response.OpCode is AttOpCode.ATT_ERROR_RSP
-            && AttErrorRsp.TryReadLittleEndian(response.Pdu, out AttErrorRsp errorRsp, out _))
+        AttResponse<AttWriteRsp> response = await _peer
+            .QueryAttPduAsync<AttWriteReq, AttWriteRsp>(
+                new AttWriteReq { AttributeHandle = AttHandle, AttributeValue = bytes },
+                cancellationToken: cancellationToken
+            )
+            .ConfigureAwait(false);
+        if (response.IsError)
         {
-            _logger?.LogWarning("Could not write with response: {ErrorCode}", errorRsp.ErrorCode);
-            return false;
-        }
-        if (!(response.OpCode is AttOpCode.ATT_WRITE_RSP && AttWriteRsp.TryReadLittleEndian(response.Pdu, out AttWriteRsp _)))
-        {
-            _logger?.LogWarning("Received unexpected att response {OpCode}", response.OpCode);
+            Logger.LogWarning("Could not write with response: {ErrorCode}", response.Error.ErrorCode);
             return false;
         }
         return true;
+    }
+
+    public override Task<byte[]> ReadAsync(CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
     }
 }

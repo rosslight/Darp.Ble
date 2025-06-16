@@ -9,12 +9,14 @@ public enum BleAddressType : byte
     /// It follows the same guidelines as MAC Addresses and shall be a 48-bit extended unique identifier (EUI-48)
     /// </summary>
     Public = 0x00,
+
     /// <summary>
     /// Random Device Address:
     /// An address that must NOT be registered with the IEEE.
     /// Can be either fixed for lifetime or be assigned on boot. Cannot change during runtime
     /// </summary>
     RandomStatic = 0x01,
+
     /// <summary>
     /// Public Identity Address:
     /// An address, which can be resolved by using a key (IRK / Identity Resolving Key).
@@ -22,14 +24,17 @@ public enum BleAddressType : byte
     /// A trusted device is a bonded device.
     /// </summary>
     RandomPrivateResolvable = 0x02,
+
     /// <summary>
     /// Random (static) Identity Address:
     /// An address, which changes periodically.
     /// Unlike a resolvable addresses, it is not resolvable by any other device. The sole purpose of this type of address is to prevent tracking by any other BLE device.
     /// </summary>
     RandomPrivateNonResolvable = 0x03,
+
     /// <summary> Private resolvable address </summary>
     ResolvablePrivateAddress = 0xFE,
+
     /// <summary>
     /// No address provided (anonymous)
     /// </summary>

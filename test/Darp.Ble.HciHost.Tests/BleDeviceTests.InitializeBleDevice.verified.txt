@@ -1,0 +1,37 @@
+﻿[
+  {
+    Type: HciCommand,
+    OpCode: HCI_Reset,
+    PduBytes: 030C00
+  },
+  {
+    Type: HciCommand,
+    OpCode: HCI_Read_Local_Version_Information,
+    PduBytes: 011000
+  },
+  {
+    Type: HciCommand,
+    OpCode: HCI_Set_Event_Mask,
+    PduBytes: 010C08FFFFFFFFFFFFFF3F
+  },
+  {
+    Type: HciCommand,
+    OpCode: HCI_LE_Set_Event_Mask,
+    PduBytes: 012008FFFFF00000000000
+  },
+  {
+    Type: HciCommand,
+    OpCode: HCI_LE_Read_Buffer_Size_V1,
+    PduBytes: 022000
+  },
+  {
+    Type: HciCommand,
+    OpCode: HCI_LE_Set_Random_Address,
+    PduBytes: 0520066E8B96AAC5E0
+  },
+  {
+    Type: HciCommand,
+    OpCode: HCI_LE_READ_MAXIMUM_ADVERTISING_DATA_LENGTH,
+    PduBytes: 3A2000
+  }
+]

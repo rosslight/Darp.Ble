@@ -23,7 +23,8 @@ internal static partial class UsbPortLinux
                 nVendorId = Convert.ToUInt16(properties.VendorId, 16);
                 nProductId = Convert.ToUInt16(properties.ModelId, 16);
 
-                nId = (ulong)HashCode.Combine(strPortName, properties.VendorId, properties.ModelId) << 32
+                nId =
+                    (ulong)HashCode.Combine(strPortName, properties.VendorId, properties.ModelId) << 32
                     | (uint)HashCode.Combine(properties.Vendor, properties.Model, properties.Type);
             }
             catch
@@ -129,7 +130,11 @@ internal static partial class UsbPortLinux
 
         private static string? GetPropertyValue(string strProperty, string str)
         {
-            var regex = new Regex("^" + strProperty + "=(?<value>.+)$", RegexOptions.Multiline, TimeSpan.FromMilliseconds(100));
+            var regex = new Regex(
+                "^" + strProperty + "=(?<value>.+)$",
+                RegexOptions.Multiline,
+                TimeSpan.FromMilliseconds(100)
+            );
             Match m = regex.Match(str);
             return m.Success ? m.Groups["value"].Value : null;
         }

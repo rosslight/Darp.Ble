@@ -1,22 +1,33 @@
+using System.Reactive;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock;
 
-internal sealed class MockBleObserver(MockBleDevice device, MockBleBroadcaster broadcaster, ILogger? logger) : BleObserver(device, logger)
+internal sealed class MockBleObserver(MockBleDevice device, ILogger<MockBleObserver> logger)
+    : BleObserver(device, logger)
 {
-    private readonly MockBleBroadcaster _broadcaster = broadcaster;
+    private readonly MockBleDevice _device = device;
+    private readonly Subject<Unit> _stopRequestedSubject = new();
+    private IDisposable? _observableSubscription;
 
-    /// <inheritdoc />
-    protected override bool TryStartScanCore(out IObservable<IGapAdvertisement> observable)
+    protected override Task StartObservingAsyncCore(CancellationToken cancellationToken)
     {
-        observable = _broadcaster.GetAdvertisements(this);
-        return true;
+        _observableSubscription = _device
+            .MockedDevices.Select(x => x.GetAdvertisements(this))
+            .Merge()
+            .TakeUntil(_stopRequestedSubject)
+            .Subscribe(OnNext);
+        return Task.CompletedTask;
     }
 
-    /// <inheritdoc />
-    protected override void StopScanCore()
+    protected override Task StopObservingAsyncCore()
     {
+        _stopRequestedSubject.OnNext(Unit.Default);
+        _observableSubscription?.Dispose();
+        return Task.CompletedTask;
     }
 }

@@ -14,6 +14,7 @@ public readonly record struct HciLeExtendedAdvertisingReportEvent : IHciLeMetaEv
 
     /// <summary> Number of separate reports in the event </summary>
     public required byte NumReports { get; init; }
+
     /// <summary> The reports </summary>
     [BinaryElementCount(nameof(NumReports))]
     public required IReadOnlyList<HciLeExtendedAdvertisingReport> Reports { get; init; }
@@ -25,7 +26,11 @@ public readonly record struct HciLeExtendedAdvertisingReportEvent : IHciLeMetaEv
     }
 
     /// <inheritdoc />
-    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out HciLeExtendedAdvertisingReportEvent value, out int bytesRead)
+    public static bool TryReadLittleEndian(
+        ReadOnlySpan<byte> source,
+        out HciLeExtendedAdvertisingReportEvent value,
+        out int bytesRead
+    )
     {
         bytesRead = 0;
         value = default;
@@ -35,9 +40,13 @@ public readonly record struct HciLeExtendedAdvertisingReportEvent : IHciLeMetaEv
         bytesRead = 2;
         for (var i = 0; i < numReports; i++)
         {
-            if (!HciLeExtendedAdvertisingReport.TryReadLittleEndian(source[bytesRead..],
+            if (
+                !HciLeExtendedAdvertisingReport.TryReadLittleEndian(
+                    source[bytesRead..],
                     out HciLeExtendedAdvertisingReport data,
-                    out int dataBytesRead))
+                    out int dataBytesRead
+                )
+            )
             {
                 return false;
             }
@@ -60,7 +69,11 @@ public readonly record struct HciLeExtendedAdvertisingReportEvent : IHciLeMetaEv
     }
 
     /// <inheritdoc />
-    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out HciLeExtendedAdvertisingReportEvent value, out int bytesRead)
+    public static bool TryReadBigEndian(
+        ReadOnlySpan<byte> source,
+        out HciLeExtendedAdvertisingReportEvent value,
+        out int bytesRead
+    )
     {
         throw new NotSupportedException();
     }

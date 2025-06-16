@@ -1,34 +1,111 @@
-using Darp.BinaryObjects;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci;
 
+[SuppressMessage("ReSharper", "ExplicitCallerInfoArgument")]
 internal static partial class Logging
 {
+    private static readonly ActivitySource HciActivity = new(HciLoggingStrings.ActivityName);
+    private static readonly ActivitySource HciTracingActivity = new(HciLoggingStrings.TracingActivityName);
+
+    public static Activity? StartInitializeHciHostActivity()
+    {
+        return HciActivity.StartActivity("Initialize HciHost");
+    }
+
+    public static Activity? StartCommandResponseActivity<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TCommand
+    >(TCommand command, ulong deviceAddress)
+        where TCommand : IHciCommand
+    {
+        Activity? activity = HciActivity.StartActivity("Query command {Name}");
+        if (activity is null)
+            return activity;
+
+        string commandName = TCommand.OpCode.ToString().ToUpperInvariant();
+        activity.SetTag("Name", commandName);
+        activity.SetTag("DeviceAddress", $"{deviceAddress:X12}");
+
+        activity.SetDeconstructedTags("Request", command, orderEntries: true);
+        activity.SetTag("Request.OpCode", $"{commandName}_COMMAND");
+        return activity;
+    }
+
+    public static Activity? StartSendCommandActivity(HciOpCode commandOpCode, ulong deviceAddress)
+    {
+        Activity? activity = HciTracingActivity.StartActivity("Enqueue command {Name}");
+        activity?.SetTag("Name", commandOpCode.ToString().ToUpperInvariant());
+        activity?.SetTag("DeviceAddress", $"{deviceAddress:X12}");
+        return activity;
+    }
+
+    public static Activity? StartWaitForEventActivity(HciEventCode eventCode, ulong deviceAddress)
+    {
+        Activity? activity = HciTracingActivity.StartActivity("Wait for event {Name}");
+        activity?.SetTag("Name", eventCode.ToString().ToUpperInvariant());
+        activity?.SetTag("DeviceAddress", $"{deviceAddress:X12}");
+        return activity;
+    }
+
     [LoggerMessage(Level = LogLevel.Trace, Message = "Enqueueing packet {@Packet}")]
     public static partial void LogEnqueuePacket(this ILogger logger, IHciPacket packet);
+
     [LoggerMessage(Level = LogLevel.Trace, Message = "Starting query of {@Command}")]
     public static partial void LogStartQuery(this ILogger logger, IHciPacket command);
+
     [LoggerMessage(Level = LogLevel.Trace, Message = "H4Transport: {Direction} disconnected")]
     public static partial void LogTransportDisconnected(this ILogger logger, string direction);
-    [LoggerMessage(Level = LogLevel.Critical, Message = "H4Transport: {Direction} died due to exception {Message}. This error is not recoverable!")]
-    public static partial void LogTransportWithError(this ILogger logger, Exception ex, string direction, string message);
-    [LoggerMessage(Level = LogLevel.Warning, Message = "H4Transport: Could not send packet {@Packet} due to error while encoding")]
+
+    [LoggerMessage(
+        Level = LogLevel.Critical,
+        Message = "H4Transport: {Direction} died due to exception {Message}. This error is not recoverable!"
+    )]
+    public static partial void LogTransportWithError(
+        this ILogger logger,
+        Exception ex,
+        string direction,
+        string message
+    );
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "H4Transport: Could not send packet {@Packet} due to error while encoding"
+    )]
     public static partial void LogPacketSendingErrorEncoding(this ILogger logger, IHciPacket packet);
+
     [LoggerMessage(Level = LogLevel.Trace, Message = "H4Transport: Sending packet {@Packet} with bytes 0x{@Bytes}")]
     public static partial void LogPacketSending(this ILogger logger, IHciPacket packet, byte[] bytes);
-    [LoggerMessage(Level = LogLevel.Warning, Message = "H4Transport: Could not decode bytes 0x{PacketBytes:X2}{Bytes} to match packet {PacketType}")]
-    public static partial void LogPacketReceivingDecodingFailed(this ILogger logger, byte packetBytes, byte[] bytes, string packetType);
-    [LoggerMessage(Level = LogLevel.Trace, Message = "Read bytes 0x{PacketBytes:X2}{Bytes} of {PacketType} packet {@Packet}")]
-    public static partial void LogPacketReceiving(this ILogger logger, byte packetBytes, byte[] bytes, HciPacketType packetType, IHciPacket packet);
-    [LoggerMessage(Level = LogLevel.Warning, Message = "H4Transport: Received unknown hci packet of type 0x{Type:X2}. Reading remaining buffer ...")]
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "H4Transport: Could not decode bytes 0x{PacketBytes:X2}{Bytes} to match packet {PacketType}"
+    )]
+    public static partial void LogPacketReceivingDecodingFailed(
+        this ILogger logger,
+        byte packetBytes,
+        byte[] bytes,
+        string packetType
+    );
+
+    [LoggerMessage(
+        Level = LogLevel.Trace,
+        Message = "Read bytes 0x{PacketBytes:X2}{Bytes} of {PacketType} packet {@Packet}"
+    )]
+    public static partial void LogPacketReceiving(
+        this ILogger logger,
+        byte packetBytes,
+        byte[] bytes,
+        HciPacketType packetType,
+        IHciPacket packet
+    );
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "H4Transport: Received unknown hci packet of type 0x{Type:X2}. Reading remaining buffer ..."
+    )]
     public static partial void LogPacketReceivingUnknownPacket(this ILogger logger, byte type);
-    [LoggerMessage(Level = LogLevel.Trace, Message = "HciHost: Query {@Command} from client completed successfully: Received {EventCode} {@Packet}")]
-    public static partial void LogQueryCompleted(this ILogger logger, IBinaryWritable command, HciEventCode eventCode, HciEventPacket packet);
-    [LoggerMessage(Level = LogLevel.Error, Message = "HciHost: Query {@Command} from client failed because of {Reason}")]
-    public static partial void LogQueryWithException(this ILogger logger, Exception ex, IBinaryWritable command, string reason);
-    [LoggerMessage(Level = LogLevel.Trace, Message = "HciHost: Query {@Command} from client started with status {Status}: Received {EventCode} {@Packet}")]
-    public static partial void LogQueryStarted(this ILogger logger, IBinaryWritable command, HciCommandStatus status, HciEventCode eventCode, HciEventPacket packet);
 }

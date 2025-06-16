@@ -7,39 +7,33 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock.Gatt;
 
-internal sealed class MockGattClientPeer : IGattClientPeer
+internal sealed class MockGattClientPeer(
+    MockedBlePeripheral peripheral,
+    BleAddress address,
+    ILogger<MockGattClientPeer> logger
+) : GattClientPeer(peripheral, address, logger)
 {
-    private readonly Dictionary<BleUuid, IGattServerService> _services;
-
-    public MockGattClientPeer(BleAddress address, MockBlePeripheral peripheral, ILogger? logger)
-    {
-        Address = address;
-        _services = peripheral.Services
-            .Select(x => (x.Key, new MockGattServerService(x.Key, (MockGattClientService)x.Value, this, logger)))
-            .ToDictionary(x => x.Key, x => (IGattServerService)x.Item2);
-    }
-
-    public IReadOnlyDictionary<BleUuid, IGattServerService> Services => _services;
+    /// <inheritdoc />
+    public override bool IsConnected => true;
 
     /// <inheritdoc />
-    public bool IsConnected => true;
-    /// <inheritdoc />
-    public IObservable<Unit> WhenDisconnected => Observable.Empty<Unit>();
-    /// <inheritdoc />
-    public BleAddress Address { get; }
+    public override IObservable<Unit> WhenDisconnected => Observable.Empty<Unit>();
 
-    public IObservable<IGattServerService> GetServices() => Services.Values.ToObservable();
-
-    public IObservable<IGattServerService> GetService(BleUuid uuid)
+    public IObservable<IGattServerService> GetServices(MockGattServerPeer serverPeer)
     {
-        return GetServices().Where(x => x.Uuid == uuid);
+        return Peripheral
+            .Services.Select(clientService => new MockGattServerService(
+                this,
+                serverPeer,
+                (MockGattClientService)clientService,
+                ServiceProvider.GetLogger<MockGattServerService>()
+            ))
+            .ToArray()
+            .ToObservable();
     }
 
-    private MockGattClientPeer()
+    public IObservable<IGattServerService> GetService(MockGattServerPeer serverPeer, BleUuid uuid)
     {
-        Address = BleAddress.NotAvailable;
-        _services = [];
+        return GetServices(serverPeer).Where(x => x.Uuid == uuid);
     }
-
-    internal static MockGattClientPeer TestClientPeer { get; } = new();
 }

@@ -13,11 +13,8 @@ public sealed class AttReadByTypeRspTests
 
     [Theory]
     [InlineData("0907180008190061FF", 0x0018, "08190061FF")]
-    [InlineData("0907180008190061FF1B00101C0062FF",
-        0x0018, "08190061FF",
-        0x001B, "101C0062FF")]
-    public void TryReadLittleEndian_ShouldBeValid(string hexBytes,
-        params object[] typeData)
+    [InlineData("0907180008190061FF1B00101C0062FF", 0x0018, "08190061FF", 0x001B, "101C0062FF")]
+    public void TryReadLittleEndian_ShouldBeValid(string hexBytes, params object[] typeData)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
         AttReadByTypeData[] dataList = typeData
@@ -35,11 +32,14 @@ public sealed class AttReadByTypeRspTests
         decoded.Should().Be(2 + 7 * dataList.Length);
         value.OpCode.Should().Be(AttOpCode.ATT_READ_BY_TYPE_RSP);
         value.Length.Should().Be(7);
-        value.AttributeDataList.Zip(dataList).Should().AllSatisfy(x =>
-        {
-            x.First.Handle.Should().Be(x.Second.Handle);
-            x.First.Value.ToArray().Should().BeEquivalentTo(x.Second.Value.ToArray());
-        });
+        value
+            .AttributeDataList.Zip(dataList)
+            .Should()
+            .AllSatisfy(x =>
+            {
+                x.First.Handle.Should().Be(x.Second.Handle);
+                x.First.Value.ToArray().Should().BeEquivalentTo(x.Second.Value.ToArray());
+            });
     }
 
     [Theory]

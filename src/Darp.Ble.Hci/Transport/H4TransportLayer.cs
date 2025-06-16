@@ -1,34 +1,38 @@
 using System.Collections.Concurrent;
 using System.IO.Ports;
-using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
-using Darp.Ble.Hci.Payload.Event;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci.Transport;
 
+/// <summary> The received HCI packet </summary>
+/// <param name="packetType"> The type of the HCI packet </param>
+/// <param name="pdu"> The pdu </param>
+public readonly ref struct HciPacket(HciPacketType packetType, ReadOnlySpan<byte> pdu)
+{
+    public HciPacketType PacketType { get; } = packetType;
+    public ReadOnlySpan<byte> Pdu { get; } = pdu;
+}
+
 /// <summary> A transport layer which sends HCI packets via a <see cref="SerialPort"/> </summary>
 public sealed class H4TransportLayer : ITransportLayer
 {
-    private readonly ILogger? _logger;
+    private readonly ILogger<H4TransportLayer> _logger;
     private readonly SerialPort _serialPort;
     private readonly ConcurrentQueue<IHciPacket> _txQueue;
     private readonly CancellationTokenSource _cancelSource;
     private readonly CancellationToken _cancelToken;
-    private readonly Subject<IHciPacket> _rxSubject;
     private bool _isDisposing;
 
     /// <summary> Instantiate a new h4 transport layer </summary>
     /// <param name="portName"> The name of the serial port </param>
     /// <param name="logger"> An optional logger </param>
-    public H4TransportLayer(string portName, ILogger? logger)
+    public H4TransportLayer(string portName, ILogger<H4TransportLayer> logger)
     {
         _logger = logger;
         _serialPort = new SerialPort(portName);
         _txQueue = new ConcurrentQueue<IHciPacket>();
-        _rxSubject = new Subject<IHciPacket>();
         _cancelSource = new CancellationTokenSource();
         _cancelToken = _cancelSource.Token;
     }
@@ -52,7 +56,6 @@ public sealed class H4TransportLayer : ITransportLayer
                     continue;
                 }
 
-                _logger?.LogPacketSending(packet, bytes);
                 await _serialPort.BaseStream.WriteAsync(bytes, _cancelToken).ConfigureAwait(false);
             }
         }
@@ -69,24 +72,25 @@ public sealed class H4TransportLayer : ITransportLayer
 #pragma warning restore CA1031
     }
 
-    private async ValueTask RunRxPacket<TPacket>(Memory<byte> buffer, byte payloadLengthIndex)
+    private async ValueTask RunRxPacket<TPacket>(
+        Memory<byte> buffer,
+        byte payloadLengthIndex,
+        Action<HciPacket> onReceived
+    )
         where TPacket : IHciPacket<TPacket>, IBinaryReadable<TPacket>
     {
         // Read Header
-        await _serialPort.BaseStream.ReadExactlyAsync(buffer[..TPacket.HeaderLength], _cancelToken).ConfigureAwait(false);
+        await _serialPort
+            .BaseStream.ReadExactlyAsync(buffer[..TPacket.HeaderLength], _cancelToken)
+            .ConfigureAwait(false);
         byte payloadLength = buffer.Span[payloadLengthIndex];
         // Read Payload
         Memory<byte> payloadBuffer = buffer[TPacket.HeaderLength..(TPacket.HeaderLength + payloadLength)];
         await _serialPort.BaseStream.ReadExactlyAsync(payloadBuffer, _cancelToken).ConfigureAwait(false);
-        if (!TPacket.TryReadLittleEndian(buffer[..(TPacket.HeaderLength + payloadLength)].Span, out TPacket? packet, out _))
-        {
-            _logger?.LogPacketReceivingDecodingFailed((byte)TPacket.Type, buffer[..(TPacket.HeaderLength + payloadLength)].ToArray(), typeof(TPacket).Name);
-            return;
-        }
-        _rxSubject.OnNext(packet);
+        onReceived(new HciPacket(TPacket.Type, buffer[..(TPacket.HeaderLength + payloadLength)].Span));
     }
 
-    private async ValueTask RunRx()
+    private async ValueTask RunRx(Action<HciPacket> onReceived)
     {
         // Longest allowed memory
         Memory<byte> buffer = new byte[4 + 255];
@@ -94,16 +98,17 @@ public sealed class H4TransportLayer : ITransportLayer
         {
             while (!_cancelToken.IsCancellationRequested)
             {
-                if (!_serialPort.IsOpen) continue;
+                if (!_serialPort.IsOpen)
+                    continue;
                 // Read Type
                 var type = (HciPacketType)_serialPort.BaseStream.ReadByte();
                 switch (type)
                 {
                     case HciPacketType.HciEvent:
-                        await RunRxPacket<HciEventPacket>(buffer, 1).ConfigureAwait(false);
+                        await RunRxPacket<HciEventPacket>(buffer, 1, onReceived).ConfigureAwait(false);
                         break;
                     case HciPacketType.HciAclData:
-                        await RunRxPacket<HciAclPacket>(buffer, 2).ConfigureAwait(false);
+                        await RunRxPacket<HciAclPacket>(buffer, 2, onReceived).ConfigureAwait(false);
                         break;
                     case HciPacketType.HciCommand:
                     default:
@@ -112,7 +117,6 @@ public sealed class H4TransportLayer : ITransportLayer
                         continue;
                 }
             }
-            _rxSubject.OnCompleted();
         }
 #pragma warning disable CA1031
         catch (Exception e)
@@ -120,27 +124,28 @@ public sealed class H4TransportLayer : ITransportLayer
             if (_isDisposing)
             {
                 _logger?.LogTransportDisconnected("Rx");
-                _rxSubject.OnCompleted();
                 return;
             }
+
             _logger?.LogTransportWithError(e, "Rx", e.Message);
-            _rxSubject.OnError(e);
         }
 #pragma warning restore CA1031
     }
 
     /// <inheritdoc />
-    public void Initialize()
+    public ValueTask InitializeAsync(Action<HciPacket> onReceived, CancellationToken cancellationToken)
     {
         _ = Task.Run(RunTx, _cancelToken);
-        _ = Task.Run(RunRx, _cancelToken);
+        _ = Task.Run(() => RunRx(onReceived), _cancelToken);
         _serialPort.Open();
+        return ValueTask.CompletedTask;
     }
 
     /// <inheritdoc />
     public void Dispose()
     {
-        if (_isDisposing) return;
+        if (_isDisposing)
+            return;
         _isDisposing = true;
         _cancelSource.Cancel();
         _serialPort.Dispose();
@@ -151,12 +156,5 @@ public sealed class H4TransportLayer : ITransportLayer
     {
         _cancelToken.ThrowIfCancellationRequested();
         _txQueue.Enqueue(packet);
-    }
-
-    /// <inheritdoc />
-    public IObservable<IHciPacket> WhenReceived()
-    {
-        _cancelToken.ThrowIfCancellationRequested();
-        return _rxSubject.AsObservable();
     }
 }

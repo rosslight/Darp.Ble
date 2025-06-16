@@ -1,5 +1,4 @@
 using Darp.BinaryObjects;
-using Darp.Ble.Hci.Payload;
 
 namespace Darp.Ble.Hci;
 

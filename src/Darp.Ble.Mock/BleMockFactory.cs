@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Reactive.Concurrency;
 
 namespace Darp.Ble.Mock;
 
@@ -6,17 +6,58 @@ namespace Darp.Ble.Mock;
 public sealed class BleMockFactory : IBleFactory
 {
     /// <summary> Delegate which describes configuration using a broadcaster and a peripheral </summary>
-    public delegate Task InitializeAsync(IMockBleBroadcaster broadcaster, IBlePeripheral peripheral);
+    /// <param name="bleDevice"> The mocked bleDevice </param>
+    public delegate Task InitializeSimpleAsync(IBleDevice bleDevice);
 
-    /// <summary> Configuration callback when the mock device is initialized </summary>
-    public InitializeAsync? OnInitialize { get; init; }
+    /// <summary> Delegate which describes configuration using a broadcaster and a peripheral </summary>
+    /// <param name="bleDevice"> The mocked bleDevice </param>
+    /// <param name="deviceSettings"> Settings specific to the mock device </param>
+    public delegate Task InitializeAsync(IBleDevice bleDevice, MockDeviceSettings deviceSettings);
+
+    private readonly List<(InitializeAsync OnInitialize, string? Name)> _configuredPeripherals = [];
+
+    /// <summary> Adds a new peripheral which can be discovered by the mock </summary>
+    /// <param name="onInitialize"> Initialize the mocked peripheral </param>
+    /// <param name="name"> The optional name of the mocked peripheral </param>
+    /// <returns> The same <see cref="BleMockFactory"/> </returns>
+    public BleMockFactory AddPeripheral(InitializeAsync onInitialize, string? name = null)
+    {
+        _configuredPeripherals.Add((onInitialize, name));
+        return this;
+    }
+
+    /// <summary> Adds a new peripheral which can be discovered by the mock </summary>
+    /// <param name="onInitialize"> Initialize the mocked peripheral </param>
+    /// <param name="name"> The optional name of the mocked peripheral </param>
+    /// <returns> The same <see cref="BleMockFactory"/> </returns>
+    public BleMockFactory AddPeripheral(InitializeSimpleAsync onInitialize, string? name = null)
+    {
+        return AddPeripheral((device, _) => onInitialize(device), name);
+    }
+
+    /// <summary> Adds a new central which can discover the mock </summary>
+    /// <param name="onInitialize"> Initialize the mocked central </param>
+    /// <param name="name"> The optional name of the mocked central </param>
+    /// <returns> The same <see cref="BleMockFactory"/> </returns>
+    public BleMockFactory AddCentral(InitializeAsync onInitialize, string? name = null)
+    {
+        return this;
+    }
+
     /// <summary> The name of the resulting device </summary>
     public string Name { get; set; } = "Mock";
 
+    /// <summary> A scheduler to be used whenever time is used </summary>
+    public IScheduler? Scheduler { get; set; }
+
     /// <inheritdoc />
-    public IEnumerable<IBleDevice> EnumerateDevices(ILogger? logger)
+    public IEnumerable<IBleDevice> EnumerateDevices(IServiceProvider serviceProvider)
     {
-        InitializeAsync onInitialize = OnInitialize ?? ((_, _) => Task.CompletedTask);
-        yield return new MockBleDevice(onInitialize, Name, logger);
+        yield return new MockBleDevice(
+            _configuredPeripherals,
+            Name,
+            Scheduler ?? System.Reactive.Concurrency.Scheduler.Default,
+            serviceProvider
+        );
     }
 }

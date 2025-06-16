@@ -10,27 +10,33 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.Implementation;
 
 /// <summary> The central view of a ble device </summary>
-public abstract class BleCentral(BleDevice device, ILogger? logger) : IBleCentral
+public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) : IBleCentral
 {
     private readonly ConcurrentDictionary<BleAddress, IGattServerPeer> _peerDevices = new();
     private readonly BleDevice _device = device;
 
     /// <summary> The logger </summary>
-    protected ILogger? Logger { get; } = logger;
+    protected ILogger<BleCentral> Logger { get; } = logger;
+
+    /// <summary> The service provider </summary>
+    protected IServiceProvider ServiceProvider => Device.ServiceProvider;
 
     /// <inheritdoc />
     public IBleDevice Device { get; } = device;
+
     /// <inheritdoc />
     public IReadOnlyCollection<IGattServerPeer> PeerDevices => _peerDevices.Values.ToArray();
 
     /// <inheritdoc />
-    public IObservable<IGattServerPeer> ConnectToPeripheral(BleAddress address,
+    public IObservable<IGattServerPeer> ConnectToPeripheral(
+        BleAddress address,
         BleConnectionParameters? connectionParameters = null,
-        BleScanParameters? scanParameters = null)
+        BleObservationParameters? scanParameters = null
+    )
     {
         connectionParameters ??= new BleConnectionParameters();
         scanParameters ??= Device.Observer.Parameters;
-        return Observable.Create<IGattServerPeer>(observer =>
+        return Observable.Create<IGattServerPeer>(async observer =>
         {
             if (connectionParameters.ConnectionInterval is < ConnectionTiming.MinValue or > ConnectionTiming.MaxValue)
             {
@@ -47,17 +53,18 @@ public abstract class BleCentral(BleDevice device, ILogger? logger) : IBleCentra
                 observer.OnError(new BleCentralConnectionFailedException(this, "Supplied invalid scanWindow"));
                 return Disposable.Empty;
             }
-            _device.Observer.StopScan();
-            return DoAfterConnection(ConnectToPeripheralCore(address, connectionParameters, scanParameters)
-                    .Do(peer =>
-                    {
-                        peer.WhenConnectionStatusChanged
-                            .Where(x => x is ConnectionStatus.Disconnected)
-                            .Do(_ => Logger?.LogTrace("Received disconnection event for Peer {@Peer}", peer))
-                            .FirstAsync()
-                            .Subscribe(__ => _ = peer.DisposeAsync().AsTask());
-                        _peerDevices[peer.Address] = peer;
-                    }))
+            await _device.Observer.StopObservingAsync().ConfigureAwait(false);
+            return DoAfterConnection(
+                    ConnectToPeripheralCore(address, connectionParameters, scanParameters)
+                        .Do(peer =>
+                        {
+                            peer.WhenConnectionStatusChanged.Where(x => x is ConnectionStatus.Disconnected)
+                                .Do(_ => Logger.LogTrace("Received disconnection event for Peer {@Peer}", peer))
+                                .FirstAsync()
+                                .Subscribe(__ => _ = peer.DisposeAsync().AsTask());
+                            _peerDevices[peer.Address] = peer;
+                        })
+                )
                 .Subscribe(observer);
         });
     }
@@ -72,11 +79,13 @@ public abstract class BleCentral(BleDevice device, ILogger? logger) : IBleCentra
     /// <summary> The core implementation of connecting to the peripheral </summary>
     /// <param name="address"> The address to be connected to </param>
     /// <param name="connectionParameters"> The connection parameters to be used </param>
-    /// <param name="scanParameters"> The scan parameters to be used for initial discovery </param>
+    /// <param name="observationParameters"> The scan parameters to be used for initial discovery </param>
     /// <returns> An observable notifying when a gatt server was connected </returns>
-    protected abstract IObservable<GattServerPeer> ConnectToPeripheralCore(BleAddress address,
+    protected abstract IObservable<GattServerPeer> ConnectToPeripheralCore(
+        BleAddress address,
         BleConnectionParameters connectionParameters,
-        BleScanParameters scanParameters);
+        BleObservationParameters observationParameters
+    );
 
     /// <summary> Remove a specific peer from the central </summary>
     /// <param name="peer"> The peer to be removed </param>
@@ -87,8 +96,16 @@ public abstract class BleCentral(BleDevice device, ILogger? logger) : IBleCentra
         return _peerDevices.TryRemove(peer.Address, out _);
     }
 
-    /// <inheritdoc />
+    /// <summary> A method that can be used to clean up all resources. </summary>
+    /// <remarks> This method is not glued to the <see cref="IAsyncDisposable"/> interface. All disposes should be done using the  </remarks>
     public async ValueTask DisposeAsync()
+    {
+        await DisposeAsyncCore().ConfigureAwait(false);
+        Dispose(disposing: false);
+    }
+
+    /// <inheritdoc cref="DisposeAsync"/>
+    protected virtual async ValueTask DisposeAsyncCore()
     {
         foreach (BleAddress address in _peerDevices.Keys)
         {
@@ -97,12 +114,12 @@ public abstract class BleCentral(BleDevice device, ILogger? logger) : IBleCentra
                 await peer.DisposeAsync().ConfigureAwait(false);
             }
         }
-        DisposeCore();
-        await DisposeAsyncCore().ConfigureAwait(false);
-        GC.SuppressFinalize(this);
     }
-    /// <inheritdoc cref="DisposeAsync"/>
-    protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
+
     /// <inheritdoc cref="IDisposable.Dispose"/>
-    protected virtual void DisposeCore() { }
+    /// <param name="disposing">
+    /// True, when this method was called by the synchronous <see cref="IDisposable.Dispose"/> method;
+    /// False if called by the asynchronous <see cref="IAsyncDisposable.DisposeAsync"/> method
+    /// </param>
+    protected virtual void Dispose(bool disposing) { }
 }

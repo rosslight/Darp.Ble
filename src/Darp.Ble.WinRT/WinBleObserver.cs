@@ -2,22 +2,23 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Devices.Bluetooth;
-using Windows.Devices.Bluetooth.Advertisement;
-using Windows.Foundation;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
 using Darp.Ble.Implementation;
 using Microsoft.Extensions.Logging;
+using Windows.Devices.Bluetooth;
+using Windows.Devices.Bluetooth.Advertisement;
+using Windows.Foundation;
 
 namespace Darp.Ble.WinRT;
 
 /// <inheritdoc />
-internal sealed class WinBleObserver(BleDevice device, ILogger? logger) : BleObserver(device, logger)
+internal sealed class WinBleObserver(BleDevice device, ILogger<WinBleObserver> logger) : BleObserver(device, logger)
 {
     private BluetoothLEAdvertisementWatcher? _watcher;
+    private IDisposable? _observableSubscription;
 
     [MemberNotNull(nameof(_watcher))]
     private void CreateScanners(ScanType mode)
@@ -28,60 +29,62 @@ internal sealed class WinBleObserver(BleDevice device, ILogger? logger) : BleObs
             {
                 ScanType.Passive => BluetoothLEScanningMode.Passive,
                 ScanType.Active => BluetoothLEScanningMode.Active,
-                _ => throw new ArgumentOutOfRangeException(nameof(mode))
-            }
+                _ => throw new ArgumentOutOfRangeException(nameof(mode)),
+            },
         };
         // Subscription needed for the watcher to start (observable will only subscribe later)
         _watcher.Received += (_, _) => { };
         _watcher.Stopped += (_, _) => { };
     }
 
-    /// <inheritdoc />
-    protected override bool TryStartScanCore(out IObservable<IGapAdvertisement> observable)
+    protected override Task StartObservingAsyncCore(CancellationToken cancellationToken)
     {
         CreateScanners(ScanType.Active);
-        try
-        {
-            _watcher.Start();
-        }
-        catch (Exception e)
-        {
-            observable = Observable.Throw<IGapAdvertisement>(e);
-            return false;
-        }
+        _watcher.Start();
         if (_watcher.Status is BluetoothLEAdvertisementWatcherStatus.Aborted)
         {
-            var exception = new BleObservationStartException(this,
-                $"Watcher status is '{_watcher.Status}' but should be 'Created'.\nTry restarting the bluetooth adapter!");
-            observable = Observable.Throw<IGapAdvertisement>(exception);
-            return false;
+            throw new BleObservationStartException(
+                this,
+                $"Watcher status is '{_watcher.Status}' but should be 'Created'.\nTry restarting the bluetooth adapter!"
+            );
         }
-        _watcher.Stopped += (_, args) =>
+        _watcher.Stopped += async (_, args) =>
         {
             if (args.Error is BluetoothError.Success)
                 return;
-            var exception = new BleObservationStopException(this, $"Watcher stopped with error {args.Error}");
-            StopScan(exception);
+            Logger.LogError("Watcher stopped with error {Error}", args.Error);
+            await StopObservingAsync().ConfigureAwait(false);
         };
-        observable = Observable.FromEventPattern<
+        _observableSubscription = Observable
+            .FromEventPattern<
                 TypedEventHandler<BluetoothLEAdvertisementWatcher, BluetoothLEAdvertisementReceivedEventArgs>,
                 BluetoothLEAdvertisementWatcher,
-                BluetoothLEAdvertisementReceivedEventArgs>(
-                addHandler => _watcher.Received += addHandler,
-                removeHandler => _watcher.Received -= removeHandler)
-            .Select(adv => OnAdvertisementReport(this, adv));
-        return true;
+                BluetoothLEAdvertisementReceivedEventArgs
+            >(addHandler => _watcher.Received += addHandler, removeHandler => _watcher.Received -= removeHandler)
+            .Select(adv => OnAdvertisementReport(this, adv))
+            .Subscribe(OnNext);
+        return Task.CompletedTask;
     }
 
-    /// <inheritdoc />
-    protected override void StopScanCore()
+    protected override Task StopObservingAsyncCore()
     {
+        _observableSubscription?.Dispose();
         _watcher?.Stop();
         _watcher = null;
+        return Task.CompletedTask;
     }
 
-    private static GapAdvertisement OnAdvertisementReport(BleObserver bleObserver,
-        IEventPattern<BluetoothLEAdvertisementWatcher, BluetoothLEAdvertisementReceivedEventArgs> gapEvt)
+    protected override async ValueTask DisposeAsyncCore()
+    {
+        _observableSubscription?.Dispose();
+        _watcher?.Stop();
+        await base.DisposeAsyncCore().ConfigureAwait(false);
+    }
+
+    private static GapAdvertisement OnAdvertisementReport(
+        BleObserver bleObserver,
+        EventPattern<BluetoothLEAdvertisementWatcher, BluetoothLEAdvertisementReceivedEventArgs> gapEvt
+    )
     {
         BluetoothLEAdvertisementReceivedEventArgs eventArgs = gapEvt.EventArgs;
 
@@ -92,16 +95,17 @@ internal sealed class WinBleObserver(BleDevice device, ILogger? logger) : BleObs
             BluetoothLEAdvertisementType.ScannableUndirected => BleEventType.AdvScanInd,
             BluetoothLEAdvertisementType.NonConnectableUndirected => BleEventType.AdvNonConnInd,
             BluetoothLEAdvertisementType.ScanResponse => BleEventType.ScanResponse,
-            _ => (BleEventType)eventArgs.AdvertisementType
+            _ => (BleEventType)eventArgs.AdvertisementType,
         };
 
-        (AdTypes, byte[])[] pduData = eventArgs
-            .Advertisement
-            .DataSections
-            .Select(section => ((AdTypes)section.DataType, section.Data.ToArray()))
+        (AdTypes, ReadOnlyMemory<byte>)[] pduData = eventArgs
+            .Advertisement.DataSections.Select(section =>
+                ((AdTypes)section.DataType, (ReadOnlyMemory<byte>)section.Data.ToArray())
+            )
             .ToArray();
 
-        GapAdvertisement advertisement = GapAdvertisement.FromExtendedAdvertisingReport(bleObserver,
+        GapAdvertisement advertisement = GapAdvertisement.FromExtendedAdvertisingReport(
+            bleObserver,
             eventArgs.Timestamp,
             advertisementType,
             BleHelper.GetBleAddress(eventArgs.BluetoothAddress, eventArgs.BluetoothAddressType),
@@ -112,7 +116,8 @@ internal sealed class WinBleObserver(BleDevice device, ILogger? logger) : BleObs
             (Rssi)eventArgs.RawSignalStrengthInDBm,
             PeriodicAdvertisingInterval.NoPeriodicAdvertising,
             new BleAddress(BleAddressType.NotAvailable, (UInt48)0x000000000000),
-            pduData);
+            AdvertisingData.From(pduData)
+        );
 
         return advertisement;
     }

@@ -1,6 +1,5 @@
 using Android.Bluetooth;
 using Android.Content.PM;
-using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Android;
 
@@ -9,16 +8,18 @@ namespace Darp.Ble.Android;
 /// <exception cref="ArgumentNullException"> Thrown if the <paramref name="manager"/> is null </exception>
 public sealed class AndroidBleFactory(BluetoothManager manager) : IBleFactory
 {
-    private readonly BluetoothManager _bluetoothManager = manager ?? throw new ArgumentNullException(nameof(manager),
-        "The android bluetooth manager provided cannot be null.");
+    private readonly BluetoothManager _bluetoothManager =
+        manager
+        ?? throw new ArgumentNullException(nameof(manager), "The android bluetooth manager provided cannot be null.");
 
     /// <inheritdoc />
-    public IEnumerable<IBleDevice> EnumerateDevices(ILogger? logger)
+    public IEnumerable<IBleDevice> EnumerateDevices(IServiceProvider serviceProvider)
     {
-        if (_bluetoothManager.Adapter is null) yield break;
+        if (_bluetoothManager.Adapter is null)
+            yield break;
         if (Application.Context.PackageManager?.HasSystemFeature(PackageManager.FeatureBluetoothLe) == false)
             yield break;
 
-        yield return new AndroidBleDevice(_bluetoothManager, logger);
+        yield return new AndroidBleDevice(_bluetoothManager, serviceProvider);
     }
 }

@@ -12,6 +12,7 @@ public readonly record struct HciNumberOfCompletedPacketsEvent : IHciEvent<HciNu
 
     /// <summary> The number of Handles and Num_HCI_Data_Packets parameters pairs contained in this event. </summary>
     public required byte NumHandles { get; init; }
+
     /// <summary> Connection_Handle or BIS_Handle </summary>
     [BinaryElementCount(nameof(NumHandles))]
     public required HciNumberOfCompletedPackets[] Handles { get; init; }
@@ -23,13 +24,19 @@ public readonly record struct HciNumberOfCompletedPacketsEvent : IHciEvent<HciNu
     }
 
     /// <inheritdoc />
-    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out HciNumberOfCompletedPacketsEvent value, out int bytesRead)
+    public static bool TryReadLittleEndian(
+        ReadOnlySpan<byte> source,
+        out HciNumberOfCompletedPacketsEvent value,
+        out int bytesRead
+    )
     {
         bytesRead = 0;
         value = default;
-        if (source.Length < 1) return false;
+        if (source.Length < 1)
+            return false;
         byte numHandles = source[0];
-        if (source.Length < 1 + (numHandles * 4)) return false;
+        if (source.Length < 1 + (numHandles * 4))
+            return false;
         var handles = new HciNumberOfCompletedPackets[numHandles];
         for (var i = 0; i < numHandles; i++)
         {
@@ -43,11 +50,7 @@ public readonly record struct HciNumberOfCompletedPacketsEvent : IHciEvent<HciNu
             };
         }
         bytesRead = 1 + numHandles * 4;
-        value = new HciNumberOfCompletedPacketsEvent
-        {
-            NumHandles = numHandles,
-            Handles = handles,
-        };
+        value = new HciNumberOfCompletedPacketsEvent { NumHandles = numHandles, Handles = handles };
         return true;
     }
 
@@ -58,7 +61,11 @@ public readonly record struct HciNumberOfCompletedPacketsEvent : IHciEvent<HciNu
     }
 
     /// <inheritdoc />
-    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out HciNumberOfCompletedPacketsEvent value, out int bytesRead)
+    public static bool TryReadBigEndian(
+        ReadOnlySpan<byte> source,
+        out HciNumberOfCompletedPacketsEvent value,
+        out int bytesRead
+    )
     {
         throw new NotSupportedException();
     }

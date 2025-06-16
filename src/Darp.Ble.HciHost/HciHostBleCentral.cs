@@ -1,10 +1,6 @@
 using System.Reactive.Linq;
 using Darp.Ble.Data;
-using Darp.Ble.Exceptions;
 using Darp.Ble.Gatt.Server;
-using Darp.Ble.Hci;
-using Darp.Ble.Hci.Package;
-using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.HciHost.Gatt.Server;
@@ -13,19 +9,22 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost;
 
-internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger? logger) : BleCentral(device, logger)
+internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger<HciHostBleCentral> logger)
+    : BleCentral(device, logger)
 {
     private readonly Hci.HciHost _host = device.Host;
 
     /// <inheritdoc />
-    protected override IObservable<GattServerPeer> ConnectToPeripheralCore(BleAddress address, BleConnectionParameters connectionParameters,
-        BleScanParameters scanParameters)
+    protected override IObservable<GattServerPeer> ConnectToPeripheralCore(
+        BleAddress address,
+        BleConnectionParameters connectionParameters,
+        BleObservationParameters observationParameters
+    )
     {
-        var scanInterval = (ushort)scanParameters.ScanInterval;
-        var scanWindow = (ushort)scanParameters.ScanWindow;
+        var scanInterval = (ushort)observationParameters.ScanInterval;
+        var scanWindow = (ushort)observationParameters.ScanWindow;
         var interval = (ushort)connectionParameters.ConnectionInterval;
-        TimeSpan timeout = TimeSpan.FromSeconds(10);
-        return Observable.Create<GattServerPeer>(observer =>
+        return Observable.FromAsync<GattServerPeer>(async token =>
         {
             var packet = new HciLeExtendedCreateConnectionV1Command
             {
@@ -43,26 +42,28 @@ internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger? logger
                 MinCeLength = 0,
                 MaxCeLength = 0,
             };
-            return _host.QueryCommandStatus(packet)
-                .SelectMany(status =>
-                {
-                    if (status.Data.Status is not (HciCommandStatus.PageTimeout or HciCommandStatus.Success))
-                    {
-                        throw new BleCentralConnectionFailedException(this, $"Started connection but is not pending but {status}");
-                    }
-                    return _host.WhenHciLeMetaEventPackageReceived;
-                })
-                .Timeout(timeout)
-                .SelectWhereLeMetaEvent<HciLeEnhancedConnectionCompleteV1Event>()
-                .Select(x => new HciHostGattServerPeer(this, _host, x.Data, address, Logger))
-                .Subscribe(observer.OnNext, observer.OnError, observer.OnCompleted);
+            HciLeEnhancedConnectionCompleteV1Event completeEvent = await _host
+                .QueryCommandAsync<HciLeExtendedCreateConnectionV1Command, HciLeEnhancedConnectionCompleteV1Event>(
+                    packet,
+                    timeout: TimeSpan.FromSeconds(10),
+                    cancellationToken: token
+                )
+                .ConfigureAwait(false);
+            return new HciHostGattServerPeer(
+                this,
+                _host,
+                completeEvent,
+                address,
+                ServiceProvider.GetLogger<HciHostGattServerPeer>()
+            );
         });
     }
 
     /// <inheritdoc />
-    protected override IObservable<IGattServerPeer> DoAfterConnection(IObservable<IGattServerPeer> source) => source
-        .Select(x => ((HciHostGattServerPeer)x).RequestExchangeMtu(65))
-        .Concat()
-        .Select(x => x.SetDataLength(65, 328))
-        .Concat();
+    protected override IObservable<IGattServerPeer> DoAfterConnection(IObservable<IGattServerPeer> source) =>
+        source
+            .Select(x => ((HciHostGattServerPeer)x).RequestExchangeMtu(65))
+            .Concat()
+            .Select(x => x.SetDataLength(65, 328))
+            .Concat();
 }

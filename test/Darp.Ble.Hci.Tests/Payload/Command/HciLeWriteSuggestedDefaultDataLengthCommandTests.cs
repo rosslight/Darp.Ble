@@ -13,9 +13,11 @@ public sealed class HciLeWriteSuggestedDefaultDataLengthCommandTests
 
     [Theory]
     [InlineData(65, 328, "41004801")]
-    public void TryWriteLittleEndian_ShouldBeValid(ushort suggestedMaxTxOctets,
+    public void TryWriteLittleEndian_ShouldBeValid(
+        ushort suggestedMaxTxOctets,
         ushort suggestedMaxTxTime,
-        string expectedHexBytes)
+        string expectedHexBytes
+    )
     {
         var buffer = new byte[4];
         var value = new HciLeWriteSuggestedDefaultDataLengthCommand

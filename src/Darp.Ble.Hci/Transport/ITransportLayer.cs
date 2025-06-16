@@ -8,9 +8,7 @@ public interface ITransportLayer : IDisposable
     /// <summary> Enqueue a new hci packet </summary>
     /// <param name="packet"> The packet to be enqueued </param>
     void Enqueue(IHciPacket packet);
-    /// <summary> Observable sequence of <see cref="IHciPacket"/> emitted when an HCI packet is received. </summary>
-    /// <returns> The observable </returns>
-    IObservable<IHciPacket> WhenReceived();
+
     /// <summary> Initialize the transport layer </summary>
-    void Initialize();
+    ValueTask InitializeAsync(Action<HciPacket> onReceived, CancellationToken cancellationToken);
 }

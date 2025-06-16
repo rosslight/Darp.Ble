@@ -1,7 +1,7 @@
 using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
-using Darp.Ble.Implementation;
+using Darp.Ble.Gatt.Server;
 using Darp.Ble.Mock;
 
 namespace Darp.Ble.Examples.Unix;
@@ -11,7 +11,6 @@ internal sealed class Ble : IDisposable
     private IBleObserver? m_observer;
     private IBleDevice? m_adapter;
     private IDisposable? m_subscriptionForObserver;
-    private IDisposable? m_subscriptionForConnect;
     private AdvGenerator? m_generator;
 
     public async Task StartScanAsync(IBleDevice adapter, Action<IGapAdvertisement> onNextAdvertisement)
@@ -24,26 +23,27 @@ internal sealed class Ble : IDisposable
 
         await adapter.InitializeAsync();
         m_observer = adapter.Observer;
-        m_observer.Configure(new BleScanParameters()
-        {
-            ScanType = ScanType.Active,
-            ScanWindow = ScanTiming.Ms100,
-            ScanInterval = ScanTiming.Ms100,
-        });
-        m_subscriptionForObserver = m_observer.Subscribe(onNextAdvertisement);
-
-        m_subscriptionForConnect = m_observer.Connect();
+        m_observer.Configure(
+            new BleObservationParameters()
+            {
+                ScanType = ScanType.Active,
+                ScanWindow = ScanTiming.Ms100,
+                ScanInterval = ScanTiming.Ms100,
+            }
+        );
+        await m_observer.StartObservingAsync();
+        m_subscriptionForObserver = m_observer.OnAdvertisement(onNextAdvertisement);
     }
 
     public void StopScan()
     {
-        m_subscriptionForConnect?.Dispose();
-        m_subscriptionForConnect = null;
+        _ = m_observer?.StopObservingAsync();
 
         m_subscriptionForObserver?.Dispose();
         m_subscriptionForObserver = null;
 
-        m_observer?.StopScan();
+        if (m_observer is not null)
+            _ = m_observer.StopObservingAsync();
         m_observer = null;
 
         m_adapter?.DisposeAsync().AsTask().Wait();
@@ -59,29 +59,30 @@ internal sealed class Ble : IDisposable
         StopScan();
     }
 
-    public Task Initialize(IMockBleBroadcaster broadcaster, IBlePeripheral peripheral)
+    public async Task Initialize(IBleDevice bleDevice, MockDeviceSettings settings)
     {
-        broadcaster.OnGetAdvertisements = GetAdvertisements;
-        return Task.CompletedTask;
-    }
+        // Configure custom tx power to rssi behavior
+        settings.TxPowerToRssi = txPower => (Rssi)((double)txPower / 3.0 * -2.0);
 
-    private IObservable<IGapAdvertisement> GetAdvertisements(BleObserver observer, AdvertisingParameters? parameters, CancellationTokenSource? cancellationTokenSource)
-    {
+        IAdvertisingSet set = await bleDevice.Broadcaster.CreateAdvertisingSetAsync().ConfigureAwait(false);
+        await set.StartAdvertisingAsync().ConfigureAwait(false);
         IObservable<AdvGenerator.DataExt> source = m_generator ?? Observable.Empty<AdvGenerator.DataExt>();
-        return source
-            .TakeWhile(_ => cancellationTokenSource?.IsCancellationRequested != true)
-            .Select(x => GapAdvertisement.FromExtendedAdvertisingReport(
-                observer,
-                DateTimeOffset.UtcNow,
-                parameters?.Type ?? BleEventType.None,
-                x.Address,
-                Physical.Le1M,
-                Physical.NotAvailable,
-                AdvertisingSId.NoAdIProvided,
-                x.TxPower,
-                x.Rssi,
-                PeriodicAdvertisingInterval.NoPeriodicAdvertising,
-                new BleAddress(UInt48.Zero),
-                x.Data));
+        source.Subscribe(x =>
+        {
+            set.SetRandomAddressAsync(x.Address).GetAwaiter().GetResult();
+            set.SetAdvertisingParametersAsync(
+                    new AdvertisingParameters
+                    {
+                        Type = BleEventType.None,
+                        PrimaryPhy = Physical.Le1M,
+                        AdvertisingSId = AdvertisingSId.NoAdIProvided,
+                        AdvertisingTxPower = x.TxPower,
+                        PeerAddress = BleAddress.NotAvailable,
+                    }
+                )
+                .GetAwaiter()
+                .GetResult();
+            set.SetAdvertisingDataAsync(x.Data).GetAwaiter().GetResult();
+        });
     }
 }

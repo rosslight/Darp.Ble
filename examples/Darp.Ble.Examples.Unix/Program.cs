@@ -4,7 +4,6 @@ using Darp.Ble.HciHost;
 using Darp.Ble.Mock;
 using Serilog;
 using Serilog.Extensions.Logging;
-using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace Darp.Ble.Examples.Unix;
 
@@ -18,13 +17,13 @@ internal sealed class Program
             .WriteTo.Console(formatProvider: CultureInfo.InvariantCulture)
             .CreateLogger();
 
-        ILogger extensionsLogger = new SerilogLoggerFactory(Log.Logger).CreateLogger("Ble");
+        var extensionsLogger = new SerilogLoggerFactory(Log.Logger);
 
         using var ble = new Ble();
 
         BleManager manager = new BleManagerBuilder()
-            .Add(new HciHostBleFactory())
-            .Add(new BleMockFactory { OnInitialize = ble.Initialize })
+            .AddSerialHciHost()
+            .AddMock(factory => factory.AddPeripheral(ble.Initialize))
             .SetLogger(extensionsLogger)
             .CreateManager();
 
@@ -41,11 +40,13 @@ internal sealed class Program
 
     private static void OnNextAdvertisement(IGapAdvertisement advertisement)
     {
-        Log.Information("Addr=0x{0}, PowerLevel={1}, Rssi={2}, Data=0x{3}",
+        Log.Information(
+            "Addr=0x{0}, PowerLevel={1}, Rssi={2}, Data=0x{3}",
             advertisement.Address,
             advertisement.TxPower,
             advertisement.Rssi,
-            Convert.ToHexString(advertisement.Data.ToByteArray()));
+            Convert.ToHexString(advertisement.Data.ToByteArray())
+        );
     }
 
     private sealed class Test_IsOpen : IDisposable
@@ -56,14 +57,17 @@ internal sealed class Program
         {
             CancellationToken cancelTok = m_cancelSource.Token;
 
-            _ = Task.Run(async () =>
-            {
-                while (!cancelTok.IsCancellationRequested)
+            _ = Task.Run(
+                async () =>
                 {
-                    Console.WriteLine("IsOpen({0})={1}", strPortName, HciHost.Usb.UsbPort.IsOpen(strPortName));
-                    await Task.Delay(200);
-                }
-            }, cancelTok);
+                    while (!cancelTok.IsCancellationRequested)
+                    {
+                        Console.WriteLine("IsOpen({0})={1}", strPortName, HciHost.Usb.UsbPort.IsOpen(strPortName));
+                        await Task.Delay(200);
+                    }
+                },
+                cancelTok
+            );
 
             Task.Delay(3000).Wait();
         }

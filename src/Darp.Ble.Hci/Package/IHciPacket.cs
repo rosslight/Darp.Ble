@@ -16,6 +16,7 @@ public interface IHciPacket<TSelf> : IHciPacket
 {
     /// <summary> The static length of the packet header </summary>
     static abstract int HeaderLength { get; }
+
     /// <summary> The static type of the packet </summary>
     static abstract HciPacketType Type { get; }
 #pragma warning disable CA1033

@@ -1,0 +1,7 @@
+﻿[
+  {
+    Type: HciCommand,
+    OpCode: HCI_LE_Set_Random_Address,
+    PduBytes: 052006665544332211
+  }
+]
