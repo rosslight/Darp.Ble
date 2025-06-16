@@ -17,7 +17,8 @@ public static class VerifyHciHost
         VerifierSettings.AddExtraSettings(serializer =>
         {
             List<JsonConverter> converters = serializer.Converters;
-            converters.Insert(0, new HciMessageConverter());
+            converters.Add(new HciMessageConverter());
+            converters.Add(new ReplayTransportLayerConverter());
         });
     }
 }
