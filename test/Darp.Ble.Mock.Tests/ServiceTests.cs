@@ -3,10 +3,10 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
-using Darp.Ble.Gap;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Gatt.Services;
+using Darp.Ble.Mock.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
 
@@ -22,23 +22,12 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
     {
         const string expectedDeviceName = "Some device name";
 
-        BleManager manager = new BleManagerBuilder()
-            .AddMock(factory =>
-                factory.AddPeripheral(
-                    async device => await device.Broadcaster.StartAdvertisingAsync(),
-                    expectedDeviceName
-                )
-            )
-            .SetLogger(_loggerFactory)
-            .CreateManager();
-        IBleDevice device = manager.EnumerateDevices().First();
-        await device.InitializeAsync();
+        GattServerGapService service = await MockHelpers.CreateMockedService(
+            peripheral => peripheral.Device.Name = expectedDeviceName,
+            peer => peer.DiscoverGapServiceAsync(),
+            _loggerFactory
+        );
 
-        await device.Observer.StartObservingAsync();
-        IGapAdvertisement advertisement = await device.Observer.OnAdvertisement().FirstAsync();
-        await using IGattServerPeer peer = await advertisement.ConnectToPeripheral().FirstAsync();
-
-        GattServerGapService service = await peer.DiscoverGapServiceAsync();
         string deviceName = await service.DeviceName.ReadAsync();
         deviceName.Should().Be(expectedDeviceName);
         AppearanceValues appearance = await service.Appearance.ReadAsync();
@@ -49,23 +38,12 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
     public async Task DeviceInformationService_ShouldWork()
     {
         const string expectedManufacturerName = "rosslight";
-        BleManager manager = new BleManagerBuilder()
-            .AddMock(factory =>
-                factory.AddPeripheral(async device =>
-                {
-                    device.Peripheral.AddDeviceInformationService(manufacturerName: expectedManufacturerName);
-                    await device.Broadcaster.StartAdvertisingAsync();
-                })
-            )
-            .SetLogger(_loggerFactory)
-            .CreateManager();
-        IBleDevice device = manager.EnumerateDevices().First();
-        await device.InitializeAsync();
 
-        await device.Observer.StartObservingAsync();
-        IGapAdvertisement advertisement = await device.Observer.OnAdvertisement().FirstAsync();
-        IGattServerPeer peer = await advertisement.ConnectToPeripheral().FirstAsync();
-        var service = await peer.DiscoverDeviceInformationServiceAsync();
+        GattServerDeviceInformationService service = await MockHelpers.CreateMockedService(
+            peripheral => peripheral.AddDeviceInformationService(expectedManufacturerName),
+            peer => peer.DiscoverDeviceInformationServiceAsync(),
+            _loggerFactory
+        );
 
         string manufacturerName = await service.ManufacturerName!.ReadAsync();
         manufacturerName.Should().Be(expectedManufacturerName);
@@ -86,23 +64,11 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
         BleUuid notifyUuid = 0x1236;
         byte[] content = Convert.FromHexString("010203040506");
 
-        BleManager manager = new BleManagerBuilder()
-            .AddMock(factory =>
-                factory.AddPeripheral(async device =>
-                {
-                    device.Peripheral.AddEchoService(serviceUuid, writeUuid, notifyUuid);
-                    await device.Broadcaster.StartAdvertisingAsync();
-                })
-            )
-            .SetLogger(_loggerFactory)
-            .CreateManager();
-        IBleDevice device = manager.EnumerateDevices().First();
-        await device.InitializeAsync();
-
-        await device.Observer.StartObservingAsync();
-        IGapAdvertisement advertisement = await device.Observer.OnAdvertisement().FirstAsync();
-        await using IGattServerPeer peer = await advertisement.ConnectToPeripheral().FirstAsync();
-        GattServerEchoService service = await peer.DiscoverEchoServiceAsync(serviceUuid, writeUuid, notifyUuid);
+        GattServerEchoService service = await MockHelpers.CreateMockedService(
+            peripheral => peripheral.AddEchoService(serviceUuid, writeUuid, notifyUuid),
+            peer => peer.DiscoverEchoServiceAsync(serviceUuid, writeUuid, notifyUuid),
+            _loggerFactory
+        );
 
         byte[] response = await service.QueryOneAsync(content);
 
@@ -116,45 +82,35 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
         const bool expectedIsSensorContactDetected = true;
         const HeartRateBodySensorLocation expectedSensorLocation = HeartRateBodySensorLocation.Chest;
 
-        BleManager manager = new BleManagerBuilder()
-            .AddMock(factory =>
-                factory.AddPeripheral(async device =>
-                {
-                    ushort energy = 0;
-                    var heartRateSubject = new BehaviorSubject<HeartRateMeasurement>(default);
-                    Observable
-                        .Interval(TimeSpan.FromMilliseconds(100))
-                        .Select(_ => new HeartRateMeasurement(expectedValue)
-                        {
-                            EnergyExpended = energy++,
-                            IsSensorContactDetected = expectedIsSensorContactDetected,
-                        })
-                        .Subscribe(heartRateSubject);
-                    GattClientHeartRateService service = device.Peripheral.AddHeartRateService(
-                        expectedSensorLocation,
-                        () => energy = 0
-                    );
-                    _ = heartRateSubject
-                        .SelectMany(async measurement => await service.HeartRateMeasurement.NotifyAllAsync(measurement))
-                        .Subscribe();
-                    await device.Broadcaster.StartAdvertisingAsync(
-                        data: AdvertisingData.Empty.WithCompleteListOfServiceUuids(device.Peripheral),
-                        autoRestart: true
-                    );
-                    // Notify subscribers of the current value as soon as they subscribe
-                    device.Peripheral.WhenConnected.SelectMany(async clientPeer =>
+        IGattServerPeer peer = await MockHelpers.CreateMockedPeerDevice(
+            peripheral =>
+            {
+                ushort energy = 0;
+                var heartRateSubject = new BehaviorSubject<HeartRateMeasurement>(default);
+                Observable
+                    .Interval(TimeSpan.FromMilliseconds(100))
+                    .Select(_ => new HeartRateMeasurement(expectedValue)
+                    {
+                        EnergyExpended = energy++,
+                        IsSensorContactDetected = expectedIsSensorContactDetected,
+                    })
+                    .Subscribe(heartRateSubject);
+                GattClientHeartRateService service = peripheral.AddHeartRateService(
+                    expectedSensorLocation,
+                    () => energy = 0
+                );
+                _ = heartRateSubject
+                    .SelectMany(async measurement => await service.HeartRateMeasurement.NotifyAllAsync(measurement))
+                    .Subscribe();
+                // Notify subscribers of the current value as soon as they subscribe
+                _ = peripheral
+                    .WhenConnected.SelectMany(async clientPeer =>
                         await service.HeartRateMeasurement.NotifyAsync(clientPeer, heartRateSubject.Value)
-                    );
-                })
-            )
-            .SetLogger(_loggerFactory)
-            .CreateManager();
-        IBleDevice device = manager.EnumerateDevices().First();
-        await device.InitializeAsync();
-
-        await device.Observer.StartObservingAsync();
-        IGapAdvertisement advertisement = await device.Observer.OnAdvertisement().Take(2).LastAsync();
-        await using IGattServerPeer peer = await advertisement.ConnectToPeripheral().FirstAsync();
+                    )
+                    .Subscribe();
+            },
+            _loggerFactory
+        );
         GattServerHeartRateService service = await peer.DiscoverHeartRateServiceAsync();
 
         service.BodySensorLocation.Should().NotBeNull();
@@ -178,38 +134,27 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
         const byte expectedValue = 30;
         const string expectedUserDescription = "customString";
 
-        BleManager manager = new BleManagerBuilder()
-            .AddMock(factory =>
-                factory.AddPeripheral(async device =>
-                {
-                    GattClientBatteryService service = device.Peripheral.AddBatteryService(
-                        batteryLevelDescription: expectedUserDescription
-                    );
-                    await device.Broadcaster.StartAdvertisingAsync(
-                        data: AdvertisingData.Empty.WithCompleteListOfServiceUuids(device.Peripheral),
-                        autoRestart: true
-                    );
-                    Observable
-                        .Interval(TimeSpan.FromMilliseconds(100))
-                        .SelectMany(async _ => await service.BatteryLevel.NotifyAllAsync(expectedValue))
-                        .Subscribe();
-                    // Notify subscribers of the current value as soon as they subscribe
-                    device
-                        .Peripheral.WhenConnected.SelectMany(async clientPeer =>
-                            await service.BatteryLevel.NotifyAsync(clientPeer, expectedValue)
-                        )
-                        .Subscribe();
-                })
-            )
-            .SetLogger(_loggerFactory)
-            .CreateManager();
-        IBleDevice device = manager.EnumerateDevices().First();
-        await device.InitializeAsync();
-
-        await device.Observer.StartObservingAsync();
-        IGapAdvertisement advertisement = await device.Observer.OnAdvertisement().FirstAsync();
-        await using IGattServerPeer peer = await advertisement.ConnectToPeripheral().FirstAsync();
+        IGattServerPeer peer = await MockHelpers.CreateMockedPeerDevice(
+            peripheral =>
+            {
+                GattClientBatteryService service = peripheral.AddBatteryService(
+                    batteryLevelDescription: expectedUserDescription
+                );
+                Observable
+                    .Interval(TimeSpan.FromMilliseconds(100))
+                    .SelectMany(async _ => await service.BatteryLevel.NotifyAllAsync(expectedValue))
+                    .Subscribe();
+                // Notify subscribers of the current value as soon as they subscribe
+                peripheral
+                    .WhenConnected.SelectMany(async clientPeer =>
+                        await service.BatteryLevel.NotifyAsync(clientPeer, expectedValue)
+                    )
+                    .Subscribe();
+            },
+            _loggerFactory
+        );
         GattServerBatteryService service = await peer.DiscoverBatteryServiceAsync();
+
         string userDescription = await service.BatteryLevel.ReadUserDescriptionAsync();
         userDescription.Should().Be(expectedUserDescription);
         var readLevel = await service.BatteryLevel.ReadAsync<byte>();
