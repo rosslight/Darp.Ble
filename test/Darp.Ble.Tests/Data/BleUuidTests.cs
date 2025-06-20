@@ -7,6 +7,16 @@ namespace Darp.Ble.Tests.Data;
 
 public sealed class BleUuidTests
 {
+    [Fact]
+    public void Construct_BleUuid_InvalidType_ShouldThrow()
+    {
+        // Act
+        Func<BleUuid> act = () => new BleUuid((BleUuidType)9999, Guid.NewGuid());
+
+        // Assert
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
     [Theory]
     [InlineData(0x1800, "00001800-0000-1000-8000-00805F9B34FB")]
     [InlineData(0x2902, "00002902-0000-1000-8000-00805f9b34fb")]
@@ -372,21 +382,6 @@ public sealed class BleUuidTests
         result.Should().BeFalse();
     }
 
-    [Fact]
-    public void TryWriteBytes_WithUnknownType_ReturnsFalse()
-    {
-        // Arrange
-        var bleUuid = new BleUuid((BleUuidType)9999, Guid.NewGuid());
-
-        Span<byte> destination = new byte[16];
-
-        // Act
-        bool result = bleUuid.TryWriteBytes(destination);
-
-        // Assert
-        result.Should().BeFalse();
-    }
-
     [Theory]
     [InlineData("00001800-0000-1000-8000-00805F9B34FB", BleUuidType.Uuid16)]
     [InlineData("00002902-0000-1000-8000-00805f9b34fb", BleUuidType.Uuid16)]
@@ -468,6 +463,7 @@ public sealed class BleUuidTests
     [Theory]
     [InlineData(1)]
     [InlineData(3)]
+    [InlineData(5)]
     [InlineData(15)]
     public void TryRead_InvalidLengths_ReturnsFalse(int len)
     {
@@ -485,6 +481,7 @@ public sealed class BleUuidTests
     [InlineData("DDCCBBAA", "AABBCCDD-0000-1000-8000-00805F9B34FB", BleUuidType.Uuid32)]
     [InlineData("00000000000000000000000000000000", "00000000-0000-0000-0000-000000000000", BleUuidType.Uuid128)]
     [InlineData("0018000000000000800000805f9b34fb", "00001800-0000-0000-8000-00805F9B34FB", BleUuidType.Uuid128)]
+    [InlineData("0018000000000000800000805f9b34fb00", "00001800-0000-0000-8000-00805F9B34FB", BleUuidType.Uuid128)]
     public void TryRead_ValidLengths_ReturnsTrueAndCorrectType(
         string hexString,
         string expectedGuidString,
@@ -500,12 +497,18 @@ public sealed class BleUuidTests
         bleUuid.Value.Should().Be(Guid.Parse(expectedGuidString));
     }
 
-    [Fact]
-    public void ToByteArray_ThrowsOnUnknownType()
+    [Theory]
+    [InlineData("00001800-0000-0000-8000-00805F9B34FB", BleUuidType.Uuid16, "0018")]
+    [InlineData("00001800-0000-0000-8000-00805F9B34FB", BleUuidType.Uuid32, "00180000")]
+    [InlineData("00001800-0000-0000-8000-00805F9B34FB", BleUuidType.Uuid128, "0018000000000000800000805f9b34fb")]
+    public void ToByteArray_ShouldWork(string guidString, BleUuidType uuidType, string expectedBytesString)
     {
-        var bad = new BleUuid((BleUuidType)999, Guid.Empty);
-        Action act = () => _ = bad.ToByteArray();
-        act.Should().Throw<InvalidOperationException>();
+        byte[] expectedBytes = Convert.FromHexString(expectedBytesString);
+        var uuid = new BleUuid(uuidType, Guid.Parse(guidString));
+
+        byte[] bytes = uuid.ToByteArray();
+
+        bytes.Should().BeEquivalentTo(expectedBytes);
     }
 
     [Theory]

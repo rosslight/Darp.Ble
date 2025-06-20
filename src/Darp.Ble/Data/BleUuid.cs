@@ -23,9 +23,12 @@ public sealed record BleUuid
     /// <summary> Initializes a new ble uuid with a given type </summary>
     /// <param name="type"> The type of the uuid </param>
     /// <param name="value"> The underlying guid </param>
+    /// <exception cref="ArgumentOutOfRangeException"> Thrown if an invalid <see cref="BleUuidType"/> is provided </exception>
     [SetsRequiredMembers]
     public BleUuid(BleUuidType type, Guid value)
     {
+        if (type is not (BleUuidType.Uuid16 or BleUuidType.Uuid32 or BleUuidType.Uuid128))
+            throw new ArgumentOutOfRangeException(nameof(type));
         Type = type;
         Value = value;
     }
@@ -180,20 +183,14 @@ public sealed record BleUuid
         out int charsWritten,
         ReadOnlySpan<char> format,
         IFormatProvider? provider
-    )
-    {
-        return TryFormat(destination, out charsWritten, format);
-    }
+    ) => TryFormat(destination, out charsWritten, format);
 
     bool IUtf8SpanFormattable.TryFormat(
         Span<byte> utf8Destination,
         out int bytesWritten,
         ReadOnlySpan<char> format,
         IFormatProvider? provider
-    )
-    {
-        return TryFormat(utf8Destination, out bytesWritten, format);
-    }
+    ) => TryFormat(utf8Destination, out bytesWritten, format);
 
     private ushort AsUShort()
     {
@@ -229,9 +226,8 @@ public sealed record BleUuid
                 return bytes[..4].TryCopyTo(destination);
             }
             case BleUuidType.Uuid128:
-                return Value.TryWriteBytes(destination);
             default:
-                return false;
+                return Value.TryWriteBytes(destination);
         }
     }
 
@@ -262,7 +258,7 @@ public sealed record BleUuid
         {
             2 => FromUInt16(BinaryPrimitives.ReadUInt16LittleEndian(source)),
             4 => FromUInt32(BinaryPrimitives.ReadUInt32LittleEndian(source)),
-            16 => FromGuid(new Guid(source), inferType: false),
+            >= 16 => FromGuid(new Guid(source[..16]), inferType: false),
             _ => null,
         };
         return uuid is not null;
