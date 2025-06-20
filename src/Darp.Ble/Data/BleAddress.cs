@@ -90,6 +90,7 @@ public sealed record BleAddress : ISpanParsable<BleAddress>, IEquatable<UInt48>,
 
     private static bool TryGetHexVal(in ReadOnlySpan<char> s, out byte res)
     {
+        // The calling method already checked that the span is at least 2 characters long
         int lower = GetHexVal(s[1]);
         int upper = GetHexVal(s[0]);
         if (lower > 15 || upper > 15)
@@ -156,10 +157,7 @@ public sealed record BleAddress : ISpanParsable<BleAddress>, IEquatable<UInt48>,
     public bool Equals(ulong other) => Value == other;
 
     /// <inheritdoc />
-    public override int GetHashCode()
-    {
-        return HashCode.Combine((int)Type, Value);
-    }
+    public override int GetHashCode() => HashCode.Combine((int)Type, Value);
 
     /// <summary> Creates a new random address with a <see cref="BleAddressType.RandomStatic"/> type </summary>
     /// <returns> The new address </returns>

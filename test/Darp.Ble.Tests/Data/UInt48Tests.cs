@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Runtime.InteropServices;
 using Darp.Ble.Data;
 using Darp.Ble.Tests.TestUtils;
 using FluentAssertions;
@@ -72,7 +74,7 @@ public sealed class UInt48Tests
     public void ReadLittleEndian_With_Enough_Bytes()
     {
         // Arrange
-        ReadOnlySpan<byte> source = stackalloc byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF };
+        ReadOnlySpan<byte> source = [0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF];
 
         // Act
         UInt48 result = UInt48.ReadLittleEndian(source);
@@ -185,5 +187,92 @@ public sealed class UInt48Tests
         (value1 >= value2).Should().BeTrue();
         (value1 <= value2).Should().BeTrue();
         value1.GetHashCode().Should().Be(value2.GetHashCode());
+    }
+
+    [Fact]
+    public void ToString_With_Format_Returns_Correct_Hex()
+    {
+        // Arrange
+        var value = (UInt48)0xAABBCCDDEEFF;
+        // Act
+        var formatted = value.ToString("X12", CultureInfo.InvariantCulture);
+        // Assert: 12 hex digits, uppercase
+        formatted.Should().Be("AABBCCDDEEFF");
+    }
+
+    [Theory]
+    [InlineData(0x001122334455, "001122334455")]
+    [InlineData(0xAABBCCDDEEFF, "AABBCCDDEEFF")]
+    public void TryFormat_Writes_Correct_Chars_And_Returns_True(ulong value, string expectedHexString)
+    {
+        // Arrange
+        var u48 = (UInt48)value;
+        Span<char> buffer = stackalloc char[12];
+        // Act
+        bool result = u48.TryFormat(buffer, out int charsWritten, "X12".AsSpan(), CultureInfo.InvariantCulture);
+        // Assert
+        result.Should().BeTrue();
+        charsWritten.Should().Be(12);
+        new string(buffer).Should().Be(expectedHexString);
+    }
+
+    [Theory]
+    [InlineData(0UL)]
+    [InlineData(0x123456789ABCUL)]
+    [InlineData(0xFFFFFFFFFFFFUL)]
+    public void Static_ToUInt48_And_ToUInt64_Roundtrip(ulong original)
+    {
+        // Act
+        var u48 = UInt48.ToUInt48(original);
+        var roundTripped = u48.ToUInt64();
+        // Assert
+        roundTripped.Should().Be(original);
+    }
+
+    [Theory]
+    [InlineData(0x000000000000UL)]
+    [InlineData(0x0123456789ABUL)]
+    [InlineData(0xFEDCBA987654UL)]
+    public void ReadThenWrite_LittleEndian_Roundtrip(ulong value)
+    {
+        // Arrange
+        var u48 = (UInt48)value;
+        Span<byte> bytes = stackalloc byte[6];
+        // Act
+        UInt48.WriteLittleEndian(bytes, u48);
+        UInt48 readBack = UInt48.ReadLittleEndian(bytes);
+        // Assert
+        readBack.Should().Be(u48);
+    }
+
+    [Fact]
+    public void MinValue_ToUInt64_Is_Zero()
+    {
+        // Act
+        ulong zero = UInt48.MinValue.ToUInt64();
+        // Assert
+        zero.Should().Be(0UL);
+    }
+
+    [Fact]
+    public void StructLayoutSize_Is6Bytes()
+    {
+        // Act
+        int size = Marshal.SizeOf<UInt48>();
+        // Assert
+        size.Should().Be(6);
+    }
+
+    [Fact]
+    public void HashCode_Different_For_Different_Values()
+    {
+        // Arrange
+        var v1 = (UInt48)0x000000000001UL;
+        var v2 = (UInt48)0x000000000002UL;
+        // Act
+        int h1 = v1.GetHashCode();
+        int h2 = v2.GetHashCode();
+        // Assert
+        h1.Should().NotBe(h2);
     }
 }

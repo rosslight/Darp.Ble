@@ -96,4 +96,106 @@ public sealed class BleAddressTests
         bleAddress.Value.Should().Be(value);
         bleAddress.Type.Should().Be(BleAddressType.NotAvailable);
     }
+
+    [Fact]
+    public void ToString_Returns_12DigitUppercaseHex()
+    {
+        // Arrange
+        var addr = new BleAddress((UInt48)0x0a1b2c3d4e5f);
+        // Act
+        string s = addr.ToString();
+        // Assert
+        s.Should().Be("0A1B2C3D4E5F");
+    }
+
+    [Fact]
+    public void TryParse_LowercaseHex_IsAccepted()
+    {
+        // Arrange
+        string input = "aa:bb:cc:dd:ee:ff";
+        // Act
+        bool ok = BleAddress.TryParse(input, provider: null, out var result);
+        // Assert
+        ok.Should().BeTrue();
+        result!.Value.Should().Be((UInt48)0xAABBCCDDEEFF);
+    }
+
+    [Fact]
+    public void Equals_BleAddress_IgnoresNullAndTypeMismatch()
+    {
+        const ulong value = 0x112233445566;
+        var publicAddress = new BleAddress(BleAddressType.Public, (UInt48)value);
+        var randomAddress = new BleAddress(BleAddressType.RandomStatic, (UInt48)value);
+        var secondPublicAddress = new BleAddress(BleAddressType.Public, (UInt48)value);
+        BleAddress? nullAddr = null;
+
+        publicAddress.Equals(publicAddress).Should().BeTrue();
+        publicAddress.Equals(randomAddress).Should().BeFalse();
+        publicAddress.Equals(secondPublicAddress).Should().BeTrue();
+        publicAddress.Equals(nullAddr).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(0xABCDEF123456, 0x000000000000)]
+    [InlineData(0x000000000000, 0xABCDEF123456)]
+    public void Equals_UInt48(ulong value, ulong otherValue)
+    {
+        var u48 = (UInt48)value;
+        var otherU48 = (UInt48)otherValue;
+        var address = new BleAddress(BleAddressType.Public, u48);
+
+        address.Equals(u48).Should().BeTrue();
+        address.Equals(value).Should().BeTrue();
+        address.Equals(otherU48).Should().BeFalse();
+        address.Equals(otherValue).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData(0x010203040506)]
+    [InlineData(0x000000000000)]
+    [InlineData(0xFFFFFFFFFFFF)]
+    public void GetHashCode_MatchesEqualityLogic(ulong value)
+    {
+        var randomAddress = new BleAddress(BleAddressType.RandomStatic, (UInt48)value);
+        var otherRandomAddress = new BleAddress(BleAddressType.RandomStatic, (UInt48)value);
+        var publicAddress = new BleAddress(BleAddressType.Public, (UInt48)value);
+
+        randomAddress.GetHashCode().Should().Be(otherRandomAddress.GetHashCode());
+        randomAddress.GetHashCode().Should().NotBe(publicAddress.GetHashCode());
+    }
+
+    [Fact]
+    public void NotAvailable_StaticProperty_IsZeroAndNotAvailableType()
+    {
+        BleAddress notAvailableAddress = BleAddress.NotAvailable;
+        notAvailableAddress.Type.Should().Be(BleAddressType.NotAvailable);
+        notAvailableAddress.Value.Should().Be(UInt48.Zero);
+    }
+
+    [Fact]
+    public void NewRandomStaticAddress_HasHighTwoBitsSetAndTypeRandomStatic()
+    {
+        var rand = BleAddress.NewRandomStaticAddress();
+
+        // the top two bits of the 48‐bit value must be 11
+        ulong hi2 = (rand.Value >> 46) & 0b11;
+        hi2.Should().Be(0b11);
+        rand.Type.Should().Be(BleAddressType.RandomStatic);
+    }
+
+    [Theory]
+    [InlineData(0b00, BleAddressType.RandomPrivateNonResolvable)]
+    [InlineData(0b01, BleAddressType.RandomPrivateResolvable)]
+    [InlineData(0b11, BleAddressType.RandomStatic)]
+    [InlineData(0b10, BleAddressType.NotAvailable)]
+    public void CreateRandomAddress_InfersTypeFromTopTwoBits(int bits, BleAddressType expectedType)
+    {
+        // put bits into bits 47-46
+        ulong raw = ((ulong)bits << 46) | 0x0000_0000_0000UL;
+        var u48 = (UInt48)raw;
+
+        var addr = BleAddress.CreateRandomAddress(u48);
+        addr.Value.Should().Be(u48);
+        addr.Type.Should().Be(expectedType);
+    }
 }

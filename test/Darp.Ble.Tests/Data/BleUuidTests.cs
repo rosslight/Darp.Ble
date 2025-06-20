@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 using Darp.Ble.Data;
 using FluentAssertions;
 
@@ -149,7 +150,7 @@ public sealed class BleUuidTests
 
         success.Should().BeTrue();
         // Convert the written bytes back to a string for comparison
-        string formattedString = System.Text.Encoding.UTF8.GetString(utf8Destination.Slice(0, bytesWritten));
+        string formattedString = Encoding.UTF8.GetString(utf8Destination.Slice(0, bytesWritten));
         formattedString.Should().Be(guid.ToString("D"));
     }
 
@@ -384,5 +385,155 @@ public sealed class BleUuidTests
 
         // Assert
         result.Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("00001800-0000-1000-8000-00805F9B34FB", BleUuidType.Uuid16)]
+    [InlineData("00002902-0000-1000-8000-00805f9b34fb", BleUuidType.Uuid16)]
+    [InlineData("12345678-0000-1000-8000-00805F9B34FB", BleUuidType.Uuid32)]
+    [InlineData("AABBCCDD-0000-1000-8000-00805F9B34FB", BleUuidType.Uuid32)]
+    [InlineData("00000000-0000-0000-0000-000000000000", BleUuidType.Uuid128)]
+    [InlineData("00001800-0000-0000-8000-00805F9B34FB", BleUuidType.Uuid128)]
+    public void FromGuid_WithInferTrue_DetectsExpectedType(string guidString, BleUuidType expectedType)
+    {
+        Guid guid = Guid.Parse(guidString);
+
+        BleUuid bleUuid = BleUuid.FromGuid(guid, inferType: true);
+
+        bleUuid.Type.Should().Be(expectedType);
+    }
+
+    [Fact]
+    public void ToString_EmitsShortFormsFor16()
+    {
+        var uuid = (BleUuid)0x00FF;
+        uuid.Type.Should().Be(BleUuidType.Uuid16);
+        uuid.ToString().Should().Be("00FF");
+    }
+
+    [Fact]
+    public void ToString_EmitsShortFormsFor32()
+    {
+        var uuid = BleUuid.FromUInt32(0xDEADBEEF);
+        uuid.Type.Should().Be(BleUuidType.Uuid32);
+        uuid.ToString().Should().Be("DEADBEEF");
+    }
+
+    [Fact]
+    public void ToString_WithFormat_PassesThroughFor128()
+    {
+        var guid = Guid.NewGuid();
+        BleUuid uuid = BleUuid.FromGuid(guid, inferType: false);
+        var fmt = uuid.ToString("D", CultureInfo.InvariantCulture);
+        fmt.Should().Be(guid.ToString("D", CultureInfo.InvariantCulture));
+    }
+
+    [Theory]
+    [InlineData("00001800-0000-1000-8000-00805F9B34FB", "1800")]
+    [InlineData("00002902-0000-1000-8000-00805f9b34fb", "2902")]
+    [InlineData("12345678-0000-1000-8000-00805F9B34FB", "12345678")]
+    [InlineData("AABBCCDD-0000-1000-8000-00805F9B34FB", "AABBCCDD")]
+    [InlineData("00000000-0000-0000-0000-000000000000", "00000000-0000-0000-0000-000000000000")]
+    [InlineData("00001800-0000-0000-8000-00805F9B34FB", "00001800-0000-0000-8000-00805f9b34fb")]
+    public void TryFormat_CharSpan(string guidString, string expectedFormatString)
+    {
+        BleUuid uuid = BleUuid.FromGuid(Guid.Parse(guidString), inferType: true);
+        Span<char> destination = stackalloc char[36];
+
+        uuid.TryFormat(destination, out int bytesWritten).Should().BeTrue();
+
+        bytesWritten.Should().Be(expectedFormatString.Length);
+        new string(destination[..bytesWritten]).Should().Be(expectedFormatString);
+    }
+
+    [Theory]
+    [InlineData("00001800-0000-1000-8000-00805F9B34FB", "1800")]
+    [InlineData("00002902-0000-1000-8000-00805f9b34fb", "2902")]
+    [InlineData("12345678-0000-1000-8000-00805F9B34FB", "12345678")]
+    [InlineData("AABBCCDD-0000-1000-8000-00805F9B34FB", "AABBCCDD")]
+    [InlineData("00000000-0000-0000-0000-000000000000", "00000000-0000-0000-0000-000000000000")]
+    [InlineData("00001800-0000-0000-8000-00805F9B34FB", "00001800-0000-0000-8000-00805f9b34fb")]
+    public void TryFormat_ByteSpan(string guidString, string expectedFormatString)
+    {
+        BleUuid uuid = BleUuid.FromGuid(Guid.Parse(guidString), inferType: true);
+        Span<byte> destination = stackalloc byte[36];
+
+        uuid.TryFormat(destination, out int bytesWritten, "D").Should().BeTrue();
+
+        bytesWritten.Should().Be(expectedFormatString.Length);
+        string formattedUuid = Encoding.UTF8.GetString(destination[..bytesWritten]);
+        formattedUuid.Should().Be(expectedFormatString);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(15)]
+    public void TryRead_InvalidLengths_ReturnsFalse(int len)
+    {
+        var span = new byte[len];
+        BleUuid.TryRead(span, out BleUuid? result).Should().BeFalse();
+        result.Should().BeNull();
+        Func<BleUuid> act = () => BleUuid.Read(span);
+        act.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Theory]
+    [InlineData("0018", "00001800-0000-1000-8000-00805F9B34FB", BleUuidType.Uuid16)]
+    [InlineData("0229", "00002902-0000-1000-8000-00805f9b34fb", BleUuidType.Uuid16)]
+    [InlineData("78563412", "12345678-0000-1000-8000-00805F9B34FB", BleUuidType.Uuid32)]
+    [InlineData("DDCCBBAA", "AABBCCDD-0000-1000-8000-00805F9B34FB", BleUuidType.Uuid32)]
+    [InlineData("00000000000000000000000000000000", "00000000-0000-0000-0000-000000000000", BleUuidType.Uuid128)]
+    [InlineData("0018000000000000800000805f9b34fb", "00001800-0000-0000-8000-00805F9B34FB", BleUuidType.Uuid128)]
+    public void TryRead_ValidLengths_ReturnsTrueAndCorrectType(
+        string hexString,
+        string expectedGuidString,
+        BleUuidType expectedType
+    )
+    {
+        byte[] uuidBytes = Convert.FromHexString(hexString);
+
+        BleUuid.TryRead(uuidBytes, out BleUuid? bleUuid).Should().BeTrue();
+
+        bleUuid.Should().NotBeNull();
+        bleUuid!.Type.Should().Be(expectedType);
+        bleUuid.Value.Should().Be(Guid.Parse(expectedGuidString));
+    }
+
+    [Fact]
+    public void ToByteArray_ThrowsOnUnknownType()
+    {
+        var bad = new BleUuid((BleUuidType)999, Guid.Empty);
+        Action act = () => _ = bad.ToByteArray();
+        act.Should().Throw<InvalidOperationException>();
+    }
+
+    [Theory]
+    [InlineData("00001800-0000-1000-8000-00805f9b34fb", 0x1800)]
+    public void Equals_GuidAndNumericOverloads_Uuid16_WorkAsDocumented(string baseGuidString, ushort shortUuid)
+    {
+        Guid baseGuid = Guid.Parse(baseGuidString);
+        BleUuid uuid = BleUuid.FromGuid(baseGuid, inferType: true);
+        uuid.Type.Should().Be(BleUuidType.Uuid16);
+        uuid.Equals(baseGuid).Should().BeTrue();
+        uuid.Equals((uint)shortUuid).Should().BeFalse(); // 16-bit only matches ushort
+        uuid.Equals(shortUuid).Should().BeTrue();
+    }
+
+    [Theory]
+    [InlineData("ABCDEF01-0000-1000-8000-00805f9b34fb", 0xABCD, 0xABCDEF01)]
+    public void Equals_GuidAndNumericOverloads_Uuid32_WorkAsDocumented(
+        string baseGuidString,
+        ushort shortUuid,
+        uint intUuid
+    )
+    {
+        Guid baseGuid = Guid.Parse(baseGuidString);
+        BleUuid uuid = BleUuid.FromGuid(baseGuid, inferType: true);
+
+        uuid.Type.Should().Be(BleUuidType.Uuid32);
+        uuid.Equals(baseGuid).Should().BeTrue();
+        uuid.Equals(shortUuid).Should().BeFalse();
+        uuid.Equals(intUuid).Should().BeTrue();
     }
 }

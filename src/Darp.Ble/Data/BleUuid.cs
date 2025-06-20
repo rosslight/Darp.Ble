@@ -1,5 +1,4 @@
 using System.Buffers.Binary;
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Globalization;
@@ -276,7 +275,7 @@ public sealed record BleUuid
     {
         var buffer = new byte[(int)Type];
         if (!TryWriteBytes(buffer))
-            throw new UnreachableException("Ble uuid is corrupt. Could not write bytes");
+            throw new InvalidOperationException("Ble uuid is corrupt. Could not write bytes");
         return buffer;
     }
 
