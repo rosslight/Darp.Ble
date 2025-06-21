@@ -101,10 +101,7 @@ public static partial class AdvertisingDataExtensions
         this AdvertisingData advertisingData,
         BleUuid bleUuid,
         params IReadOnlyCollection<BleUuid> bleUuids
-    )
-    {
-        return advertisingData.WithCompleteListOfServiceUuids([bleUuid, .. bleUuids]);
-    }
+    ) => advertisingData.WithCompleteListOfServiceUuids([bleUuid, .. bleUuids]);
 
     /// <summary>
     /// Create a new <see cref="AdvertisingData"/> object with the
@@ -140,10 +137,7 @@ public static partial class AdvertisingDataExtensions
         this AdvertisingData advertisingData,
         BleUuid bleUuid,
         params IReadOnlyCollection<BleUuid> bleUuids
-    )
-    {
-        return advertisingData.WithIncompleteListOfServiceUuids([bleUuid, .. bleUuids]);
-    }
+    ) => advertisingData.WithIncompleteListOfServiceUuids([bleUuid, .. bleUuids]);
 
     /// <summary>
     /// Create a new <see cref="AdvertisingData"/> object with the

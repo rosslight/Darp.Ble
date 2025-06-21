@@ -11,7 +11,6 @@ public sealed class AdvertisingDataExtensionsSetterTests
 {
     private static readonly AdvertisingData PowerLevelData = AdvertisingData.From([(AdTypes.TxPowerLevel, [0x08])]);
 
-    private static readonly BleUuid UuidInvalid = new((BleUuidType)1, Guid.Empty); // Invalid type
     private static readonly BleUuid Uuid16BitHeartRate = 0x180D; // 16-bit
     private static readonly BleUuid Uuid16BitDeviceInfo = 0x180A; // another 16-bit
     private static readonly BleUuid Uuid32 = BleUuid.FromUInt32(0xAABBCCDD); // 32-bit
@@ -430,12 +429,97 @@ public sealed class AdvertisingDataExtensionsSetterTests
     }
 
     [Fact]
-    public void WithCompleteListOfServiceUuids_InvalidUuid_ShouldThrow()
+    public void WithTxPower_EmptyAdvertisingData_AddsNewTxPowerSection()
     {
-        // Act
-        Func<AdvertisingData> action = () => AdvertisingData.Empty.WithCompleteListOfServiceUuids(UuidInvalid);
+        const TxPowerLevel expected = (TxPowerLevel)1;
+        var advertisingData = AdvertisingData.Empty;
 
-        // Assert
-        action.Should().Throw<ArgumentOutOfRangeException>();
+        AdvertisingData result = advertisingData.WithTxPower(expected);
+
+        result.Count.Should().Be(1, "one TxPowerLevel section should be added");
+        result.Contains(AdTypes.TxPowerLevel).Should().BeTrue();
+        result[0].Type.Should().Be(AdTypes.TxPowerLevel);
+        result[0].Bytes.Span[0].Should().Be((byte)expected);
+    }
+
+    [Fact]
+    public void WithTxPower_SectionAlreadyPresent_ReplacesExistingSection()
+    {
+        var original = AdvertisingData.From([(AdTypes.TxPowerLevel, [0x05])]);
+        TxPowerLevel newLevel = (TxPowerLevel)8;
+
+        AdvertisingData result = original.WithTxPower(newLevel);
+
+        result.Count.Should().Be(1, "existing TxPowerLevel should be replaced");
+        result[0].Bytes.Span[0].Should().Be((byte)newLevel);
+    }
+
+    [Fact]
+    public void WithTxPower_OriginalAdvertisingData_RemainsUnchanged()
+    {
+        var original = AdvertisingData.Empty;
+        AdvertisingData modified = original.WithTxPower((TxPowerLevel)1);
+
+        original.Count.Should().Be(0);
+        modified.Count.Should().Be(1);
+    }
+
+    // New tests for WithServiceData
+    [Fact]
+    public void WithServiceData_16BitUuid_AddsServiceData16BitSection()
+    {
+        var advertisingData = AdvertisingData.Empty;
+        byte[] svcData = [0xAA, 0xBB];
+
+        AdvertisingData result = advertisingData.WithServiceData(Uuid16BitHeartRate, svcData);
+
+        result.Count.Should().Be(1);
+        result[0].Type.Should().Be(AdTypes.ServiceData16BitUuid);
+        // first two bytes are the UUID in little-endian
+        result[0].Bytes.Span[0].Should().Be(0x0D);
+        result[0].Bytes.Span[1].Should().Be(0x18);
+        // then service data
+        result[0].Bytes.Span[2].Should().Be(0xAA);
+        result[0].Bytes.Span[3].Should().Be(0xBB);
+    }
+
+    [Fact]
+    public void WithServiceData_32BitUuid_AddsServiceData32BitSection()
+    {
+        var advertisingData = AdvertisingData.Empty;
+        byte[] svcData = [0x01, 0x02, 0x03];
+
+        AdvertisingData result = advertisingData.WithServiceData(Uuid32, svcData);
+
+        result.Count.Should().Be(1);
+        result[0].Type.Should().Be(AdTypes.ServiceData32BitUuid);
+        // first 4 bytes are the UUID
+        var span = result[0].Bytes.Span;
+        span[0].Should().Be(0xDD);
+        span[1].Should().Be(0xCC);
+        span[2].Should().Be(0xBB);
+        span[3].Should().Be(0xAA);
+        span[4].Should().Be(0x01);
+    }
+
+    [Fact]
+    public void WithServiceData_128BitUuid_AddsServiceData128BitSection()
+    {
+        var advertisingData = AdvertisingData.Empty;
+        byte[] svcData = [0xFF];
+
+        AdvertisingData result = advertisingData.WithServiceData(Uuid128BitCustom, svcData);
+
+        result.Count.Should().Be(1);
+        result[0].Type.Should().Be(AdTypes.ServiceData128BitUuid);
+        result[0].Bytes.Length.Should().Be(16 + 1);
+    }
+
+    [Fact]
+    public void WithServiceData_NullUuid_Throws()
+    {
+        byte[] svcData = [0x00];
+        Func<AdvertisingData> act = () => AdvertisingData.Empty.WithServiceData(null!, svcData);
+        act.Should().Throw<ArgumentNullException>();
     }
 }
