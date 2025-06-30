@@ -15,9 +15,9 @@ public sealed class ObserverTests
     );
     private static readonly HciMessage[] ObservingMessages =
     [
-        HciMessage.CommandCompleteEventToHost("01000100A000A000"),
-        HciMessage.CommandCompleteEventToHost("010000000000"),
-        HciMessage.CommandCompleteEventToHost("010000000000"),
+        HciMessage.CommandCompleteEventToHost("01412000"),
+        HciMessage.CommandCompleteEventToHost("01422000"),
+        HciMessage.CommandCompleteEventToHost("01422000"),
     ];
 
     // start with no HCI messages so StartObservingAsync completes immediately

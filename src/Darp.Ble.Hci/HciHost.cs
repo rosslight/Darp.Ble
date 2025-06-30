@@ -284,13 +284,32 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ulong random
         (HciCommandCompleteEvent response, Activity? activity) = await handler
             .QueryAsync(command, timeout.Value, cancellationToken)
             .ConfigureAwait(false);
-        if (!TResponse.TryReadLittleEndian(response.ReturnParameters.Span, out TResponse? parameters))
-            throw new HciException("Command failed because response could not be read");
-        activity?.SetDeconstructedTags("Response.Parameters", parameters, orderEntries: true, writeRawBytes: false);
-        if (parameters.Status is not HciCommandStatus.Success)
+        try
+        {
+            if (response.CommandOpCode != TCommand.OpCode)
+            {
+                throw new HciException(
+                    $"Command failed because response OpCode {response.CommandOpCode} is not {TCommand.OpCode}"
+                );
+            }
+
+            if (!TResponse.TryReadLittleEndian(response.ReturnParameters.Span, out TResponse? parameters))
+                throw new HciException("Command failed because response could not be read");
+
+            activity?.SetDeconstructedTags("Response.Parameters", parameters, orderEntries: true, writeRawBytes: false);
+            if (parameters.Status is not HciCommandStatus.Success)
+                activity?.SetStatus(ActivityStatusCode.Error);
+            return parameters;
+        }
+        catch (Exception)
+        {
             activity?.SetStatus(ActivityStatusCode.Error);
-        activity?.Dispose();
-        return parameters;
+            throw;
+        }
+        finally
+        {
+            activity?.Dispose();
+        }
     }
 
     /// <summary> Writes a new, random address to the host </summary>
