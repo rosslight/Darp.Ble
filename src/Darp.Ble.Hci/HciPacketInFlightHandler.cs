@@ -21,14 +21,13 @@ internal sealed partial class HciPacketInFlightHandler<
     private readonly TaskCompletionSource<TResponse> _completionSource = new(
         TaskCreationOptions.RunContinuationsAsynchronously
     );
-    private readonly IDisposable _subscription;
+    private IDisposable? _subscription;
     private readonly bool _waitingForCommandStatus;
 
     public HciPacketInFlightHandler(HciHost host, SemaphoreSlim packetInFlightSemaphore)
     {
         _host = host;
         _packetInFlightSemaphore = packetInFlightSemaphore;
-        _subscription = _host.Subscribe(this);
         _waitingForCommandStatus = typeof(TResponse) == typeof(HciCommandStatusEvent);
     }
 
@@ -52,6 +51,7 @@ internal sealed partial class HciPacketInFlightHandler<
                 {
                     throw new TimeoutException("Timeout while waiting for next command to be sent");
                 }
+                _subscription = _host.Subscribe(this);
                 var packet = new HciCommandPacket<TCommand>(command);
                 _host.EnqueuePacket(packet);
             }
@@ -126,7 +126,7 @@ internal sealed partial class HciPacketInFlightHandler<
 
     public void Dispose()
     {
-        _subscription.Dispose();
+        _subscription?.Dispose();
         _completionSource.TrySetCanceled();
     }
 }
