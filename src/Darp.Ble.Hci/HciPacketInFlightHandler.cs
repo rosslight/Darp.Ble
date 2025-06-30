@@ -86,6 +86,9 @@ internal sealed partial class HciPacketInFlightHandler<
             }
             finally
             {
+                // Release the InFlight semaphore at the end of the query to ensure the next command can continue
+                // TODO: What do we do if a response is received after a timeout was hit? Will this trigger the next query?
+                _packetInFlightSemaphore.Release();
                 receiveActivity?.Dispose();
             }
         }
@@ -107,7 +110,6 @@ internal sealed partial class HciPacketInFlightHandler<
         T messageToCopy = message;
         TResponse response = Unsafe.As<T, TResponse>(ref messageToCopy);
         _completionSource.TrySetResult(response);
-        _packetInFlightSemaphore.Release();
     }
 
     [MessageSink]
@@ -120,8 +122,11 @@ internal sealed partial class HciPacketInFlightHandler<
         if (message.Status is HciCommandStatus.Success)
             return;
         _completionSource.TrySetException(new HciException($"Command failed with status {message.Status}"));
-        _packetInFlightSemaphore.Release();
     }
 
-    public void Dispose() => _subscription.Dispose();
+    public void Dispose()
+    {
+        _subscription.Dispose();
+        _completionSource.TrySetCanceled();
+    }
 }
