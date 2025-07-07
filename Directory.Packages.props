@@ -10,7 +10,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
     <PackageVersion Include="Darp.BinaryObjects" Version="0.6.0" />
-    <PackageVersion Include="Darp.Utils.Messaging" Version="1.18.0" />
+    <PackageVersion Include="Darp.Utils.Messaging" Version="1.18.1" />
     <PackageVersion Include="FluentAssertions" Version="[7.1.0,8.0.0)" />
     <PackageVersion Include="FluentAssertions.Analyzers" Version="0.34.1" />
     <PackageVersion Include="FluentAssertions.Reactive" Version="0.2.0" />
