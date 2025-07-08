@@ -3,7 +3,7 @@ using Windows.Devices.Bluetooth;
 
 namespace Darp.Ble.WinRT;
 
-public static class BleHelper
+internal static class BleHelper
 {
     public static BleAddress GetBleAddress(ulong winAddress, BluetoothAddressType winAddressType)
     {
