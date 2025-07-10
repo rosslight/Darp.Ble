@@ -10,7 +10,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
     <PackageVersion Include="Darp.BinaryObjects" Version="0.6.0" />
-    <PackageVersion Include="Darp.Utils.Messaging" Version="1.18.0" />
+    <PackageVersion Include="Darp.Utils.Messaging" Version="1.18.2" />
     <PackageVersion Include="FluentAssertions" Version="[7.1.0,8.0.0)" />
     <PackageVersion Include="FluentAssertions.Analyzers" Version="0.34.1" />
     <PackageVersion Include="FluentAssertions.Reactive" Version="0.2.0" />
@@ -40,7 +40,7 @@
     <PackageVersion Include="SerilogTracing" Version="2.3.1" />
     <PackageVersion Include="SerilogTracing.Expressions" Version="2.3.1" />
     <PackageVersion Include="Shouldly" Version="4.3.0" />
-    <PackageVersion Include="System.IO.Ports" Version="9.0.6" />
+    <PackageVersion Include="System.IO.Ports" Version="9.0.7" />
     <PackageVersion Include="System.Linq.Async" Version="6.0.3" />
     <PackageVersion Include="System.Numerics.Tensors" Version="9.0.6" />
     <PackageVersion Include="System.Reactive" Version="6.0.1" />
