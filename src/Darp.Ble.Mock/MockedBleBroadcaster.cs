@@ -1,3 +1,4 @@
+using System.Reactive;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -15,11 +16,13 @@ internal sealed class MockedBleBroadcaster(MockedBleDevice bleDevice, ILogger<Mo
 {
     private readonly MockedBleDevice _device = bleDevice;
     private readonly Subject<IAdvertisingSet> _advertisingSetPublishedSubject = new();
+    private readonly Subject<Unit> _stopRequestedSubject = new();
 
-    public IObservable<IGapAdvertisement> GetAdvertisements(BleObserver observer)
+    public IObservable<IGapAdvertisement> GetAdvertisements(BleObserver observer, ScanType observerScanType)
     {
-        return _advertisingSetPublishedSubject.Select(set =>
-            GapAdvertisement.FromExtendedAdvertisingReport(
+        return _advertisingSetPublishedSubject.SelectMany(set =>
+        {
+            GapAdvertisement advReport = GapAdvertisement.FromExtendedAdvertisingReport(
                 observer,
                 DateTimeOffset.UtcNow,
                 set.Parameters.Type,
@@ -32,8 +35,32 @@ internal sealed class MockedBleBroadcaster(MockedBleDevice bleDevice, ILogger<Mo
                 PeriodicAdvertisingInterval.NoPeriodicAdvertising,
                 BleAddress.NotAvailable,
                 set.Data
-            )
-        );
+            );
+            IObservable<GapAdvertisement> observable = Observable.Return(advReport);
+            if (observerScanType is not ScanType.Active || !set.Parameters.Type.HasFlag(BleEventType.Scannable))
+            {
+                return observable;
+            }
+            IObservable<GapAdvertisement> scanResponseObservable = Observable
+                .Timer(TimeSpan.FromMilliseconds(4.2))
+                .Select(_ =>
+                    GapAdvertisement.FromExtendedAdvertisingReport(
+                        observer,
+                        DateTimeOffset.UtcNow,
+                        BleEventType.ScanResponse,
+                        set.RandomAddress,
+                        set.Parameters.PrimaryPhy,
+                        Physical.NotAvailable,
+                        set.Parameters.AdvertisingSId,
+                        set.SelectedTxPower,
+                        _device.Settings.TxPowerToRssi(set.SelectedTxPower),
+                        PeriodicAdvertisingInterval.NoPeriodicAdvertising,
+                        BleAddress.NotAvailable,
+                        set.ScanResponseData ?? AdvertisingData.Empty
+                    )
+                );
+            return observable.Merge(scanResponseObservable);
+        });
     }
 
     protected override async Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(
@@ -55,7 +82,7 @@ internal sealed class MockedBleBroadcaster(MockedBleDevice bleDevice, ILogger<Mo
         }
         if (scanResponseData is not null)
         {
-            await advertisingSet.SetAdvertisingDataAsync(scanResponseData, cancellationToken).ConfigureAwait(false);
+            await advertisingSet.SetScanResponseDataAsync(scanResponseData, cancellationToken).ConfigureAwait(false);
         }
         return advertisingSet;
     }
@@ -76,6 +103,7 @@ internal sealed class MockedBleBroadcaster(MockedBleDevice bleDevice, ILogger<Mo
             );
             IObservable<IAdvertisingSet> observable = Observable
                 .Interval((minInterval + maxInterval) / 2, _device.Scheduler)
+                .TakeUntil(_stopRequestedSubject)
                 .Select(_ => advertisingSet);
             disposables.Add(observable.Subscribe(_advertisingSetPublishedSubject));
         }
@@ -91,6 +119,12 @@ internal sealed class MockedBleBroadcaster(MockedBleDevice bleDevice, ILogger<Mo
     )
     {
         throw new NotImplementedException();
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        _stopRequestedSubject.OnNext(Unit.Default);
+        base.Dispose(disposing);
     }
 }
 

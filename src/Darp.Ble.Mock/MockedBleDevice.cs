@@ -52,8 +52,8 @@ internal sealed class MockedBleDevice(
         return InitializeResult.Success;
     }
 
-    public IObservable<IGapAdvertisement> GetAdvertisements(BleObserver observer)
+    public IObservable<IGapAdvertisement> GetAdvertisements(BleObserver observer, ScanType parametersScanType)
     {
-        return Broadcaster.GetAdvertisements(observer);
+        return Broadcaster.GetAdvertisements(observer, parametersScanType);
     }
 }

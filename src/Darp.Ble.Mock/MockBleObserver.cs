@@ -17,7 +17,7 @@ internal sealed class MockBleObserver(MockBleDevice device, ILogger<MockBleObser
     protected override Task StartObservingAsyncCore(CancellationToken cancellationToken)
     {
         _observableSubscription = _device
-            .MockedDevices.Select(x => x.GetAdvertisements(this))
+            .MockedDevices.Select(x => x.GetAdvertisements(this, Parameters.ScanType))
             .Merge()
             .TakeUntil(_stopRequestedSubject)
             .Subscribe(OnNext);
