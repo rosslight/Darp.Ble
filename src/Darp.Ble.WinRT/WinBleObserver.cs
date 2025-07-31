@@ -39,7 +39,7 @@ internal sealed class WinBleObserver(BleDevice device, ILogger<WinBleObserver> l
 
     protected override Task StartObservingAsyncCore(CancellationToken cancellationToken)
     {
-        CreateScanners(ScanType.Active);
+        CreateScanners(Parameters.ScanType);
         _watcher.Start();
         if (_watcher.Status is BluetoothLEAdvertisementWatcherStatus.Aborted)
         {
