@@ -31,6 +31,7 @@ internal sealed class WinBleObserver(BleDevice device, ILogger<WinBleObserver> l
                 ScanType.Active => BluetoothLEScanningMode.Active,
                 _ => throw new ArgumentOutOfRangeException(nameof(mode)),
             },
+            AllowExtendedAdvertisements = true,
         };
         // Subscription needed for the watcher to start (observable will only subscribe later)
         _watcher.Received += (_, _) => { };
