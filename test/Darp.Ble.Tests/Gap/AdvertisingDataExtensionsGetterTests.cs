@@ -26,6 +26,7 @@ public sealed class AdvertisingDataExtensionsGetterTests
     private const string AdDataComplete128Uuids = "1106FFEEDDCCBBAA99887766554433221100";
     private const string AdDataManufacturerSpecificInvalid = "02FF4C";
     private const string AdDataManufacturerSpecificApple = "07FF4C0012020002";
+    private const string AdDataService16Uuid = "061626FE3E0A6E";
 
     [Theory]
     [InlineData(AdDataEmpty, false, AdvertisingDataFlags.None)]
@@ -189,6 +190,31 @@ public sealed class AdvertisingDataExtensionsGetterTests
         if (expectedSuccess)
         {
             manufacturerData.ToArray().Should().BeEquivalentTo(expectedDataString.ToByteArray());
+        }
+    }
+
+    [Theory]
+    [InlineData(AdDataEmpty, "26FE", false, "")]
+    [InlineData(AdDataManufacturerSpecificInvalid, "26FE", false, "")]
+    [InlineData(AdDataFlagLimitedDiscoverable, "26FE", false, "")]
+    [InlineData(AdDataManufacturerSpecificApple, "26FE", false, "")]
+    [InlineData(AdDataService16Uuid, "26FF", false, "")]
+    [InlineData(AdDataService16Uuid, "26FE3E0A", false, "")]
+    [InlineData(AdDataService16Uuid, "26FE", true, "3E0A6E")]
+    public void TryGetServiceData(string sections, string uuidBytes, bool expectedSuccess, string expectedDataString)
+    {
+        // Arrange
+        AdvertisingData data = AdvertisingData.From(Convert.FromHexString(sections));
+        BleUuid uuid = BleUuid.Read(Convert.FromHexString(uuidBytes));
+
+        // Act
+        bool result = data.TryGetServiceData(uuid, out ReadOnlyMemory<byte> serviceData);
+
+        // Assert
+        result.Should().Be(expectedSuccess);
+        if (expectedSuccess)
+        {
+            serviceData.ToArray().Should().BeEquivalentTo(expectedDataString.ToByteArray());
         }
     }
 }

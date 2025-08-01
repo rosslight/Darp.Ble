@@ -108,7 +108,7 @@ public static partial class AdvertisingDataExtensions
     public static IEnumerable<BleUuid> GetServiceUuids(this AdvertisingData data)
     {
         ArgumentNullException.ThrowIfNull(data);
-        return data.Count is 0 ? Array.Empty<BleUuid>() : GetServicesInt(data);
+        return data.Count is 0 ? [] : GetServicesInt(data);
 
         IEnumerable<BleUuid> GetServicesInt(AdvertisingData d)
         {
@@ -191,5 +191,36 @@ public static partial class AdvertisingDataExtensions
         companyUuid = (CompanyIdentifiers)BinaryPrimitives.ReadUInt16LittleEndian(bytes.Span);
         manufacturerData = bytes[2..];
         return true;
+    }
+
+    /// <summary> Get the AD ServiceData for a specific service <paramref name="uuid"/> </summary>
+    /// <param name="data"> The data to be looked at </param>
+    /// <param name="uuid"> The uuid of the service to search the data for </param>
+    /// <param name="serviceData"> The resulting serviceData if found </param>
+    /// <returns> True, if the <paramref name="uuid"/> was found in the <paramref name="data"/>, False otherwise </returns>
+    public static bool TryGetServiceData(this AdvertisingData data, BleUuid uuid, out ReadOnlyMemory<byte> serviceData)
+    {
+        ArgumentNullException.ThrowIfNull(data);
+        ArgumentNullException.ThrowIfNull(uuid);
+        foreach ((AdTypes adTypes, ReadOnlyMemory<byte> bytes) in data)
+        {
+            if (
+                (uuid.Type is BleUuidType.Uuid16 && adTypes != AdTypes.ServiceData16BitUuid)
+                || (uuid.Type is BleUuidType.Uuid32 && adTypes != AdTypes.ServiceData32BitUuid)
+                || (uuid.Type is BleUuidType.Uuid128 && adTypes != AdTypes.ServiceData128BitUuid)
+            )
+            {
+                continue;
+            }
+            var uuidLength = (int)uuid.Type;
+            if (bytes.Length < uuidLength)
+                continue;
+            if (!BleUuid.TryRead(bytes.Span[..uuidLength], out BleUuid? sectionUuid) || sectionUuid != uuid)
+                continue;
+            serviceData = bytes[uuidLength..];
+            return true;
+        }
+        serviceData = default;
+        return false;
     }
 }
