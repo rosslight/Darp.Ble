@@ -1,22 +1,19 @@
 <Project>
-    <Import Project="../Directory.Build.props" />
-
-    <PropertyGroup>
-        <AnalysisLevel>latest-all</AnalysisLevel>
-        <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        <IsAotCompatible>true</IsAotCompatible>
-
-        <Authors>rosslight GmbH</Authors>
-        <Description>Abstraction for BLE implementations</Description>
-        <PackageProjectUrl>https://github.com/rosslight/Darp.Ble</PackageProjectUrl>
-        <RepositoryType>git</RepositoryType>
-        <PackageReadmeFile>README.md</PackageReadmeFile>
-        <PackageTags>BLE,communication,near-field,nordic,nrf52840,hci,windows,android</PackageTags>
-    </PropertyGroup>
-
-    <ItemGroup>
-        <None Include="../../README.md" Pack="true" PackagePath="/"/>
-        <None Include="../../LICENSE.md" Pack="true" PackagePath="/"/>
-        <None Include="../../LICENSE-COMMERCIAL.md" Pack="true" PackagePath="/"/>
-    </ItemGroup>
+  <Import Project="../Directory.Build.props" />
+  <PropertyGroup>
+    <AnalysisLevel>latest-all</AnalysisLevel>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IsAotCompatible>true</IsAotCompatible>
+    <Authors>rosslight GmbH</Authors>
+    <Description>Abstraction for BLE implementations</Description>
+    <PackageProjectUrl>https://github.com/rosslight/Darp.Ble</PackageProjectUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageTags>BLE,communication,near-field,nordic,nrf52840,hci,windows,android</PackageTags>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+    <None Include="../../LICENSE.md" Pack="true" PackagePath="/" />
+    <None Include="../../LICENSE-COMMERCIAL.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
 </Project>

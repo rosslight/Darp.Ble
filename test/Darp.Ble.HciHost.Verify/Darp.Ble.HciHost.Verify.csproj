@@ -1,17 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-    <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <LangVersion>latest</LangVersion>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\..\src\Darp.Ble.Hci\Darp.Ble.Hci.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <PackageReference Include="Verify" />
-    </ItemGroup>
-
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Darp.Ble.Hci\Darp.Ble.Hci.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Verify" />
+  </ItemGroup>
 </Project>

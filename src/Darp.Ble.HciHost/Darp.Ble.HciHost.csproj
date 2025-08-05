@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
-    <LangVersion>13</LangVersion>
+    <LangVersion>latest</LangVersion>
     <IsAotCompatible>true</IsAotCompatible>
     <!-- Required for DLL import source generation -->
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

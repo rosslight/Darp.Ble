@@ -1,18 +1,18 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <OutputType>WinExe</OutputType>
-        <TargetFramework>net9.0</TargetFramework>
-        <EnableWindowsTargeting>True</EnableWindowsTargeting>
-        <ImplicitUsings>enable</ImplicitUsings>
-        <Nullable>enable</Nullable>
-    </PropertyGroup>
-    <ItemGroup>
-        <ProjectReference Include="..\..\src\Darp.Ble\Darp.Ble.csproj" />
-        <ProjectReference Include="..\..\src\Darp.Ble.Mock\Darp.Ble.Mock.csproj" />
-        <ProjectReference Include="..\..\src\Darp.Ble.HciHost\Darp.Ble.HciHost.csproj" />
-    </ItemGroup>
-    <ItemGroup>
-        <PackageReference Include="Serilog.Extensions.Logging" />
-        <PackageReference Include="Serilog.Sinks.Console" />
-    </ItemGroup>
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <EnableWindowsTargeting>True</EnableWindowsTargeting>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Darp.Ble\Darp.Ble.csproj" />
+    <ProjectReference Include="..\..\src\Darp.Ble.Mock\Darp.Ble.Mock.csproj" />
+    <ProjectReference Include="..\..\src\Darp.Ble.HciHost\Darp.Ble.HciHost.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Serilog.Extensions.Logging" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+  </ItemGroup>
 </Project>
