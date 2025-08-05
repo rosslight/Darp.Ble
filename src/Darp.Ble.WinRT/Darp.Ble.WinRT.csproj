@@ -1,28 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-    <PropertyGroup>
-        <TargetFrameworks>net8.0;net8.0-windows10.0.19041.0</TargetFrameworks>
-        <GenerateDocumentationFile>true</GenerateDocumentationFile>
-        <EnableWindowsTargeting>true</EnableWindowsTargeting>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\Darp.Ble\Darp.Ble.csproj" />
-    </ItemGroup>
-
-    <!-- When NOT building windows, remove everything except for the public API -->
-    <ItemGroup Condition="'$(TargetFramework)'!='net8.0-windows10.0.19041.0'">
-        <!-- remove all .cs under the project -->
-        <Compile Remove="**\*.cs" />
-
-        <!-- Bring back the public API only. -->
-        <Compile Include="WinBleFactory.cs" />
-        <Compile Include="WinBleFactoryExtensions.cs" />
-    </ItemGroup>
-
-    <ItemGroup>
-        <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
-            <_Parameter1>TargetFramework</_Parameter1>
-            <_Parameter2>$(TargetFramework)</_Parameter2>
-        </AssemblyAttribute>
-    </ItemGroup>
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net8.0-windows10.0.19041.0</TargetFrameworks>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Darp.Ble\Darp.Ble.csproj" />
+  </ItemGroup>
+  <!-- When NOT building windows, remove everything except for the public API -->
+  <ItemGroup Condition="'$(TargetFramework)'!='net8.0-windows10.0.19041.0'">
+    <!-- remove all .cs under the project -->
+    <Compile Remove="**\*.cs" />
+    <!-- Bring back the public API only. -->
+    <Compile Include="WinBleFactory.cs" />
+    <Compile Include="WinBleFactoryExtensions.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
+      <_Parameter1>TargetFramework</_Parameter1>
+      <_Parameter2>$(TargetFramework)</_Parameter2>
+    </AssemblyAttribute>
+  </ItemGroup>
 </Project>
