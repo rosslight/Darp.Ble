@@ -6,14 +6,13 @@ using Darp.Ble.Hci.Payload.Result;
 using Darp.Ble.HciHost.Verify;
 using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
-using VerifyTUnit;
 using UInt48 = Darp.Ble.Data.UInt48;
 
 namespace Darp.Ble.HciHost.Tests;
 
 public sealed class BleDeviceTests
 {
-    [Test]
+    [Fact]
     public async Task InitializeBleDevice()
     {
         var address = BleAddress.CreateRandomAddress((UInt48)0xE0C5AA968B6E);
@@ -38,7 +37,7 @@ public sealed class BleDeviceTests
         await Verifier.Verify(replayTransportLayer.MessagesToController);
     }
 
-    [Test]
+    [Fact]
     public async Task SetRandomAddress()
     {
         var newAddress = BleAddress.CreateRandomAddress((UInt48)0x112233445566);
@@ -53,7 +52,7 @@ public sealed class BleDeviceTests
         await Verifier.Verify(replayTransportLayer.MessagesToController);
     }
 
-    [Test]
+    [Fact]
     public async Task LaunchMultipleCommandsAtTheSameTime()
     {
         ReplayTransportLayer replayTransportLayer = ReplayTransportLayer.Replay(

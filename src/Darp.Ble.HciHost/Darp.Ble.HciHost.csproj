@@ -13,4 +13,7 @@
   <ItemGroup>
     <PackageReference Include="System.IO.Ports" />
   </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Darp.Ble.HciHost.Tests" />
+  </ItemGroup>
 </Project>

@@ -63,6 +63,8 @@ internal sealed class MockedBleBroadcaster(MockedBleDevice bleDevice, ILogger<Mo
         });
     }
 
+    public override bool IsAdvertising { get; }
+
     protected override async Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(
         AdvertisingParameters? parameters,
         AdvertisingData? data,

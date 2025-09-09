@@ -1,4 +1,5 @@
 using Darp.Ble.Hci.Package;
+using Darp.Ble.Hci.Payload.Event;
 
 namespace Darp.Ble.HciHost.Verify;
 
@@ -14,6 +15,14 @@ internal sealed class HciMessageConverter : WriteOnlyJsonConverter<HciMessage>
             case HciPacketType.HciCommand
                 when HciCommandPacket.TryReadLittleEndian(handler.PduBytes, out HciCommandPacket packet):
                 writer.WriteMember(packet, packet.OpCode, nameof(packet.OpCode));
+                break;
+            case HciPacketType.HciEvent
+                when HciEventPacket.TryReadLittleEndian(handler.PduBytes, out HciEventPacket? eventPacket)
+                    && HciCommandCompleteEvent.TryReadLittleEndian(
+                        eventPacket.DataBytes,
+                        out HciCommandCompleteEvent completeEvent
+                    ):
+                writer.WriteMember(completeEvent, completeEvent.CommandOpCode, nameof(completeEvent.CommandOpCode));
                 break;
         }
         writer.WriteMember(handler, Convert.ToHexString(handler.PduBytes), nameof(HciMessage.PduBytes));

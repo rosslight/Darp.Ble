@@ -8,18 +8,17 @@ namespace Darp.Ble.Implementation;
 /// <summary> The broadcaster view of a ble device </summary>
 public abstract class BleBroadcaster(IBleDevice device, ILogger<BleBroadcaster> logger) : IBleBroadcaster
 {
-    private readonly List<IAdvertisingSet> _advertisingSets = [];
-
     /// <summary> The logger </summary>
     protected ILogger<BleBroadcaster> Logger { get; } = logger;
 
     /// <summary> The service provider </summary>
     protected IServiceProvider ServiceProvider => Device.ServiceProvider;
 
-    public IReadOnlyCollection<IAdvertisingSet> AdvertisingSets => _advertisingSets.AsReadOnly();
-
     /// <inheritdoc />
     public IBleDevice Device { get; } = device;
+
+    /// <inheritdoc />
+    public abstract bool IsAdvertising { get; }
 
     /// <inheritdoc />
     public async Task<IAdvertisingSet> CreateAdvertisingSetAsync(
@@ -41,23 +40,8 @@ public abstract class BleBroadcaster(IBleDevice device, ILogger<BleBroadcaster> 
                 "Non-legacy extended advertising event properties may not be both connectable and scannable"
             );
         }
-        IAdvertisingSet advertisingSet = await CreateAdvertisingSetAsyncCore(
-                parameters,
-                data,
-                scanResponseData,
-                cancellationToken
-            )
+        return await CreateAdvertisingSetAsyncCore(parameters, data, scanResponseData, cancellationToken)
             .ConfigureAwait(false);
-        _advertisingSets.Add(advertisingSet);
-        return advertisingSet;
-    }
-
-    /// <summary> Removes an advertising set from the current broadcaster. Only is intended to be called by the advertising set on disposal </summary>
-    /// <param name="advertisingSet"> The advertising set to be removed </param>
-    /// <returns> True if item is successfully removed; otherwise, False </returns>
-    internal bool RemoveAdvertisingSet(IAdvertisingSet advertisingSet)
-    {
-        return _advertisingSets.Remove(advertisingSet);
     }
 
     /// <inheritdoc cref="CreateAdvertisingSetAsync" />

@@ -9,6 +9,7 @@ namespace Darp.Ble.HciHost;
 
 internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster) : AdvertisingSet(broadcaster)
 {
+    private readonly HciHostBleBroadcaster _broadcaster = broadcaster;
     private readonly Hci.HciHost _host = broadcaster.Host;
 
     /// <summary> The handle of the advertising set </summary>
@@ -26,6 +27,7 @@ internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster) : Adv
     )
     {
         ArgumentNullException.ThrowIfNull(randomAddress);
+        ThrowIfDisposed();
         await _host
             .QueryCommandCompletionAsync<
                 HciLeSetAdvertisingSetRandomAddressCommand,
@@ -48,6 +50,7 @@ internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster) : Adv
     )
     {
         ArgumentNullException.ThrowIfNull(parameters);
+        ThrowIfDisposed();
         HciLeSetExtendedAdvertisingParametersResult result = await _host
             .QueryCommandCompletionAsync<
                 HciLeSetExtendedAdvertisingParametersV1Command,
@@ -85,6 +88,7 @@ internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster) : Adv
     )
     {
         ArgumentNullException.ThrowIfNull(data);
+        ThrowIfDisposed();
         ReadOnlyMemory<byte> memory = data.AsReadOnlyMemory();
         if (memory.Length > 251)
         {
@@ -113,6 +117,7 @@ internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster) : Adv
     )
     {
         ArgumentNullException.ThrowIfNull(scanResponseData);
+        ThrowIfDisposed();
         ReadOnlyMemory<byte> memory = scanResponseData.AsReadOnlyMemory();
         if (memory.Length > 251)
         {
@@ -143,13 +148,18 @@ internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster) : Adv
     protected override async ValueTask DisposeAsyncCore()
     {
         await base.DisposeAsyncCore().ConfigureAwait(false);
+        if (IsAdvertising)
+        {
+            await _broadcaster.StopAdvertisingAsync([this], CancellationToken.None).ConfigureAwait(false);
+            IsAdvertising = false;
+        }
         await _host
             .QueryCommandCompletionAsync<HciLeRemoveAdvertisingSetCommand, HciLeRemoveAdvertisingSetResult>(
                 new HciLeRemoveAdvertisingSetCommand { AdvertisingHandle = AdvertisingHandle },
                 cancellationToken: CancellationToken.None
             )
             .ConfigureAwait(false);
-        IsAdvertising = false;
+        _broadcaster.RemoveAdvertisingSet(this);
     }
 
     internal void SetAdvertisingStatus(bool isEnabled)

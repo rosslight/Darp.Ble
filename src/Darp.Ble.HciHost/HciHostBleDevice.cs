@@ -66,10 +66,12 @@ internal sealed class HciHostBleDevice(
     /// <inheritdoc />
     public override string Identifier => BleDeviceIdentifiers.HciHost;
 
-    /// <inheritdoc />
-    protected override void Dispose(bool disposing)
+    protected override async ValueTask DisposeAsyncCore()
     {
+        // Dispose of broadcaster, ...
+        await base.DisposeAsyncCore().ConfigureAwait(false);
+        // Dispose of host
+        //await Host.QueryCommandCompletionAsync<HciResetCommand, HciResetResult>().ConfigureAwait(false);
         Host.Dispose();
-        base.Dispose(disposing);
     }
 }

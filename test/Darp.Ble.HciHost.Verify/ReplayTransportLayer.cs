@@ -2,7 +2,6 @@
 using System.Globalization;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
-using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Transport;
 
 namespace Darp.Ble.HciHost.Verify;
@@ -36,12 +35,12 @@ public sealed class ReplayTransportLayer(
     private readonly ConcurrentQueue<HciMessage> _messagesToHost = [];
     private Action<HciPacket>? _onReceived;
 
-    /// <summary> Provides all messages sent to the controller. Skips the defined amount of messages </summary>
+    /// <summary> Provides all messages sent to the controller. Skips the defined number of messages </summary>
     public IReadOnlyCollection<HciMessage> MessagesToController =>
         _messagesToController.Skip(_messagesToSkip).ToArray();
 
     /// <summary> Provides all messages sent to the host by the replay transport layer </summary>
-    public IReadOnlyCollection<HciMessage> MessagesToHost => _messagesToHost;
+    public IReadOnlyCollection<HciMessage> MessagesToHost => _messagesToHost.Skip(_messagesToSkip).ToArray();
 
     /// <summary> Initializes a default replay transport layer with no messages </summary>
     /// <param name="messagesToSkip"> The number of messages to skip when a recording is requested </param>

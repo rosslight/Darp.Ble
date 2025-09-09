@@ -18,6 +18,8 @@ internal sealed class WinBleBroadcaster(WinBleDevice winBleDevice, ILogger<WinBl
     private readonly WinBleDevice _winBleDevice = winBleDevice;
     private readonly ConcurrentDictionary<IAdvertisingSet, BluetoothLEAdvertisementPublisher> _publishers = new();
 
+    public override bool IsAdvertising => _publishers.All(x => x.Key.IsAdvertising);
+
     protected override Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(
         AdvertisingParameters? parameters,
         AdvertisingData? data,
