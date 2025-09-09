@@ -4,7 +4,6 @@ using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Darp.Ble.HciHost.Verify;
 using Shouldly;
-using VerifyTUnit;
 
 namespace Darp.Ble.HciHost.Tests;
 
@@ -40,10 +39,10 @@ public sealed class ObserverTests
         CancellationToken token
     ) => CreateObserver(ObservingMessages, token);
 
-    [Test]
-    [Timeout(5000)]
-    public async Task AdvertisementObserved(CancellationToken token)
+    [Fact(Timeout = 5000)]
+    public async Task AdvertisementObserved()
     {
+        var token = CancellationToken.None;
         (IBleObserver observer, ReplayTransportLayer replay) = await CreateDefaultObserver(token);
 
         Task<IGapAdvertisement> observationTask = observer.OnAdvertisement().FirstAsync().ToTask(token);
@@ -58,10 +57,10 @@ public sealed class ObserverTests
         await Verifier.Verify(replay.MessagesToController);
     }
 
-    [Test]
-    [Timeout(5_000)]
-    public async Task Configure(CancellationToken token)
+    [Fact(Timeout = 5000)]
+    public async Task Configure()
     {
+        var token = CancellationToken.None;
         const ScanTiming interval1 = ScanTiming.Ms100;
         const ScanTiming interval2 = ScanTiming.Ms1000;
         (IBleObserver observer, _) = await CreateDefaultObserver(token);
@@ -82,10 +81,10 @@ public sealed class ObserverTests
         await observer.StopObservingAsync();
     }
 
-    [Test]
-    [Timeout(5_000)]
-    public async Task StartObserving_IsNoOp(CancellationToken token)
+    [Fact(Timeout = 5000)]
+    public async Task StartObserving_IsNoOp()
     {
+        var token = CancellationToken.None;
         (IBleObserver observer, ReplayTransportLayer replay) = await CreateDefaultObserver(token);
 
         await observer.StartObservingAsync(token);
@@ -100,22 +99,22 @@ public sealed class ObserverTests
         await Verifier.Verify(replay.MessagesToController);
     }
 
-    [Test]
-    [Timeout(5_000)]
-    public async Task StopObserving_BeforeStart_IsNoOp(CancellationToken token)
+    [Fact(Timeout = 5000)]
+    public async Task StopObserving_BeforeStart_IsNoOp()
     {
+        var token = CancellationToken.None;
         (IBleObserver observer, ReplayTransportLayer _) = await CreateObserver(EmptyMessages, token);
 
         await observer.StopObservingAsync();
         observer.IsObserving.ShouldBeFalse();
     }
 
-    [Test]
-    [Timeout(5_000)]
-    public async Task OnAdvertisement_Unsubscribe_StopsCallback(CancellationToken ct)
+    [Fact(Timeout = 5000)]
+    public async Task OnAdvertisement_Unsubscribe_StopsCallback()
     {
-        (IBleObserver observer, ReplayTransportLayer replay) = await CreateDefaultObserver(ct);
-        await observer.StartObservingAsync(ct);
+        var token = CancellationToken.None;
+        (IBleObserver observer, ReplayTransportLayer replay) = await CreateDefaultObserver(token);
+        await observer.StartObservingAsync(token);
 
         var calls = 0;
         IDisposable subscription = observer.OnAdvertisement(_ => calls++);
@@ -131,12 +130,12 @@ public sealed class ObserverTests
         await Verifier.Verify(replay.MessagesToController);
     }
 
-    [Test]
-    [Timeout(5_000)]
-    public async Task OnAdvertisement_ThrowingHandler_DoesNotPreventOthers(CancellationToken ct)
+    [Fact(Timeout = 5000)]
+    public async Task OnAdvertisement_ThrowingHandler_DoesNotPreventOthers()
     {
-        (IBleObserver observer, ReplayTransportLayer replay) = await CreateDefaultObserver(ct);
-        await observer.StartObservingAsync(ct);
+        var token = CancellationToken.None;
+        (IBleObserver observer, ReplayTransportLayer replay) = await CreateDefaultObserver(token);
+        await observer.StartObservingAsync(token);
 
         var secondFired = false;
 

@@ -54,6 +54,11 @@ internal sealed class HciHostBleBroadcaster(
         );
     }
 
+    public override bool IsAdvertising => _advertisingSets.Values.Any(x => x.IsAdvertising);
+
+    internal void RemoveAdvertisingSet(HciAdvertisingSet advertisingSet) =>
+        _advertisingSets.TryRemove(advertisingSet.AdvertisingHandle, out _);
+
     /// <inheritdoc />
     protected override async Task<IAdvertisingSet> CreateAdvertisingSetAsyncCore(
         AdvertisingParameters? parameters,
@@ -197,5 +202,18 @@ internal sealed class HciHostBleBroadcaster(
                 hciAdvertisingSet.SetAdvertisingStatus(isEnabled: false);
         }
         return true;
+    }
+
+    protected override async ValueTask DisposeAsyncCore()
+    {
+        if (IsAdvertising)
+        {
+            await StopAdvertisingAsync(_advertisingSets.Values.ToArray(), CancellationToken.None).ConfigureAwait(false);
+        }
+        foreach (HciAdvertisingSet set in _advertisingSets.Values)
+        {
+            await set.DisposeAsync().ConfigureAwait(false);
+        }
+        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 }

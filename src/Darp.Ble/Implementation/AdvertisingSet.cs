@@ -9,6 +9,7 @@ namespace Darp.Ble.Implementation;
 public abstract class AdvertisingSet(BleBroadcaster broadcaster) : IAdvertisingSet
 {
     private readonly BleBroadcaster _broadcaster = broadcaster;
+    private bool _isDisposing;
 
     /// <inheritdoc />
     public IBleBroadcaster Broadcaster => _broadcaster;
@@ -34,6 +35,7 @@ public abstract class AdvertisingSet(BleBroadcaster broadcaster) : IAdvertisingS
     /// <inheritdoc />
     public virtual Task SetRandomAddressAsync(BleAddress randomAddress, CancellationToken cancellationToken = default)
     {
+        ThrowIfDisposed();
         RandomAddress = randomAddress;
         return Task.CompletedTask;
     }
@@ -44,6 +46,7 @@ public abstract class AdvertisingSet(BleBroadcaster broadcaster) : IAdvertisingS
         CancellationToken cancellationToken = default
     )
     {
+        ThrowIfDisposed();
         Parameters = parameters;
         return Task.CompletedTask;
     }
@@ -51,6 +54,7 @@ public abstract class AdvertisingSet(BleBroadcaster broadcaster) : IAdvertisingS
     /// <inheritdoc />
     public virtual Task SetAdvertisingDataAsync(AdvertisingData data, CancellationToken cancellationToken = default)
     {
+        ThrowIfDisposed();
         Data = data;
         return Task.CompletedTask;
     }
@@ -61,6 +65,7 @@ public abstract class AdvertisingSet(BleBroadcaster broadcaster) : IAdvertisingS
         CancellationToken cancellationToken = default
     )
     {
+        ThrowIfDisposed();
         ScanResponseData = scanResponseData;
         return Task.CompletedTask;
     }
@@ -68,12 +73,17 @@ public abstract class AdvertisingSet(BleBroadcaster broadcaster) : IAdvertisingS
     /// <inheritdoc />
     public async ValueTask DisposeAsync()
     {
+        if (_isDisposing)
+            return;
+        _isDisposing = true;
         await DisposeAsyncCore().ConfigureAwait(false);
-        _broadcaster.RemoveAdvertisingSet(this);
         GC.SuppressFinalize(this);
     }
 
     /// <summary> Remove the advertising set </summary>
     /// <returns> The value task </returns>
     protected virtual ValueTask DisposeAsyncCore() => ValueTask.CompletedTask;
+
+    /// <summary> Throws if the disposal of this set was started </summary>
+    protected void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_isDisposing, this);
 }

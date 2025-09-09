@@ -15,13 +15,16 @@ public interface IBleBroadcaster
     /// <summary> The ble device </summary>
     IBleDevice Device { get; }
 
+    /// <summary> True, if any advertising set is broadcasting </summary>
+    bool IsAdvertising { get; }
+
     /// <summary> Creates a new advertising set </summary>
     /// <param name="parameters"> The parameters for advertising </param>
     /// <param name="data"> Optional data to advertise </param>
     /// <param name="scanResponseData"> Optional scan response data </param>
     /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
     /// <returns> The created advertising set </returns>
-    public Task<IAdvertisingSet> CreateAdvertisingSetAsync(
+    Task<IAdvertisingSet> CreateAdvertisingSetAsync(
         AdvertisingParameters? parameters = null,
         AdvertisingData? data = null,
         AdvertisingData? scanResponseData = null,
@@ -32,7 +35,7 @@ public interface IBleBroadcaster
     /// <param name="advertisingSetStartInfo"> A collection of advertising sets together with information on how to start them </param>
     /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
     /// <returns> An async disposable to stop advertising </returns>
-    public Task<IAsyncDisposable> StartAdvertisingAsync(
+    Task<IAsyncDisposable> StartAdvertisingAsync(
         IReadOnlyCollection<AdvertisingStartInfo> advertisingSetStartInfo,
         CancellationToken cancellationToken
     );
@@ -41,7 +44,7 @@ public interface IBleBroadcaster
     /// <param name="advertisingSets"> A collection of advertising sets </param>
     /// <param name="cancellationToken"> The cancellationToken to cancel the operation </param>
     /// <returns> A task </returns>
-    public Task<bool> StopAdvertisingAsync(
+    Task<bool> StopAdvertisingAsync(
         IReadOnlyCollection<IAdvertisingSet> advertisingSets,
         CancellationToken cancellationToken
     );

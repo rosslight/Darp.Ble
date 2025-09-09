@@ -1,10 +1,8 @@
-using VerifyTUnit;
-
 namespace Darp.Ble.HciHost.Tests;
 
 public sealed class VerifyCheckTests
 {
-    [Test]
+    [Fact]
     public Task Run()
     {
         return VerifyChecks.Run();
