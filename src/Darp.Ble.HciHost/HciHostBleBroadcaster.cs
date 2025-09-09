@@ -54,8 +54,7 @@ internal sealed class HciHostBleBroadcaster(
         );
     }
 
-    public override bool IsAdvertising =>
-        !_advertisingSets.IsEmpty && _advertisingSets.Values.All(x => x.IsAdvertising);
+    public override bool IsAdvertising => _advertisingSets.Values.Any(x => x.IsAdvertising);
 
     internal void RemoveAdvertisingSet(HciAdvertisingSet advertisingSet) =>
         _advertisingSets.TryRemove(advertisingSet.AdvertisingHandle, out _);

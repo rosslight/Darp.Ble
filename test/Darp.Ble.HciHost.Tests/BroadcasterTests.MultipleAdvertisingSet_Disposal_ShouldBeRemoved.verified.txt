@@ -32,6 +32,16 @@
     },
     {
       Type: HciCommand,
+      OpCode: HCI_LE_SET_EXTENDED_ADVERTISING_ENABLE,
+      PduBytes: 392006010100000000
+    },
+    {
+      Type: HciCommand,
+      OpCode: HCI_LE_SET_EXTENDED_ADVERTISING_ENABLE,
+      PduBytes: 39200A00020001000000000000
+    },
+    {
+      Type: HciCommand,
       OpCode: HCI_LE_Remove_Advertising_Set,
       PduBytes: 3C200100
     },
@@ -71,6 +81,16 @@
       Type: HciEvent,
       CommandOpCode: HCI_LE_SET_ADVERTISING_SET_RANDOM_ADDRESS,
       PduBytes: 0E0401352000
+    },
+    {
+      Type: HciEvent,
+      CommandOpCode: HCI_LE_SET_EXTENDED_ADVERTISING_ENABLE,
+      PduBytes: 0E0401392000
+    },
+    {
+      Type: HciEvent,
+      CommandOpCode: HCI_LE_SET_EXTENDED_ADVERTISING_ENABLE,
+      PduBytes: 0E0401392000
     },
     {
       Type: HciEvent,

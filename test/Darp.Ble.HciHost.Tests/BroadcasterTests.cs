@@ -29,6 +29,8 @@ public sealed class BroadcasterTests
                 HciMessages.HciLeReadNumberOfSupportedAdvertisingSetsEvent(numSupportedAdvertisingSets: 2), // Create set 2
                 HciMessages.HciLeSetExtendedAdvertisingParametersEvent(),
                 HciMessages.HciLeSetAdvertisingSetRandomAddressEvent(),
+                HciMessages.HciLeSetExtendedAdvertisingEnableEvent(), // Starting
+                HciMessages.HciLeSetExtendedAdvertisingEnableEvent(), // Stopping
                 HciMessages.HciLeRemoveAdvertisingSetEvent(), // Remove sets
                 HciMessages.HciLeRemoveAdvertisingSetEvent(),
             ],
@@ -39,9 +41,15 @@ public sealed class BroadcasterTests
         IAdvertisingSet set2 = await broadcaster.CreateAdvertisingSetAsync(cancellationToken: token);
 
         set1.IsAdvertising.ShouldBeFalse();
+        broadcaster.IsAdvertising.ShouldBeFalse();
         set1.ShouldBeOfType<HciAdvertisingSet>().AdvertisingHandle.ShouldBe<byte>(0);
         set2.IsAdvertising.ShouldBeFalse();
+        broadcaster.IsAdvertising.ShouldBeFalse();
         set2.ShouldBeOfType<HciAdvertisingSet>().AdvertisingHandle.ShouldBe<byte>(1);
+
+        await set1.StartAdvertisingAsync(cancellationToken: token);
+        set1.IsAdvertising.ShouldBeTrue();
+        broadcaster.IsAdvertising.ShouldBeTrue();
 
         await broadcaster.Device.DisposeAsync();
 
