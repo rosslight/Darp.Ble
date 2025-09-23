@@ -3,7 +3,7 @@ using Darp.Ble.Data;
 namespace Darp.Ble.Gap;
 
 /// <summary> The advertisement definition </summary>
-public interface IGapAdvertisement
+public interface IGapAdvertisement : IEquatable<IGapAdvertisement>
 {
     /// <summary> The ble observer which registered the advertisement </summary>
     internal IBleObserver Observer { get; }
@@ -50,8 +50,8 @@ public interface IGapAdvertisement
 
 /// <summary> An advertisement with attached user data </summary>
 /// <typeparam name="TUserData"> The user data </typeparam>
-public interface IGapAdvertisement<out TUserData> : IGapAdvertisement
+public interface IGapAdvertisement<out TUserData> : IGapAdvertisementWithUserData
 {
     /// <summary> The data specified by the user and attached to the advertisement </summary>
-    TUserData UserData { get; }
+    new TUserData UserData { get; }
 }
