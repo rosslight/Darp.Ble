@@ -1,8 +1,10 @@
+using System.Collections.Concurrent;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gatt.Server;
+using Darp.Ble.Linq;
 
 namespace Darp.Ble.Gap;
 
@@ -220,4 +222,44 @@ public static class AdvertisementExtensions
             );
         });
     }
+
+    /// <summary>
+    /// Combine the ManufacturerSpecificData of a scannable advertisement with the scan response
+    /// </summary>
+    /// <param name="source">An observable sequence of advertisements whose elements to combine.</param>
+    /// <returns> An observable sequence which combines scan responses with the original advertisement </returns>
+    public static IObservable<IGapAdvertisement> CombineWithScanResponse(this IObservable<IGapAdvertisement> source)
+    {
+        return Observable.Create<IGapAdvertisement>(observer =>
+        {
+            ConcurrentDictionary<AdvKey, IGapAdvertisement> advertisementDict = new();
+            return source.Subscribe(
+                adv =>
+                {
+                    bool isScanningActively = adv.Observer.Parameters.ScanType is ScanType.Active;
+                    bool isAdvScannable = adv.EventType.HasFlag(BleEventType.Scannable);
+                    bool isAdvScanResponse = adv.EventType.HasFlag(BleEventType.ScanResponse);
+                    if (!isScanningActively || !(isAdvScannable || isAdvScanResponse))
+                    {
+                        observer.OnNext(adv);
+                        return;
+                    }
+                    var key = new AdvKey(adv.Address, adv.AdvertisingSId);
+                    if (isAdvScannable)
+                    {
+                        advertisementDict[key] = adv;
+                        return;
+                    }
+                    if (isAdvScanResponse && advertisementDict.TryRemove(key, out IGapAdvertisement? previousAdv))
+                    {
+                        observer.OnNext(new GapAdvertisementWithScanResponse(previousAdv, adv));
+                    }
+                },
+                observer.OnError,
+                observer.OnCompleted
+            );
+        });
+    }
 }
+
+file readonly record struct AdvKey(BleAddress Address, AdvertisingSId SId);

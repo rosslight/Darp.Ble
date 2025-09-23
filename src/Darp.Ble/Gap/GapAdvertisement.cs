@@ -160,11 +160,39 @@ public sealed class GapAdvertisement : IGapAdvertisement
 
     /// <inheritdoc />
     public byte[] AsByteArray() => _bytes;
+
+    private bool Equals(GapAdvertisement other) =>
+        Timestamp.Equals(other.Timestamp)
+        && EventType == other.EventType
+        && Address.Equals(other.Address)
+        && PrimaryPhy == other.PrimaryPhy
+        && SecondaryPhy == other.SecondaryPhy
+        && AdvertisingSId == other.AdvertisingSId
+        && TxPower == other.TxPower
+        && Rssi == other.Rssi
+        && PeriodicAdvertisingInterval == other.PeriodicAdvertisingInterval
+        && DirectAddress.Equals(other.DirectAddress)
+        && Data.Equals(other.Data);
+
+    /// <inheritdoc />
+    public bool Equals(IGapAdvertisement? other) =>
+        ReferenceEquals(this, other) || (other is GapAdvertisement otherAdv && Equals(otherAdv));
+
+    /// <inheritdoc />
+    public override bool Equals(object? obj) =>
+        ReferenceEquals(this, obj) || (obj is GapAdvertisement otherAdv && Equals(otherAdv));
+
+    /// <inheritdoc />
+    public override int GetHashCode()
+    {
+        int tempHashCode = HashCode.Combine(Timestamp, EventType, Address, PrimaryPhy, SecondaryPhy, AdvertisingSId);
+        return HashCode.Combine(tempHashCode, TxPower, Rssi, PeriodicAdvertisingInterval, DirectAddress, Data);
+    }
 }
 
 /// <summary> An advertisement with additional data attached </summary>
 /// <typeparam name="TUserData"> The type of the attached data </typeparam>
-public sealed class GapAdvertisement<TUserData> : IGapAdvertisement<TUserData>, IGapAdvertisementWithUserData
+public sealed class GapAdvertisement<TUserData> : IGapAdvertisement<TUserData>
 {
     private readonly IGapAdvertisement _advertisement;
 
@@ -219,4 +247,19 @@ public sealed class GapAdvertisement<TUserData> : IGapAdvertisement<TUserData>, 
 
     /// <inheritdoc />
     public byte[] AsByteArray() => _advertisement.AsByteArray();
+
+    private bool Equals(GapAdvertisement<TUserData> other) =>
+        _advertisement.Equals(other._advertisement)
+        && EqualityComparer<TUserData>.Default.Equals(UserData, other.UserData);
+
+    /// <inheritdoc />
+    public bool Equals(IGapAdvertisement? other) =>
+        ReferenceEquals(this, other) || (other is GapAdvertisement<TUserData> otherAdv && Equals(otherAdv));
+
+    /// <inheritdoc />
+    public override bool Equals(object? obj) =>
+        ReferenceEquals(this, obj) || (obj is GapAdvertisement<TUserData> otherAdv && Equals(otherAdv));
+
+    /// <inheritdoc />
+    public override int GetHashCode() => HashCode.Combine(_advertisement, UserData);
 }
