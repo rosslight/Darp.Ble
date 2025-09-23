@@ -191,4 +191,33 @@ public static class AdvertisementExtensions
             ? source
             : source.Where(x => x.Data.GetServiceUuids().Any(uuid => uuid.Equals(service.Value)));
     }
+
+    /// <summary> Filters for <see cref="IGapAdvertisementWithUserData.UserData"/> with the given type </summary>
+    /// <param name="source"> The source of advertisements with optional userdata </param>
+    /// <typeparam name="TAdvertisementData"> The type of the advertising data </typeparam>
+    /// <returns> The source sequence with only advertisements of the specified specific adv data </returns>
+    public static IObservable<IGapAdvertisement<TAdvertisementData>> OfUserData<TAdvertisementData>(
+        this IObservable<IGapAdvertisement> source
+    )
+    {
+        return Observable.Create<IGapAdvertisement<TAdvertisementData>>(observer =>
+        {
+            return source.Subscribe(
+                advertisement =>
+                {
+                    switch (advertisement)
+                    {
+                        case IGapAdvertisement<TAdvertisementData> adv:
+                            observer.OnNext(adv);
+                            return;
+                        case IGapAdvertisementWithUserData { UserData: TAdvertisementData data }:
+                            observer.OnNext(advertisement.WithUserData(data));
+                            return;
+                    }
+                },
+                observer.OnError,
+                observer.OnCompleted
+            );
+        });
+    }
 }
