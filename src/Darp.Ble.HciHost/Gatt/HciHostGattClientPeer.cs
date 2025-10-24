@@ -163,7 +163,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
 
         int availablePduSpace = AttMtu - 2;
         int maxNumberOfAttributes = availablePduSpace / 6;
-        AttGroupTypeData<ushort>[] serviceAttributes = await Peripheral
+        AttGroupTypeData[] serviceAttributes = await Peripheral
             .GattDatabase.GetServiceEntries(request.StartingHandle)
             .Where(x =>
                 x.AttributeType.Equals(attributeType)
@@ -171,9 +171,9 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
                 && x.Handle <= request.EndingHandle
             )
             .ToAsyncEnumerable()
-            .SelectAwait(async x => new AttGroupTypeData<ushort>
+            .SelectAwait(async x => new AttGroupTypeData
             {
-                Value = BinaryPrimitives.ReadUInt16LittleEndian(await x.ReadValueAsync(this).ConfigureAwait(false)),
+                Value = await x.ReadValueAsync(this).ConfigureAwait(false),
                 Handle = x.Handle,
                 EndGroup = x.EndGroupHandle,
             })
@@ -190,7 +190,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             );
             return;
         }
-        var rsp = new AttReadByGroupTypeRsp<ushort>
+        var rsp = new AttReadByGroupTypeRsp
         {
             Length = (byte)serviceAttributes[0].GetByteCount(),
             AttributeDataList = serviceAttributes,

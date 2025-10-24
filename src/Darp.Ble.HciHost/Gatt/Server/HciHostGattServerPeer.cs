@@ -82,9 +82,9 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
                 ushort startingHandle = 0x0001;
                 while (!token.IsCancellationRequested && startingHandle < 0xFFFF)
                 {
-                    AttResponse<AttReadByGroupTypeRsp<ushort>> response = await this.QueryAttPduAsync<
+                    AttResponse<AttReadByGroupTypeRsp> response = await this.QueryAttPduAsync<
                         AttReadByGroupTypeReq<ushort>,
-                        AttReadByGroupTypeRsp<ushort>
+                        AttReadByGroupTypeRsp
                     >(
                             new AttReadByGroupTypeReq<ushort>
                             {
@@ -101,14 +101,14 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
                             break;
                         throw new Exception($"Could not discover services due to error {response.Error.ErrorCode}");
                     }
-                    AttReadByGroupTypeRsp<ushort> rsp = response.Value;
+                    AttReadByGroupTypeRsp rsp = response.Value;
                     if (rsp.AttributeDataList.Length == 0)
                         break;
-                    foreach ((ushort handle, ushort endGroup, ushort value) in rsp.AttributeDataList)
+                    foreach ((ushort handle, ushort endGroup, ReadOnlyMemory<byte> value) in rsp.AttributeDataList)
                     {
                         observer.OnNext(
                             new HciHostGattServerService(
-                                value,
+                                BleUuid.Read(value.Span),
                                 GattServiceType.Primary,
                                 handle,
                                 endGroup,
@@ -117,6 +117,9 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
                             )
                         );
                     }
+                    ushort endGroupHandle = rsp.AttributeDataList[^1].EndGroup;
+                    if (endGroupHandle is 0xFFFF)
+                        break;
                     startingHandle = (ushort)(rsp.AttributeDataList[^1].EndGroup + 1);
                 }
             }

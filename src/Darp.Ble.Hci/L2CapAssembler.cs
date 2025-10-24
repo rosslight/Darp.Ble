@@ -141,7 +141,7 @@ public sealed partial class L2CapAssembler : IL2CapAssembler, IDisposable
                 PublishMessage(req);
                 break;
             case AttOpCode.ATT_READ_BY_GROUP_TYPE_RSP
-                when AttReadByGroupTypeRsp<ushort>.TryReadLittleEndian(l2Cap.Pdu, out var rsp):
+                when AttReadByGroupTypeRsp.TryReadLittleEndian(l2Cap.Pdu, out var rsp):
                 PublishMessage(rsp);
                 break;
             case AttOpCode.ATT_WRITE_REQ when AttWriteReq.TryReadLittleEndian(l2Cap.Pdu, out var req):

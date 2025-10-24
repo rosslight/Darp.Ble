@@ -1,17 +1,11 @@
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using Darp.BinaryObjects;
 
 namespace Darp.Ble.Hci.Payload.Att;
 
 /// <summary> The ATT_READ_BY_TYPE_RSP PDU is sent in reply to a received ATT_READ_BY_TYPE_REQ PDU and contains the handles and values of the attributes that have been read </summary>
-/// <typeparam name="TAttributeValue"> The type of the attribute </typeparam>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/attribute-protocol--att-.html#UUID-2c2cdcd4-6173-9654-82fc-c4c7bd74fe3a"/>
-public readonly record struct AttReadByGroupTypeRsp<TAttributeValue>()
-    : IAttPdu,
-        IBinaryObject<AttReadByGroupTypeRsp<TAttributeValue>>
-    where TAttributeValue : unmanaged
+public readonly record struct AttReadByGroupTypeRsp() : IAttPdu, IBinaryObject<AttReadByGroupTypeRsp>
 {
     /// <inheritdoc />
     public static AttOpCode ExpectedOpCode => AttOpCode.ATT_READ_BY_GROUP_TYPE_RSP;
@@ -24,18 +18,16 @@ public readonly record struct AttReadByGroupTypeRsp<TAttributeValue>()
 
     /// <summary> A list of Attribute Data </summary>
     [BinaryElementCount(nameof(Length))]
-    public required AttGroupTypeData<TAttributeValue>[] AttributeDataList { get; init; }
+    public required AttGroupTypeData[] AttributeDataList { get; init; }
+
+    /// <inheritdoc />
+    public static bool TryReadLittleEndian(ReadOnlySpan<byte> source, out AttReadByGroupTypeRsp value) =>
+        TryReadLittleEndian(source, out value, out _);
 
     /// <inheritdoc />
     public static bool TryReadLittleEndian(
         ReadOnlySpan<byte> source,
-        out AttReadByGroupTypeRsp<TAttributeValue> value
-    ) => TryReadLittleEndian(source, out value, out _);
-
-    /// <inheritdoc />
-    public static bool TryReadLittleEndian(
-        ReadOnlySpan<byte> source,
-        out AttReadByGroupTypeRsp<TAttributeValue> value,
+        out AttReadByGroupTypeRsp value,
         out int bytesRead
     )
     {
@@ -47,28 +39,35 @@ public readonly record struct AttReadByGroupTypeRsp<TAttributeValue>()
         if (opCode != ExpectedOpCode)
             return false;
         byte length = source[1];
-        if (length != Unsafe.SizeOf<AttGroupTypeData<TAttributeValue>>())
-            return false;
         if ((source.Length - 2) % length != 0)
             return false;
-        value = new AttReadByGroupTypeRsp<TAttributeValue>
+        int numberOfAttributeData = (source.Length - 2) / length;
+        var attributeDataList = new AttGroupTypeData[numberOfAttributeData];
+        for (int i = 0; i < numberOfAttributeData; i++)
+        {
+            ReadOnlySpan<byte> slice = source.Slice(2 + (i * length), length);
+            if (!AttGroupTypeData.TryReadLittleEndian(slice, out AttGroupTypeData data))
+                return false;
+            attributeDataList[i] = data;
+        }
+        value = new AttReadByGroupTypeRsp
         {
             OpCode = opCode,
             Length = length,
-            AttributeDataList = MemoryMarshal.Cast<byte, AttGroupTypeData<TAttributeValue>>(source[2..]).ToArray(),
+            AttributeDataList = attributeDataList,
         };
         bytesRead = source.Length;
         return true;
     }
 
     /// <inheritdoc />
-    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out AttReadByGroupTypeRsp<TAttributeValue> value) =>
+    public static bool TryReadBigEndian(ReadOnlySpan<byte> source, out AttReadByGroupTypeRsp value) =>
         TryReadBigEndian(source, out value, out _);
 
     /// <inheritdoc />
     public static bool TryReadBigEndian(
         ReadOnlySpan<byte> source,
-        out AttReadByGroupTypeRsp<TAttributeValue> value,
+        out AttReadByGroupTypeRsp value,
         out int bytesRead
     ) => throw new NotSupportedException();
 
@@ -81,16 +80,22 @@ public readonly record struct AttReadByGroupTypeRsp<TAttributeValue>()
     /// <inheritdoc />
     public bool TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
     {
-        Debug.Assert(Length == Unsafe.SizeOf<AttGroupTypeData<TAttributeValue>>());
+        Debug.Assert(AttributeDataList.Length == 0 || Length == AttributeDataList[0].GetByteCount());
 
         bytesWritten = 0;
-        int attributeDataListLength = AttributeDataList.Length * Length;
-        if (destination.Length < 2 + attributeDataListLength)
+        if (destination.Length < 2)
             return false;
         destination[0] = (byte)OpCode;
         destination[1] = Length;
-        AttributeDataList.CopyTo(MemoryMarshal.Cast<byte, AttGroupTypeData<TAttributeValue>>(destination[2..]));
-        bytesWritten += 2 + attributeDataListLength;
+        bytesWritten += 2;
+        Span<byte> slice = destination[2..];
+        foreach (AttGroupTypeData attributeData in AttributeDataList)
+        {
+            if (!attributeData.TryWriteLittleEndian(slice, out int dataWritten))
+                return false;
+            slice = slice[..dataWritten];
+            bytesWritten += dataWritten;
+        }
         return true;
     }
 
