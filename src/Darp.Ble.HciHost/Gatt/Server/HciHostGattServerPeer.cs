@@ -31,6 +31,8 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
     public ushort AttMtu { get; private set; } = DefaultAttMtu;
     public IAclPacketQueue AclPacketQueue => Host.AclPacketQueue;
     public IL2CapAssembler L2CapAssembler => _assembler;
+    ulong IAclConnection.ServerAddress => Address.Value;
+    ulong IAclConnection.ClientAddress => Central.Device.RandomAddress.Value;
 
     public HciHostGattServerPeer(
         HciHostBleCentral central,
@@ -58,6 +60,11 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
     {
         if (hciEvent.ConnectionHandle != ConnectionHandle)
             return;
+        Logger.LogDebug(
+            "Received disconnection event for connection 0x{ConnectionHandle:X}. Reason: {Reason}",
+            hciEvent.ConnectionHandle,
+            hciEvent.Reason
+        );
         ConnectionSubject.OnNext(ConnectionStatus.Disconnected);
     }
 
@@ -110,7 +117,7 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
                             )
                         );
                     }
-                    startingHandle = rsp.AttributeDataList[^1].EndGroup;
+                    startingHandle = (ushort)(rsp.AttributeDataList[^1].EndGroup + 1);
                 }
             }
         );
@@ -157,7 +164,7 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
                         ServiceProvider.GetLogger<HciHostGattServerService>()
                     );
                 }
-                startingHandle = rsp.HandlesInformationList[^1].GroupEndHandle;
+                startingHandle = (ushort)(rsp.HandlesInformationList[^1].GroupEndHandle + 1);
             }
             throw new Exception("Could not find a service");
         });
@@ -211,23 +218,18 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        Task<ConnectionStatus> task = WhenConnectionStatusChanged
-            .Where(x => x == ConnectionStatus.Disconnected)
-            .FirstAsync()
-            .ToTask();
-        HciCommandStatus status = await Host.QueryCommandStatusAsync(
+        await Host.QueryCommandAsync<HciDisconnectCommand, HciDisconnectionCompleteEvent>(
                 new HciDisconnectCommand
                 {
                     ConnectionHandle = ConnectionHandle,
                     Reason = HciCommandStatus.RemoteUserTerminatedConnection,
-                }
+                },
+                timeout: TimeSpan.FromSeconds(2),
+                CancellationToken.None
             )
-            .ConfigureAwait(false);
-        if (status is HciCommandStatus.Success)
-        {
-            await task.ConfigureAwait(false);
-            await Task.Delay(200).ConfigureAwait(false);
-        }
+            .ContinueWith(_ => { }, TaskScheduler.Default)
+            .ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing | ConfigureAwaitOptions.ContinueOnCapturedContext);
+        await Task.Delay(200).ConfigureAwait(false);
         _assembler.Dispose();
         _assemblerSubscription.Dispose();
         _hostSubscription.Dispose();

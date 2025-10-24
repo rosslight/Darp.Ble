@@ -1,7 +1,9 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload;
+using Darp.Ble.Hci.Payload.Att;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci;
@@ -40,6 +42,27 @@ internal static partial class Logging
         Activity? activity = HciTracingActivity.StartActivity("Enqueue command {Name}");
         activity?.SetTag("Name", commandOpCode.ToString().ToUpperInvariant());
         activity?.SetTag("DeviceAddress", $"{deviceAddress:X12}");
+        return activity;
+    }
+
+    public static Activity? StartHandleQueryAttPduActivity<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TAttPdu
+    >(TAttPdu request, IAclConnection aclConnection)
+        where TAttPdu : IAttPdu, IBinaryWritable
+    {
+        Activity? activity = HciActivity.StartActivity("Query ATT {Name}");
+        if (activity is null)
+            return activity;
+
+        string requestName = request.OpCode.ToString().ToUpperInvariant();
+        activity.SetTag("Name", requestName);
+        activity.SetTag("Connection.Handle", $"{aclConnection.ConnectionHandle:X4}");
+        activity.SetTag("Connection.ServerAddress", aclConnection.ServerAddress);
+        activity.SetTag("Connection.ClientAddress", aclConnection.ClientAddress);
+        activity.SetTag("Connection.Role", "Server");
+
+        activity.SetDeconstructedTags("Request", request, orderEntries: true);
+        activity.SetTag("Request.OpCode", requestName);
         return activity;
     }
 

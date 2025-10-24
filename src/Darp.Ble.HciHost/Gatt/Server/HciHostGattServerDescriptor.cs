@@ -19,7 +19,11 @@ internal sealed class HciHostGattServerDescriptor(
     public void WriteWithoutResponse(byte[] bytes)
     {
         ArgumentOutOfRangeException.ThrowIfGreaterThan(bytes.Length, _peer.AttMtu, nameof(bytes));
-        _peer.EnqueueGattPacket(new AttWriteCmd { Handle = AttHandle, Value = bytes }, activity: null);
+        _peer.EnqueueGattPacket(
+            new AttWriteCmd { Handle = AttHandle, Value = bytes },
+            activity: null,
+            isResponse: false
+        );
     }
 
     public override async Task<bool> WriteAsync(byte[] bytes, CancellationToken cancellationToken = default)

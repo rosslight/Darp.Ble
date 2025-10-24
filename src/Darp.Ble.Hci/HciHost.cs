@@ -2,8 +2,7 @@ using System.Buffers.Binary;
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reactive.Linq;
-using System.Reactive.Threading.Tasks;
+using System.Runtime.CompilerServices;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.AssignedNumbers;
 using Darp.Ble.Hci.Exceptions;
@@ -26,6 +25,8 @@ public interface IAclConnection : IMessageSinkProvider
     ushort AttMtu { get; }
     IAclPacketQueue AclPacketQueue { get; }
     IL2CapAssembler L2CapAssembler { get; }
+    ulong ServerAddress { get; }
+    ulong ClientAddress { get; }
     protected internal ILogger Logger { get; }
 }
 
@@ -343,34 +344,38 @@ public sealed partial class HciHost(ITransportLayer transportLayer, ulong random
 
 public static class L2CapHelpers
 {
-    public static async Task<AttResponse<TResponse>> QueryAttPduAsync<TAttRequest, TResponse>(
+    public static async Task<AttResponse<TResponse>> QueryAttPduAsync<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TAttRequest,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TResponse
+    >(
         this IAclConnection connection,
         TAttRequest request,
-        TimeSpan timeout = default,
+        TimeSpan? timeout = null,
         CancellationToken cancellationToken = default
     )
         where TAttRequest : IAttPdu, IBinaryWritable
         where TResponse : struct, IAttPdu, IBinaryReadable<TResponse>
     {
         ArgumentNullException.ThrowIfNull(connection);
-        IObservable<AttResponse<TResponse>> valueObservable = connection
-            .L2CapAssembler.AsObservable<TResponse>()
-            .Select(AttResponse<TResponse>.Ok);
-        IObservable<AttResponse<TResponse>> errorObservable = connection
-            .L2CapAssembler.AsObservable<AttErrorRsp>()
-            .Where(x => x.RequestOpCode == TAttRequest.ExpectedOpCode)
-            .Select(AttResponse<TResponse>.Fail);
-        IObservable<AttResponse<TResponse>> observable = valueObservable.Concat(errorObservable);
-        if (timeout.TotalNanoseconds > 0)
-            observable = observable.Timeout(timeout);
+        timeout ??= TimeSpan.FromSeconds(30);
+        using Activity? activity = Logging.StartHandleQueryAttPduActivity(request, connection);
+
+        var responseSink = new AttResponseMessageSinkProvider<TResponse>(TAttRequest.ExpectedOpCode);
+        connection.L2CapAssembler.Subscribe(responseSink);
         try
         {
-            AttResponse<TResponse> response = await observable
-                .FirstAsync()
-                .ToTask(cancellationToken)
+            connection.EnqueueGattPacket(request, activity, isResponse: false);
+            AttResponse<TResponse> response = await responseSink
+                .Task.WaitAsync(timeout.Value, cancellationToken)
                 .ConfigureAwait(false);
+            if (response.IsSuccess)
+                activity?.SetDeconstructedTags("Response", response.Value, orderEntries: true);
+            else
+                activity?.SetDeconstructedTags("Response", response.Error, orderEntries: true);
+            string responseName = response.OpCode.ToString().ToUpperInvariant();
+            activity?.SetTag("Response.OpCode", responseName);
             connection.Host.Logger.LogTrace(
-                "HciClient: Finished att request {@Request} with result {@Result}",
+                "HciClient: Finished att request {@Request} with response {@Response}",
                 request,
                 response
             );
@@ -384,6 +389,8 @@ public static class L2CapHelpers
                 request,
                 e.Message
             );
+            activity?.SetStatus(ActivityStatusCode.Error);
+            activity?.AddException(e);
             throw;
         }
     }
@@ -392,20 +399,26 @@ public static class L2CapHelpers
     /// <param name="connection"> The connection to send this packet to </param>
     /// <param name="attPdu"> The packet to be enqueued </param>
     /// <param name="activity"></param>
+    /// <param name="isResponse"> If true, the request will be logged as a response. If false, as a request </param>
     public static void EnqueueGattPacket<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TAttPdu
-    >(this IAclConnection connection, TAttPdu attPdu, Activity? activity)
+    >(this IAclConnection connection, TAttPdu attPdu, Activity? activity, bool isResponse)
         where TAttPdu : IAttPdu, IBinaryWritable
     {
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(connection);
         const ushort attCId = 0x0004;
         byte[] payloadBytes = attPdu.ToArrayLittleEndian();
-        activity?.SetDeconstructedTags("Response", attPdu, orderEntries: true);
+        activity?.SetDeconstructedTags("Pdu", attPdu, orderEntries: true);
 
         using (connection.Logger.BeginDeconstructedScope(LogLevel.Trace, "Packet", attPdu, orderEntries: true))
         {
-            connection.Logger.LogTrace("Enqueued att response {OpCode} on channel {CId}", attPdu.OpCode, attCId);
+            connection.Logger.LogTrace(
+                "Enqueued att {Direction} {OpCode} on channel {CId}",
+                isResponse ? "response" : "request",
+                attPdu.OpCode,
+                attCId
+            );
         }
         connection.AclPacketQueue.EnqueueL2CapBasic(connection.ConnectionHandle, attCId, payloadBytes);
     }
@@ -445,7 +458,8 @@ public static class L2CapHelpers
                 Handle = handle,
                 ErrorCode = errorCode,
             },
-            activity
+            activity,
+            isResponse: false
         );
     }
 
@@ -484,4 +498,36 @@ public static class L2CapHelpers
             numberOfRemainingBytes -= totalLength;
         }
     }
+}
+
+internal sealed partial class AttResponseMessageSinkProvider<TResponse>(AttOpCode expectedOpCode)
+    where TResponse : IAttPdu
+{
+    private readonly AttOpCode _expectedOpCode = expectedOpCode;
+
+    private readonly TaskCompletionSource<AttResponse<TResponse>> _tcs = new(
+        TaskCreationOptions.RunContinuationsAsynchronously
+    );
+
+    [MessageSink]
+    private void OnValue<T>(T value)
+        where T : allows ref struct
+    {
+        if (value is null)
+            throw new ArgumentNullException(nameof(value));
+        if (typeof(T) == typeof(TResponse))
+        {
+            TResponse response = Unsafe.As<T, TResponse>(ref value);
+            _tcs.TrySetResult(AttResponse<TResponse>.Ok(response));
+        }
+        else if (typeof(T) == typeof(AttErrorRsp))
+        {
+            AttErrorRsp errorResponse = Unsafe.As<T, AttErrorRsp>(ref value);
+            if (_expectedOpCode != errorResponse.RequestOpCode)
+                return;
+            _tcs.TrySetResult(AttResponse<TResponse>.Fail(errorResponse));
+        }
+    }
+
+    public Task<AttResponse<TResponse>> Task => _tcs.Task;
 }

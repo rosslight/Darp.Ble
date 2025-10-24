@@ -91,6 +91,11 @@ public enum HciCommandStatus : byte
     RemoteDeviceTerminatedConnectionDueToPowerOff = 0x15,
 
     /// <summary>
+    /// Connection Terminated By Local Host
+    /// </summary>
+    ConnectionTerminatedByLocalHost = 0x16,
+
+    /// <summary>
     /// The Unsupported Remote Feature error code indicates that the remote device does not support the feature
     /// associated with the issued command, LMP PDU, or Link Layer Control PDU.
     /// </summary>

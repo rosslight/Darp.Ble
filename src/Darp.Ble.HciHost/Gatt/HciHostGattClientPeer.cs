@@ -30,6 +30,8 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
     public ushort AttMtu { get; private set; } = 23;
     public IAclPacketQueue AclPacketQueue => Host.AclPacketQueue;
     public IL2CapAssembler L2CapAssembler => _assembler;
+    ulong IAclConnection.ServerAddress => Peripheral.Device.RandomAddress.Value;
+    ulong IAclConnection.ClientAddress => Address.Value;
     private readonly BehaviorSubject<bool> _disconnectedBehavior = new(value: false);
 
     ILogger IAclConnection.Logger => base.Logger;
@@ -57,7 +59,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
         if (hciEvent.ConnectionHandle != ConnectionHandle)
             return;
         Logger.LogDebug(
-            "Received disconnection event for connection 0x{ConnectionHandle}. Reason: {Reason}",
+            "Received disconnection event for connection 0x{ConnectionHandle:X}. Reason: {Reason}",
             hciEvent.ConnectionHandle,
             hciEvent.Reason
         );
@@ -71,7 +73,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
 
         ushort newMtu = Math.Min(request.ClientRxMtu, MaxMtu);
         AttMtu = newMtu;
-        this.EnqueueGattPacket(new AttExchangeMtuRsp { ServerRxMtu = newMtu }, activity);
+        this.EnqueueGattPacket(new AttExchangeMtuRsp { ServerRxMtu = newMtu }, activity, isResponse: true);
     }
 
     [MessageSink]
@@ -140,7 +142,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             Length = (byte)attributes[0].GetByteCount(),
             AttributeDataList = attributes.ToArray(),
         };
-        this.EnqueueGattPacket(rsp, activity);
+        this.EnqueueGattPacket(rsp, activity, isResponse: true);
     }
 
     [MessageSink]
@@ -193,7 +195,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             Length = (byte)serviceAttributes[0].GetByteCount(),
             AttributeDataList = serviceAttributes,
         };
-        this.EnqueueGattPacket(rsp, activity);
+        this.EnqueueGattPacket(rsp, activity, isResponse: true);
     }
 
     [MessageSink]
@@ -240,7 +242,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             return;
         }
         var rsp = new AttFindByTypeValueRsp { HandlesInformationList = handlesInformation.ToArray() };
-        this.EnqueueGattPacket(rsp, activity);
+        this.EnqueueGattPacket(rsp, activity, isResponse: true);
     }
 
     [MessageSink]
@@ -276,7 +278,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             byte[] value = await attribute.ReadValueAsync(this).ConfigureAwait(false);
             int length = Math.Min(AttMtu - 1, value.Length);
             var rsp = new AttReadRsp { AttributeValue = value.AsMemory()[..length] };
-            this.EnqueueGattPacket(rsp, activity);
+            this.EnqueueGattPacket(rsp, activity, isResponse: true);
         }
         catch (Exception e)
         {
@@ -341,7 +343,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
                 : AttFindInformationFormat.HandleAnd128BitUuid,
             InformationData = attributes.ToArray(),
         };
-        this.EnqueueGattPacket(response, activity);
+        this.EnqueueGattPacket(response, activity, isResponse: true);
     }
 
     [MessageSink]
@@ -404,7 +406,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             );
             return;
         }
-        this.EnqueueGattPacket(new AttWriteRsp(), activity);
+        this.EnqueueGattPacket(new AttWriteRsp(), activity, isResponse: true);
     }
 
     public override bool IsConnected => !_disconnectedBehavior.Value;
