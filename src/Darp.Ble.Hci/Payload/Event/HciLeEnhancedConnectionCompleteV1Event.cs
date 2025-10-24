@@ -23,7 +23,7 @@ public readonly partial record struct HciLeEnhancedConnectionCompleteV1Event
     public required ushort ConnectionHandle { get; init; }
 
     /// <summary> The Role </summary>
-    public required HciConnectionRole Role { get; init; }
+    public required HciLeConnectionRole Role { get; init; }
 
     /// <summary> The Peer_Address_Type </summary>
     public required byte PeerAddressType { get; init; }

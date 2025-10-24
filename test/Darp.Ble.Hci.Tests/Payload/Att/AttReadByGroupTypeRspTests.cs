@@ -8,8 +8,7 @@ public sealed class AttReadByGroupTypeRspTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        AttReadByGroupTypeRsp<ushort>.ExpectedOpCode.Should().HaveValue(0x11);
-        AttReadByGroupTypeRsp<Guid>.ExpectedOpCode.Should().HaveValue(0x11);
+        AttReadByGroupTypeRsp.ExpectedOpCode.Should().HaveValue(0x11);
     }
 
     [Theory]
@@ -32,20 +31,20 @@ public sealed class AttReadByGroupTypeRspTests
     public void TryReadLittleEndian_16Bit_ShouldBeValid(string hexBytes, params int[] informationData)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
-        AttGroupTypeData<ushort>[] attributeDataList = informationData
+        AttGroupTypeData[] attributeDataList = informationData
             .Select(x => (ushort)x)
             .PairsOf(3)
-            .Select(x => new AttGroupTypeData<ushort>()
+            .Select(x => new AttGroupTypeData
             {
                 Handle = x[0],
                 EndGroup = x[1],
-                Value = x[2],
+                Value = BitConverter.GetBytes(x[2]),
             })
             .ToArray();
 
-        bool success = AttReadByGroupTypeRsp<ushort>.TryReadLittleEndian(
+        bool success = AttReadByGroupTypeRsp.TryReadLittleEndian(
             bytes,
-            out AttReadByGroupTypeRsp<ushort> value,
+            out AttReadByGroupTypeRsp value,
             out int decoded
         );
 
@@ -53,7 +52,12 @@ public sealed class AttReadByGroupTypeRspTests
         decoded.Should().Be(2 + 6 * attributeDataList.Length);
         value.OpCode.Should().Be(AttOpCode.ATT_READ_BY_GROUP_TYPE_RSP);
         value.Length.Should().Be(6);
-        value.AttributeDataList.Should().BeEquivalentTo(attributeDataList);
+        foreach (var valueTuple in value.AttributeDataList.Zip(attributeDataList))
+        {
+            valueTuple.First.Handle.Should().Be(valueTuple.Second.Handle);
+            valueTuple.First.EndGroup.Should().Be(valueTuple.Second.EndGroup);
+            valueTuple.First.Value.ToArray().Should().Equal(valueTuple.Second.Value.ToArray());
+        }
     }
 
     [Theory]
@@ -66,14 +70,11 @@ public sealed class AttReadByGroupTypeRspTests
     )
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
-        AttGroupTypeData<Guid>[] attributeDataList =
-        [
-            new(startHandle, endHandle, new Guid(Convert.FromHexString(valueHexBytes))),
-        ];
+        AttGroupTypeData[] attributeDataList = [new(startHandle, endHandle, Convert.FromHexString(valueHexBytes))];
 
-        bool success = AttReadByGroupTypeRsp<Guid>.TryReadLittleEndian(
+        bool success = AttReadByGroupTypeRsp.TryReadLittleEndian(
             bytes,
-            out AttReadByGroupTypeRsp<Guid> value,
+            out AttReadByGroupTypeRsp value,
             out int decoded
         );
 
@@ -81,7 +82,12 @@ public sealed class AttReadByGroupTypeRspTests
         decoded.Should().Be(2 + 20 * attributeDataList.Length);
         value.OpCode.Should().Be(AttOpCode.ATT_READ_BY_GROUP_TYPE_RSP);
         value.Length.Should().Be(20);
-        value.AttributeDataList.Should().BeEquivalentTo(attributeDataList);
+        foreach (var valueTuple in value.AttributeDataList.Zip(attributeDataList))
+        {
+            valueTuple.First.Handle.Should().Be(valueTuple.Second.Handle);
+            valueTuple.First.EndGroup.Should().Be(valueTuple.Second.EndGroup);
+            valueTuple.First.Value.ToArray().Should().Equal(valueTuple.Second.Value.ToArray());
+        }
     }
 
     [Theory]
@@ -90,11 +96,10 @@ public sealed class AttReadByGroupTypeRspTests
     [InlineData("110601000B0000", 0)]
     [InlineData("110601000B00001800", 0)]
     [InlineData("1106", 0)]
-    [InlineData("111401000B000000FFE000001000800000805F9B34FB", 0)]
     public void TryReadLittleEndian_16Bit_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);
-        bool success = AttReadByGroupTypeRsp<ushort>.TryReadLittleEndian(bytes, out _, out int decoded);
+        bool success = AttReadByGroupTypeRsp.TryReadLittleEndian(bytes, out _, out int decoded);
 
         success.Should().BeFalse();
         decoded.Should().Be(expectedBytesDecoded);
