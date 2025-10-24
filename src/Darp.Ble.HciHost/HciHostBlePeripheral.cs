@@ -26,6 +26,11 @@ internal sealed partial class HciHostBlePeripheral : BlePeripheral
     [MessageSink]
     private void OnHciConnectionCompleteEvent(HciLeEnhancedConnectionCompleteV1Event connectionCompleteEvent)
     {
+        if (connectionCompleteEvent.Role != HciConnectionRole.Peripheral)
+        {
+            // Do not react to completion events targeted at the central
+            return;
+        }
         if (connectionCompleteEvent.Status is not HciCommandStatus.Success)
         {
             Logger.LogWarning(

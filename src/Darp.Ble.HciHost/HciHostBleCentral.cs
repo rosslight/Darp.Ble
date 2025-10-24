@@ -45,7 +45,7 @@ internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger<HciHost
             HciLeEnhancedConnectionCompleteV1Event completeEvent = await _host
                 .QueryCommandAsync<HciLeExtendedCreateConnectionV1Command, HciLeEnhancedConnectionCompleteV1Event>(
                     packet,
-                    timeout: TimeSpan.FromSeconds(10),
+                    timeout: TimeSpan.FromSeconds(30),
                     cancellationToken: token
                 )
                 .ConfigureAwait(false);

@@ -59,7 +59,12 @@ public abstract class BleCentral(BleDevice device, ILogger<BleCentral> logger) :
                         .Do(peer =>
                         {
                             peer.WhenConnectionStatusChanged.Where(x => x is ConnectionStatus.Disconnected)
-                                .Do(_ => Logger.LogTrace("Received disconnection event for Peer {@Peer}", peer))
+                                .Do(_ =>
+                                    Logger.LogTrace(
+                                        "Status of connection {Address} changed to disconnected",
+                                        peer.Address
+                                    )
+                                )
                                 .FirstAsync()
                                 .Subscribe(__ => _ = peer.DisposeAsync().AsTask());
                             _peerDevices[peer.Address] = peer;
