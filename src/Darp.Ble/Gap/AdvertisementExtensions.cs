@@ -226,6 +226,28 @@ public static class AdvertisementExtensions
         });
     }
 
+    /// <summary> Casts <see cref="IGapAdvertisementWithUserData.UserData"/> to the given type </summary>
+    /// <param name="source"> The source of advertisements with optional userdata </param>
+    /// <typeparam name="TAdvertisementData"> The type of the advertising data </typeparam>
+    /// <returns> The source sequence with advertisements of the specified specific adv data </returns>
+    public static IObservable<IGapAdvertisement<TAdvertisementData>> CastUserData<TAdvertisementData>(
+        this IObservable<IGapAdvertisement> source
+    )
+    {
+        return source.Select(adv =>
+            adv switch
+            {
+                IGapAdvertisement<TAdvertisementData> a => a,
+                IGapAdvertisementWithUserData { UserData: TAdvertisementData data } => adv.WithUserData(data),
+                IGapAdvertisementWithUserData { UserData: null } when default(TAdvertisementData) is null =>
+                    adv.WithUserData<TAdvertisementData>(default!),
+                _ => throw new InvalidCastException(
+                    $"Cannot cast UserData on '{adv.GetType().Name}' to '{typeof(TAdvertisementData).Name}'."
+                ),
+            }
+        );
+    }
+
     /// <summary>
     /// Combine the ManufacturerSpecificData of a scannable advertisement with the scan response
     /// </summary>
