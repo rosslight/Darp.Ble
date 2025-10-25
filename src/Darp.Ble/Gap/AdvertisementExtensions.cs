@@ -205,15 +205,18 @@ public static class AdvertisementExtensions
         return Observable.Create<IGapAdvertisement<TAdvertisementData>>(observer =>
         {
             return source.Subscribe(
-                advertisement =>
+                adv =>
                 {
-                    switch (advertisement)
+                    switch (adv)
                     {
-                        case IGapAdvertisement<TAdvertisementData> adv:
-                            observer.OnNext(adv);
+                        case IGapAdvertisement<TAdvertisementData> a:
+                            observer.OnNext(a);
                             return;
                         case IGapAdvertisementWithUserData { UserData: TAdvertisementData data }:
-                            observer.OnNext(advertisement.WithUserData(data));
+                            observer.OnNext(adv.WithUserData(data));
+                            return;
+                        case IGapAdvertisementWithUserData { UserData: null } when default(TAdvertisementData) is null:
+                            observer.OnNext(adv.WithUserData<TAdvertisementData>(default!));
                             return;
                     }
                 },

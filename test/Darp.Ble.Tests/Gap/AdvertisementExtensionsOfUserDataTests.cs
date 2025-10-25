@@ -115,4 +115,19 @@ public sealed class AdvertisementExtensionsOfUserDataTests
         result.Should().BeSameAs(adv);
         result.UserData.Should().BeAssignableTo<Dog>();
     }
+
+    [Theory]
+    [InlineData(42)]
+    [InlineData(null)]
+    public async Task CastUserData_WithNullableTypes_ShouldCastCorrectly(int? data)
+    {
+        // Arrange
+        IGapAdvertisement<object?> adv = CreateBaseAdvertisement().WithUserData<object?>(data);
+
+        // Act
+        IGapAdvertisement<int?> result1 = await new[] { adv }.ToObservable().OfUserData<int?>().FirstAsync();
+
+        // Assert
+        result1.UserData.Should().Be(data);
+    }
 }
