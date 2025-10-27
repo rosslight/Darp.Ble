@@ -24,4 +24,9 @@ public interface IGattServerDescriptor
     /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/generic-attribute-profile--gatt-.html#UUID-75455264-b4ab-072b-0d02-d040ecd94412">Write Descriptor Value</seealso>
     /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/generic-attribute-profile--gatt-.html#UUID-db7d3709-37c2-7c9a-34b7-7cbb1e9182d4">Write Long Descriptor Value</seealso>
     Task<bool> WriteAsync(byte[] bytes, CancellationToken cancellationToken = default);
+
+    /// <summary> Write <paramref name="bytes"/> to the characteristic without expecting a response </summary>
+    /// <param name="bytes"> The bytes to be sent </param>
+    /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host/generic-attribute-profile--gatt-.html#UUID-5bcdaffa-d6e9-9d99-01b6-dd6bacc09656">Write Without Response</seealso>
+    void WriteWithoutResponse(byte[] bytes);
 }

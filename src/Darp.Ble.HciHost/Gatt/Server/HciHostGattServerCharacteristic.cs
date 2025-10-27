@@ -98,7 +98,7 @@ internal sealed class HciHostGattServerCharacteristic(
     {
         if (!Descriptors.TryGetValue(Uuid, out IGattServerDescriptor? descriptor))
             throw new GattCharacteristicException(this, "No descriptor defining self available");
-        _ = descriptor.WriteAsync(bytes);
+        descriptor.WriteWithoutResponse(bytes);
     }
 
     protected override async Task<byte[]> ReadAsyncCore(CancellationToken cancellationToken)
