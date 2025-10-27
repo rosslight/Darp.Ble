@@ -174,7 +174,7 @@ public static class AdvertisementExtensions
         ArgumentNullException.ThrowIfNull(source);
         return service is null
             ? source
-            : source.Where(x => x.Data.GetServiceUuids().Any(uuid => uuid.Equals(service.Value)));
+            : source.Where(adv => adv.Data.GetServiceUuids().Any(uuid => uuid.Equals(service.Value)));
     }
 
     /// <summary>
@@ -191,7 +191,7 @@ public static class AdvertisementExtensions
         ArgumentNullException.ThrowIfNull(source);
         return service is null
             ? source
-            : source.Where(x => x.Data.GetServiceUuids().Any(uuid => uuid.Equals(service.Value)));
+            : source.Where(adv => adv.Data.GetServiceUuids().Any(uuid => uuid.Equals(service.Value)));
     }
 
     /// <summary> Filters for <see cref="IGapAdvertisementWithUserData.UserData"/> with the given type </summary>
@@ -205,18 +205,18 @@ public static class AdvertisementExtensions
         return Observable.Create<IGapAdvertisement<TAdvertisementData>>(observer =>
         {
             return source.Subscribe(
-                adv =>
+                advertisement =>
                 {
-                    switch (adv)
+                    switch (advertisement)
                     {
-                        case IGapAdvertisement<TAdvertisementData> a:
-                            observer.OnNext(a);
+                        case IGapAdvertisement<TAdvertisementData> adv:
+                            observer.OnNext(adv);
                             return;
                         case IGapAdvertisementWithUserData { UserData: TAdvertisementData data }:
-                            observer.OnNext(adv.WithUserData(data));
+                            observer.OnNext(advertisement.WithUserData(data));
                             return;
                         case IGapAdvertisementWithUserData { UserData: null } when default(TAdvertisementData) is null:
-                            observer.OnNext(adv.WithUserData<TAdvertisementData>(default!));
+                            observer.OnNext(advertisement.WithUserData<TAdvertisementData>(default!));
                             return;
                     }
                 },
@@ -234,15 +234,15 @@ public static class AdvertisementExtensions
         this IObservable<IGapAdvertisement> source
     )
     {
-        return source.Select(adv =>
-            adv switch
+        return source.Select(advertisement =>
+            advertisement switch
             {
-                IGapAdvertisement<TAdvertisementData> a => a,
-                IGapAdvertisementWithUserData { UserData: TAdvertisementData data } => adv.WithUserData(data),
+                IGapAdvertisement<TAdvertisementData> adv => adv,
+                IGapAdvertisementWithUserData { UserData: TAdvertisementData data } => advertisement.WithUserData(data),
                 IGapAdvertisementWithUserData { UserData: null } when default(TAdvertisementData) is null =>
-                    adv.WithUserData<TAdvertisementData>(default!),
+                    advertisement.WithUserData<TAdvertisementData>(default!),
                 _ => throw new InvalidCastException(
-                    $"Cannot cast UserData on '{adv.GetType().Name}' to '{typeof(TAdvertisementData).Name}'."
+                    $"Cannot cast UserData on '{advertisement.GetType().Name}' to '{typeof(TAdvertisementData).Name}'."
                 ),
             }
         );
@@ -259,25 +259,25 @@ public static class AdvertisementExtensions
         {
             ConcurrentDictionary<AdvKey, IGapAdvertisement> advertisementDict = new();
             return source.Subscribe(
-                adv =>
+                advertisement =>
                 {
-                    bool isScanningActively = adv.Observer.Parameters.ScanType is ScanType.Active;
-                    bool isAdvScannable = adv.EventType.HasFlag(BleEventType.Scannable);
-                    bool isAdvScanResponse = adv.EventType.HasFlag(BleEventType.ScanResponse);
+                    bool isScanningActively = advertisement.Observer.Parameters.ScanType is ScanType.Active;
+                    bool isAdvScannable = advertisement.EventType.HasFlag(BleEventType.Scannable);
+                    bool isAdvScanResponse = advertisement.EventType.HasFlag(BleEventType.ScanResponse);
                     if (!isScanningActively || !(isAdvScannable || isAdvScanResponse))
                     {
-                        observer.OnNext(adv);
+                        observer.OnNext(advertisement);
                         return;
                     }
-                    var key = new AdvKey(adv.Address, adv.AdvertisingSId);
+                    var key = new AdvKey(advertisement.Address, advertisement.AdvertisingSId);
                     if (isAdvScannable)
                     {
-                        advertisementDict[key] = adv;
+                        advertisementDict[key] = advertisement;
                         return;
                     }
                     if (isAdvScanResponse && advertisementDict.TryRemove(key, out IGapAdvertisement? previousAdv))
                     {
-                        observer.OnNext(new GapAdvertisementWithScanResponse(previousAdv, adv));
+                        observer.OnNext(new GapAdvertisementWithScanResponse(previousAdv, advertisement));
                     }
                 },
                 observer.OnError,
