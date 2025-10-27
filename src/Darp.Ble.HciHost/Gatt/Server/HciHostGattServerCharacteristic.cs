@@ -114,19 +114,19 @@ internal sealed class HciHostGattServerCharacteristic(
         CancellationToken cancellationToken
     )
     {
-        if (!Descriptors.TryGetValue(0x2902, out IGattServerDescriptor? cccd))
-        {
-            throw new GattCharacteristicException(this, "No cccd available");
-        }
         if (!Properties.HasFlag(GattProperty.Notify))
         {
             throw new GattCharacteristicException(this, "Characteristic does not support notification");
+        }
+        if (!Descriptors.TryGetValue(0x2902, out IGattServerDescriptor? cccd))
+        {
+            throw new GattCharacteristicException(this, "No cccd available");
         }
         if (!await cccd.WriteAsync([0x01, 0x00], cancellationToken).ConfigureAwait(false))
         {
             throw new GattCharacteristicException(this, "Could not write notification status to cccd");
         }
-        return _peer.Subscribe<AttHandleValueNtf>(ntf => onNotify(state, ntf.Value.ToArray()));
+        return _peer.L2CapAssembler.Subscribe(new NotifyObservable<TState>(state, onNotify));
     }
 
     protected override async Task DisableNotificationsAsync()
@@ -137,4 +137,13 @@ internal sealed class HciHostGattServerCharacteristic(
         }
         await cccd.WriteAsync([0x00, 0x00], CancellationToken.None).ConfigureAwait(false);
     }
+}
+
+internal sealed partial class NotifyObservable<TState>(TState state, Action<TState, byte[]> onNotify)
+{
+    private readonly TState _state = state;
+    private readonly Action<TState, byte[]> _onNotify = onNotify;
+
+    [MessageSink]
+    private void OnValueNtf(AttHandleValueNtf evt) => _onNotify(_state, evt.Value.ToArray());
 }
