@@ -361,7 +361,7 @@ public static class L2CapHelpers
         using Activity? activity = Logging.StartHandleQueryAttPduActivity(request, connection);
 
         var responseSink = new AttResponseMessageSinkProvider<TResponse>(TAttRequest.ExpectedOpCode);
-        connection.L2CapAssembler.Subscribe(responseSink);
+        using IDisposable _ = connection.L2CapAssembler.Subscribe(responseSink);
         try
         {
             connection.EnqueueGattPacket(request, activity, isResponse: false);

@@ -101,7 +101,7 @@ public abstract class GattServerCharacteristic(
                         this,
                         static (characteristic, bytes) =>
                         {
-                            // Reversed for loop. Actions might be removed from list on involke
+                            // Reversed for loop. Actions might be removed from list on invoke
                             for (int index = characteristic._actions.Count - 1; index >= 0; index--)
                             {
                                 if (characteristic._actions.Count is 0)

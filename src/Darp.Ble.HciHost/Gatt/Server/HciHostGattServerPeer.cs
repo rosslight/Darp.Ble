@@ -1,5 +1,4 @@
 using System.Reactive.Linq;
-using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Server;
@@ -15,7 +14,6 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost.Gatt.Server;
 
-[MessageSource]
 internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnection
 {
     private const ushort DefaultAttMtu = 23;
