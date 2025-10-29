@@ -25,6 +25,9 @@ public interface IAclConnection : IMessageSinkProvider
     ushort AttMtu { get; }
     IAclPacketQueue AclPacketQueue { get; }
     IL2CapAssembler L2CapAssembler { get; }
+
+    /// <summary> A cancellationToken that will fire when the connection was disconnected </summary>
+    CancellationToken DisconnectToken { get; }
     ulong ServerAddress { get; }
     ulong ClientAddress { get; }
     protected internal ILogger Logger { get; }
@@ -358,6 +361,10 @@ public static class L2CapHelpers
     {
         ArgumentNullException.ThrowIfNull(connection);
         timeout ??= TimeSpan.FromSeconds(30);
+        using var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            connection.DisconnectToken
+        );
         using Activity? activity = Logging.StartHandleQueryAttPduActivity(request, connection);
 
         var responseSink = new AttResponseMessageSinkProvider<TResponse>(TAttRequest.ExpectedOpCode);
@@ -366,7 +373,7 @@ public static class L2CapHelpers
         {
             connection.EnqueueGattPacket(request, activity, isResponse: false);
             AttResponse<TResponse> response = await responseSink
-                .Task.WaitAsync(timeout.Value, cancellationToken)
+                .Task.WaitAsync(timeout.Value, tokenSource.Token)
                 .ConfigureAwait(false);
             if (response.IsSuccess)
                 activity?.SetDeconstructedTags("Response", response.Value, orderEntries: true);
