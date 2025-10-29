@@ -122,4 +122,9 @@ public enum HciCommandStatus : byte
     /// the connection or rejected a request because of one or more unacceptable connection parameters.
     /// </summary>
     UnacceptableConnectionParameters = 0x3B,
+
+    /// <summary>
+    /// Connection Failed to be Established / Synchronization Timeout
+    /// </summary>
+    ConnectionFailedToBeEstablishedOrSynchronizationTimeout = 0x3E,
 }

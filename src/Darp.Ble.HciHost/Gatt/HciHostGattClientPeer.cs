@@ -23,6 +23,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
     private readonly L2CapAssembler _assembler;
     private readonly IDisposable _hostSubscription;
     private readonly IDisposable _assemblerSubscription;
+    private readonly CancellationTokenSource _disconnectSource = new();
 
     public ushort ConnectionHandle { get; }
     public new HciHostBlePeripheral Peripheral { get; }
@@ -30,6 +31,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
     public ushort AttMtu { get; private set; } = 23;
     public IAclPacketQueue AclPacketQueue => Host.AclPacketQueue;
     public IL2CapAssembler L2CapAssembler => _assembler;
+    public CancellationToken DisconnectToken => _disconnectSource.Token;
     ulong IAclConnection.ServerAddress => Peripheral.Device.RandomAddress.Value;
     ulong IAclConnection.ClientAddress => Address.Value;
     private readonly BehaviorSubject<bool> _disconnectedBehavior = new(value: false);
@@ -63,6 +65,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             hciEvent.ConnectionHandle,
             hciEvent.Reason
         );
+        _disconnectSource.Cancel();
         _disconnectedBehavior.OnNext(value: true);
     }
 
@@ -418,5 +421,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
         _assembler.Dispose();
         _assemblerSubscription.Dispose();
         _hostSubscription.Dispose();
+        _disconnectSource.Cancel();
+        _disconnectSource.Dispose();
     }
 }

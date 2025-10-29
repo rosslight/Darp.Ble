@@ -21,6 +21,7 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
     private readonly L2CapAssembler _assembler;
     private readonly IDisposable _hostSubscription;
     private readonly IDisposable _assemblerSubscription;
+    private readonly CancellationTokenSource _disconnectSource = new();
 
     public Hci.HciHost Host { get; }
 
@@ -29,6 +30,7 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
     public ushort AttMtu { get; private set; } = DefaultAttMtu;
     public IAclPacketQueue AclPacketQueue => Host.AclPacketQueue;
     public IL2CapAssembler L2CapAssembler => _assembler;
+    public CancellationToken DisconnectToken => _disconnectSource.Token;
     ulong IAclConnection.ServerAddress => Address.Value;
     ulong IAclConnection.ClientAddress => Central.Device.RandomAddress.Value;
 
@@ -63,6 +65,7 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
             hciEvent.ConnectionHandle,
             hciEvent.Reason
         );
+        _disconnectSource.Cancel();
         ConnectionSubject.OnNext(ConnectionStatus.Disconnected);
     }
 
@@ -219,21 +222,28 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        await Host.QueryCommandAsync<HciDisconnectCommand, HciDisconnectionCompleteEvent>(
-                new HciDisconnectCommand
-                {
-                    ConnectionHandle = ConnectionHandle,
-                    Reason = HciCommandStatus.RemoteUserTerminatedConnection,
-                },
-                timeout: TimeSpan.FromSeconds(2),
-                CancellationToken.None
-            )
-            .ContinueWith(_ => { }, TaskScheduler.Default)
-            .ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing | ConfigureAwaitOptions.ContinueOnCapturedContext);
-        await Task.Delay(200).ConfigureAwait(false);
+        if (!DisconnectToken.IsCancellationRequested)
+        {
+            // Suppress throwing here
+            await Host.QueryCommandAsync<HciDisconnectCommand, HciDisconnectionCompleteEvent>(
+                    new HciDisconnectCommand
+                    {
+                        ConnectionHandle = ConnectionHandle,
+                        Reason = HciCommandStatus.RemoteUserTerminatedConnection,
+                    },
+                    timeout: TimeSpan.FromSeconds(2),
+                    CancellationToken.None
+                )
+                .ContinueWith(_ => { }, TaskScheduler.Default)
+                .ConfigureAwait(
+                    ConfigureAwaitOptions.SuppressThrowing | ConfigureAwaitOptions.ContinueOnCapturedContext
+                );
+        }
         _assembler.Dispose();
         _assemblerSubscription.Dispose();
         _hostSubscription.Dispose();
+        await _disconnectSource.CancelAsync().ConfigureAwait(false);
+        _disconnectSource.Dispose();
         await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 }
