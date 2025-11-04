@@ -18,7 +18,7 @@ internal sealed partial class HciHostBlePeripheral : BlePeripheral
         : base(device, logger)
     {
         Device = device;
-        _subscription = device.Host.Subscribe(this);
+        _subscription = device.HciDevice.Subscribe(this);
     }
 
     public new HciHostBleDevice Device { get; }
@@ -51,8 +51,10 @@ internal sealed partial class HciHostBlePeripheral : BlePeripheral
         );
         if (!PeerDevices.TryGetValue(peerDeviceAddress, out IGattClientPeer? peerDevice))
         {
+            // TODO Fix me
             peerDevice = new HciHostGattClientPeer(
                 this,
+                null!,
                 peerDeviceAddress,
                 connectionCompleteEvent.ConnectionHandle,
                 ServiceProvider.GetLogger<HciHostGattClientPeer>()

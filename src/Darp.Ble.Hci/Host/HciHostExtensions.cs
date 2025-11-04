@@ -1,15 +1,16 @@
 using System.Diagnostics.CodeAnalysis;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.Payload;
+using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.Hci.Payload.Result;
 
-namespace Darp.Ble.Hci.Package;
+namespace Darp.Ble.Hci.Host;
 
-/// <summary> Extensions regarding command packets </summary>
-public static class CommandPackageExtensions
+/// <summary> Extensions which can be used to query commands, ... on the HCI Device </summary>
+public static class HciHostExtensions
 {
-    /// <summary> Query a command expecting a <see cref="HciCommandCompleteEvent{TParameters}"/> </summary>
+    /// <summary> Query a command expecting a <see cref="hciHost"/> </summary>
     /// <param name="hciHost"> The hci host </param>
     /// <param name="cancellationToken"> The cancellation token to cancel the operation </param>
     /// <typeparam name="TCommand"> The type of the command </typeparam>
@@ -65,4 +66,75 @@ public static class CommandPackageExtensions
             .ConfigureAwait(false);
         return response.Status;
     }
+
+    public static Task<HciReadLocalSupportedCommandsResult> QueryReadLocalSupportedCommandsAsync(
+        this HciHost host,
+        CancellationToken token
+    ) =>
+        host.QueryCommandCompletionAsync<HciReadLocalSupportedCommandsCommand, HciReadLocalSupportedCommandsResult>(
+            token
+        );
+
+    public static Task<HciResetResult> QueryResetAsync(this HciHost host, CancellationToken token) =>
+        host.QueryCommandCompletionAsync<HciResetCommand, HciResetResult>(token);
+
+    public static Task<HciLeReadLocalSupportedFeaturesResult> QueryLeReadLocalSupportedFeaturesAsync(
+        this HciHost host,
+        CancellationToken token
+    ) =>
+        host.QueryCommandCompletionAsync<HciLeReadLocalSupportedFeaturesCommand, HciLeReadLocalSupportedFeaturesResult>(
+            token
+        );
+
+    public static Task<HciReadLocalVersionInformationResult> QueryReadLocalVersionInformationAsync(
+        this HciHost host,
+        CancellationToken token
+    ) =>
+        host.QueryCommandCompletionAsync<HciReadLocalVersionInformationCommand, HciReadLocalVersionInformationResult>(
+            token
+        );
+
+    public static Task<HciReadLocalSupportedFeaturesResult> QueryReadLocalSupportedFeaturesAsync(
+        this HciHost host,
+        CancellationToken token
+    ) =>
+        host.QueryCommandCompletionAsync<HciReadLocalSupportedFeaturesCommand, HciReadLocalSupportedFeaturesResult>(
+            token
+        );
+
+    public static Task<HciSetEventMaskResult> QuerySetEventMaskAsync(
+        this HciHost host,
+        HciSetEventMaskCommand command,
+        CancellationToken token
+    ) => host.QueryCommandCompletionAsync<HciSetEventMaskCommand, HciSetEventMaskResult>(command, token);
+
+    public static Task<HciLeSetEventMaskResult> QueryLeSetEventMaskAsync(
+        this HciHost host,
+        HciLeSetEventMaskCommand command,
+        CancellationToken token
+    ) => host.QueryCommandCompletionAsync<HciLeSetEventMaskCommand, HciLeSetEventMaskResult>(command, token);
+
+    public static Task<HciLeReadBufferSizeResultV1> QueryLeReadBufferSizeV1Async(
+        this HciHost host,
+        CancellationToken token
+    ) => host.QueryCommandCompletionAsync<HciLeReadBufferSizeCommandV1, HciLeReadBufferSizeResultV1>(token);
+
+    public static Task<HciLeReadSuggestedDefaultDataLengthResult> QueryLeReadSuggestedDefaultDataLengthAsync(
+        this HciHost host,
+        CancellationToken token
+    ) =>
+        host.QueryCommandCompletionAsync<
+            HciLeReadSuggestedDefaultDataLengthCommand,
+            HciLeReadSuggestedDefaultDataLengthResult
+        >(token);
+
+    public static Task<HciLeWriteSuggestedDefaultDataLengthResult> QueryLeWriteSuggestedDefaultDataLengthAsync(
+        this HciHost host,
+        HciLeWriteSuggestedDefaultDataLengthCommand command,
+        CancellationToken token
+    ) =>
+        host.QueryCommandCompletionAsync<
+            HciLeWriteSuggestedDefaultDataLengthCommand,
+            HciLeWriteSuggestedDefaultDataLengthResult
+        >(command, token);
 }

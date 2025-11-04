@@ -1,7 +1,7 @@
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
-using Darp.Ble.Hci.Package;
+using Darp.Ble.Hci.Host;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Event;
@@ -19,7 +19,7 @@ internal sealed partial class HciHostBleObserver : BleObserver
     private readonly HciHostBleDevice _device;
     private readonly IDisposable _subscription;
 
-    private Hci.HciHost Host => _device.Host;
+    private Hci.Host.HciHost Host => _device.HciDevice.Host;
 
     /// <inheritdoc />
     public HciHostBleObserver(HciHostBleDevice device, ILogger<HciHostBleObserver> logger)

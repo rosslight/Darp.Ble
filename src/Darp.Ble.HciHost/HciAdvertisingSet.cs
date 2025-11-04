@@ -1,6 +1,6 @@
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
-using Darp.Ble.Hci.Package;
+using Darp.Ble.Hci.Host;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Result;
 using Darp.Ble.Implementation;
@@ -10,7 +10,7 @@ namespace Darp.Ble.HciHost;
 internal sealed class HciAdvertisingSet(HciHostBleBroadcaster broadcaster) : AdvertisingSet(broadcaster)
 {
     private readonly HciHostBleBroadcaster _broadcaster = broadcaster;
-    private readonly Hci.HciHost _host = broadcaster.Host;
+    private readonly Hci.Host.HciHost _host = broadcaster.Host;
 
     /// <summary> The handle of the advertising set </summary>
     public byte AdvertisingHandle

@@ -34,6 +34,7 @@
     </PackageVersion>
     <PackageVersion Include="Serilog" Version="4.3.0" />
     <PackageVersion Include="Serilog.Extensions.Logging" Version="9.0.2" />
+    <PackageVersion Include="Serilog.Sinks.Async" Version="2.1.0" />
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.0.0" />
     <PackageVersion Include="Serilog.Sinks.Seq" Version="9.0.0" />
     <PackageVersion Include="Serilog.Sinks.XUnit" Version="3.0.19" />

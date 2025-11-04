@@ -3,10 +3,7 @@ using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Hci;
-using Darp.Ble.Hci.Package;
-using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Att;
-using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.Hci.Payload.Result;
 using Darp.Utils.Messaging;
@@ -14,45 +11,27 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost.Gatt.Server;
 
-internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnection
+internal sealed partial class HciHostGattServerPeer : GattServerPeer
 {
     private const ushort DefaultAttMtu = 23;
 
-    private readonly L2CapAssembler _assembler;
     private readonly IDisposable _hostSubscription;
-    private readonly IDisposable _assemblerSubscription;
-    private readonly CancellationTokenSource _disconnectSource = new();
 
-    public Hci.HciHost Host { get; }
-
-    ILogger IAclConnection.Logger => base.Logger;
     public ushort ConnectionHandle { get; }
     public ushort AttMtu { get; private set; } = DefaultAttMtu;
-    public IAclPacketQueue AclPacketQueue => Host.AclPacketQueue;
-    public IL2CapAssembler L2CapAssembler => _assembler;
-    public CancellationToken DisconnectToken => _disconnectSource.Token;
-    ulong IAclConnection.ServerAddress => Address.Value;
-    ulong IAclConnection.ClientAddress => Central.Device.RandomAddress.Value;
+    public AclConnection Connection { get; }
 
     public HciHostGattServerPeer(
         HciHostBleCentral central,
-        Hci.HciHost host,
-        HciLeEnhancedConnectionCompleteV1Event connectionCompleteEvent,
+        AclConnection connection,
         BleAddress address,
         ILogger<HciHostGattServerPeer> logger
     )
         : base(central, address, logger)
     {
-        Host = host;
-        ConnectionHandle = connectionCompleteEvent.ConnectionHandle;
-        _assembler = new L2CapAssembler(
-            Host,
-            connectionCompleteEvent.ConnectionHandle,
-            ServiceProvider.GetLogger<L2CapAssembler>()
-        );
-        _assemblerSubscription = _assembler.Subscribe(this);
-        _hostSubscription = Host.Subscribe(this);
-        Host.RegisterConnection(this);
+        Connection = connection;
+        ConnectionHandle = connection.ConnectionHandle;
+        _hostSubscription = connection.Device.Host.Subscribe(this);
     }
 
     [MessageSink]
@@ -65,7 +44,6 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
             hciEvent.ConnectionHandle,
             hciEvent.Reason
         );
-        _disconnectSource.Cancel();
         ConnectionSubject.OnNext(ConnectionStatus.Disconnected);
     }
 
@@ -83,10 +61,8 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
                 ushort startingHandle = 0x0001;
                 while (!token.IsCancellationRequested && startingHandle < 0xFFFF)
                 {
-                    AttResponse<AttReadByGroupTypeRsp> response = await this.QueryAttPduAsync<
-                        AttReadByGroupTypeReq<ushort>,
-                        AttReadByGroupTypeRsp
-                    >(
+                    AttResponse<AttReadByGroupTypeRsp> response = await Connection
+                        .QueryAttPduAsync<AttReadByGroupTypeReq<ushort>, AttReadByGroupTypeRsp>(
                             new AttReadByGroupTypeReq<ushort>
                             {
                                 StartingHandle = startingHandle,
@@ -134,10 +110,8 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
             ushort startingHandle = 0x0001;
             while (!token.IsCancellationRequested && startingHandle < 0xFFFF)
             {
-                AttResponse<AttFindByTypeValueRsp> response = await this.QueryAttPduAsync<
-                    AttFindByTypeValueReq,
-                    AttFindByTypeValueRsp
-                >(
+                AttResponse<AttFindByTypeValueRsp> response = await Connection
+                    .QueryAttPduAsync<AttFindByTypeValueReq, AttFindByTypeValueRsp>(
                         new AttFindByTypeValueReq
                         {
                             StartingHandle = startingHandle,
@@ -157,13 +131,17 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
                 AttFindByTypeValueRsp rsp = response.Value;
                 if (rsp.HandlesInformationList.Length == 0)
                     break;
-                foreach ((ushort handle, ushort endGroup) in rsp.HandlesInformationList)
+                foreach ((ushort handle, ushort endGroupHandle) in rsp.HandlesInformationList)
                 {
+                    if (handle < startingHandle || endGroupHandle < handle)
+                    {
+                        throw new Exception("Could not discover services. Handle values do not make sense");
+                    }
                     return new HciHostGattServerService(
                         uuid,
                         GattServiceType.Primary,
                         handle,
-                        endGroup,
+                        endGroupHandle,
                         this,
                         ServiceProvider.GetLogger<HciHostGattServerService>()
                     );
@@ -174,76 +152,39 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer, IAclConnec
         });
     }
 
-    public IObservable<HciHostGattServerPeer> SetDataLength(ushort txOctets, ushort txTime)
-    {
-        if (txOctets is < 0x001B or > 0x00FB)
-            return Observable.Throw<HciHostGattServerPeer>(new ArgumentOutOfRangeException(nameof(txOctets)));
-        if (txTime is < 0x0148 or > 0x4290)
-            return Observable.Throw<HciHostGattServerPeer>(new ArgumentOutOfRangeException(nameof(txOctets)));
+    public Task SetDataLengthAsync(ushort txOctets, ushort txTime, CancellationToken token = default) =>
+        Connection.SetDataLengthAsync(txOctets, txTime, token);
 
-        return Observable.FromAsync<HciHostGattServerPeer>(async token =>
-        {
-            await Host.QueryCommandCompletionAsync<HciLeSetDataLengthCommand, HciLeSetDataLengthResult>(
-                    new HciLeSetDataLengthCommand
-                    {
-                        ConnectionHandle = ConnectionHandle,
-                        TxOctets = txOctets,
-                        TxTime = txTime,
-                    },
-                    cancellationToken: token
-                )
-                .ConfigureAwait(false);
-            return this;
-        });
-    }
+    public Task<HciLeReadPhyResult> ReadPhyAsync(CancellationToken token = default) => Connection.ReadPhyAsync(token);
 
-    public IObservable<HciHostGattServerPeer> RequestExchangeMtu(ushort mtu)
+    public async Task RequestExchangeMtuAsync(ushort mtu, CancellationToken token = default)
     {
-        return Observable.FromAsync<HciHostGattServerPeer>(async token =>
+        AttResponse<AttExchangeMtuRsp> response = await Connection
+            .QueryAttPduAsync<AttExchangeMtuReq, AttExchangeMtuRsp>(
+                new AttExchangeMtuReq { ClientRxMtu = mtu },
+                cancellationToken: token
+            )
+            .ConfigureAwait(false);
+        if (response.IsError)
         {
-            AttResponse<AttExchangeMtuRsp> response = await this.QueryAttPduAsync<AttExchangeMtuReq, AttExchangeMtuRsp>(
-                    new AttExchangeMtuReq { ClientRxMtu = mtu },
-                    cancellationToken: token
-                )
-                .ConfigureAwait(false);
-            if (response.IsError)
-            {
-                throw new Exception($"Could not exchange mtu due to error {response.Error.ErrorCode}");
-            }
-            AttMtu = Math.Min(mtu, response.Value.ServerRxMtu);
-            Logger.LogInformation(
-                "Mtu updated to min of {AttMtu} with maximum possible {ServerRxMtu}",
-                AttMtu,
-                response.Value.ServerRxMtu
-            );
-            return this;
-        });
+            throw new Exception($"Could not exchange mtu due to error {response.Error.ErrorCode}");
+        }
+        AttMtu = Math.Min(mtu, response.Value.ServerRxMtu);
+        Logger.LogInformation(
+            "Mtu updated to min of {AttMtu} with maximum possible {ServerRxMtu}",
+            AttMtu,
+            response.Value.ServerRxMtu
+        );
     }
 
     protected override async ValueTask DisposeAsyncCore()
     {
-        if (!DisconnectToken.IsCancellationRequested)
-        {
-            // Suppress throwing here
-            await Host.QueryCommandAsync<HciDisconnectCommand, HciDisconnectionCompleteEvent>(
-                    new HciDisconnectCommand
-                    {
-                        ConnectionHandle = ConnectionHandle,
-                        Reason = HciCommandStatus.RemoteUserTerminatedConnection,
-                    },
-                    timeout: TimeSpan.FromSeconds(2),
-                    CancellationToken.None
-                )
-                .ContinueWith(_ => { }, TaskScheduler.Default)
-                .ConfigureAwait(
-                    ConfigureAwaitOptions.SuppressThrowing | ConfigureAwaitOptions.ContinueOnCapturedContext
-                );
-        }
-        _assembler.Dispose();
-        _assemblerSubscription.Dispose();
+        // Suppress throwing here
+        await Connection
+            .DisconnectAsync()
+            .ContinueWith(_ => { }, TaskScheduler.Default)
+            .ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
         _hostSubscription.Dispose();
-        await _disconnectSource.CancelAsync().ConfigureAwait(false);
-        _disconnectSource.Dispose();
         await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 }
