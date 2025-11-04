@@ -35,6 +35,8 @@ public sealed class H4TransportLayer(string portName, ILogger<H4TransportLayer>?
     /// <inheritdoc />
     public ValueTask InitializeAsync(Action<HciPacket> onReceived, CancellationToken cancellationToken)
     {
+        if (_txTask is not null || _rxTask is not null)
+            throw new InvalidOperationException("Initialization can only be done once");
         _serialPort.Open();
         _txTask = Task.Run(RunTx, cancellationToken);
         _rxTask = Task.Run(() => RunRx(onReceived), cancellationToken);
@@ -58,7 +60,6 @@ public sealed class H4TransportLayer(string portName, ILogger<H4TransportLayer>?
                         _logger?.LogPacketSendingErrorEncoding(packet);
                         continue;
                     }
-                    _logger?.LogPacketSending(packet, bytes.AsSpan(0, packetLength).ToArray());
                     Memory<byte> writeMemory = bytes.AsMemory(0, packetLength);
                     await _serialPort.BaseStream.WriteAsync(writeMemory, StopToken).ConfigureAwait(false);
                 }
@@ -155,14 +156,13 @@ public sealed class H4TransportLayer(string portName, ILogger<H4TransportLayer>?
         // Read Payload
         Memory<byte> payloadBuffer = buffer[headerLength..(headerLength + payloadLength)];
         await _serialPort.BaseStream.ReadExactlyAsync(payloadBuffer, StopToken).ConfigureAwait(false);
-        _logger?.LogPacketReceiving(buffer[..(headerLength + payloadLength)].ToArray());
         onReceived(new HciPacket(packetType, buffer[..(headerLength + payloadLength)].Span));
     }
 
     /// <inheritdoc />
     public void Enqueue(IHciPacket packet)
     {
-        ObjectDisposedException.ThrowIf(StopToken.IsCancellationRequested, this);
+        ObjectDisposedException.ThrowIf(_isDisposing, this);
         // Writing to an unbounded channel should work, always
         _ = _txQueue.Writer.TryWrite(packet);
     }

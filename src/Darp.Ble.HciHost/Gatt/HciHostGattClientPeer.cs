@@ -1,4 +1,3 @@
-using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Reactive;
 using System.Reactive.Linq;
@@ -15,43 +14,33 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.HciHost.Gatt;
 
-internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnection, IDisposable
+internal sealed partial class HciHostGattClientPeer : GattClientPeer, IDisposable
 {
     private const ushort MaxMtu = 517;
     private const ushort GattMaxAttributeValueSize = 512;
 
-    private readonly L2CapAssembler _assembler;
     private readonly IDisposable _hostSubscription;
-    private readonly IDisposable _assemblerSubscription;
-    private readonly CancellationTokenSource _disconnectSource = new();
 
     public ushort ConnectionHandle { get; }
     public new HciHostBlePeripheral Peripheral { get; }
-    public Hci.HciHost Host => Peripheral.Device.Host;
+    public Hci.Host.HciHost Host => Peripheral.Device.HciDevice.Host;
     public ushort AttMtu { get; private set; } = 23;
-    public IAclPacketQueue AclPacketQueue => Host.AclPacketQueue;
-    public IL2CapAssembler L2CapAssembler => _assembler;
-    public CancellationToken DisconnectToken => _disconnectSource.Token;
-    ulong IAclConnection.ServerAddress => Peripheral.Device.RandomAddress.Value;
-    ulong IAclConnection.ClientAddress => Address.Value;
+    public AclConnection Connection { get; }
     private readonly BehaviorSubject<bool> _disconnectedBehavior = new(value: false);
-
-    ILogger IAclConnection.Logger => base.Logger;
 
     public HciHostGattClientPeer(
         HciHostBlePeripheral peripheral,
+        AclConnection connection,
         BleAddress address,
         ushort connectionHandle,
         ILogger<HciHostGattClientPeer> logger
     )
         : base(peripheral, address, logger)
     {
+        Connection = connection;
         ConnectionHandle = connectionHandle;
         Peripheral = peripheral;
-        _assembler = new L2CapAssembler(Host, connectionHandle, ServiceProvider.GetLogger<L2CapAssembler>());
-        _assemblerSubscription = _assembler.Subscribe(this);
         _hostSubscription = Host.Subscribe(this);
-        Host.RegisterConnection(this);
         Logger.LogTrace("Database: {Database}", peripheral.GattDatabase.ToString());
     }
 
@@ -65,36 +54,19 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             hciEvent.ConnectionHandle,
             hciEvent.Reason
         );
-        _disconnectSource.Cancel();
         _disconnectedBehavior.OnNext(value: true);
-    }
-
-    [MessageSink]
-    private void HandleExchangeMtuRequest(AttExchangeMtuReq request)
-    {
-        using Activity? activity = Logging.StartHandleAttRequestActivity(request, this);
-
-        ushort newMtu = Math.Min(request.ClientRxMtu, MaxMtu);
-        AttMtu = newMtu;
-        this.EnqueueGattPacket(new AttExchangeMtuRsp { ServerRxMtu = newMtu }, activity, isResponse: true);
     }
 
     [MessageSink]
     private void HandlePhyUpdateComplete(HciLePhyUpdateCompleteEvent hciEvent)
     {
         Logger.LogDebug(
-            "Phy update for connection {ConnectionHandle:X4} with {Status}. Tx: {TxPhy}, Rx: {TxPhy}",
+            "Phy update for connection {ConnectionHandle:X4} with {Status}. Tx: {TxPhy}, Rx: {RxPhy}",
             hciEvent.ConnectionHandle,
             hciEvent.Status,
             hciEvent.TxPhy,
             hciEvent.RxPhy
         );
-    }
-
-    [MessageSink]
-    private void HandleDataLengthChangeEvent(HciLeDataLengthChangeEvent hciEvent)
-    {
-        Logger.LogDebug("Received le datachange event: {@PacketData}", hciEvent);
     }
 
     [MessageSink]
@@ -132,7 +104,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
         }
         if (attributes.Count == 0)
         {
-            this.EnqueueGattErrorResponse(
+            Connection.EnqueueGattErrorResponse(
                 request.OpCode,
                 request.StartingHandle,
                 AttErrorCode.AttributeNotFoundError,
@@ -145,7 +117,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             Length = (byte)attributes[0].GetByteCount(),
             AttributeDataList = attributes.ToArray(),
         };
-        this.EnqueueGattPacket(rsp, activity, isResponse: true);
+        Connection.EnqueueGattPacket(rsp, activity, isResponse: true);
     }
 
     [MessageSink]
@@ -154,7 +126,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
         using Activity? activity = Logging.StartHandleAttRequestActivity(request, this);
         if (request.AttributeGroupType is not (0x2800 or 0x2801))
         {
-            this.EnqueueGattErrorResponse(
+            Connection.EnqueueGattErrorResponse(
                 request.OpCode,
                 request.StartingHandle,
                 AttErrorCode.UnsupportedGroupTypeError,
@@ -185,7 +157,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             .ConfigureAwait(false);
         if (serviceAttributes.Length == 0)
         {
-            this.EnqueueGattErrorResponse(
+            Connection.EnqueueGattErrorResponse(
                 request.OpCode,
                 request.StartingHandle,
                 AttErrorCode.AttributeNotFoundError,
@@ -198,7 +170,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             Length = (byte)serviceAttributes[0].GetByteCount(),
             AttributeDataList = serviceAttributes,
         };
-        this.EnqueueGattPacket(rsp, activity, isResponse: true);
+        Connection.EnqueueGattPacket(rsp, activity, isResponse: true);
     }
 
     [MessageSink]
@@ -236,7 +208,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
         }
         if (handlesInformation.Count == 0)
         {
-            this.EnqueueGattErrorResponse(
+            Connection.EnqueueGattErrorResponse(
                 request.OpCode,
                 request.StartingHandle,
                 AttErrorCode.AttributeNotFoundError,
@@ -245,7 +217,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             return;
         }
         var rsp = new AttFindByTypeValueRsp { HandlesInformationList = handlesInformation.ToArray() };
-        this.EnqueueGattPacket(rsp, activity, isResponse: true);
+        Connection.EnqueueGattPacket(rsp, activity, isResponse: true);
     }
 
     [MessageSink]
@@ -255,7 +227,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
 
         if (!Peripheral.GattDatabase.TryGetAttribute(request.AttributeHandle, out IGattAttribute? attribute))
         {
-            this.EnqueueGattErrorResponse(
+            Connection.EnqueueGattErrorResponse(
                 request.OpCode,
                 request.AttributeHandle,
                 AttErrorCode.InvalidHandle,
@@ -267,7 +239,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
         PermissionCheckStatus permissionStatus = attribute.CheckReadPermissions(this);
         if (permissionStatus is not PermissionCheckStatus.Success)
         {
-            this.EnqueueGattErrorResponse(
+            Connection.EnqueueGattErrorResponse(
                 request.OpCode,
                 request.AttributeHandle,
                 (AttErrorCode)permissionStatus,
@@ -281,11 +253,11 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             byte[] value = await attribute.ReadValueAsync(this).ConfigureAwait(false);
             int length = Math.Min(AttMtu - 1, value.Length);
             var rsp = new AttReadRsp { AttributeValue = value.AsMemory()[..length] };
-            this.EnqueueGattPacket(rsp, activity, isResponse: true);
+            Connection.EnqueueGattPacket(rsp, activity, isResponse: true);
         }
         catch (Exception e)
         {
-            this.EnqueueGattErrorResponse(
+            Connection.EnqueueGattErrorResponse(
                 e,
                 request.OpCode,
                 request.AttributeHandle,
@@ -302,7 +274,12 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
 
         if (request.StartingHandle is 0 || request.EndingHandle < request.StartingHandle)
         {
-            this.EnqueueGattErrorResponse(request.OpCode, request.StartingHandle, AttErrorCode.InvalidHandle, activity);
+            Connection.EnqueueGattErrorResponse(
+                request.OpCode,
+                request.StartingHandle,
+                AttErrorCode.InvalidHandle,
+                activity
+            );
             return;
         }
 
@@ -331,7 +308,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
         }
         if (attributes.Count == 0 || attributeLength is null)
         {
-            this.EnqueueGattErrorResponse(
+            Connection.EnqueueGattErrorResponse(
                 request.OpCode,
                 request.StartingHandle,
                 AttErrorCode.AttributeNotFoundError,
@@ -346,7 +323,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
                 : AttFindInformationFormat.HandleAnd128BitUuid,
             InformationData = attributes.ToArray(),
         };
-        this.EnqueueGattPacket(response, activity, isResponse: true);
+        Connection.EnqueueGattPacket(response, activity, isResponse: true);
     }
 
     [MessageSink]
@@ -356,7 +333,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
 
         if (!Peripheral.GattDatabase.TryGetAttribute(request.AttributeHandle, out IGattAttribute? attribute))
         {
-            this.EnqueueGattErrorResponse(
+            Connection.EnqueueGattErrorResponse(
                 request.OpCode,
                 request.AttributeHandle,
                 AttErrorCode.InvalidHandle,
@@ -366,7 +343,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
         }
         if (request.AttributeValue.Length > GattMaxAttributeValueSize)
         {
-            this.EnqueueGattErrorResponse(
+            Connection.EnqueueGattErrorResponse(
                 request.OpCode,
                 request.AttributeHandle,
                 AttErrorCode.InvalidAttributeLengthError,
@@ -378,7 +355,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
         PermissionCheckStatus permissionStatus = attribute.CheckWritePermissions(this);
         if (permissionStatus is not PermissionCheckStatus.Success)
         {
-            this.EnqueueGattErrorResponse(
+            Connection.EnqueueGattErrorResponse(
                 request.OpCode,
                 request.AttributeHandle,
                 (AttErrorCode)permissionStatus,
@@ -394,13 +371,18 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
                 .ConfigureAwait(false);
             if (status is not GattProtocolStatus.Success)
             {
-                this.EnqueueGattErrorResponse(request.OpCode, request.AttributeHandle, (AttErrorCode)status, activity);
+                Connection.EnqueueGattErrorResponse(
+                    request.OpCode,
+                    request.AttributeHandle,
+                    (AttErrorCode)status,
+                    activity
+                );
                 return;
             }
         }
         catch (Exception e)
         {
-            this.EnqueueGattErrorResponse(
+            Connection.EnqueueGattErrorResponse(
                 e,
                 request.OpCode,
                 request.AttributeHandle,
@@ -409,7 +391,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
             );
             return;
         }
-        this.EnqueueGattPacket(new AttWriteRsp(), activity, isResponse: true);
+        Connection.EnqueueGattPacket(new AttWriteRsp(), activity, isResponse: true);
     }
 
     public override bool IsConnected => !_disconnectedBehavior.Value;
@@ -418,10 +400,6 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IAclConnec
     public void Dispose()
     {
         _disconnectedBehavior.Dispose();
-        _assembler.Dispose();
-        _assemblerSubscription.Dispose();
         _hostSubscription.Dispose();
-        _disconnectSource.Cancel();
-        _disconnectSource.Dispose();
     }
 }

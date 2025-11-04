@@ -3,7 +3,7 @@ using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
 using Darp.Ble.Gatt.Server;
-using Darp.Ble.Hci.Package;
+using Darp.Ble.Hci.Host;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Result;
@@ -26,7 +26,7 @@ internal sealed class HciHostBleBroadcaster(
     private readonly ConcurrentDictionary<byte, HciAdvertisingSet> _advertisingSets = [];
 
     public ushort MaxAdvertisingDataLength { get; } = maxAdvertisingDataLength;
-    public Hci.HciHost Host => _device.Host;
+    public Hci.Host.HciHost Host => _device.HciDevice.Host;
 
     private async Task RegisterAdvertisingSetAsync(
         HciAdvertisingSet advertisingSet,

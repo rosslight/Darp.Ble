@@ -71,7 +71,7 @@ public sealed class BleDeviceTests
                 HciMessage.CommandCompleteEventToHost("01352000"),
             ]
         );
-        using var host = new Hci.HciHost(replayTransportLayer, 0x112233445566, NullLogger<Hci.HciHost>.Instance);
+        using var host = new Hci.HciDevice(replayTransportLayer, 0x112233445566, NullLogger<Hci.HciDevice>.Instance);
 
         await host.InitializeAsync(CancellationToken.None);
         Task t1 = Create1();

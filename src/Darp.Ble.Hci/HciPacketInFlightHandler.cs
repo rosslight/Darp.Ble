@@ -12,24 +12,19 @@ namespace Darp.Ble.Hci;
 internal sealed partial class HciPacketInFlightHandler<
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TCommand,
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TResponse
-> : IDisposable
+>(Host.HciHost host, SemaphoreSlim packetInFlightSemaphore) : IDisposable
     where TCommand : IHciCommand
     where TResponse : IHciEvent<TResponse>
 {
-    private readonly HciHost _host;
-    private readonly SemaphoreSlim _packetInFlightSemaphore;
+#pragma warning disable CA2213 // False positive, these fields are not owned by the PacketInFlightHandler
+    private readonly Host.HciHost _host = host;
+    private readonly SemaphoreSlim _packetInFlightSemaphore = packetInFlightSemaphore;
+#pragma warning restore CA2213 // Disposable fields should be disposed
     private readonly TaskCompletionSource<TResponse> _completionSource = new(
         TaskCreationOptions.RunContinuationsAsynchronously
     );
     private IDisposable? _subscription;
-    private readonly bool _waitingForCommandStatus;
-
-    public HciPacketInFlightHandler(HciHost host, SemaphoreSlim packetInFlightSemaphore)
-    {
-        _host = host;
-        _packetInFlightSemaphore = packetInFlightSemaphore;
-        _waitingForCommandStatus = typeof(TResponse) == typeof(HciCommandStatusEvent);
-    }
+    private readonly bool _waitingForCommandStatus = typeof(TResponse) == typeof(HciCommandStatusEvent);
 
     public async Task<(TResponse Response, Activity? Activity)> QueryAsync(
         TCommand command,
@@ -38,10 +33,13 @@ internal sealed partial class HciPacketInFlightHandler<
     )
     {
         DateTimeOffset startTime = DateTimeOffset.UtcNow;
-        Activity? activity = Logging.StartCommandResponseActivity(command, _host.Address);
+        Activity? activity = Logging.StartCommandResponseActivity(command, _host.Device.Address);
         try
         {
-            Activity? sendActivity = Logging.StartSendCommandActivity(TCommand.OpCode, _host.Address);
+            // Only log the time that is needed to enqueue the command if it actually has to wait.
+            Activity? enqueueActivity = _packetInFlightSemaphore.CurrentCount is 0
+                ? Logging.StartEnqueueCommandActivity(TCommand.OpCode, _host.Device.Address)
+                : null;
             try
             {
                 bool enteredSlim = await _packetInFlightSemaphore
@@ -57,16 +55,14 @@ internal sealed partial class HciPacketInFlightHandler<
             }
             catch (Exception e)
             {
-                sendActivity?.AddException(e);
-                sendActivity?.SetStatus(ActivityStatusCode.Error, e.Message);
+                enqueueActivity?.AddException(e);
+                enqueueActivity?.SetStatus(ActivityStatusCode.Error, e.Message);
                 throw;
             }
             finally
             {
-                sendActivity?.Dispose();
+                enqueueActivity?.Dispose();
             }
-
-            Activity? receiveActivity = Logging.StartWaitForEventActivity(TResponse.EventCode, _host.Address);
             try
             {
                 TimeSpan waitTime = DateTimeOffset.UtcNow - startTime;
@@ -78,18 +74,11 @@ internal sealed partial class HciPacketInFlightHandler<
                 activity?.SetDeconstructedTags("Response", result, orderEntries: true);
                 return (result, activity);
             }
-            catch (Exception e)
-            {
-                receiveActivity?.AddException(e);
-                receiveActivity?.SetStatus(ActivityStatusCode.Error, e.Message);
-                throw;
-            }
             finally
             {
                 // Release the InFlight semaphore at the end of the query to ensure the next command can continue
                 // TODO: What do we do if a response is received after a timeout was hit? Will this trigger the next query?
                 _packetInFlightSemaphore.Release();
-                receiveActivity?.Dispose();
             }
         }
         catch (Exception e)

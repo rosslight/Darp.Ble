@@ -33,7 +33,7 @@ internal sealed class HciHostGattServerCharacteristic(
                 while (!token.IsCancellationRequested && startingHandle < 0xFFFF)
                 {
                     AttResponse<AttFindInformationRsp> response = await _peer
-                        .QueryAttPduAsync<AttFindInformationReq, AttFindInformationRsp>(
+                        .Connection.QueryAttPduAsync<AttFindInformationReq, AttFindInformationRsp>(
                             new AttFindInformationReq { StartingHandle = startingHandle, EndingHandle = EndHandle },
                             cancellationToken: token
                         )
@@ -126,7 +126,7 @@ internal sealed class HciHostGattServerCharacteristic(
         {
             throw new GattCharacteristicException(this, "Could not write notification status to cccd");
         }
-        return _peer.L2CapAssembler.Subscribe(new NotifyObservable<TState>(state, onNotify));
+        return _peer.Connection.Assembler.Subscribe(new NotifyObservable<TState>(state, onNotify));
     }
 
     protected override async Task DisableNotificationsAsync()

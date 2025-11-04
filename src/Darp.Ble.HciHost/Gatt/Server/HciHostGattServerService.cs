@@ -30,12 +30,10 @@ internal sealed class HciHostGattServerService(
                 ushort startingHandle = _attHandle;
                 HciHostGattServerCharacteristic? lastCharacteristic = null;
                 List<HciHostGattServerCharacteristic> discoveredCharacteristics = [];
-                while (!token.IsCancellationRequested && startingHandle < 0xFFFF)
+                while (!token.IsCancellationRequested && startingHandle <= _endGroupHandle)
                 {
-                    AttResponse<AttReadByTypeRsp> response = await Peer.QueryAttPduAsync<
-                        AttReadByTypeReq<ushort>,
-                        AttReadByTypeRsp
-                    >(
+                    AttResponse<AttReadByTypeRsp> response = await Peer
+                        .Connection.QueryAttPduAsync<AttReadByTypeReq<ushort>, AttReadByTypeRsp>(
                             new AttReadByTypeReq<ushort>
                             {
                                 StartingHandle = startingHandle,
@@ -74,7 +72,7 @@ internal sealed class HciHostGattServerService(
                         );
                         discoveredCharacteristics.Add(characteristic);
                         if (lastCharacteristic is not null)
-                            lastCharacteristic.EndHandle = handle;
+                            lastCharacteristic.EndHandle = (ushort)(handle - 1);
                         lastCharacteristic = characteristic;
                     }
                     startingHandle = (ushort)(rsp.AttributeDataList[^1].Handle + 1);

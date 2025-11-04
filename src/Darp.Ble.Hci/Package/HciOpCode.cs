@@ -30,6 +30,9 @@ public enum HciOpCode : ushort
     /// <summary> The <see cref="HciReadLocalSupportedCommandsCommand"/> </summary>
     HCI_Read_Local_Supported_Commands = 0x0002 | (HciOpCodeGroupField.Informational << 10),
 
+    /// <summary> The <see cref="HciReadLocalSupportedFeaturesCommand"/> </summary>
+    HCI_Read_Local_Supported_Features = 0x0003 | (HciOpCodeGroupField.Informational << 10),
+
     /// <summary> The <see cref="HciReadBdAddrCommand"/> </summary>
     HCI_Read_BD_ADDR = 0x0009 | (HciOpCodeGroupField.Informational << 10),
 
@@ -54,6 +57,9 @@ public enum HciOpCode : ushort
 
     /// <summary> The <see cref="HciLeWriteSuggestedDefaultDataLengthCommand"/> </summary>
     HCI_LE_Write_Suggested_Default_Data_Length = 0x0024 | (HciOpCodeGroupField.LeController << 10),
+
+    /// <summary> The <see cref="HciLeReadPhyCommand"/> </summary>
+    HCI_LE_READ_PHY = 0x0030 | (HciOpCodeGroupField.LeController << 10),
 
     /// <summary> The <see cref="HciLeSetAdvertisingSetRandomAddressCommand"/> </summary>
     HCI_LE_SET_ADVERTISING_SET_RANDOM_ADDRESS = 0x0035 | (HciOpCodeGroupField.LeController << 10),

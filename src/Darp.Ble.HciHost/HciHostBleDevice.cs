@@ -1,11 +1,13 @@
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gatt.Services;
-using Darp.Ble.Hci.Package;
+using Darp.Ble.Hci.Host;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Result;
 using Darp.Ble.Hci.Transport;
 using Darp.Ble.Implementation;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using UInt48 = Darp.Ble.Data.UInt48;
 
 namespace Darp.Ble.HciHost;
@@ -18,31 +20,32 @@ internal sealed class HciHostBleDevice(
     IServiceProvider serviceProvider
 ) : BleDevice(serviceProvider, serviceProvider.GetLogger<HciHostBleDevice>())
 {
-    public Hci.HciHost Host { get; } =
+    public Hci.HciDevice HciDevice { get; } =
         new(
             transportLayer,
             randomAddress ?? BleAddress.NewRandomStaticAddress().Value,
-            logger: serviceProvider.GetLogger<Hci.HciHost>()
+            serviceProvider.GetService<ILoggerFactory>()
         );
 
     public override string? Name { get; set; } = name;
     public override AppearanceValues Appearance { get; set; } = AppearanceValues.Unknown;
 
-    public override BleAddress RandomAddress => BleAddress.CreateRandomAddress((UInt48)Host.Address);
+    public override BleAddress RandomAddress => BleAddress.CreateRandomAddress((UInt48)HciDevice.Address);
 
     /// <inheritdoc />
     protected override async Task<InitializeResult> InitializeAsyncCore(CancellationToken cancellationToken)
     {
-        await Host.InitializeAsync(cancellationToken).ConfigureAwait(false);
+        await HciDevice.InitializeAsync(cancellationToken).ConfigureAwait(false);
         await SetRandomAddressAsync(RandomAddress, cancellationToken).ConfigureAwait(false);
 
         Observer = new HciHostBleObserver(this, ServiceProvider.GetLogger<HciHostBleObserver>());
         Central = new HciHostBleCentral(this, ServiceProvider.GetLogger<HciHostBleCentral>());
 
-        HciLeReadMaximumAdvertisingDataLengthResult result = await Host.QueryCommandCompletionAsync<
-            HciLeReadMaximumAdvertisingDataLengthCommand,
-            HciLeReadMaximumAdvertisingDataLengthResult
-        >(cancellationToken: cancellationToken)
+        HciLeReadMaximumAdvertisingDataLengthResult result = await HciDevice
+            .Host.QueryCommandCompletionAsync<
+                HciLeReadMaximumAdvertisingDataLengthCommand,
+                HciLeReadMaximumAdvertisingDataLengthResult
+            >(cancellationToken: cancellationToken)
             .ConfigureAwait(false);
         Broadcaster = new HciHostBleBroadcaster(
             this,
@@ -59,17 +62,17 @@ internal sealed class HciHostBleDevice(
         CancellationToken cancellationToken
     )
     {
-        await Host.SetRandomAddressAsync(randomAddress.Value, cancellationToken: cancellationToken)
+        await HciDevice
+            .SetRandomAddressAsync(randomAddress.Value, cancellationToken: cancellationToken)
             .ConfigureAwait(false);
     }
 
     /// <inheritdoc />
     public override string Identifier => BleDeviceIdentifiers.HciHost;
 
-    /// <inheritdoc />
-    protected override void Dispose(bool disposing)
+    protected override async ValueTask DisposeAsyncCore()
     {
-        Host.Dispose();
-        base.Dispose(disposing);
+        await base.DisposeAsyncCore().ConfigureAwait(false);
+        await HciDevice.DisposeAsync().ConfigureAwait(false);
     }
 }

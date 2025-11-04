@@ -37,7 +37,7 @@ internal static partial class Logging
         return activity;
     }
 
-    public static Activity? StartSendCommandActivity(HciOpCode commandOpCode, ulong deviceAddress)
+    public static Activity? StartEnqueueCommandActivity(HciOpCode commandOpCode, ulong deviceAddress)
     {
         Activity? activity = HciTracingActivity.StartActivity("Enqueue command {Name}");
         activity?.SetTag("Name", commandOpCode.ToString().ToUpperInvariant());
@@ -47,7 +47,7 @@ internal static partial class Logging
 
     public static Activity? StartHandleQueryAttPduActivity<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TAttPdu
-    >(TAttPdu request, IAclConnection aclConnection)
+    >(TAttPdu request, AclConnection aclConnection)
         where TAttPdu : IAttPdu, IBinaryWritable
     {
         Activity? activity = HciActivity.StartActivity("Query ATT {Name}");
@@ -57,9 +57,9 @@ internal static partial class Logging
         string requestName = request.OpCode.ToString().ToUpperInvariant();
         activity.SetTag("Name", requestName);
         activity.SetTag("Connection.Handle", $"{aclConnection.ConnectionHandle:X4}");
-        activity.SetTag("Connection.ServerAddress", aclConnection.ServerAddress);
-        activity.SetTag("Connection.ClientAddress", aclConnection.ClientAddress);
-        activity.SetTag("Connection.Role", "Server");
+        activity.SetTag("Connection.Address", aclConnection.Address);
+        activity.SetTag("Connection.PeerAddress", aclConnection.PeerAddress);
+        activity.SetTag("Connection.Role", aclConnection.Role);
 
         activity.SetDeconstructedTags("Request", request, orderEntries: true);
         activity.SetTag("Request.OpCode", requestName);
@@ -81,13 +81,13 @@ internal static partial class Logging
     public static partial void LogStartQuery(this ILogger logger, IHciPacket command);
 
     [LoggerMessage(Level = LogLevel.Trace, Message = "H4Transport: {Direction} disconnected")]
-    public static partial void LogTransportDisconnected(this ILogger logger, string direction);
+    public static partial void LogH4TransportDisconnected(this ILogger logger, string direction);
 
     [LoggerMessage(
         Level = LogLevel.Critical,
         Message = "H4Transport: {Direction} died due to exception {Message}. This error is not recoverable!"
     )]
-    public static partial void LogTransportWithError(
+    public static partial void LogH4TransportWithError(
         this ILogger logger,
         Exception ex,
         string direction,
@@ -114,21 +114,96 @@ internal static partial class Logging
         string packetType
     );
 
+    [LoggerMessage(Level = LogLevel.Trace, Message = "Read bytes 0x{Bytes}")]
+    public static partial void LogPacketReceiving(this ILogger logger, byte[] bytes);
+
+    [LoggerMessage(
+        Level = LogLevel.Critical,
+        Message = "H4Transport: Received unknown hci packet of type 0x{Type:X2}. Remaining buffer: {Remaining}. This Error is not recoverable!"
+    )]
+    public static partial void LogPacketReceivingUnknownPacket(this ILogger logger, byte type, string remaining);
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "H4Transport: Disposed")]
+    public static partial void LogH4TransportDisposed(this ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{Source} to {Destination}: {PacketName}")]
+    public static partial void LogPacketTransmission(
+        this ILogger logger,
+        string source,
+        string destination,
+        string packetName
+    );
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{Source} to {Destination}: {PacketName} {Message}")]
+    public static partial void LogPacketTransmissionWarning(
+        this ILogger logger,
+        string source,
+        string destination,
+        string packetName,
+        string message
+    );
+
     [LoggerMessage(
         Level = LogLevel.Trace,
-        Message = "Read bytes 0x{PacketBytes:X2}{Bytes} of {PacketType} packet {@Packet}"
+        Message = "{Source} to {Destination}: [0x{ConnectionHandle:X3}]: {PacketName}"
     )]
-    public static partial void LogPacketReceiving(
+    public static partial void LogAttPacketTransmission(
         this ILogger logger,
-        byte packetBytes,
-        byte[] bytes,
-        HciPacketType packetType,
-        IHciPacket packet
+        string source,
+        string destination,
+        ushort connectionHandle,
+        string packetName
     );
 
     [LoggerMessage(
         Level = LogLevel.Warning,
-        Message = "H4Transport: Received unknown hci packet of type 0x{Type:X2}. Reading remaining buffer ..."
+        Message = "{Source} to {Destination}: [0x{ConnectionHandle:X3}]: {OpCode}"
     )]
-    public static partial void LogPacketReceivingUnknownPacket(this ILogger logger, byte type);
+    public static partial void LogReceivedUnknownAttPacket(
+        this ILogger logger,
+        string source,
+        string destination,
+        ushort connectionHandle,
+        AttOpCode opCode
+    );
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "{Source} to {Destination}: [0x{ConnectionHandle:X3}]: {PacketName} {Message}"
+    )]
+    public static partial void LogAttPacketTransmissionWarning(
+        this ILogger logger,
+        string source,
+        string destination,
+        string packetName,
+        ushort connectionHandle,
+        string message
+    );
+
+    public static IDisposable? ForContext<T>(this ILogger logger, string name, T value)
+    {
+        return logger.BeginScope(new Dictionary<string, object?>(StringComparer.Ordinal) { [name] = value });
+    }
+
+    public static Activity? StartHandleAttRequestActivity<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TAttPdu
+    >(TAttPdu request, AclConnection connection)
+        where TAttPdu : IAttPdu, IBinaryWritable
+    {
+        Activity? activity = HciActivity.StartActivity("Handle ATT request {Name}");
+        if (activity is null)
+            return activity;
+
+        string requestName = request.OpCode.ToString().ToUpperInvariant();
+        activity.SetTag("Name", requestName);
+        activity.SetTag("DeviceAddress", connection.Address);
+        activity.SetTag("Connection.Handle", $"{connection.ConnectionHandle:X4}");
+        activity.SetTag("Connection.ServerAddress", connection.Address);
+        activity.SetTag("Connection.ClientAddress", connection.PeerAddress);
+        activity.SetTag("Connection.Role", "Server");
+
+        activity.SetDeconstructedTags("Request", request, orderEntries: true);
+        activity.SetTag("Request.OpCode", requestName);
+        return activity;
+    }
 }
