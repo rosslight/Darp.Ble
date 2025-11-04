@@ -27,7 +27,7 @@ public sealed class ObserverTests
         CancellationToken token
     )
     {
-        ReplayTransportLayer transport = ReplayTransportLayer.ReplayAfterInitialization(messages);
+        ReplayTransportLayer transport = ReplayTransportLayer.ReplayAfterBleDeviceInitialization(messages);
         IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(transport, cancellationToken: token);
 
         // sanity check: not observing yet
