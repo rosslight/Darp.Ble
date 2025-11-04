@@ -20,6 +20,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IDisposabl
     private const ushort GattMaxAttributeValueSize = 512;
 
     private readonly IDisposable _hostSubscription;
+    private readonly IDisposable _assemblerSubscription;
 
     public ushort ConnectionHandle { get; }
     public new HciHostBlePeripheral Peripheral { get; }
@@ -41,6 +42,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IDisposabl
         ConnectionHandle = connectionHandle;
         Peripheral = peripheral;
         _hostSubscription = Host.Subscribe(this);
+        _assemblerSubscription = Connection.Assembler.Subscribe(this);
         Logger.LogTrace("Database: {Database}", peripheral.GattDatabase.ToString());
     }
 
@@ -117,7 +119,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IDisposabl
             Length = (byte)attributes[0].GetByteCount(),
             AttributeDataList = attributes.ToArray(),
         };
-        Connection.EnqueueGattPacket(rsp, activity, isResponse: true);
+        Connection.EnqueueGattPacket(rsp, activity);
     }
 
     [MessageSink]
@@ -170,7 +172,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IDisposabl
             Length = (byte)serviceAttributes[0].GetByteCount(),
             AttributeDataList = serviceAttributes,
         };
-        Connection.EnqueueGattPacket(rsp, activity, isResponse: true);
+        Connection.EnqueueGattPacket(rsp, activity);
     }
 
     [MessageSink]
@@ -217,7 +219,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IDisposabl
             return;
         }
         var rsp = new AttFindByTypeValueRsp { HandlesInformationList = handlesInformation.ToArray() };
-        Connection.EnqueueGattPacket(rsp, activity, isResponse: true);
+        Connection.EnqueueGattPacket(rsp, activity);
     }
 
     [MessageSink]
@@ -253,7 +255,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IDisposabl
             byte[] value = await attribute.ReadValueAsync(this).ConfigureAwait(false);
             int length = Math.Min(AttMtu - 1, value.Length);
             var rsp = new AttReadRsp { AttributeValue = value.AsMemory()[..length] };
-            Connection.EnqueueGattPacket(rsp, activity, isResponse: true);
+            Connection.EnqueueGattPacket(rsp, activity);
         }
         catch (Exception e)
         {
@@ -323,7 +325,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IDisposabl
                 : AttFindInformationFormat.HandleAnd128BitUuid,
             InformationData = attributes.ToArray(),
         };
-        Connection.EnqueueGattPacket(response, activity, isResponse: true);
+        Connection.EnqueueGattPacket(response, activity);
     }
 
     [MessageSink]
@@ -391,7 +393,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IDisposabl
             );
             return;
         }
-        Connection.EnqueueGattPacket(new AttWriteRsp(), activity, isResponse: true);
+        Connection.EnqueueGattPacket(new AttWriteRsp(), activity);
     }
 
     public override bool IsConnected => !_disconnectedBehavior.Value;
@@ -401,5 +403,6 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IDisposabl
     {
         _disconnectedBehavior.Dispose();
         _hostSubscription.Dispose();
+        _assemblerSubscription.Dispose();
     }
 }

@@ -182,6 +182,7 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
         where T : IHciCommand
     {
         using (_logger?.ForContext("PacketPayload", packet.ToArrayLittleEndian()))
+        using (_logger?.ForContext("@Packet", packet.Data))
         {
             _logger?.LogPacketTransmission("Host", "Controller", $"{T.OpCode.ToString().ToUpperInvariant()}_COMMAND");
         }
@@ -329,6 +330,11 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
                 when HciLeExtendedAdvertisingReportEvent.TryReadLittleEndian(metaEvt.Parameters.Span, out var evt):
                 PublishMessage(evt);
                 break;
+            case HciLeMetaSubEventType.HCI_LE_Advertising_Set_Terminated
+                when HciLeAdvertisingSetTerminatedEvent.TryReadLittleEndian(metaEvt.Parameters.Span, out var evt):
+                LogEventPacketControllerToHost(evt, packetPayloadBytes);
+                PublishMessage(evt);
+                break;
             default:
                 LogPacketControllerToHost(
                     metaEvt,
@@ -340,8 +346,13 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
     }
 
     private void LogEventPacketControllerToHost<T>(T packet, ReadOnlyMemory<byte> packetPayloadBytes)
-        where T : IHciEvent<T> =>
-        LogPacketControllerToHost(packet, packetPayloadBytes, $"{T.EventCode.ToString().ToUpperInvariant()}_EVENT");
+        where T : IHciEvent<T>
+    {
+        string packetName = packet is IHciLeMetaEvent<T> p
+            ? $"{p.SubEventCode.ToString().ToUpperInvariant()}_EVENT"
+            : $"{T.EventCode.ToString().ToUpperInvariant()}_EVENT";
+        LogPacketControllerToHost(packet, packetPayloadBytes, packetName);
+    }
 
     private void LogPacketControllerToHost<T>(T packet, ReadOnlyMemory<byte> packetPayloadBytes, string packetName)
     {

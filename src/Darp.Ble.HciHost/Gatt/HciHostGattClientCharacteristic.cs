@@ -26,8 +26,7 @@ internal sealed class HciHostGattClientCharacteristic(
             return;
         hciHostClientPeer.Connection.EnqueueGattPacket(
             new AttHandleValueNtf { Handle = Value.Handle, Value = value },
-            activity: null,
-            isResponse: true
+            activity: null
         );
     }
 

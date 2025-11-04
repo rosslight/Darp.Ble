@@ -17,7 +17,7 @@ public sealed class GattServer(HciDevice device, ILogger<GattServer>? logger)
 
         ushort newMtu = Math.Min(request.ClientRxMtu, Constants.DefaultMaxAttMtu);
         connection.AttMtu = newMtu;
-        connection.EnqueueGattPacket(new AttExchangeMtuRsp { ServerRxMtu = newMtu }, activity, isResponse: true);
+        connection.EnqueueGattPacket(new AttExchangeMtuRsp { ServerRxMtu = newMtu }, activity);
     }
 
     internal void OnHciLeDataLengthChangeEvent(HciLeDataLengthChangeEvent hciEvent)

@@ -48,7 +48,6 @@ public readonly partial struct HciPacketEvent
 }
 
 /// <summary> The HCI Host </summary>
-[MessageSource]
 public sealed partial class HciDevice : IAsyncDisposable
 {
     private readonly ITransportLayer _transportLayer;
