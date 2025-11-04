@@ -1,10 +1,9 @@
 ﻿using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
-using Darp.Ble.Hci.Package;
+using Darp.Ble.Hci.Host;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Result;
 using Darp.Ble.HciHost.Verify;
-using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 using UInt48 = Darp.Ble.Data.UInt48;
 
@@ -17,15 +16,7 @@ public sealed class BleDeviceTests
     {
         var address = BleAddress.CreateRandomAddress((UInt48)0xE0C5AA968B6E);
         ReplayTransportLayer replayTransportLayer = ReplayTransportLayer.Replay(
-            [
-                HciMessage.CommandCompleteEventToHost("01030C00"),
-                HciMessage.CommandCompleteEventToHost("010110000D02110D59000211"),
-                HciMessage.CommandCompleteEventToHost("01010C00"),
-                HciMessage.CommandCompleteEventToHost("01012000"),
-                HciMessage.CommandCompleteEventToHost("01022000FB0003"),
-                HciMessage.CommandCompleteEventToHost("01052000"),
-                HciMessage.CommandCompleteEventToHost("013A20003E00"),
-            ]
+            ReplayTransportLayer.InitializeBleDeviceMessages
         );
         await using IBleDevice device = await Helpers.GetBleDeviceAsync(replayTransportLayer);
         await device.InitializeAsync();
@@ -41,7 +32,7 @@ public sealed class BleDeviceTests
     public async Task SetRandomAddress()
     {
         var newAddress = BleAddress.CreateRandomAddress((UInt48)0x112233445566);
-        ReplayTransportLayer replayTransportLayer = ReplayTransportLayer.ReplayAfterInitialization(
+        ReplayTransportLayer replayTransportLayer = ReplayTransportLayer.ReplayAfterBleDeviceInitialization(
             [HciMessage.CommandCompleteEventToHost("01052000")]
         );
         await using IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(replayTransportLayer);
@@ -55,25 +46,12 @@ public sealed class BleDeviceTests
     [Fact]
     public async Task LaunchMultipleCommandsAtTheSameTime()
     {
-        ReplayTransportLayer replayTransportLayer = ReplayTransportLayer.Replay(
-            [
-                // HCI_Reset
-                HciMessage.CommandCompleteEventToHost("01030C00"),
-                // HCI_Read_Local_Version_Information
-                HciMessage.CommandCompleteEventToHost("010110000D02110D59000211"),
-                // HCI_Set_Event_Mask
-                HciMessage.CommandCompleteEventToHost("01010C00"),
-                // HCI_LE_Set_Event_Mask
-                HciMessage.CommandCompleteEventToHost("01012000"),
-                // HCI_LE_Read_Buffer_Size_V1
-                HciMessage.CommandCompleteEventToHost("01022000FB0003"),
-                HciMessage.CommandCompleteEventToHost("01392000"),
-                HciMessage.CommandCompleteEventToHost("01352000"),
-            ]
+        ReplayTransportLayer replayTransportLayer = ReplayTransportLayer.ReplayAfterInitialization(
+            [HciMessage.CommandCompleteEventToHost("01392000"), HciMessage.CommandCompleteEventToHost("01352000")]
         );
-        using var host = new Hci.HciDevice(replayTransportLayer, 0x112233445566, NullLogger<Hci.HciDevice>.Instance);
+        await using var device = new Hci.HciDevice(replayTransportLayer, 0x112233445566, loggerFactory: null);
 
-        await host.InitializeAsync(CancellationToken.None);
+        await device.InitializeAsync(CancellationToken.None);
         Task t1 = Create1();
         Task t2 = Create2();
         await Task.WhenAll(t1, t2);
@@ -82,7 +60,7 @@ public sealed class BleDeviceTests
         return;
 
         Task Create1() =>
-            host.QueryCommandCompletionAsync<
+            device.Host.QueryCommandCompletionAsync<
                 HciLeSetExtendedAdvertisingEnableCommand,
                 HciLeSetExtendedAdvertisingEnableResult
             >(
@@ -98,7 +76,7 @@ public sealed class BleDeviceTests
             );
 
         Task Create2() =>
-            host.QueryCommandCompletionAsync<
+            device.Host.QueryCommandCompletionAsync<
                 HciLeSetAdvertisingSetRandomAddressCommand,
                 HciLeSetAdvertisingSetRandomAddressResult
             >(
