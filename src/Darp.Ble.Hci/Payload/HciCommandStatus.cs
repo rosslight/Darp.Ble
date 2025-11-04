@@ -124,6 +124,12 @@ public enum HciCommandStatus : byte
     UnacceptableConnectionParameters = 0x3B,
 
     /// <summary>
+    /// The Advertising Timeout error code indicates that advertising for a fixed duration completed or,
+    /// for directed advertising, that advertising completed without a connection being created.
+    /// </summary>
+    AdvertisingTimeout = 0x3C,
+
+    /// <summary>
     /// Connection Failed to be Established / Synchronization Timeout
     /// </summary>
     ConnectionFailedToBeEstablishedOrSynchronizationTimeout = 0x3E,

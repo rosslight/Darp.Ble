@@ -1,6 +1,7 @@
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Client;
+using Darp.Ble.Hci;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.HciHost.Gatt;
@@ -18,7 +19,7 @@ internal sealed partial class HciHostBlePeripheral : BlePeripheral
         : base(device, logger)
     {
         Device = device;
-        _subscription = device.HciDevice.Subscribe(this);
+        _subscription = device.HciDevice.Host.Subscribe(this);
     }
 
     public new HciHostBleDevice Device { get; }
@@ -49,18 +50,25 @@ internal sealed partial class HciHostBlePeripheral : BlePeripheral
             connectionCompleteEvent.ConnectionHandle,
             peerDeviceAddress
         );
-        if (!PeerDevices.TryGetValue(peerDeviceAddress, out IGattClientPeer? peerDevice))
+        if (PeerDevices.TryGetValue(peerDeviceAddress, out _))
         {
-            // TODO Fix me
-            peerDevice = new HciHostGattClientPeer(
-                this,
-                null!,
-                peerDeviceAddress,
-                connectionCompleteEvent.ConnectionHandle,
-                ServiceProvider.GetLogger<HciHostGattClientPeer>()
-            );
-            OnConnectedCentral(peerDevice);
+            Logger.LogWarning("Completed a connection with an already known peer device");
+            return;
         }
+
+        if (!Device.HciDevice.TryGetConnection(connectionCompleteEvent.ConnectionHandle, out AclConnection? connection))
+        {
+            Logger.LogError("Received a connectionCompleteEvent but no connection was registered");
+            return;
+        }
+        var peerDevice = new HciHostGattClientPeer(
+            this,
+            connection,
+            peerDeviceAddress,
+            connectionCompleteEvent.ConnectionHandle,
+            ServiceProvider.GetLogger<HciHostGattClientPeer>()
+        );
+        OnConnectedCentral(peerDevice);
     }
 
     protected override GattClientService AddServiceCore(BleUuid uuid, bool isPrimary)

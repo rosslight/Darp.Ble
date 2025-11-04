@@ -36,7 +36,7 @@ public static class AclConnectionExtensions
         using IDisposable _ = connection.Assembler.Subscribe(responseSink);
         try
         {
-            connection.EnqueueGattPacket(request, activity, isResponse: false);
+            connection.EnqueueGattPacket(request, activity);
             AttResponse<TResponse> response = await responseSink
                 .Task.WaitAsync(timeout.Value, tokenSource.Token)
                 .ConfigureAwait(false);
@@ -60,17 +60,16 @@ public static class AclConnectionExtensions
     /// <param name="connection"> The connection to send this packet to </param>
     /// <param name="attPdu"> The packet to be enqueued </param>
     /// <param name="activity"></param>
-    /// <param name="isResponse"> If true, the request will be logged as a response. If false, as a request </param>
     public static void EnqueueGattPacket<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TAttPdu
-    >(this AclConnection connection, TAttPdu attPdu, Activity? activity, bool isResponse)
+    >(this AclConnection connection, TAttPdu attPdu, Activity? activity)
         where TAttPdu : IAttPdu, IBinaryWritable
     {
         ArgumentNullException.ThrowIfNull(connection);
         ArgumentNullException.ThrowIfNull(connection);
         const ushort attCId = 0x0004;
         byte[] payloadBytes = attPdu.ToArrayLittleEndian();
-        activity?.SetDeconstructedTags("Pdu", attPdu, orderEntries: true);
+        activity?.SetDeconstructedTags("Response", attPdu, orderEntries: true);
 
         using (connection.Logger?.BeginDeconstructedScope(LogLevel.Trace, "Packet", attPdu, orderEntries: true))
         using (connection.Logger?.ForContext("PacketPayload", payloadBytes))
@@ -120,8 +119,7 @@ public static class AclConnectionExtensions
                 Handle = handle,
                 ErrorCode = errorCode,
             },
-            activity,
-            isResponse: false
+            activity
         );
     }
 
