@@ -173,8 +173,19 @@ public sealed class H4TransportLayer(string portName, ILogger<H4TransportLayer>?
         if (_isDisposing)
             return;
         _isDisposing = true;
-        // Cancel and wait until all tasks have completed
+        // Cancel the token first to signal cancellation
         await _cancelSource.CancelAsync().ConfigureAwait(false);
+        // Close the serial port to interrupt any pending read/write operations
+        // (ReadExactlyAsync does not honor the cancel token)
+        try
+        {
+            _serialPort.Close();
+        }
+        catch
+        {
+            // Ignore errors during close
+        }
+        // Wait for tasks to complete after port is closed
         if (_rxTask is not null)
             await _rxTask.ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
         if (_txTask is not null)
