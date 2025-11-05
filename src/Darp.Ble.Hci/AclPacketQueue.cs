@@ -23,7 +23,7 @@ internal sealed class AclPacketQueue : IAclPacketQueue
 {
     private readonly ITransportLayer _transportLayer;
     private readonly int _maxPacketsInFlight;
-    private readonly Dictionary<ushort, ConnState> _packetQueues = [];
+    private readonly Dictionary<ushort, ConnectionState> _packetQueues = [];
     private readonly Lock _lock = new();
     private int _packetsInFlight;
 
@@ -44,7 +44,7 @@ internal sealed class AclPacketQueue : IAclPacketQueue
         {
             foreach (HciNumberOfCompletedPackets evt in hciEvent.Handles)
             {
-                if (_packetQueues.TryGetValue(evt.ConnectionHandle, out ConnState? connectionState))
+                if (_packetQueues.TryGetValue(evt.ConnectionHandle, out ConnectionState? connectionState))
                 {
                     int packetsToFree = Math.Min(evt.NumCompletedPackets, connectionState.InFlight);
                     connectionState.InFlight -= packetsToFree;
@@ -66,9 +66,9 @@ internal sealed class AclPacketQueue : IAclPacketQueue
         ushort connectionHandle = aclPacket.ConnectionHandle;
         lock (_lock)
         {
-            if (!_packetQueues.TryGetValue(connectionHandle, out ConnState? connectionState))
+            if (!_packetQueues.TryGetValue(connectionHandle, out ConnectionState? connectionState))
             {
-                connectionState = new ConnState();
+                connectionState = new ConnectionState();
                 _packetQueues[connectionHandle] = connectionState;
             }
             connectionState.Queue.Enqueue(aclPacket);
@@ -86,7 +86,7 @@ internal sealed class AclPacketQueue : IAclPacketQueue
             {
                 if (_packetsInFlight >= _maxPacketsInFlight)
                     return;
-                if (!TryDequeueFirstPacket(out ConnState? state, out pkt))
+                if (!TryDequeueFirstPacket(out ConnectionState? state, out pkt))
                     return;
                 state.InFlight++;
                 _packetsInFlight++;
@@ -96,23 +96,23 @@ internal sealed class AclPacketQueue : IAclPacketQueue
     }
 
     /// <summary> Tries to dequeue a package from the queue. </summary>
-    /// <param name="connState"> The connectionState the packet is associated with </param>
+    /// <param name="connectionState"> The connectionState the packet is associated with </param>
     /// <param name="aclPacket"> The packet that was just dequeued </param>
     /// <returns> True, if a packet was dequeued and the out params were set. False, otherwise </returns>
     private bool TryDequeueFirstPacket(
-        [NotNullWhen(true)] out ConnState? connState,
+        [NotNullWhen(true)] out ConnectionState? connectionState,
         [NotNullWhen(true)] out HciAclPacket? aclPacket
     )
     {
-        foreach ((_, ConnState value) in _packetQueues)
+        foreach ((_, ConnectionState value) in _packetQueues)
         {
             if (!value.Queue.TryDequeue(out HciAclPacket dequeuedPkt))
                 continue;
-            connState = value;
+            connectionState = value;
             aclPacket = dequeuedPkt;
             return true;
         }
-        connState = null;
+        connectionState = null;
         aclPacket = null;
         return false;
     }
@@ -120,7 +120,7 @@ internal sealed class AclPacketQueue : IAclPacketQueue
     /// <summary>Flush queued packets for a connection and reclaim its in-flight credits.</summary>
     public void Flush(ushort connectionHandle)
     {
-        ConnState? removed;
+        ConnectionState? removed;
 
         lock (_lock)
         {
@@ -137,7 +137,7 @@ internal sealed class AclPacketQueue : IAclPacketQueue
     }
 }
 
-internal sealed class ConnState
+internal sealed class ConnectionState
 {
     public Queue<HciAclPacket> Queue { get; } = new();
     public int InFlight { get; set; }

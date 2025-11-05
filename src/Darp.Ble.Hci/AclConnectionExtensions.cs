@@ -66,7 +66,6 @@ public static class AclConnectionExtensions
         where TAttPdu : IAttPdu, IBinaryWritable
     {
         ArgumentNullException.ThrowIfNull(connection);
-        ArgumentNullException.ThrowIfNull(connection);
         const ushort attCId = 0x0004;
         byte[] payloadBytes = attPdu.ToArrayLittleEndian();
         activity?.SetDeconstructedTags("Response", attPdu, orderEntries: true);

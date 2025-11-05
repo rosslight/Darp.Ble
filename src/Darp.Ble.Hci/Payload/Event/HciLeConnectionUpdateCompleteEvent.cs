@@ -2,8 +2,8 @@ using Darp.BinaryObjects;
 
 namespace Darp.Ble.Hci.Payload.Event;
 
-/// <summary> The HCI_LE_Data_Length_Change event notifies the Host of a change to either the maximum LL Data PDU Payload length or the maximum transmission time of packets containing LL Data PDUs in either direction </summary>
-/// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-f97f9e50-69db-5e1d-25c2-9d569b5532eb"/>
+/// <summary> The HCI_LE_Connection_Update_Complete event is used to indicate that the Connection Update procedure has completed. </summary>
+/// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-0422d5f6-dcf2-88f9-be9c-d6de51256cba"/>
 [BinaryObject]
 public readonly partial record struct HciLeConnectionUpdateCompleteEvent
     : IHciLeMetaEvent<HciLeConnectionUpdateCompleteEvent>
