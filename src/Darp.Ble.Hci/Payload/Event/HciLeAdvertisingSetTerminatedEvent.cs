@@ -2,8 +2,8 @@ using Darp.BinaryObjects;
 
 namespace Darp.Ble.Hci.Payload.Event;
 
-/// <summary> The HCI_LE_Data_Length_Change event notifies the Host of a change to either the maximum LL Data PDU Payload length or the maximum transmission time of packets containing LL Data PDUs in either direction </summary>
-/// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-f97f9e50-69db-5e1d-25c2-9d569b5532eb"/>
+/// <summary> The HCI_LE_Advertising_Set_Terminated event indicates that the Controller has terminated advertising in the advertising sets specified by the Advertising_Handle parameter. </summary>
+/// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/Core-60/out/en/host-controller-interface/host-controller-interface-functional-specification.html#UUID-7cdd2597-da9d-e4b9-1cc6-cf10dd3a7ef3"/>
 [BinaryObject]
 public readonly partial record struct HciLeAdvertisingSetTerminatedEvent
     : IHciLeMetaEvent<HciLeAdvertisingSetTerminatedEvent>

@@ -47,8 +47,6 @@ internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger<HciHost
                 {
                     var hciPeer = (HciHostGattServerPeer)peer;
                     await hciPeer.ReadPhyAsync(token).ConfigureAwait(false);
-                    //await hciPeer.RequestExchangeMtuAsync(517, token).ConfigureAwait(false);
-                    //await hciPeer.SetDataLengthAsync(65, 328, token).ConfigureAwait(false);
                     return peer;
                 });
             })

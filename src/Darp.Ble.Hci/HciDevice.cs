@@ -47,8 +47,8 @@ public readonly partial struct HciPacketEvent
     public required ReadOnlyMemory<byte> DataBytes { get; init; }
 }
 
-/// <summary> The HCI Host </summary>
-public sealed partial class HciDevice : IAsyncDisposable
+/// <summary> The HCI Device </summary>
+public sealed class HciDevice : IAsyncDisposable
 {
     private readonly ITransportLayer _transportLayer;
     private readonly ILoggerFactory? _loggerFactory;
@@ -57,6 +57,8 @@ public sealed partial class HciDevice : IAsyncDisposable
 
     /// <summary> The HCI Host </summary>
     public HciHost Host { get; }
+
+    /// <summary> The GATT Server </summary>
     public GattServer GattServer { get; }
     internal ILogger? Logger { get; }
 
