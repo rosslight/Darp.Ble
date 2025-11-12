@@ -1,5 +1,6 @@
 using System.Reactive;
 using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
@@ -13,11 +14,23 @@ internal sealed class MockGattClientPeer(
     ILogger<MockGattClientPeer> logger
 ) : GattClientPeer(peripheral, address, logger)
 {
-    /// <inheritdoc />
-    public override bool IsConnected => true;
+    private readonly Subject<Unit> _whenDisconnectedSubject = new();
+    private int _isDisconnected;
 
     /// <inheritdoc />
-    public override IObservable<Unit> WhenDisconnected => Observable.Empty<Unit>();
+    public override bool IsConnected => Interlocked.CompareExchange(ref _isDisconnected, 0, 0) == 0;
+
+    /// <inheritdoc />
+    public override IObservable<Unit> WhenDisconnected => _whenDisconnectedSubject.AsObservable();
+
+    /// <summary> Triggers the disconnect event </summary>
+    internal void OnDisconnected()
+    {
+        if (Interlocked.Exchange(ref _isDisconnected, 1) == 1)
+            return;
+        _whenDisconnectedSubject.OnNext(Unit.Default);
+        _whenDisconnectedSubject.OnCompleted();
+    }
 
     public IObservable<IGattServerService> GetServices(MockGattServerPeer serverPeer)
     {
