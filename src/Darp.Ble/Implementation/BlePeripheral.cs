@@ -16,6 +16,7 @@ public abstract class BlePeripheral(BleDevice device, ILogger<BlePeripheral> log
 
     private readonly Dictionary<BleAddress, IGattClientPeer> _peerDevices = new();
     private readonly Subject<IGattClientPeer> _whenConnected = new();
+    private readonly Subject<IGattClientPeer> _whenDisconnected = new();
     private readonly Subject<Unit> _whenServiceChanged = new();
 
     /// <summary> The logger </summary>
@@ -40,8 +41,7 @@ public abstract class BlePeripheral(BleDevice device, ILogger<BlePeripheral> log
     public IObservable<IGattClientPeer> WhenConnected => _whenConnected.AsObservable();
 
     /// <inheritdoc />
-    public IObservable<IGattClientPeer> WhenDisconnected =>
-        _whenConnected.SelectMany(x => x.WhenDisconnected.Select(_ => x));
+    public IObservable<IGattClientPeer> WhenDisconnected => _whenDisconnected.AsObservable();
 
     /// <inheritdoc />
     public IObservable<Unit> WhenServiceChanged => _whenServiceChanged.AsObservable();
@@ -68,7 +68,13 @@ public abstract class BlePeripheral(BleDevice device, ILogger<BlePeripheral> log
         ArgumentNullException.ThrowIfNull(clientPeer);
         _peerDevices[clientPeer.Address] = clientPeer;
         _whenConnected.OnNext(clientPeer);
-        clientPeer.WhenDisconnected.Subscribe(_ => _peerDevices.Remove(clientPeer.Address));
+        _ = clientPeer
+            .WhenDisconnected.Take(1)
+            .Subscribe(_ =>
+            {
+                _peerDevices.Remove(clientPeer.Address);
+                _whenDisconnected.OnNext(clientPeer);
+            });
     }
 
     /// <summary> A method that can be used to clean up all resources. </summary>
@@ -77,6 +83,10 @@ public abstract class BlePeripheral(BleDevice device, ILogger<BlePeripheral> log
     {
         await DisposeAsyncCore().ConfigureAwait(false);
         Dispose(disposing: false);
+        _whenConnected.OnCompleted();
+        _whenDisconnected.OnCompleted();
+        _whenConnected.Dispose();
+        _whenDisconnected.Dispose();
     }
 
     /// <inheritdoc cref="DisposeAsync"/>

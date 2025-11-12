@@ -41,33 +41,32 @@ public sealed class MockGattClientPeerTests(ILoggerFactory loggerFactory)
         return (clientPeer, peripheral, serverPeer);
     }
 
-    [Fact]
+    [Fact(Timeout = 5000)]
     public async Task WhenDisconnected_ShouldEmit_WhenServerPeerDisposed()
     {
         (MockGattClientPeer clientPeer, _, IGattServerPeer serverPeer) = await CreateConnectedPeerAsync();
 
-        bool disconnectedReceived = false;
-        using IDisposable subscription = clientPeer.WhenDisconnected.Subscribe(_ => disconnectedReceived = true);
+        Task<Unit> peripheralDisconnectedTask = clientPeer.WhenDisconnected.Take(1).ToTask();
 
         await serverPeer.DisposeAsync();
-        await Task.Delay(10);
 
-        disconnectedReceived.Should().BeTrue("client peer should emit WhenDisconnected on disposal");
+        await peripheralDisconnectedTask;
+
         clientPeer.IsConnected.Should().BeFalse();
     }
 
-    [Fact]
+    [Fact(Timeout = 5000)]
     public async Task Peripheral_WhenDisconnected_ShouldEmit_WhenServerPeerDisposed()
     {
         (MockGattClientPeer clientPeer, MockedBlePeripheral peripheral, IGattServerPeer serverPeer) =
             await CreateConnectedPeerAsync();
 
-        Task peripheralDisconnectedTask = peripheral.WhenDisconnected.Take(1).ToTask();
+        Task<IGattClientPeer> peripheralDisconnectedTask = peripheral.WhenDisconnected.Take(1).ToTask();
 
         await serverPeer.DisposeAsync();
-        Task completedTask = await Task.WhenAny(peripheralDisconnectedTask, Task.Delay(100));
+        IGattClientPeer completedPeer = await peripheralDisconnectedTask;
 
-        completedTask.Should().BeSameAs(peripheralDisconnectedTask);
+        completedPeer.Should().BeSameAs(clientPeer);
         clientPeer.IsConnected.Should().BeFalse();
     }
 }
