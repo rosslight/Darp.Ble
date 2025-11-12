@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Command;
 using FluentAssertions;
@@ -16,7 +17,7 @@ public sealed class HciDisconnectCommandTests
     [InlineData(0, HciCommandStatus.RemoteUserTerminatedConnection, "000013")]
     public void TryWriteLittleEndian_ShouldBeValid(ushort handle, HciCommandStatus reason, string expectedHexBytes)
     {
-        var buffer = new byte[3];
+        byte[] buffer = RandomNumberGenerator.GetBytes(3);
         var value = new HciDisconnectCommand { ConnectionHandle = handle, Reason = reason };
 
         bool success = value.TryWriteLittleEndian(buffer);
@@ -30,7 +31,7 @@ public sealed class HciDisconnectCommandTests
     [Fact]
     public void TryWriteLittleEndian_ShouldBeInvalid()
     {
-        var buffer = new byte[2];
+        byte[] buffer = RandomNumberGenerator.GetBytes(2);
         HciDisconnectCommand value = default;
 
         bool success = value.TryWriteLittleEndian(buffer);

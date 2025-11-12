@@ -52,15 +52,15 @@ public sealed class H4TransportLayer(string portName, ILogger<H4TransportLayer>?
                 IHciPacket packet = await _txQueue.Reader.ReadAsync(StopToken).ConfigureAwait(false);
                 int packetLength = 1 + packet.GetByteCount();
                 byte[] bytes = ArrayPool<byte>.Shared.Rent(packetLength);
+                Memory<byte> writeMemory = bytes.AsMemory(0, packetLength);
                 try
                 {
-                    bytes[0] = (byte)packet.PacketType;
-                    if (!packet.TryWriteLittleEndian(bytes.AsSpan(start: 1)))
+                    writeMemory.Span[0] = (byte)packet.PacketType;
+                    if (!packet.TryWriteLittleEndian(writeMemory.Span[1..]))
                     {
                         _logger?.LogPacketSendingErrorEncoding(packet);
                         continue;
                     }
-                    Memory<byte> writeMemory = bytes.AsMemory(0, packetLength);
                     await _serialPort.BaseStream.WriteAsync(writeMemory, StopToken).ConfigureAwait(false);
                 }
                 finally

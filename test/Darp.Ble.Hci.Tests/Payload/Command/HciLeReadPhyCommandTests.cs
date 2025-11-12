@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Darp.Ble.Hci.Payload.Command;
 using FluentAssertions;
 
@@ -16,7 +17,7 @@ public sealed class HciLeReadPhyCommandTests
     [InlineData(0x00EF, "EF00")]
     public void TryWriteLittleEndian_ShouldBeValid(ushort handle, string expectedHexBytes)
     {
-        var buffer = new byte[2];
+        byte[] buffer = RandomNumberGenerator.GetBytes(2);
         var value = new HciLeReadPhyCommand { ConnectionHandle = handle };
 
         bool success = value.TryWriteLittleEndian(buffer);
@@ -30,7 +31,7 @@ public sealed class HciLeReadPhyCommandTests
     [Fact]
     public void TryWriteLittleEndian_ShouldBeInvalid()
     {
-        var buffer = new byte[1];
+        byte[] buffer = RandomNumberGenerator.GetBytes(1);
         HciLeReadPhyCommand value = default;
 
         bool success = value.TryWriteLittleEndian(buffer);

@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Darp.Ble.Hci.Payload.Command;
 using FluentAssertions;
 
@@ -15,7 +16,7 @@ public sealed class HciSetEventMaskCommandTests
     [InlineData((EventMask)0xFFFFFFFFFFFFFF3F, "3FFFFFFFFFFFFFFF")]
     public void TryWriteLittleEndian_ShouldBeValid(EventMask eventMask, string expectedHexBytes)
     {
-        var buffer = new byte[8];
+        byte[] buffer = RandomNumberGenerator.GetBytes(8);
         var value = new HciSetEventMaskCommand { Mask = eventMask };
 
         bool success = value.TryWriteLittleEndian(buffer);
@@ -28,7 +29,7 @@ public sealed class HciSetEventMaskCommandTests
     [Fact]
     public void TryWriteLittleEndian_ShouldBeInvalid()
     {
-        var buffer = new byte[7];
+        byte[] buffer = RandomNumberGenerator.GetBytes(7);
         HciSetEventMaskCommand value = default;
 
         bool success = value.TryWriteLittleEndian(buffer);

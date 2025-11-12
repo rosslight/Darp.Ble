@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Darp.Ble.Hci.Payload.Command;
 using FluentAssertions;
 
@@ -45,7 +46,7 @@ public sealed class HciLeExtendedCreateConnectionV1CommandTests
         string expectedHexBytes
     )
     {
-        var buffer = new byte[26];
+        byte[] buffer = RandomNumberGenerator.GetBytes(26);
         var value = new HciLeExtendedCreateConnectionV1Command
         {
             InitiatorFilterPolicy = initiatorFilterPolicy,
@@ -85,7 +86,7 @@ public sealed class HciLeExtendedCreateConnectionV1CommandTests
     [Fact]
     public void TryWriteLittleEndian_ShouldBeInvalid()
     {
-        var buffer = new byte[25];
+        byte[] buffer = RandomNumberGenerator.GetBytes(25);
         HciLeExtendedCreateConnectionV1Command value = default;
 
         bool success = value.TryWriteLittleEndian(buffer);

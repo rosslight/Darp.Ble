@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Darp.Ble.Hci.Payload.Command;
 using FluentAssertions;
 
@@ -15,7 +16,7 @@ public sealed class HciLeSetRandomAddressCommandTests
     [InlineData(0xF5F4F3F2F1F0, "F0F1F2F3F4F5")]
     public void TryWriteLittleEndian_ShouldBeValid(ulong address, string expectedHexBytes)
     {
-        var buffer = new byte[6];
+        byte[] buffer = RandomNumberGenerator.GetBytes(6);
         var value = new HciLeSetRandomAddressCommand { RandomAddress = address };
 
         bool success = value.TryWriteLittleEndian(buffer);
@@ -28,7 +29,7 @@ public sealed class HciLeSetRandomAddressCommandTests
     [Fact]
     public void TryWriteLittleEndian_ShouldBeInvalid()
     {
-        var buffer = new byte[5];
+        byte[] buffer = RandomNumberGenerator.GetBytes(5);
         HciLeSetExtendedScanParametersCommand value = default;
 
         bool success = value.TryWriteLittleEndian(buffer);

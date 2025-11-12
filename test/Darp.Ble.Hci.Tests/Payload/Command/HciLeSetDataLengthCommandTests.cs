@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Darp.Ble.Hci.Payload.Command;
 using FluentAssertions;
 
@@ -20,7 +21,7 @@ public sealed class HciLeSetDataLengthCommandTests
         string expectedHexBytes
     )
     {
-        var buffer = new byte[6];
+        byte[] buffer = RandomNumberGenerator.GetBytes(6);
         var value = new HciLeSetDataLengthCommand
         {
             ConnectionHandle = handle,

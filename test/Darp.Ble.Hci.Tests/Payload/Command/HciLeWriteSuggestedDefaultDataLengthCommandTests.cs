@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Darp.Ble.Hci.Payload.Command;
 using FluentAssertions;
 
@@ -19,7 +20,7 @@ public sealed class HciLeWriteSuggestedDefaultDataLengthCommandTests
         string expectedHexBytes
     )
     {
-        var buffer = new byte[4];
+        byte[] buffer = RandomNumberGenerator.GetBytes(4);
         var value = new HciLeWriteSuggestedDefaultDataLengthCommand
         {
             SuggestedMaxTxOctets = suggestedMaxTxOctets,
@@ -37,7 +38,7 @@ public sealed class HciLeWriteSuggestedDefaultDataLengthCommandTests
     [Fact]
     public void TryWriteLittleEndian_ShouldBeInvalid()
     {
-        var buffer = new byte[3];
+        byte[] buffer = RandomNumberGenerator.GetBytes(3);
         HciLeWriteSuggestedDefaultDataLengthCommand value = default;
 
         bool success = value.TryWriteLittleEndian(buffer);

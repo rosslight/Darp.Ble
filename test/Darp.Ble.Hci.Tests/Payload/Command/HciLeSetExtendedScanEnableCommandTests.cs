@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Darp.Ble.Hci.Payload.Command;
 using FluentAssertions;
 
@@ -21,7 +22,7 @@ public sealed class HciLeSetExtendedScanEnableCommandTests
         string expectedHexBytes
     )
     {
-        var buffer = new byte[6];
+        byte[] buffer = RandomNumberGenerator.GetBytes(6);
         var value = new HciLeSetExtendedScanEnableCommand
         {
             Enable = enable,
@@ -43,7 +44,7 @@ public sealed class HciLeSetExtendedScanEnableCommandTests
     [Fact]
     public void TryWriteLittleEndian_ShouldBeInvalid()
     {
-        var buffer = new byte[5];
+        byte[] buffer = RandomNumberGenerator.GetBytes(5);
         HciLeSetExtendedScanEnableCommand value = default;
 
         bool success = value.TryWriteLittleEndian(buffer);
