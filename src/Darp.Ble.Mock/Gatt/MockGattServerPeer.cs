@@ -24,6 +24,8 @@ internal sealed class MockGattServerPeer(
     protected override void DisposeCore()
     {
         ConnectionSubject.OnNext(ConnectionStatus.Disconnected);
+        // Trigger the client peer's disconnect
+        _clientPeer.OnDisconnected();
         base.DisposeCore();
     }
 }
