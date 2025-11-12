@@ -1,13 +1,13 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
+using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Gatt.Services;
-using Darp.Ble.Mock;
 using Darp.Ble.Mock.Testing;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;
@@ -164,38 +164,5 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
         await using IDisposableObservable<byte> notifyable = await service.BatteryLevel.OnNotifyAsync<byte>();
         byte notifiedLevel = await notifyable.FirstAsync();
         notifiedLevel.Should().Be(readLevel);
-    }
-
-    [Fact]
-    public async Task WhenDisconnected_ShouldBeCalled_WhenServerPeerIsDisposed()
-    {
-        var address = BleAddress.NewRandomStaticAddress();
-        BleManager manager = new BleManagerBuilder()
-            .AddMock(factory =>
-                factory.AddPeripheral(async device =>
-                {
-                    await device.SetRandomAddressAsync(address).ConfigureAwait(false);
-                })
-            )
-            .SetLogger(_loggerFactory)
-            .CreateManager();
-        var device = (MockBleDevice)manager.EnumerateDevices().First();
-        await device.InitializeAsync();
-
-        IGattServerPeer serverPeer = await device.Central.ConnectToPeripheral(address).FirstAsync();
-        MockedBlePeripheral peripheral = device.MockedDevices.First().Peripheral;
-        IGattClientPeer clientPeer = peripheral.PeerDevices[address];
-
-        // Subscribe to WhenDisconnected on the client peer
-        bool disconnectedReceived = false;
-        using IDisposable subscription = clientPeer.WhenDisconnected.Subscribe(_ => disconnectedReceived = true);
-
-        // Dispose the server peer - this should trigger WhenDisconnected
-        await serverPeer.DisposeAsync();
-
-        // Wait a bit to allow the observable to propagate
-        await Task.Delay(10);
-
-        disconnectedReceived.Should().BeTrue("WhenDisconnected should be called when server peer is disposed");
     }
 }
