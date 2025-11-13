@@ -1,6 +1,7 @@
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gatt.Services;
+using Darp.Ble.Hci;
 using Darp.Ble.Hci.Host;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Result;
@@ -17,17 +18,20 @@ internal sealed class HciHostBleDevice(
     string? name,
     BleAddress? randomAddress,
     ITransportLayer transportLayer,
+    HciSettings settings,
     IServiceProvider serviceProvider
 ) : BleDevice(serviceProvider, serviceProvider.GetLogger<HciHostBleDevice>())
 {
-    public Hci.HciDevice HciDevice { get; } =
+    public HciDevice HciDevice { get; } =
         new(
             transportLayer,
             randomAddress ?? BleAddress.NewRandomStaticAddress().Value,
+            settings,
             serviceProvider.GetService<ILoggerFactory>()
         );
 
     public override string? Name { get; set; } = name;
+
     public override AppearanceValues Appearance { get; set; } = AppearanceValues.Unknown;
 
     public override BleAddress RandomAddress => BleAddress.CreateRandomAddress((UInt48)HciDevice.Address);

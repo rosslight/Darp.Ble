@@ -67,15 +67,25 @@ public sealed class HciDevice : IAsyncDisposable
     /// <summary> The random address </summary>
     public ulong Address { get; private set; }
 
+    /// <summary> Settings to be used </summary>
+    public HciSettings Settings { get; }
+
     /// <summary> The HCI Host </summary>
     /// <param name="transportLayer"> The transport layer </param>
     /// <param name="randomAddress"> The random address of the device </param>
+    /// <param name="settings"> Settings for timings, etc </param>
     /// <param name="loggerFactory"> An optional logger </param>
-    public HciDevice(ITransportLayer transportLayer, ulong randomAddress, ILoggerFactory? loggerFactory)
+    public HciDevice(
+        ITransportLayer transportLayer,
+        ulong randomAddress,
+        HciSettings settings,
+        ILoggerFactory? loggerFactory
+    )
     {
         _transportLayer = transportLayer;
         _loggerFactory = loggerFactory;
         Address = randomAddress;
+        Settings = settings;
         Logger = loggerFactory?.CreateLogger<HciDevice>();
         Host = new HciHost(this, transportLayer, loggerFactory?.CreateLogger<HciHost>());
         GattServer = new GattServer(this, loggerFactory?.CreateLogger<GattServer>());

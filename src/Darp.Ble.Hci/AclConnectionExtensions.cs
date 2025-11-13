@@ -25,7 +25,7 @@ public static class AclConnectionExtensions
         where TResponse : struct, IAttPdu, IBinaryReadable<TResponse>
     {
         ArgumentNullException.ThrowIfNull(connection);
-        timeout ??= TimeSpan.FromSeconds(30);
+        timeout ??= TimeSpan.FromMilliseconds(connection.Device.Settings.DefaultAttTimeoutMs);
         using var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(
             cancellationToken,
             connection.DisconnectToken

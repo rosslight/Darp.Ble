@@ -140,7 +140,7 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
         where TResponse : ICommandStatusResult, IBinaryReadable<TResponse>
     {
         ObjectDisposedException.ThrowIf(Device.IsDisposed, this);
-        timeout ??= TimeSpan.FromSeconds(5);
+        timeout ??= TimeSpan.FromMilliseconds(Device.Settings.DefaultHciCommandTimeoutMs);
         using var handler = new HciPacketInFlightHandler<TCommand, HciCommandCompleteEvent>(
             this,
             _packetInFlightSemaphore
