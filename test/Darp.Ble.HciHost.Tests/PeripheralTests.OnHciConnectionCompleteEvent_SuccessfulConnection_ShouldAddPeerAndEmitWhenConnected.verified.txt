@@ -1,0 +1,9 @@
+﻿{
+  MessagesToHost: [
+    {
+      Type: HciEvent,
+      EventCode: HCI_LE_Meta,
+      PduBytes: 043E1F0A000100010366554433221100000000000000000000000028000000F40101
+    }
+  ]
+}

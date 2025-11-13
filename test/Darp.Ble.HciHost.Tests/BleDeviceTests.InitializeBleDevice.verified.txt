@@ -2,61 +2,61 @@
   {
     Type: HciCommand,
     OpCode: HCI_Reset,
-    PduBytes: 030C00
+    PduBytes: 01030C00
   },
   {
     Type: HciCommand,
     OpCode: HCI_Read_Local_Supported_Commands,
-    PduBytes: 021000
+    PduBytes: 01021000
   },
   {
     Type: HciCommand,
     OpCode: HCI_LE_Read_Local_Supported_Features,
-    PduBytes: 032000
+    PduBytes: 01032000
   },
   {
     Type: HciCommand,
     OpCode: HCI_Read_Local_Version_Information,
-    PduBytes: 011000
+    PduBytes: 01011000
   },
   {
     Type: HciCommand,
     OpCode: HCI_Read_Local_Supported_Features,
-    PduBytes: 031000
+    PduBytes: 01031000
   },
   {
     Type: HciCommand,
     OpCode: HCI_Set_Event_Mask,
-    PduBytes: 010C08FF9FFBBF07F8BF3D
+    PduBytes: 01010C08FF9FFBBF07F8BF3D
   },
   {
     Type: HciCommand,
     OpCode: HCI_LE_Set_Event_Mask,
-    PduBytes: 012008FFFFF7FF07000000
+    PduBytes: 01012008FFFFF7FF07000000
   },
   {
     Type: HciCommand,
     OpCode: HCI_LE_Read_Buffer_Size_V1,
-    PduBytes: 022000
+    PduBytes: 01022000
   },
   {
     Type: HciCommand,
     OpCode: HCI_LE_Read_Suggested_Default_Data_Length,
-    PduBytes: 232000
+    PduBytes: 01232000
   },
   {
     Type: HciCommand,
     OpCode: HCI_LE_Write_Suggested_Default_Data_Length,
-    PduBytes: 242004FB004808
+    PduBytes: 01242004FB004808
   },
   {
     Type: HciCommand,
     OpCode: HCI_LE_Set_Random_Address,
-    PduBytes: 0520066E8B96AAC5E0
+    PduBytes: 010520066E8B96AAC5E0
   },
   {
     Type: HciCommand,
     OpCode: HCI_LE_READ_MAXIMUM_ADVERTISING_DATA_LENGTH,
-    PduBytes: 3A2000
+    PduBytes: 013A2000
   }
 ]

@@ -18,6 +18,8 @@ public sealed class Startup
     {
         VerifierSettings.InitializePlugins();
         VerifierSettings.ScrubLinesContaining(StringComparison.InvariantCulture, "DiffEngineTray");
+        // 16-byte arrays may be scrubbed
+        VerifierSettings.DontScrubGuids();
         VerifierSettings.IgnoreStackTrace();
         VerifyHciHost.Initialize();
     }
