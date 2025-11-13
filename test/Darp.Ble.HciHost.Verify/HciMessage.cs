@@ -114,4 +114,10 @@ public sealed record HciMessage(HciDirection Direction, HciPacketType Type, byte
     /// <returns></returns>
     public static HciMessage AclToHost(byte[] pduBytes) =>
         new(HciDirection.ControllerToHost, HciPacketType.HciAclData, pduBytes);
+
+    /// <summary> Constructs an HCI ACL message sent to the controller </summary>
+    /// <param name="pduBytes"></param>
+    /// <returns></returns>
+    public static HciMessage AclToController(byte[] pduBytes) =>
+        new(HciDirection.HostToController, HciPacketType.HciAclData, pduBytes);
 }

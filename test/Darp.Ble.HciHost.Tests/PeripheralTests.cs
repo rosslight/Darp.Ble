@@ -63,7 +63,7 @@ public sealed class PeripheralTests
     [Fact(Timeout = 5000)]
     public async Task ServiceDiscovery_WhenCentralRequestsServices_ShouldRespondWithServices()
     {
-        const ushort connectionHandle = 0x0001;
+        const ushort connectionHandle = 0x000F;
         var peerAddress = BleAddress.CreateRandomAddress((UInt48)0x112233445566);
 
         ReplayTransportLayer replay = ReplayTransportLayer.ReplayAfterBleDeviceInitialization(
@@ -71,7 +71,15 @@ public sealed class PeripheralTests
         );
 
         await using IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(replay, token: Token);
-        GattClientDeviceInformationService service = device.Peripheral.AddDeviceInformationService();
+        device.Peripheral.AddGattService();
+        GattClientDeviceInformationService service = device.Peripheral.AddDeviceInformationService(
+            manufacturerName: "rosslight",
+            modelNumber: "123-123-123",
+            serialNumber: "123-123-123",
+            hardwareRevision: "v1.2.3",
+            softwareRevision: "v3.2.1",
+            systemId: new SystemId(0x1234, 0x4321)
+        );
 
         // Subscribe to WhenConnected observable before pushing the event
         Task<IGattClientPeer> connectionTask = device.Peripheral.WhenConnected.FirstAsync().ToTask(Token);
