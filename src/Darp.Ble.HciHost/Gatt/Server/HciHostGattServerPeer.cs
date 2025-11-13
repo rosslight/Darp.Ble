@@ -181,7 +181,7 @@ internal sealed partial class HciHostGattServerPeer : GattServerPeer
     {
         // Suppress throwing here
         await Connection
-            .DisconnectAsync()
+            .DisconnectAsync(token: CancellationToken.None)
             .ContinueWith(_ => { }, TaskScheduler.Default)
             .ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
         _hostSubscription.Dispose();

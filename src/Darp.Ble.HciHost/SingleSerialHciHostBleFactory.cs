@@ -1,4 +1,5 @@
 using Darp.Ble.Data;
+using Darp.Ble.Hci;
 using Darp.Ble.Hci.Transport;
 
 namespace Darp.Ble.HciHost;
@@ -19,6 +20,9 @@ public sealed class SingleSerialHciHostBleFactory(string portName) : IHciHostBle
     /// <inheritdoc />
     public TimeProvider TimeProvider { get; set; } = TimeProvider.System;
 
+    /// <summary> Settings to be used by devices enumerated by this factory </summary>
+    public HciSettings Settings { get; set; } = HciSettings.Default;
+
     /// <inheritdoc />
     IEnumerable<IBleDevice> IBleFactory.EnumerateDevices(IServiceProvider serviceProvider)
     {
@@ -28,8 +32,9 @@ public sealed class SingleSerialHciHostBleFactory(string portName) : IHciHostBle
         yield return new HciHostBleDevice(
             DeviceName ?? PortName,
             randomAddress: RandomAddress,
-            transportLayer,
-            serviceProvider
+            transportLayer: transportLayer,
+            settings: Settings,
+            serviceProvider: serviceProvider
         );
     }
 }

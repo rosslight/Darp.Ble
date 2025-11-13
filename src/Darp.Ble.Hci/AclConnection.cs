@@ -108,11 +108,13 @@ public sealed class AclConnection : IDisposable
     {
         if (DisconnectToken.IsCancellationRequested)
             return;
-        await Device.Host.QueryCommandAsync<HciDisconnectCommand, HciDisconnectionCompleteEvent>(
-            new HciDisconnectCommand { ConnectionHandle = ConnectionHandle, Reason = reason },
-            timeout: TimeSpan.FromSeconds(2),
-            token
-        );
+        await Device
+            .Host.QueryCommandAsync<HciDisconnectCommand, HciDisconnectionCompleteEvent>(
+                new HciDisconnectCommand { ConnectionHandle = ConnectionHandle, Reason = reason },
+                timeout: TimeSpan.FromSeconds(2),
+                token
+            )
+            .ConfigureAwait(false);
     }
 
     public void Dispose()

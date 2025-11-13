@@ -1,4 +1,5 @@
 using Darp.Ble.Data;
+using Darp.Ble.Hci;
 using Darp.Ble.Hci.Transport;
 using Darp.Ble.HciHost.Usb;
 
@@ -17,6 +18,9 @@ public sealed class SerialHciHostBleFactory : IHciHostBleFactory
     /// <inheritdoc />
     public TimeProvider TimeProvider { get; set; } = TimeProvider.System;
 
+    /// <summary> Settings to be used by devices enumerated by this factory </summary>
+    public HciSettings Settings { get; set; } = HciSettings.Default;
+
     IEnumerable<IBleDevice> IBleFactory.EnumerateDevices(IServiceProvider serviceProvider)
     {
         // Using vendorId of NordicSemiconductor and productId self defined
@@ -33,8 +37,9 @@ public sealed class SerialHciHostBleFactory : IHciHostBleFactory
             yield return new HciHostBleDevice(
                 $"{deviceName} ({portInfo.Port})",
                 randomAddress: RandomAddress,
-                transportLayer,
-                serviceProvider
+                transportLayer: transportLayer,
+                settings: Settings,
+                serviceProvider: serviceProvider
             );
         }
     }
