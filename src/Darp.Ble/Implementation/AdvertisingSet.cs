@@ -15,7 +15,7 @@ public abstract class AdvertisingSet(BleBroadcaster broadcaster) : IAdvertisingS
     public IBleBroadcaster Broadcaster => _broadcaster;
 
     /// <inheritdoc />
-    public BleAddress RandomAddress { get; protected set; } = BleAddress.NotAvailable;
+    public BleAddress RandomAddress { get; protected set; } = broadcaster.Device.RandomAddress;
 
     /// <inheritdoc />
     public AdvertisingParameters Parameters { get; protected set; } = AdvertisingParameters.Default;

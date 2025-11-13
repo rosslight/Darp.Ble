@@ -67,6 +67,9 @@ public sealed record AdvertisingParameters
     /// <value> Only <see cref="Physical.Le1M"/> and <see cref="Physical.LeCoded"/> are allowed </value>
     public Physical PrimaryPhy { get; init; } = Physical.Le1M;
 
+    /// <summary> The secondary physical </summary>
+    public Physical SecondaryPhy { get; init; } = Physical.Le1M;
+
     /// <summary> The advertising SId </summary>
     public AdvertisingSId AdvertisingSId { get; init; }
 }
