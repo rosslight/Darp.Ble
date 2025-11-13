@@ -42,6 +42,10 @@ internal sealed class HciMessageConverter : WriteOnlyJsonConverter<HciMessage>
                         ):
                         writer.WriteMember(statusEvent, statusEvent.CommandOpCode, nameof(statusEvent.CommandOpCode));
                         break;
+                    case HciEventCode.HCI_LE_Meta
+                        when HciLeMetaEvent.TryReadLittleEndian(eventPacket.DataBytes, out HciLeMetaEvent leMetaEvent):
+                        writer.WriteMember(leMetaEvent, leMetaEvent.SubEventCode, nameof(leMetaEvent.SubEventCode));
+                        break;
                 }
                 break;
             case HciPacketType.HciAclData
