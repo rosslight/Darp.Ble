@@ -9,6 +9,8 @@ namespace Darp.Ble.HciHost.Tests;
 
 public sealed class ObserverTests
 {
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
     private static readonly HciMessage SingleAdv = HciMessage.LeEventToHost(
         "0D0110000115C4911966EE0100FF7FB40000FF0000000000000807FF4C0012020000"
     );
@@ -28,7 +30,7 @@ public sealed class ObserverTests
     )
     {
         ReplayTransportLayer transport = ReplayTransportLayer.ReplayAfterBleDeviceInitialization(messages);
-        IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(transport, cancellationToken: token);
+        IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(transport, token: token);
 
         // sanity check: not observing yet
         device.Observer.IsObserving.ShouldBeFalse();
@@ -42,11 +44,10 @@ public sealed class ObserverTests
     [Fact(Timeout = 5000)]
     public async Task AdvertisementObserved()
     {
-        var token = CancellationToken.None;
-        (IBleObserver observer, ReplayTransportLayer replay) = await CreateDefaultObserver(token);
+        (IBleObserver observer, ReplayTransportLayer replay) = await CreateDefaultObserver(Token);
 
-        Task<IGapAdvertisement> observationTask = observer.OnAdvertisement().FirstAsync().ToTask(token);
-        await observer.StartObservingAsync(token);
+        Task<IGapAdvertisement> observationTask = observer.OnAdvertisement().FirstAsync().ToTask(Token);
+        await observer.StartObservingAsync(Token);
 
         replay.Push(SingleAdv);
         IGapAdvertisement advertisement = await observationTask;
@@ -60,17 +61,16 @@ public sealed class ObserverTests
     [Fact(Timeout = 5000)]
     public async Task Configure()
     {
-        var token = CancellationToken.None;
         const ScanTiming interval1 = ScanTiming.Ms100;
         const ScanTiming interval2 = ScanTiming.Ms1000;
-        (IBleObserver observer, _) = await CreateDefaultObserver(token);
+        (IBleObserver observer, _) = await CreateDefaultObserver(Token);
 
         bool configureSuccess1 = observer.Configure(new BleObservationParameters { ScanInterval = interval1 });
         configureSuccess1.ShouldBeTrue();
         observer.Parameters.ScanInterval.ShouldBe(interval1);
 
         // start observing
-        await observer.StartObservingAsync(token);
+        await observer.StartObservingAsync(Token);
         observer.IsObserving.ShouldBeTrue();
 
         // now configure should be rejected
@@ -84,13 +84,12 @@ public sealed class ObserverTests
     [Fact(Timeout = 5000)]
     public async Task StartObserving_IsNoOp()
     {
-        var token = CancellationToken.None;
-        (IBleObserver observer, ReplayTransportLayer replay) = await CreateDefaultObserver(token);
+        (IBleObserver observer, ReplayTransportLayer replay) = await CreateDefaultObserver(Token);
 
-        await observer.StartObservingAsync(token);
+        await observer.StartObservingAsync(Token);
         observer.IsObserving.ShouldBeTrue();
 
-        await observer.StartObservingAsync(token);
+        await observer.StartObservingAsync(Token);
         observer.IsObserving.ShouldBeTrue();
 
         await observer.StopObservingAsync();
@@ -102,8 +101,7 @@ public sealed class ObserverTests
     [Fact(Timeout = 5000)]
     public async Task StopObserving_BeforeStart_IsNoOp()
     {
-        var token = CancellationToken.None;
-        (IBleObserver observer, ReplayTransportLayer _) = await CreateObserver(EmptyMessages, token);
+        (IBleObserver observer, ReplayTransportLayer _) = await CreateObserver(EmptyMessages, Token);
 
         await observer.StopObservingAsync();
         observer.IsObserving.ShouldBeFalse();
@@ -112,9 +110,8 @@ public sealed class ObserverTests
     [Fact(Timeout = 5000)]
     public async Task OnAdvertisement_Unsubscribe_StopsCallback()
     {
-        var token = CancellationToken.None;
-        (IBleObserver observer, ReplayTransportLayer replay) = await CreateDefaultObserver(token);
-        await observer.StartObservingAsync(token);
+        (IBleObserver observer, ReplayTransportLayer replay) = await CreateDefaultObserver(Token);
+        await observer.StartObservingAsync(Token);
 
         var calls = 0;
         IDisposable subscription = observer.OnAdvertisement(_ => calls++);
@@ -133,9 +130,8 @@ public sealed class ObserverTests
     [Fact(Timeout = 5000)]
     public async Task OnAdvertisement_ThrowingHandler_DoesNotPreventOthers()
     {
-        var token = CancellationToken.None;
-        (IBleObserver observer, ReplayTransportLayer replay) = await CreateDefaultObserver(token);
-        await observer.StartObservingAsync(token);
+        (IBleObserver observer, ReplayTransportLayer replay) = await CreateDefaultObserver(Token);
+        await observer.StartObservingAsync(Token);
 
         var secondFired = false;
 

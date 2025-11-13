@@ -6,13 +6,15 @@ namespace Darp.Ble.HciHost.Tests;
 
 public sealed class BroadcasterTests
 {
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
     private static async Task<(IBleBroadcaster Observer, ReplayTransportLayer Replay)> CreateBroadcaster(
         HciMessage[] messages,
         CancellationToken token
     )
     {
         ReplayTransportLayer transport = ReplayTransportLayer.ReplayAfterBleDeviceInitialization(messages);
-        IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(transport, cancellationToken: token);
+        IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(transport, token: token);
 
         return (device.Broadcaster, transport);
     }
@@ -20,7 +22,6 @@ public sealed class BroadcasterTests
     [Fact(Timeout = 5000)]
     public async Task? MultipleAdvertisingSet_Disposal_ShouldBeRemoved()
     {
-        var token = CancellationToken.None;
         (IBleBroadcaster broadcaster, ReplayTransportLayer replay) = await CreateBroadcaster(
             [
                 HciMessages.HciLeReadNumberOfSupportedAdvertisingSetsEvent(numSupportedAdvertisingSets: 2), // Create set 1
@@ -34,11 +35,11 @@ public sealed class BroadcasterTests
                 HciMessages.HciLeRemoveAdvertisingSetEvent(), // Remove sets
                 HciMessages.HciLeRemoveAdvertisingSetEvent(),
             ],
-            token
+            Token
         );
 
-        IAdvertisingSet set1 = await broadcaster.CreateAdvertisingSetAsync(cancellationToken: token);
-        IAdvertisingSet set2 = await broadcaster.CreateAdvertisingSetAsync(cancellationToken: token);
+        IAdvertisingSet set1 = await broadcaster.CreateAdvertisingSetAsync(cancellationToken: Token);
+        IAdvertisingSet set2 = await broadcaster.CreateAdvertisingSetAsync(cancellationToken: Token);
 
         set1.IsAdvertising.ShouldBeFalse();
         broadcaster.IsAdvertising.ShouldBeFalse();
@@ -47,7 +48,7 @@ public sealed class BroadcasterTests
         broadcaster.IsAdvertising.ShouldBeFalse();
         set2.ShouldBeOfType<HciAdvertisingSet>().AdvertisingHandle.ShouldBe<byte>(1);
 
-        await set1.StartAdvertisingAsync(cancellationToken: token);
+        await set1.StartAdvertisingAsync(cancellationToken: Token);
         set1.IsAdvertising.ShouldBeTrue();
         broadcaster.IsAdvertising.ShouldBeTrue();
 
@@ -59,7 +60,6 @@ public sealed class BroadcasterTests
     [Fact(Timeout = 5000)]
     public async Task AdvertisingSet_IsAdvertising_Disposal_ShouldBeStoppedAndRemoved()
     {
-        var token = CancellationToken.None;
         (IBleBroadcaster broadcaster, ReplayTransportLayer replay) = await CreateBroadcaster(
             [
                 HciMessages.HciLeReadNumberOfSupportedAdvertisingSetsEvent(), // Create set
@@ -69,14 +69,14 @@ public sealed class BroadcasterTests
                 HciMessages.HciLeSetExtendedAdvertisingEnableEvent(), // Stopping
                 HciMessages.HciLeRemoveAdvertisingSetEvent(),
             ],
-            token
+            Token
         );
 
-        IAdvertisingSet set1 = await broadcaster.CreateAdvertisingSetAsync(cancellationToken: token);
+        IAdvertisingSet set1 = await broadcaster.CreateAdvertisingSetAsync(cancellationToken: Token);
         set1.IsAdvertising.ShouldBeFalse();
         broadcaster.IsAdvertising.ShouldBeFalse();
 
-        IAsyncDisposable disposable = await set1.StartAdvertisingAsync(cancellationToken: token);
+        IAsyncDisposable disposable = await set1.StartAdvertisingAsync(cancellationToken: Token);
         set1.IsAdvertising.ShouldBeTrue();
         broadcaster.IsAdvertising.ShouldBeTrue();
 

@@ -2,6 +2,8 @@ using System.Runtime.CompilerServices;
 using Darp.Ble.HciHost.Verify;
 using VerifyTests.DiffPlex;
 
+[assembly: CaptureConsole]
+
 namespace Darp.Ble.HciHost.Tests;
 
 // Magic class "Startup" to set up DI

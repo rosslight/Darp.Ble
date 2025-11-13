@@ -1,6 +1,13 @@
+using System.Buffers.Binary;
+using System.Diagnostics;
+using Darp.BinaryObjects;
+using Darp.Ble.Hci;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload;
+using Darp.Ble.Hci.Payload.Att;
+using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.Hci.Payload.Result;
+using UInt48 = Darp.Ble.Hci.Payload.Command.UInt48;
 
 namespace Darp.Ble.HciHost.Verify;
 
@@ -49,4 +56,152 @@ public static class HciMessages
             HciOpCode.HCI_LE_Remove_Advertising_Set,
             new HciLeRemoveAdvertisingSetResult { Status = status }
         );
+
+    public static HciMessage HciLeExtendedCreateConnectionCommandStatusEvent(
+        HciCommandStatus status = HciCommandStatus.Success,
+        byte numHciCommandPackets = 1
+    ) =>
+        HciMessage.EventToHost(
+            new HciCommandStatusEvent
+            {
+                Status = status,
+                NumHciCommandPackets = numHciCommandPackets,
+                CommandOpCode = HciOpCode.HCI_LE_Extended_Create_Connection_V1,
+            }
+        );
+
+    public static HciMessage HciLeEnhancedConnectionCompleteEvent(
+        ushort connectionHandle,
+        HciLeConnectionRole role,
+        byte peerAddressType,
+        ulong peerAddress,
+        ushort connectionInterval,
+        ushort peripheralLatency,
+        ushort supervisionTimeout,
+        byte centralClockAccuracy = 0,
+        HciCommandStatus status = HciCommandStatus.Success
+    )
+    {
+        var evt = new HciLeEnhancedConnectionCompleteV1Event
+        {
+            SubEventCode = HciLeEnhancedConnectionCompleteV1Event.SubEventType,
+            Status = status,
+            ConnectionHandle = connectionHandle,
+            Role = role,
+            PeerAddressType = peerAddressType,
+            PeerAddress = peerAddress,
+            LocalResolvablePrivateAddress = default,
+            PeerResolvablePrivateAddress = default,
+            ConnectionInterval = connectionInterval,
+            PeripheralLatency = peripheralLatency,
+            SupervisionTimeout = supervisionTimeout,
+            CentralClockAccuracy = centralClockAccuracy,
+        };
+        return HciMessage.LeEventToHost(evt);
+    }
+
+    public static HciMessage HciLeReadPhyEvent(
+        ushort connectionHandle,
+        byte txPhy,
+        byte rxPhy,
+        HciCommandStatus status = HciCommandStatus.Success
+    ) =>
+        HciMessage.CommandCompleteEventToHost(
+            HciOpCode.HCI_LE_READ_PHY,
+            new HciLeReadPhyResult
+            {
+                Status = status,
+                ConnectionHandle = connectionHandle,
+                TxPhy = txPhy,
+                RxPhy = rxPhy,
+            }
+        );
+
+    public static HciMessage HciDisconnectionCompleteEvent(
+        ushort connectionHandle,
+        HciCommandStatus reason = HciCommandStatus.RemoteUserTerminatedConnection,
+        HciCommandStatus status = HciCommandStatus.Success
+    ) =>
+        HciMessage.EventToHost(
+            new HciDisconnectionCompleteEvent
+            {
+                Status = status,
+                ConnectionHandle = connectionHandle,
+                Reason = reason,
+            }
+        );
+
+    public static HciMessage AttToHost<TAttPdu>(ushort connectionHandle, TAttPdu attPdu)
+        where TAttPdu : IAttPdu, IBinaryWritable
+    {
+        byte[] attBytes = attPdu.ToArrayLittleEndian();
+        var l2CapPayload = new byte[4 + attBytes.Length];
+        BinaryPrimitives.WriteUInt16LittleEndian(l2CapPayload, (ushort)attBytes.Length);
+        BinaryPrimitives.WriteUInt16LittleEndian(l2CapPayload.AsSpan(2), 0x0004);
+        attBytes.CopyTo(l2CapPayload.AsSpan(4));
+
+        var aclPacket = new HciAclPacket(
+            connectionHandle,
+            PacketBoundaryFlag.FirstAutoFlushable,
+            BroadcastFlag.PointToPoint,
+            (ushort)l2CapPayload.Length,
+            l2CapPayload
+        );
+
+        return HciMessage.AclToHost(aclPacket.ToArrayLittleEndian());
+    }
+
+    public static HciMessage AttReadByGroupTypeResponse(
+        ushort connectionHandle,
+        params AttGroupTypeData[] attributeDataList
+    )
+    {
+        byte length = attributeDataList.Length > 0 ? checked((byte)attributeDataList[0].GetByteCount()) : (byte)0;
+        Debug.Assert(attributeDataList.All(x => x.GetByteCount() == length));
+
+        return AttToHost(
+            connectionHandle,
+            new AttReadByGroupTypeRsp { Length = length, AttributeDataList = attributeDataList }
+        );
+    }
+
+    public static HciMessage AttNotFoundErrorResponse(
+        ushort connectionHandle,
+        AttOpCode requestOpCode,
+        ushort handle
+    ) => AttErrorResponse(connectionHandle, requestOpCode, handle, AttErrorCode.AttributeNotFoundError);
+
+    public static HciMessage AttErrorResponse(
+        ushort connectionHandle,
+        AttOpCode requestOpCode,
+        ushort handle,
+        AttErrorCode errorCode
+    ) =>
+        AttToHost(
+            connectionHandle,
+            new AttErrorRsp
+            {
+                RequestOpCode = requestOpCode,
+                Handle = handle,
+                ErrorCode = errorCode,
+            }
+        );
+
+    public static HciMessage HciNumberOfCompletedPacketsEvent(ushort connectionHandle, ushort numCompletedPackets = 1)
+    {
+        return HciMessage.EventToHost(
+            new HciNumberOfCompletedPacketsEvent
+            {
+                Handles =
+                [
+                    new HciNumberOfCompletedPackets
+                    {
+                        ConnectionHandle = connectionHandle,
+                        NumCompletedPackets = numCompletedPackets,
+                    },
+                ],
+                NumHandles = 1,
+            }
+        );
+    }
 }

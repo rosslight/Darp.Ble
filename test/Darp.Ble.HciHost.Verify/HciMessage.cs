@@ -50,6 +50,12 @@ public sealed record HciMessage(HciDirection Direction, HciPacketType Type, byte
         return new HciMessage(HciDirection.ControllerToHost, HciPacketType.HciEvent, evt.ToArrayLittleEndian());
     }
 
+    public static HciMessage LeEventToHost<TEvent>(TEvent hciEvent)
+        where TEvent : IHciLeMetaEvent<TEvent>, IBinaryWritable
+    {
+        return LeEventToHost(hciEvent.ToArrayLittleEndian());
+    }
+
     /// <summary> Constructs an HCI le event message sent to the host </summary>
     /// <param name="parameterBytes"> The parameter bytes of the event sent </param>
     /// <returns> The representation of the HCI message </returns>
