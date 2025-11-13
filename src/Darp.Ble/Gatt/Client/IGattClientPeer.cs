@@ -7,7 +7,7 @@ namespace Darp.Ble.Gatt.Client;
 public interface IGattClientPeer
 {
     /// <summary> The peripheral that controls the connection </summary>
-    public IBlePeripheral Peripheral { get; }
+    IBlePeripheral Peripheral { get; }
 
     /// <summary> The BLE address of the peer central device </summary>
     BleAddress Address { get; }

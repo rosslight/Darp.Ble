@@ -1,0 +1,26 @@
+﻿{
+  MessagesToController: [
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_READ_BY_GROUP_TYPE_RSP,
+      PduBytes: 02010012000E0004001106060006000A18000000000000
+    }
+  ],
+  MessagesToHost: [
+    {
+      Type: HciEvent,
+      EventCode: HCI_LE_Meta,
+      PduBytes: 043E1F0A000100010366554433221100000000000000000000000028000000F40101
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_READ_BY_GROUP_TYPE_REQ,
+      PduBytes: 0201200B0007000400100100FFFF0028
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_Disconnection_Complete,
+      PduBytes: 04050400010013
+    }
+  ]
+}
