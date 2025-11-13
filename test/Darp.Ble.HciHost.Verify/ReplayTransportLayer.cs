@@ -96,7 +96,7 @@ public sealed class ReplayTransportLayer(
     )
         : this((_, i) => IterateHciMessages(messages, i), messagesToSkip, logger) { }
 
-    private static (HciMessage?, TimeSpan) IterateHciMessages(IReadOnlyList<HciMessage?> messages, int i)
+    public static (HciMessage?, TimeSpan) IterateHciMessages(IReadOnlyList<HciMessage?> messages, int i)
     {
         if (messages.Count <= i)
         {
@@ -111,6 +111,8 @@ public sealed class ReplayTransportLayer(
 
     public void Push(HciMessage message)
     {
+        _logger?.LogDebug("ReplayTransportLayer: Packet to Host: {PacketBytes}", Convert.ToHexString(message.PduBytes));
+        _messagesToHost.Enqueue(message);
         _onReceived?.Invoke(new HciPacket(message.Type, message.PduBytes));
     }
 

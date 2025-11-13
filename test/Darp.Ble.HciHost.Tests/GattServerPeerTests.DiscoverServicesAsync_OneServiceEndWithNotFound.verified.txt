@@ -1,0 +1,59 @@
+﻿{
+  MessagesToController: [
+    {
+      Type: HciCommand,
+      OpCode: HCI_LE_Extended_Create_Connection_V1,
+      PduBytes: 43201A00010366554433221101600060000C0018000000480000000000
+    },
+    {
+      Type: HciCommand,
+      OpCode: HCI_LE_READ_PHY,
+      PduBytes: 3020020100
+    },
+    {
+      Type: HciAclData,
+      PduBytes: 01000B0007000400100100FFFF0028
+    },
+    {
+      Type: HciAclData,
+      PduBytes: 01000B0007000400100600FFFF0028
+    }
+  ],
+  MessagesToHost: [
+    {
+      Type: HciEvent,
+      EventCode: HCI_Command_Status,
+      CommandOpCode: HCI_LE_Extended_Create_Connection_V1,
+      PduBytes: 0F0400014320
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_LE_Meta,
+      PduBytes: 3E1F0A000100000366554433221100000000000000000000000028000000F40101
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_Command_Complete,
+      CommandOpCode: HCI_LE_READ_PHY,
+      PduBytes: 0E080130200001000101
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_Number_Of_Completed_Packets,
+      PduBytes: 13050101000100
+    },
+    {
+      Type: HciAclData,
+      PduBytes: Guid_1
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_Number_Of_Completed_Packets,
+      PduBytes: 13050101000100
+    },
+    {
+      Type: HciAclData,
+      PduBytes: 0120090005000400011006000A
+    }
+  ]
+}

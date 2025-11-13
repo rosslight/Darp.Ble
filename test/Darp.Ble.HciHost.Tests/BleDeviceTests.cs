@@ -1,5 +1,6 @@
 ﻿using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
+using Darp.Ble.Hci;
 using Darp.Ble.Hci.Host;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Result;
@@ -11,6 +12,8 @@ namespace Darp.Ble.HciHost.Tests;
 
 public sealed class BleDeviceTests
 {
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
     [Fact]
     public async Task InitializeBleDevice()
     {
@@ -18,8 +21,8 @@ public sealed class BleDeviceTests
         ReplayTransportLayer replayTransportLayer = ReplayTransportLayer.Replay(
             ReplayTransportLayer.InitializeBleDeviceMessages
         );
-        await using IBleDevice device = await Helpers.GetBleDeviceAsync(replayTransportLayer);
-        await device.InitializeAsync();
+        await using IBleDevice device = await Helpers.GetBleDeviceAsync(replayTransportLayer, token: Token);
+        await device.InitializeAsync(Token);
 
         device.IsInitialized.ShouldBeTrue();
         device.IsDisposed.ShouldBeFalse();
@@ -35,9 +38,12 @@ public sealed class BleDeviceTests
         ReplayTransportLayer replayTransportLayer = ReplayTransportLayer.ReplayAfterBleDeviceInitialization(
             [HciMessage.CommandCompleteEventToHost("01052000")]
         );
-        await using IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(replayTransportLayer);
+        await using IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(
+            replayTransportLayer,
+            token: Token
+        );
 
-        await device.SetRandomAddressAsync(newAddress);
+        await device.SetRandomAddressAsync(newAddress, Token);
 
         device.RandomAddress.ShouldBe(newAddress);
         await Verifier.Verify(replayTransportLayer.MessagesToController);
@@ -49,7 +55,12 @@ public sealed class BleDeviceTests
         ReplayTransportLayer replayTransportLayer = ReplayTransportLayer.ReplayAfterInitialization(
             [HciMessage.CommandCompleteEventToHost("01392000"), HciMessage.CommandCompleteEventToHost("01352000")]
         );
-        await using var device = new Hci.HciDevice(replayTransportLayer, 0x112233445566, loggerFactory: null);
+        await using var device = new HciDevice(
+            replayTransportLayer,
+            0x112233445566,
+            HciSettings.Default,
+            loggerFactory: null
+        );
 
         await device.InitializeAsync(CancellationToken.None);
         Task t1 = Create1();
