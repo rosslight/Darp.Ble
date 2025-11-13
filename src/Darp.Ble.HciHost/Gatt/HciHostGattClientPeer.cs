@@ -16,11 +16,11 @@ namespace Darp.Ble.HciHost.Gatt;
 
 internal sealed partial class HciHostGattClientPeer : GattClientPeer, IDisposable
 {
-    private const ushort MaxMtu = 517;
     private const ushort GattMaxAttributeValueSize = 512;
-
     private readonly IDisposable _hostSubscription;
     private readonly IDisposable _assemblerSubscription;
+
+    private bool _disposing;
 
     public ushort ConnectionHandle { get; }
     public new HciHostBlePeripheral Peripheral { get; }
@@ -57,6 +57,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IDisposabl
             hciEvent.Reason
         );
         _disconnectedBehavior.OnNext(value: true);
+        Dispose();
     }
 
     [MessageSink]
@@ -74,6 +75,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IDisposabl
     [MessageSink]
     private async void HandleTypeRequest(AttReadByTypeReq<ushort> request)
     {
+        ObjectDisposedException.ThrowIf(_disposing, this);
         using Activity? activity = Logging.StartHandleAttRequestActivity(request, this);
         BleUuid attributeType = BleUuid.FromUInt16(request.AttributeType);
         int availablePduSpace = AttMtu - 2;
@@ -125,6 +127,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IDisposabl
     [MessageSink]
     private async void HandleGroupTypeRequest(AttReadByGroupTypeReq<ushort> request)
     {
+        ObjectDisposedException.ThrowIf(_disposing, this);
         using Activity? activity = Logging.StartHandleAttRequestActivity(request, this);
         if (request.AttributeGroupType is not (0x2800 or 0x2801))
         {
@@ -178,6 +181,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IDisposabl
     [MessageSink]
     private async void HandleGroupTypeRequest(AttFindByTypeValueReq request)
     {
+        ObjectDisposedException.ThrowIf(_disposing, this);
         using Activity? activity = Logging.StartHandleAttRequestActivity(request, this);
 
         BleUuid requestedAttributeType = BleUuid.FromUInt16(request.AttributeType);
@@ -225,6 +229,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IDisposabl
     [MessageSink]
     private async void HandleReadRequest(AttReadReq request)
     {
+        ObjectDisposedException.ThrowIf(_disposing, this);
         using Activity? activity = Logging.StartHandleAttRequestActivity(request, this);
 
         if (!Peripheral.GattDatabase.TryGetAttribute(request.AttributeHandle, out IGattAttribute? attribute))
@@ -272,6 +277,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IDisposabl
     [MessageSink]
     private void HandleFindInformationRequest(AttFindInformationReq request)
     {
+        ObjectDisposedException.ThrowIf(_disposing, this);
         using Activity? activity = Logging.StartHandleAttRequestActivity(request, this);
 
         if (request.StartingHandle is 0 || request.EndingHandle < request.StartingHandle)
@@ -331,6 +337,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IDisposabl
     [MessageSink]
     private async void HandleAttWriteRequest(AttWriteReq request)
     {
+        ObjectDisposedException.ThrowIf(_disposing, this);
         using Activity? activity = Logging.StartHandleAttRequestActivity(request, this);
 
         if (!Peripheral.GattDatabase.TryGetAttribute(request.AttributeHandle, out IGattAttribute? attribute))
@@ -401,6 +408,10 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IDisposabl
 
     public void Dispose()
     {
+        if (_disposing)
+            return;
+        _disposing = true;
+        _disconnectedBehavior.OnCompleted();
         _disconnectedBehavior.Dispose();
         _hostSubscription.Dispose();
         _assemblerSubscription.Dispose();
