@@ -17,7 +17,6 @@ public readonly record struct AttReadByGroupTypeRsp() : IAttPdu, IBinaryObject<A
     public required byte Length { get; init; }
 
     /// <summary> A list of Attribute Data </summary>
-    [BinaryElementCount(nameof(Length))]
     public required AttGroupTypeData[] AttributeDataList { get; init; }
 
     /// <inheritdoc />
@@ -93,7 +92,7 @@ public readonly record struct AttReadByGroupTypeRsp() : IAttPdu, IBinaryObject<A
         {
             if (!attributeData.TryWriteLittleEndian(slice, out int dataWritten))
                 return false;
-            slice = slice[..dataWritten];
+            slice = slice[dataWritten..];
             bytesWritten += dataWritten;
         }
         return true;
