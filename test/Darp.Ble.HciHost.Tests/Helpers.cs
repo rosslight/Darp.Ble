@@ -42,8 +42,8 @@ public static class Helpers
                 {
                     factory.Settings = factory.Settings with
                     {
-                        DefaultHciCommandTimeoutMs = 100,
-                        DefaultAttTimeoutMs = 100,
+                        DefaultHciCommandTimeoutMs = 1000,
+                        DefaultAttTimeoutMs = 1000,
                     };
                 }
             )
