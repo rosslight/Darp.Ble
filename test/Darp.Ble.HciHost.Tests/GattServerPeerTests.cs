@@ -24,7 +24,7 @@ public sealed class GattServerPeerTests
             ),
             HciMessages.AttNotFoundErrorResponse(connectionHandle, AttOpCode.ATT_READ_BY_GROUP_TYPE_REQ, 0x0006),
         ];
-        (HciHostGattServerPeer peer, ReplayTransportLayer replay) = await Helpers.CreateConnectedPeerAsync(
+        (HciHostGattServerPeer peer, ReplayTransportLayer replay) = await Helpers.CreateConnectedServerPeerAsync(
             connectionHandle: connectionHandle,
             additionalControllerMessages: messages,
             token: Token

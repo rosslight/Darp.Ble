@@ -57,10 +57,11 @@ internal sealed class MockBleDevice(
 
     protected override async ValueTask DisposeAsyncCore()
     {
+        // Dispose base (Central) first to ensure disconnect callbacks execute before peripheral Subjects are disposed
+        await base.DisposeAsyncCore().ConfigureAwait(false);
         foreach (MockedBleDevice mockedBleDevice in _mockedDevices)
         {
             await mockedBleDevice.DisposeAsync().ConfigureAwait(false);
         }
-        await base.DisposeAsyncCore().ConfigureAwait(false);
     }
 }

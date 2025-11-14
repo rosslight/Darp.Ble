@@ -32,6 +32,9 @@ public sealed class CentralTests
         IObservable<IGattServerPeer> connectionObservable = device.Central.ConnectToPeripheral(peerAddress);
         Task<IGattServerPeer> connectionTask = connectionObservable.FirstAsync().ToTask(Token);
 
+        // Wait a short while until the HCI_LE_Extended_Create_Connection_V1 event was propagated
+        await Task.Delay(10, Token);
+
         replay.Push(
             HciMessages.HciLeEnhancedConnectionCompleteEvent(
                 connectionHandle: connectionHandle,
@@ -51,6 +54,23 @@ public sealed class CentralTests
         result.ConnectionHandle.ShouldBe(connectionHandle);
 
         await result.DisposeAsync();
+        await Verifier.Verify(new { replay.MessagesToController, replay.MessagesToHost });
+    }
+
+    [Fact(Timeout = 5000)]
+    public async Task DisposeDevice_ShouldWork()
+    {
+        const ushort connectionHandle = 0x001;
+
+        HciMessage[] messages = [HciMessages.HciDisconnectionCompleteEvent(connectionHandle)];
+        (HciHostGattServerPeer peer, ReplayTransportLayer replay) = await Helpers.CreateConnectedServerPeerAsync(
+            connectionHandle: connectionHandle,
+            additionalControllerMessages: messages,
+            token: Token
+        );
+
+        await peer.Central.Device.DisposeAsync();
+
         await Verifier.Verify(new { replay.MessagesToController, replay.MessagesToHost });
     }
 }

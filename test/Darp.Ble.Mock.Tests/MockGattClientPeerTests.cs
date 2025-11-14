@@ -69,4 +69,20 @@ public sealed class MockGattClientPeerTests(ILoggerFactory loggerFactory)
         completedPeer.Should().BeSameAs(clientPeer);
         clientPeer.IsConnected.Should().BeFalse();
     }
+
+    [Fact(Timeout = 5000)]
+    public async Task DisposeDevice_WithConnectedCentral_ShouldNotThrowObjectDisposedException()
+    {
+        (_, _, IGattServerPeer serverPeer) = await CreateConnectedPeerAsync();
+        var device = (MockBleDevice)serverPeer.Central.Device;
+
+        // Disposing the device should dispose Central first, which disposes server peers.
+        // This triggers client peer disconnect, which fires the WhenDisconnected observable.
+        // The subscription in BlePeripheral.OnConnectedCentral tries to call OnNext on
+        // _whenDisconnected, but if Peripheral is disposed before the callback completes,
+        // it will throw ObjectDisposedException.
+        Func<Task> act = async () => await device.DisposeAsync();
+
+        await act.Should().NotThrowAsync<ObjectDisposedException>();
+    }
 }

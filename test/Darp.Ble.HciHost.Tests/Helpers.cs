@@ -54,7 +54,10 @@ public static class Helpers
         return device;
     }
 
-    internal static async Task<(HciHostGattServerPeer Peer, ReplayTransportLayer Replay)> CreateConnectedPeerAsync(
+    internal static async Task<(
+        HciHostGattServerPeer Peer,
+        ReplayTransportLayer Replay
+    )> CreateConnectedServerPeerAsync(
         BleAddress? peerAddress = null,
         ushort connectionHandle = 0x0001,
         IEnumerable<HciMessage>? additionalControllerMessages = null,
@@ -95,6 +98,9 @@ public static class Helpers
             .Central.ConnectToPeripheral(resolvedPeerAddress)
             .FirstAsync()
             .ToTask(token);
+
+        // Wait a short while until the HCI_LE_Extended_Create_Connection_V1 event was propagated
+        await Task.Delay(10, token);
 
         replay.Push(
             HciMessages.HciLeEnhancedConnectionCompleteEvent(
