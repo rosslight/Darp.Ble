@@ -42,7 +42,7 @@ public abstract class GattServerPeer : IGattServerPeer
     public BleAddress Address { get; }
 
     /// <inheritdoc />
-    public IReadOnlyCollection<IGattServerService> Services => _services;
+    public IReadOnlyList<IGattServerService> Services => _services;
 
     /// <inheritdoc />
     public bool IsConnected => ConnectionSubject.Value is ConnectionStatus.Connected;
