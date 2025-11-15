@@ -12,7 +12,7 @@ public interface IGattServerPeer : IAsyncDisposable
     BleAddress Address { get; }
 
     /// <summary> All discovered services </summary>
-    IReadOnlyCollection<IGattServerService> Services { get; }
+    IReadOnlyList<IGattServerService> Services { get; }
 
     /// <summary> True, if the peer is connected </summary>
     bool IsConnected { get; }
