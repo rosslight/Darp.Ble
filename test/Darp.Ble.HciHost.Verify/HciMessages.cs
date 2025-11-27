@@ -165,6 +165,26 @@ public static class HciMessages
         );
     }
 
+    public static HciMessage AttReadByTypeResponse(
+        ushort connectionHandle,
+        params AttReadByTypeData[] attributeDataList
+    )
+    {
+        if (attributeDataList.Length == 0)
+        {
+            return AttToHost(connectionHandle, new AttReadByTypeRsp { Length = 0, AttributeDataList = [] });
+        }
+        // Length includes handle (2 bytes) + value length
+        byte valueLength = checked((byte)attributeDataList[0].Value.Length);
+        Debug.Assert(attributeDataList.All(x => x.Value.Length == valueLength));
+        byte length = checked((byte)(2 + valueLength));
+
+        return AttToHost(
+            connectionHandle,
+            new AttReadByTypeRsp { Length = length, AttributeDataList = attributeDataList }
+        );
+    }
+
     public static HciMessage AttNotFoundErrorResponse(
         ushort connectionHandle,
         AttOpCode requestOpCode,
