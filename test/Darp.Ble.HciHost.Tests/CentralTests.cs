@@ -23,6 +23,7 @@ public sealed class CentralTests
             [
                 HciMessages.HciLeExtendedCreateConnectionCommandStatusEvent(),
                 HciMessages.HciLeReadPhyEvent(connectionHandle, txPhy: 0x01, rxPhy: 0x01),
+                HciMessages.AttExchangeMtuResponse(connectionHandle, serverRxMtu: 65),
                 HciMessages.HciDisconnectionCompleteEvent(connectionHandle),
             ]
         );

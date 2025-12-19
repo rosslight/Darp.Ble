@@ -1,0 +1,214 @@
+﻿{
+  MessagesToController: [
+    {
+      Type: HciCommand,
+      OpCode: HCI_LE_Extended_Create_Connection_V1,
+      PduBytes: 0143201A00010366554433221101600060000C0018000000480000000000
+    },
+    {
+      Type: HciCommand,
+      OpCode: HCI_LE_READ_PHY,
+      PduBytes: 013020020100
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_EXCHANGE_MTU_REQ,
+      PduBytes: 020100070003000400024100
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_READ_BY_GROUP_TYPE_REQ,
+      PduBytes: 0201000B0007000400100100FFFF0028
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_READ_BY_GROUP_TYPE_REQ,
+      PduBytes: 0201000B0007000400100D00FFFF0028
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_READ_BY_TYPE_REQ,
+      PduBytes: 0201000B00070004000801000C000328
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_READ_BY_TYPE_REQ,
+      PduBytes: 0201000B00070004000806000C000328
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_READ_BY_TYPE_REQ,
+      PduBytes: 0201000B00070004000809000C000328
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_FIND_INFORMATION_REQ,
+      PduBytes: 0201000900050004000403000400
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_FIND_INFORMATION_REQ,
+      PduBytes: 0201000900050004000404000400
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_FIND_INFORMATION_REQ,
+      PduBytes: 0201000900050004000406000700
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_FIND_INFORMATION_REQ,
+      PduBytes: 0201000900050004000407000700
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_FIND_INFORMATION_REQ,
+      PduBytes: 0201000900050004000409000C00
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_FIND_INFORMATION_REQ,
+      PduBytes: 020100090005000400040A000C00
+    }
+  ],
+  MessagesToHost: [
+    {
+      Type: HciEvent,
+      EventCode: HCI_Command_Status,
+      CommandOpCode: HCI_LE_Extended_Create_Connection_V1,
+      PduBytes: 040F0400014320
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_LE_Meta,
+      SubEventCode: HCI_LE_Enhanced_Connection_Complete_V1,
+      PduBytes: 043E1F0A000100000366554433221100000000000000000000000028000000F40101
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_Command_Complete,
+      CommandOpCode: HCI_LE_READ_PHY,
+      PduBytes: 040E080130200001000101
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_Number_Of_Completed_Packets,
+      PduBytes: 0413050101000100
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_EXCHANGE_MTU_RSP,
+      PduBytes: 020120070003000400034100
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_Number_Of_Completed_Packets,
+      PduBytes: 0413050101000100
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_READ_BY_GROUP_TYPE_RSP,
+      PduBytes: 0201200C0008000400110601000C000A18
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_Number_Of_Completed_Packets,
+      PduBytes: 0413050101000100
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_ERROR_RSP,
+      PduBytes: 02012009000500040001100D000A
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_Number_Of_Completed_Packets,
+      PduBytes: 0413050101000100
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_READ_BY_TYPE_RSP,
+      PduBytes: 02012014001000040009070200020300292A0500020600242A
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_Number_Of_Completed_Packets,
+      PduBytes: 0413050101000100
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_READ_BY_TYPE_RSP,
+      PduBytes: 0201200D000900040009070800020900252A
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_Number_Of_Completed_Packets,
+      PduBytes: 0413050101000100
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_ERROR_RSP,
+      PduBytes: 02012009000500040001080A000A
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_Number_Of_Completed_Packets,
+      PduBytes: 0413050101000100
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_FIND_INFORMATION_RSP,
+      PduBytes: 0201200A000600040005010300292A
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_Number_Of_Completed_Packets,
+      PduBytes: 0413050101000100
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_ERROR_RSP,
+      PduBytes: 020120090005000400010404000A
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_Number_Of_Completed_Packets,
+      PduBytes: 0413050101000100
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_FIND_INFORMATION_RSP,
+      PduBytes: 0201200A000600040005010600242A
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_Number_Of_Completed_Packets,
+      PduBytes: 0413050101000100
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_ERROR_RSP,
+      PduBytes: 020120090005000400010407000A
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_Number_Of_Completed_Packets,
+      PduBytes: 0413050101000100
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_FIND_INFORMATION_RSP,
+      PduBytes: 0201200A000600040005010900252A
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_Number_Of_Completed_Packets,
+      PduBytes: 0413050101000100
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_ERROR_RSP,
+      PduBytes: 02012009000500040001040C000A
+    }
+  ]
+}
