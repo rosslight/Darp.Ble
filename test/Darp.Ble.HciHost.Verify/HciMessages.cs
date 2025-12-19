@@ -151,6 +151,11 @@ public static class HciMessages
         return HciMessage.AclToHost(aclPacket.ToArrayLittleEndian());
     }
 
+    public static HciMessage AttExchangeMtuResponse(ushort connectionHandle, ushort serverRxMtu)
+    {
+        return AttToHost(connectionHandle, new AttExchangeMtuRsp { ServerRxMtu = serverRxMtu });
+    }
+
     public static HciMessage AttReadByGroupTypeResponse(
         ushort connectionHandle,
         params AttGroupTypeData[] attributeDataList

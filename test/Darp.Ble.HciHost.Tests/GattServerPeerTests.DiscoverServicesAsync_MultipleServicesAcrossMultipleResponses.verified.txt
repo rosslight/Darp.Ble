@@ -12,6 +12,11 @@
     },
     {
       Type: HciAclData,
+      AttOpCode: ATT_EXCHANGE_MTU_REQ,
+      PduBytes: 020100070003000400024100
+    },
+    {
+      Type: HciAclData,
       AttOpCode: ATT_READ_BY_GROUP_TYPE_REQ,
       PduBytes: 0201000B0007000400100100FFFF0028
     },
@@ -44,6 +49,16 @@
       EventCode: HCI_Command_Complete,
       CommandOpCode: HCI_LE_READ_PHY,
       PduBytes: 040E080130200001000101
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_Number_Of_Completed_Packets,
+      PduBytes: 0413050101000100
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_EXCHANGE_MTU_RSP,
+      PduBytes: 020120070003000400034100
     },
     {
       Type: HciEvent,

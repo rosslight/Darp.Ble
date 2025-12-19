@@ -52,7 +52,7 @@ internal sealed partial class HciHostGattClientPeer : GattClientPeer, IDisposabl
         if (hciEvent.ConnectionHandle != ConnectionHandle)
             return;
         Logger.LogDebug(
-            "Received disconnection event for connection 0x{ConnectionHandle:X}. Reason: {Reason}",
+            "HciHostGattClientPeer: Received disconnection event for connection 0x{ConnectionHandle:X}. Reason: {Reason}",
             hciEvent.ConnectionHandle,
             hciEvent.Reason
         );
