@@ -94,7 +94,7 @@ public sealed class AclConnection : IDisposable
         if (hciEvent.ConnectionHandle != ConnectionHandle)
             return;
         Logger?.LogDebug(
-            "Received disconnection event for connection 0x{ConnectionHandle:X}. Reason: {Reason}",
+            "AclConnection: Received disconnection event for connection 0x{ConnectionHandle:X}. Reason: {Reason}",
             hciEvent.ConnectionHandle,
             hciEvent.Reason
         );

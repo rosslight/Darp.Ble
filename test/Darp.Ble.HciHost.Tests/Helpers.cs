@@ -70,6 +70,7 @@ public static class Helpers
         {
             HciMessages.HciLeExtendedCreateConnectionCommandStatusEvent(),
             HciMessages.HciLeReadPhyEvent(connectionHandle, txPhy: 0x01, rxPhy: 0x01),
+            HciMessages.AttExchangeMtuResponse(connectionHandle, serverRxMtu: 65),
         };
 
         if (additionalControllerMessages is not null)
