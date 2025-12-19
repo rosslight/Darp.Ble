@@ -11,6 +11,11 @@
       PduBytes: 013020020100
     },
     {
+      Type: HciAclData,
+      AttOpCode: ATT_EXCHANGE_MTU_REQ,
+      PduBytes: 020100070003000400024100
+    },
+    {
       Type: HciCommand,
       OpCode: HCI_Disconnect,
       PduBytes: 01060403010013
@@ -34,6 +39,11 @@
       EventCode: HCI_Command_Complete,
       CommandOpCode: HCI_LE_READ_PHY,
       PduBytes: 040E080130200001000101
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_EXCHANGE_MTU_RSP,
+      PduBytes: 020120070003000400034100
     },
     {
       Type: HciEvent,

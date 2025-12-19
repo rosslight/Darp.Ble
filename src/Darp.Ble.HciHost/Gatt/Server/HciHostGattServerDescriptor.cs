@@ -9,24 +9,24 @@ namespace Darp.Ble.HciHost.Gatt.Server;
 internal sealed class HciHostGattServerDescriptor(
     HciHostGattServerCharacteristic characteristic,
     BleUuid uuid,
-    ushort attHandle,
+    ushort attributeHandle,
     ILogger<HciHostGattServerDescriptor> logger
 ) : GattServerDescriptor(characteristic, uuid, logger)
 {
     private readonly HciHostGattServerPeer _peer = characteristic.Service.Peer;
-    private ushort AttHandle { get; } = attHandle;
+    internal ushort AttributeHandle { get; } = attributeHandle;
 
     public void WriteWithoutResponse(byte[] bytes)
     {
         ArgumentOutOfRangeException.ThrowIfGreaterThan(bytes.Length, _peer.AttMtu, nameof(bytes));
-        _peer.Connection.EnqueueGattPacket(new AttWriteCmd { Handle = AttHandle, Value = bytes }, activity: null);
+        _peer.Connection.EnqueueGattPacket(new AttWriteCmd { Handle = AttributeHandle, Value = bytes }, activity: null);
     }
 
     public override async Task<bool> WriteAsync(byte[] bytes, CancellationToken cancellationToken = default)
     {
         AttResponse<AttWriteRsp> response = await _peer
             .Connection.QueryAttPduAsync<AttWriteReq, AttWriteRsp>(
-                new AttWriteReq { AttributeHandle = AttHandle, AttributeValue = bytes },
+                new AttWriteReq { AttributeHandle = AttributeHandle, AttributeValue = bytes },
                 cancellationToken: cancellationToken
             )
             .ConfigureAwait(false);

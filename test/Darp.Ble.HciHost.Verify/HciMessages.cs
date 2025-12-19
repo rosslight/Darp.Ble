@@ -196,6 +196,36 @@ public static class HciMessages
         ushort handle
     ) => AttErrorResponse(connectionHandle, requestOpCode, handle, AttErrorCode.AttributeNotFoundError);
 
+    public static HciMessage AttFindInformationResponse(
+        ushort connectionHandle,
+        params AttFindInformationData[] informationDataList
+    )
+    {
+        if (informationDataList.Length == 0)
+        {
+            return AttToHost(
+                connectionHandle,
+                new AttFindInformationRsp
+                {
+                    Format = AttFindInformationFormat.HandleAnd16BitUuid,
+                    InformationData = informationDataList,
+                }
+            );
+        }
+        // Determine format based on first UUID length
+        int uuidLength = informationDataList[0].Uuid.Length;
+        Debug.Assert(informationDataList.All(x => x.Uuid.Length == uuidLength));
+        AttFindInformationFormat format =
+            uuidLength == 2
+                ? AttFindInformationFormat.HandleAnd16BitUuid
+                : AttFindInformationFormat.HandleAnd128BitUuid;
+
+        return AttToHost(
+            connectionHandle,
+            new AttFindInformationRsp { Format = format, InformationData = informationDataList }
+        );
+    }
+
     public static HciMessage AttErrorResponse(
         ushort connectionHandle,
         AttOpCode requestOpCode,
