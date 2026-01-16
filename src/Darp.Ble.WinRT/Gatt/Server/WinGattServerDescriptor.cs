@@ -34,4 +34,9 @@ internal sealed class WinGattServerDescriptor(
             throw new Exception($"Could not write because of protocol error {result.ProtocolError}");
         throw new Exception($"Could not write because of {result.Status}");
     }
+
+    public override void WriteWithoutResponse(byte[] bytes)
+    {
+        _ = _winDescriptor.WriteValueAsync(bytes.AsBuffer()).AsTask().ConfigureAwait(false);
+    }
 }
