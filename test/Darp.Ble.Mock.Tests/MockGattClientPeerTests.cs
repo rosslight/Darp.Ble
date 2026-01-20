@@ -5,8 +5,8 @@ using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Mock.Gatt;
-using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using Shouldly;
 
 namespace Darp.Ble.Mock.Tests;
 
@@ -51,7 +51,7 @@ public sealed class MockGattClientPeerTests(ILoggerFactory loggerFactory)
 
         await peripheralDisconnectedTask;
 
-        clientPeer.IsConnected.Should().BeFalse();
+        clientPeer.IsConnected.ShouldBeFalse();
     }
 
     [Fact(Timeout = 5000)]
@@ -65,8 +65,8 @@ public sealed class MockGattClientPeerTests(ILoggerFactory loggerFactory)
         await serverPeer.DisposeAsync();
         IGattClientPeer completedPeer = await peripheralDisconnectedTask;
 
-        completedPeer.Should().BeSameAs(clientPeer);
-        clientPeer.IsConnected.Should().BeFalse();
+        completedPeer.ShouldBeSameAs(clientPeer);
+        clientPeer.IsConnected.ShouldBeFalse();
     }
 
     [Fact(Timeout = 5000)]
@@ -82,6 +82,6 @@ public sealed class MockGattClientPeerTests(ILoggerFactory loggerFactory)
         // it will throw ObjectDisposedException.
         Func<Task> act = async () => await device.DisposeAsync();
 
-        await act.Should().NotThrowAsync<ObjectDisposedException>();
+        await act.ShouldNotThrowAsync();
     }
 }

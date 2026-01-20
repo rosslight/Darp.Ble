@@ -1,6 +1,6 @@
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Tests.Gap;
 
@@ -14,8 +14,8 @@ public sealed class AdvertisingDataTests
 
         AdvertisingData data = AdvertisingData.From(sectionsWithByteArray);
 
-        data[0].Type.Should().Be(AdTypes.Flags);
-        data[0].Bytes.ToArray().Should().BeEquivalentTo(bytes);
+        data[0].Type.ShouldBe(AdTypes.Flags);
+        data[0].Bytes.ToArray().ShouldBe(bytes);
     }
 
     [Fact]
@@ -33,12 +33,12 @@ public sealed class AdvertisingDataTests
 
         AdvertisingData data = AdvertisingData.From(sectionsWithByteArray);
 
-        data[0].Type.Should().Be(AdTypes.Flags);
-        data[0].Bytes.ToArray().Should().BeEquivalentTo(flagsBytes);
-        data[1].Type.Should().Be(AdTypes.ManufacturerSpecificData);
-        data[1].Bytes.ToArray().Should().BeEquivalentTo(manufacturerBytes);
-        data[2].Type.Should().Be(AdTypes.IncompleteListOf16BitServiceOrServiceClassUuids);
-        data[2].Bytes.ToArray().Should().BeEquivalentTo(serviceBytes);
+        data[0].Type.ShouldBe(AdTypes.Flags);
+        data[0].Bytes.ToArray().ShouldBe(flagsBytes);
+        data[1].Type.ShouldBe(AdTypes.ManufacturerSpecificData);
+        data[1].Bytes.ToArray().ShouldBe(manufacturerBytes);
+        data[2].Type.ShouldBe(AdTypes.IncompleteListOf16BitServiceOrServiceClassUuids);
+        data[2].Bytes.ToArray().ShouldBe(serviceBytes);
     }
 
     [Theory]
@@ -48,7 +48,7 @@ public sealed class AdvertisingDataTests
     {
         AdvertisingData advertisingData = AdvertisingData.From(Convert.FromHexString(hexString));
 
-        advertisingData.Should().HaveCount(sections.Length);
-        advertisingData.Select(x => x.Type).Should().BeEquivalentTo(sections);
+        advertisingData.Count.ShouldBe(sections.Length);
+        advertisingData.Select(x => x.Type).ShouldBe(sections);
     }
 }

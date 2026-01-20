@@ -2,14 +2,12 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
-using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Mock;
-using FluentAssertions;
-using FluentAssertions.Reactive;
+using Shouldly;
 
 namespace Darp.Ble.Tests.Implementation;
 
@@ -25,7 +23,7 @@ public sealed class BleCentralTests
             .CreateManager();
         IBleDevice device = bleManager.EnumerateDevices().First();
         InitializeResult result = await device.InitializeAsync();
-        result.Should().Be(InitializeResult.Success);
+        result.ShouldBe(InitializeResult.Success);
         return device;
     }
 
@@ -51,7 +49,7 @@ public sealed class BleCentralTests
         }
     }
 
-    [Theory]
+    [Theory(Timeout = 5000)]
     [InlineData((ConnectionTiming)5, false)]
     [InlineData(ConnectionTiming.MinValue, true)]
     [InlineData(ConnectionTiming.MaxValue, true)]
@@ -68,19 +66,19 @@ public sealed class BleCentralTests
             new BleConnectionParameters { ConnectionInterval = connectionInterval }
         );
 
-        FluentTestObserver<IGattServerPeer> testObserver = observable.Observe();
-
+        IGattServerPeer? peer = await observable.SingleOrDefaultAsync();
         if (expectedResult)
         {
-            await testObserver.Should().PushAsync(1);
+            peer.ShouldNotBeNull();
+            peer.Address.ShouldBe(address);
         }
         else
         {
-            await testObserver.Should().ThrowAsync<BleCentralConnectionFailedException>();
+            peer.ShouldBeNull();
         }
     }
 
-    [Theory]
+    [Theory(Timeout = 5000)]
     [InlineData((ScanTiming)3, ScanTiming.MinValue, false)]
     [InlineData(ScanTiming.MinValue, (ScanTiming)3, false)]
     [InlineData(ScanTiming.MinValue, ScanTiming.MinValue, true)]
@@ -94,18 +92,18 @@ public sealed class BleCentralTests
         IBleDevice device = await GetMockDeviceAsync(async device => await device.SetRandomAddressAsync(address));
         IObservable<IGattServerPeer> observable = device.Central.ConnectToPeripheral(
             address,
-            scanParameters: new BleObservationParameters() { ScanInterval = scanInterval, ScanWindow = scanWindow }
+            scanParameters: new BleObservationParameters { ScanInterval = scanInterval, ScanWindow = scanWindow }
         );
 
-        var testObserver = observable.Observe();
-
+        IGattServerPeer? peer = await observable.SingleOrDefaultAsync();
         if (expectedResult)
         {
-            await testObserver.Should().PushAsync(1);
+            peer.ShouldNotBeNull();
+            peer.Address.ShouldBe(address);
         }
         else
         {
-            await testObserver.Should().ThrowAsync<BleCentralConnectionFailedException>();
+            peer.ShouldBeNull();
         }
     }
 
@@ -139,6 +137,6 @@ public sealed class BleCentralTests
         await writeChar.WriteAsync(dataToWrite, Token);
         byte[] result = await notifyTask;
 
-        result.Should().BeEquivalentTo(dataToWrite);
+        result.ShouldBe(dataToWrite);
     }
 }

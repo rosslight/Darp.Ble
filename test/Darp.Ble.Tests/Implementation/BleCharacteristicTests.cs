@@ -8,8 +8,8 @@ using Darp.Ble.Gatt.Server;
 using Darp.Ble.Mock;
 using Darp.Ble.Mock.Gatt;
 using Darp.Ble.Tests.TestUtils;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
+using Shouldly;
 
 namespace Darp.Ble.Tests.Implementation;
 
@@ -73,10 +73,10 @@ public sealed class BleCharacteristicTests
         await using IDisposableObservable<byte[]> observable = await newChar.OnNotifyAsync(Token);
         Task<byte[]> resultTask = observable.FirstAsync().ToTask();
         await clientCharacteristic.NotifyAsync(clientPeer, bytes);
-        resultTask.Status.Should().Be(TaskStatus.RanToCompletion);
+        resultTask.Status.ShouldBe(TaskStatus.RanToCompletion);
         byte[] result = await resultTask;
 
-        result.Should().BeEquivalentTo(bytes);
+        result.ShouldBe(bytes);
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public sealed class BleCharacteristicTests
         IDisposableObservable<byte[]> observable = await newChar.OnNotifyAsync(Token);
         Task<byte[]> resultTask = observable.FirstAsync().ToTask();
         await observable.DisposeAsync();
-        resultTask.Status.Should().Be(TaskStatus.Faulted);
+        resultTask.Status.ShouldBe(TaskStatus.Faulted);
         await clientCharacteristic.NotifyAsync(clientPeer, bytes);
     }
 
@@ -111,8 +111,8 @@ public sealed class BleCharacteristicTests
         await clientCharacteristic.NotifyAsync(clientPeer, bytes);
         byte[] result1 = await resultTask1;
         byte[] result2 = await resultTask2;
-        result1.Should().BeEquivalentTo(bytes);
-        result2.Should().BeEquivalentTo(bytes);
+        result1.ShouldBe(bytes);
+        result2.ShouldBe(bytes);
     }
 
     [Fact]
@@ -129,12 +129,12 @@ public sealed class BleCharacteristicTests
         Task<byte[]> resultTask1 = observable1.FirstAsync().ToTask();
         Task<byte[]> resultTask2 = observable2.FirstAsync().ToTask();
         await observable1.DisposeAsync();
-        resultTask1.Status.Should().Be(TaskStatus.Faulted);
-        resultTask2.Status.Should().Be(TaskStatus.WaitingForActivation);
+        resultTask1.Status.ShouldBe(TaskStatus.Faulted);
+        resultTask2.Status.ShouldBe(TaskStatus.WaitingForActivation);
         // Using return of NotifyAsync to check whether we disabled notifications
         await clientCharacteristic.NotifyAsync(clientPeer, bytes);
         await observable2.DisposeAsync();
-        resultTask2.Status.Should().Be(TaskStatus.RanToCompletion);
+        resultTask2.Status.ShouldBe(TaskStatus.RanToCompletion);
         await clientCharacteristic.NotifyAsync(clientPeer, bytes);
     }
 
@@ -150,12 +150,12 @@ public sealed class BleCharacteristicTests
         IDisposableObservable<byte[]> notifyObservable = await newChar.OnNotifyAsync(Token);
         Task<byte[]> resultTask = notifyObservable.FirstAsync().ToTask();
         await clientCharacteristic.NotifyAsync(clientPeer, bytes);
-        resultTask.Status.Should().Be(TaskStatus.RanToCompletion);
+        resultTask.Status.ShouldBe(TaskStatus.RanToCompletion);
         await notifyObservable.DisposeAsync();
         IDisposableObservable<byte[]> notifyObservable2 = await newChar.OnNotifyAsync(Token);
         Task<byte[]> resultTask2 = notifyObservable2.FirstAsync().ToTask();
         await clientCharacteristic.NotifyAsync(clientPeer, bytes);
-        resultTask2.Status.Should().Be(TaskStatus.RanToCompletion);
+        resultTask2.Status.ShouldBe(TaskStatus.RanToCompletion);
         await notifyObservable2.DisposeAsync();
     }
 }

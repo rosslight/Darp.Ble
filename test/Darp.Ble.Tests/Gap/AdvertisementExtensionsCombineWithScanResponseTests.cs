@@ -2,8 +2,8 @@ using System.Reactive.Linq;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Darp.Ble.Mock;
-using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using Shouldly;
 
 namespace Darp.Ble.Tests.Gap;
 
@@ -60,16 +60,13 @@ public sealed class AdvertisementExtensionsCombineWithScanResponseTests(ILoggerF
         IGapAdvertisement[] result = await new[] { adv, scanRsp }.ToObservable().CombineWithScanResponse().ToArray();
 
         // Assert
-        result.Should().ContainSingle();
+        result.ShouldHaveSingleItem();
 
-        IGapAdvertisementWithScanResponse combined = result[0]
-            .Should()
-            .BeAssignableTo<IGapAdvertisementWithScanResponse>()
-            .Subject;
-        combined.EventType.Should().Be(adv.EventType);
-        combined.Address.Should().Be(adv.Address);
-        combined.Data.ToByteArray().Should().BeEquivalentTo("020101050954657374".ToByteArray());
-        combined.AsByteArray().Should().BeEquivalentTo(adv.AsByteArray());
+        var combined = result[0].ShouldBeAssignableTo<IGapAdvertisementWithScanResponse>();
+        combined.EventType.ShouldBe(adv.EventType);
+        combined.Address.ShouldBe(adv.Address);
+        combined.Data.ToByteArray().ShouldBe("020101050954657374".ToByteArray());
+        combined.AsByteArray().ShouldBe(adv.AsByteArray());
     }
 
     [Fact]
@@ -86,9 +83,9 @@ public sealed class AdvertisementExtensionsCombineWithScanResponseTests(ILoggerF
         IGapAdvertisement[] result = await new[] { adv, scanRsp }.ToObservable().CombineWithScanResponse().ToArray();
 
         // Assert
-        result.Should().HaveCount(2);
-        result.Should().HaveElementAt(0, adv);
-        result.Should().HaveElementAt(1, scanRsp);
+        result.Length.ShouldBe(2);
+        result[0].ShouldBe(adv);
+        result[1].ShouldBe(scanRsp);
     }
 
     [Fact]
@@ -104,7 +101,7 @@ public sealed class AdvertisementExtensionsCombineWithScanResponseTests(ILoggerF
         IGapAdvertisement[] result = await new[] { scanRsp }.ToObservable().CombineWithScanResponse().ToArray();
 
         // Assert
-        result.Should().BeEmpty();
+        result.ShouldBeEmpty();
     }
 
     [Fact]
@@ -120,7 +117,7 @@ public sealed class AdvertisementExtensionsCombineWithScanResponseTests(ILoggerF
         IGapAdvertisement[] result = await new[] { nonScannable }.ToObservable().CombineWithScanResponse().ToArray();
 
         // Assert
-        result.Should().ContainSingle();
-        result.Should().HaveElementAt(0, nonScannable);
+        result.ShouldHaveSingleItem();
+        result[0].ShouldBe(nonScannable);
     }
 }

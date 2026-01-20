@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text;
 using Darp.Ble.Data;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Tests.Data;
 
@@ -14,7 +14,7 @@ public sealed class BleUuidTests
         Func<BleUuid> act = () => new BleUuid((BleUuidType)9999, Guid.NewGuid());
 
         // Assert
-        act.Should().Throw<ArgumentOutOfRangeException>();
+        act.ShouldThrow<ArgumentOutOfRangeException>();
     }
 
     [Theory]
@@ -25,8 +25,8 @@ public sealed class BleUuidTests
         Guid guid = Guid.Parse(expectedGuid);
         BleUuid uuid = BleUuid.FromUInt16(value);
 
-        uuid.Type.Should().Be(BleUuidType.Uuid16);
-        uuid.Value.Should().Be(guid);
+        uuid.Type.ShouldBe(BleUuidType.Uuid16);
+        uuid.Value.ShouldBe(guid);
     }
 
     [Theory]
@@ -37,8 +37,8 @@ public sealed class BleUuidTests
         Guid guid = Guid.Parse(expectedGuid);
         BleUuid uuid = BleUuid.FromUInt32(value);
 
-        uuid.Type.Should().Be(BleUuidType.Uuid32);
-        uuid.Value.Should().Be(guid);
+        uuid.Type.ShouldBe(BleUuidType.Uuid32);
+        uuid.Value.ShouldBe(guid);
     }
 
     [Fact]
@@ -47,8 +47,8 @@ public sealed class BleUuidTests
         var guid = Guid.NewGuid();
         BleUuid uuid = BleUuid.FromGuid(guid);
 
-        uuid.Type.Should().Be(BleUuidType.Uuid128);
-        uuid.Value.Should().Be(guid);
+        uuid.Type.ShouldBe(BleUuidType.Uuid128);
+        uuid.Value.ShouldBe(guid);
     }
 
     [Theory]
@@ -59,7 +59,7 @@ public sealed class BleUuidTests
         BleUuid bytesUuid = BleUuid.Read(bytes);
         BleUuid uint16Uuid = value;
 
-        bytesUuid.Should().Be(uint16Uuid);
+        bytesUuid.ShouldBe(uint16Uuid);
     }
 
     [Theory]
@@ -71,7 +71,7 @@ public sealed class BleUuidTests
         byte[] bytes = Convert.FromHexString(hexString);
         BleUuid bytesUuid = BleUuid.Read(bytes);
 
-        bytesUuid.Type.Should().Be(expectedType);
+        bytesUuid.Type.ShouldBe(expectedType);
     }
 
     [Theory]
@@ -84,7 +84,7 @@ public sealed class BleUuidTests
 
         Action action = () => _ = BleUuid.Read(bytes);
 
-        action.Should().Throw<ArgumentOutOfRangeException>();
+        action.ShouldThrow<ArgumentOutOfRangeException>();
     }
 
     [Theory]
@@ -95,8 +95,8 @@ public sealed class BleUuidTests
 
         BleUuid uuid = BleUuid.Parse(guidString, null);
 
-        uuid.Type.Should().Be(BleUuidType.Uuid128);
-        uuid.Value.Should().Be(expectedGuid);
+        uuid.Type.ShouldBe(BleUuidType.Uuid128);
+        uuid.Value.ShouldBe(expectedGuid);
     }
 
     [Theory]
@@ -107,10 +107,10 @@ public sealed class BleUuidTests
 
         bool success = BleUuid.TryParse(guidString, null, out BleUuid? uuid);
 
-        success.Should().BeTrue();
-        uuid.Should().NotBeNull();
-        uuid!.Type.Should().Be(BleUuidType.Uuid128);
-        uuid.Value.Should().Be(expectedGuid);
+        success.ShouldBeTrue();
+        uuid.ShouldNotBeNull();
+        uuid!.Type.ShouldBe(BleUuidType.Uuid128);
+        uuid.Value.ShouldBe(expectedGuid);
     }
 
     [Theory]
@@ -120,8 +120,8 @@ public sealed class BleUuidTests
     {
         bool success = BleUuid.TryParse(invalidGuidString, null, out BleUuid? uuid);
 
-        success.Should().BeFalse();
-        uuid.Should().BeNull();
+        success.ShouldBeFalse();
+        uuid.ShouldBeNull();
     }
 
     [Theory]
@@ -132,7 +132,7 @@ public sealed class BleUuidTests
 
         var uuidString = BleUuid.FromGuid(guid).ToString();
 
-        uuidString.Should().Be(guidString);
+        uuidString.ShouldBe(guidString);
     }
 
     [Fact]
@@ -144,9 +144,9 @@ public sealed class BleUuidTests
 
         bool success = uuid.TryFormat(destination, out int charsWritten, "D");
 
-        success.Should().BeTrue();
-        charsWritten.Should().Be(36);
-        destination.ToString().Should().Be(guid.ToString("D"));
+        success.ShouldBeTrue();
+        charsWritten.ShouldBe(36);
+        destination.ToString().ShouldBe(guid.ToString("D"));
     }
 
     [Fact]
@@ -158,10 +158,10 @@ public sealed class BleUuidTests
 
         bool success = uuid.TryFormat(utf8Destination, out int bytesWritten, "D");
 
-        success.Should().BeTrue();
+        success.ShouldBeTrue();
         // Convert the written bytes back to a string for comparison
         string formattedString = Encoding.UTF8.GetString(utf8Destination.Slice(0, bytesWritten));
-        formattedString.Should().Be(guid.ToString("D"));
+        formattedString.ShouldBe(guid.ToString("D"));
     }
 
     [Fact]
@@ -173,8 +173,8 @@ public sealed class BleUuidTests
 
         bool success = uuid.TryFormat(destination, out int charsWritten, "D");
 
-        success.Should().BeFalse();
-        charsWritten.Should().Be(0);
+        success.ShouldBeFalse();
+        charsWritten.ShouldBe(0);
     }
 
     [Fact]
@@ -186,8 +186,8 @@ public sealed class BleUuidTests
 
         bool success = uuid.TryFormat(utf8Destination, out int bytesWritten, "D");
 
-        success.Should().BeFalse();
-        bytesWritten.Should().Be(0);
+        success.ShouldBeFalse();
+        bytesWritten.ShouldBe(0);
     }
 
     [Fact]
@@ -200,7 +200,7 @@ public sealed class BleUuidTests
         var expected = guid.ToString(format, CultureInfo.InvariantCulture);
         var result = uuid.ToString(format, CultureInfo.InvariantCulture);
 
-        result.Should().Be(expected);
+        result.ShouldBe(expected);
     }
 
     [Fact]
@@ -218,9 +218,9 @@ public sealed class BleUuidTests
             CultureInfo.InvariantCulture
         );
 
-        success.Should().BeTrue();
-        charsWritten.Should().Be(guid.ToString(format).Length);
-        destination.ToString().Should().Be(guid.ToString(format));
+        success.ShouldBeTrue();
+        charsWritten.ShouldBe(guid.ToString(format).Length);
+        destination.ToString().ShouldBe(guid.ToString(format));
     }
 
     [Fact]
@@ -238,11 +238,11 @@ public sealed class BleUuidTests
             CultureInfo.InvariantCulture
         );
 
-        success.Should().BeTrue();
+        success.ShouldBeTrue();
         var expectedString = guid.ToString(format);
         string resultString = System.Text.Encoding.UTF8.GetString(utf8Destination[..bytesWritten]);
 
-        resultString.Should().Be(expectedString);
+        resultString.ShouldBe(expectedString);
     }
 
     [Fact]
@@ -259,8 +259,8 @@ public sealed class BleUuidTests
             CultureInfo.InvariantCulture
         );
 
-        success.Should().BeFalse();
-        charsWritten.Should().Be(0);
+        success.ShouldBeFalse();
+        charsWritten.ShouldBe(0);
     }
 
     [Fact]
@@ -277,8 +277,8 @@ public sealed class BleUuidTests
             CultureInfo.InvariantCulture
         );
 
-        success.Should().BeFalse();
-        bytesWritten.Should().Be(0);
+        success.ShouldBeFalse();
+        bytesWritten.ShouldBe(0);
     }
 
     [Fact]
@@ -292,8 +292,8 @@ public sealed class BleUuidTests
         bool result = bleUuid.TryWriteBytes(destination);
 
         // Assert
-        result.Should().BeTrue();
-        destination.ToArray().Should().BeEquivalentTo([0xBB, 0xAA]);
+        result.ShouldBeTrue();
+        destination.ToArray().ShouldBe([0xBB, 0xAA]);
     }
 
     [Fact]
@@ -307,9 +307,9 @@ public sealed class BleUuidTests
         bool result = bleUuid.TryWriteBytes(destination);
 
         // Assert
-        result.Should().BeFalse();
+        result.ShouldBeFalse();
         // It hasn't been overwritten
-        destination[0].Should().Be(0xFF);
+        destination[0].ShouldBe<byte>(0xFF);
     }
 
     [Fact]
@@ -323,8 +323,8 @@ public sealed class BleUuidTests
         bool result = bleUuid.TryWriteBytes(destination);
 
         // Assert
-        result.Should().BeTrue();
-        destination.ToArray().Should().BeEquivalentTo([0xDD, 0xCC, 0xBB, 0xAA]);
+        result.ShouldBeTrue();
+        destination.ToArray().ShouldBe([0xDD, 0xCC, 0xBB, 0xAA]);
     }
 
     [Fact]
@@ -338,8 +338,8 @@ public sealed class BleUuidTests
         bool result = bleUuid.TryWriteBytes(destination);
 
         // Assert
-        result.Should().BeFalse();
-        destination.ToArray().Should().BeEquivalentTo([0xFF, 0xFF, 0xFF]);
+        result.ShouldBeFalse();
+        destination.ToArray().ShouldBe([0xFF, 0xFF, 0xFF]);
     }
 
     [Fact]
@@ -356,29 +356,11 @@ public sealed class BleUuidTests
         bool result = bleUuid.TryWriteBytes(destination);
 
         // Assert
-        result.Should().BeTrue();
-        destination.Length.Should().Be(16);
+        result.ShouldBeTrue();
+        destination.Length.ShouldBe(16);
         destination
             .ToArray()
-            .Should()
-            .BeEquivalentTo([
-                0x04,
-                0x03,
-                0x02,
-                0x01,
-                0x06,
-                0x05,
-                0x08,
-                0x07,
-                0x09,
-                0x0A,
-                0x0B,
-                0x0C,
-                0x0D,
-                0x0E,
-                0x0F,
-                0x10,
-            ]);
+            .ShouldBe([0x04, 0x03, 0x02, 0x01, 0x06, 0x05, 0x08, 0x07, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10]);
     }
 
     [Fact]
@@ -394,7 +376,7 @@ public sealed class BleUuidTests
         bool result = bleUuid.TryWriteBytes(destination);
 
         // Assert
-        result.Should().BeFalse();
+        result.ShouldBeFalse();
     }
 
     [Theory]
@@ -410,23 +392,23 @@ public sealed class BleUuidTests
 
         BleUuid bleUuid = BleUuid.FromGuid(guid, inferType: true);
 
-        bleUuid.Type.Should().Be(expectedType);
+        bleUuid.Type.ShouldBe(expectedType);
     }
 
     [Fact]
     public void ToString_EmitsShortFormsFor16()
     {
         var uuid = (BleUuid)0x00FF;
-        uuid.Type.Should().Be(BleUuidType.Uuid16);
-        uuid.ToString().Should().Be("00FF");
+        uuid.Type.ShouldBe(BleUuidType.Uuid16);
+        uuid.ToString().ShouldBe("00FF");
     }
 
     [Fact]
     public void ToString_EmitsShortFormsFor32()
     {
         var uuid = BleUuid.FromUInt32(0xDEADBEEF);
-        uuid.Type.Should().Be(BleUuidType.Uuid32);
-        uuid.ToString().Should().Be("DEADBEEF");
+        uuid.Type.ShouldBe(BleUuidType.Uuid32);
+        uuid.ToString().ShouldBe("DEADBEEF");
     }
 
     [Fact]
@@ -435,7 +417,7 @@ public sealed class BleUuidTests
         var guid = Guid.NewGuid();
         BleUuid uuid = BleUuid.FromGuid(guid, inferType: false);
         var fmt = uuid.ToString("D", CultureInfo.InvariantCulture);
-        fmt.Should().Be(guid.ToString("D", CultureInfo.InvariantCulture));
+        fmt.ShouldBe(guid.ToString("D", CultureInfo.InvariantCulture));
     }
 
     [Theory]
@@ -450,10 +432,10 @@ public sealed class BleUuidTests
         BleUuid uuid = BleUuid.FromGuid(Guid.Parse(guidString), inferType: true);
         Span<char> destination = stackalloc char[36];
 
-        uuid.TryFormat(destination, out int bytesWritten).Should().BeTrue();
+        uuid.TryFormat(destination, out int bytesWritten).ShouldBeTrue();
 
-        bytesWritten.Should().Be(expectedFormatString.Length);
-        new string(destination[..bytesWritten]).Should().Be(expectedFormatString);
+        bytesWritten.ShouldBe(expectedFormatString.Length);
+        new string(destination[..bytesWritten]).ShouldBe(expectedFormatString);
     }
 
     [Theory]
@@ -468,11 +450,11 @@ public sealed class BleUuidTests
         BleUuid uuid = BleUuid.FromGuid(Guid.Parse(guidString), inferType: true);
         Span<byte> destination = stackalloc byte[36];
 
-        uuid.TryFormat(destination, out int bytesWritten, "D").Should().BeTrue();
+        uuid.TryFormat(destination, out int bytesWritten, "D").ShouldBeTrue();
 
-        bytesWritten.Should().Be(expectedFormatString.Length);
+        bytesWritten.ShouldBe(expectedFormatString.Length);
         string formattedUuid = Encoding.UTF8.GetString(destination[..bytesWritten]);
-        formattedUuid.Should().Be(expectedFormatString);
+        formattedUuid.ShouldBe(expectedFormatString);
     }
 
     [Theory]
@@ -483,10 +465,10 @@ public sealed class BleUuidTests
     public void TryRead_InvalidLengths_ReturnsFalse(int len)
     {
         var span = new byte[len];
-        BleUuid.TryRead(span, out BleUuid? result).Should().BeFalse();
-        result.Should().BeNull();
+        BleUuid.TryRead(span, out BleUuid? result).ShouldBeFalse();
+        result.ShouldBeNull();
         Func<BleUuid> act = () => BleUuid.Read(span);
-        act.Should().Throw<ArgumentOutOfRangeException>();
+        act.ShouldThrow<ArgumentOutOfRangeException>();
     }
 
     [Theory]
@@ -505,11 +487,11 @@ public sealed class BleUuidTests
     {
         byte[] uuidBytes = Convert.FromHexString(hexString);
 
-        BleUuid.TryRead(uuidBytes, out BleUuid? bleUuid).Should().BeTrue();
+        BleUuid.TryRead(uuidBytes, out BleUuid? bleUuid).ShouldBeTrue();
 
-        bleUuid.Should().NotBeNull();
-        bleUuid!.Type.Should().Be(expectedType);
-        bleUuid.Value.Should().Be(Guid.Parse(expectedGuidString));
+        bleUuid.ShouldNotBeNull();
+        bleUuid!.Type.ShouldBe(expectedType);
+        bleUuid.Value.ShouldBe(Guid.Parse(expectedGuidString));
     }
 
     [Theory]
@@ -523,7 +505,7 @@ public sealed class BleUuidTests
 
         byte[] bytes = uuid.ToByteArray();
 
-        bytes.Should().BeEquivalentTo(expectedBytes);
+        bytes.ShouldBe(expectedBytes);
     }
 
     [Theory]
@@ -532,10 +514,10 @@ public sealed class BleUuidTests
     {
         Guid baseGuid = Guid.Parse(baseGuidString);
         BleUuid uuid = BleUuid.FromGuid(baseGuid, inferType: true);
-        uuid.Type.Should().Be(BleUuidType.Uuid16);
-        uuid.Equals(baseGuid).Should().BeTrue();
-        uuid.Equals((uint)shortUuid).Should().BeFalse(); // 16-bit only matches ushort
-        uuid.Equals(shortUuid).Should().BeTrue();
+        uuid.Type.ShouldBe(BleUuidType.Uuid16);
+        uuid.Equals(baseGuid).ShouldBeTrue();
+        uuid.Equals((uint)shortUuid).ShouldBeFalse(); // 16-bit only matches ushort
+        uuid.Equals(shortUuid).ShouldBeTrue();
     }
 
     [Theory]
@@ -549,9 +531,9 @@ public sealed class BleUuidTests
         Guid baseGuid = Guid.Parse(baseGuidString);
         BleUuid uuid = BleUuid.FromGuid(baseGuid, inferType: true);
 
-        uuid.Type.Should().Be(BleUuidType.Uuid32);
-        uuid.Equals(baseGuid).Should().BeTrue();
-        uuid.Equals(shortUuid).Should().BeFalse();
-        uuid.Equals(intUuid).Should().BeTrue();
+        uuid.Type.ShouldBe(BleUuidType.Uuid32);
+        uuid.Equals(baseGuid).ShouldBeTrue();
+        uuid.Equals(shortUuid).ShouldBeFalse();
+        uuid.Equals(intUuid).ShouldBeTrue();
     }
 }

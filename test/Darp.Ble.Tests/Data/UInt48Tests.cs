@@ -1,8 +1,7 @@
 using System.Globalization;
 using System.Runtime.InteropServices;
 using Darp.Ble.Data;
-using Darp.Ble.Tests.TestUtils;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Tests.Data;
 
@@ -15,7 +14,7 @@ public sealed class UInt48Tests
         var maxValue = (UInt48)0xFFFFFFFFFFFF;
 
         // Assert
-        UInt48.MaxValue.Should().Be(maxValue);
+        UInt48.MaxValue.ShouldBe(maxValue);
     }
 
     [Fact]
@@ -25,7 +24,7 @@ public sealed class UInt48Tests
         var minValue = (UInt48)0x000000000000;
 
         // Assert
-        UInt48.MinValue.Should().Be(minValue);
+        UInt48.MinValue.ShouldBe(minValue);
     }
 
     [Fact]
@@ -38,9 +37,7 @@ public sealed class UInt48Tests
         var castedValue = (UInt48)originalValue;
 
         // Assert
-        ((ulong)castedValue)
-            .Should()
-            .Be(originalValue);
+        ((ulong)castedValue).ShouldBe(originalValue);
     }
 
     [Fact]
@@ -53,7 +50,7 @@ public sealed class UInt48Tests
         ulong castedValue = originalValue;
 
         // Assert
-        castedValue.Should().Be(0x0000FFFFFFFFFFFF);
+        castedValue.ShouldBe(0x0000FFFFFFFFFFFFUL);
     }
 
     [Fact]
@@ -67,7 +64,7 @@ public sealed class UInt48Tests
         UInt48 reversed = UInt48.ReverseEndianness(testValue);
 
         // Assert
-        reversed.Should().Be(expectedValue);
+        reversed.ShouldBe(expectedValue);
     }
 
     [Fact]
@@ -80,7 +77,7 @@ public sealed class UInt48Tests
         UInt48 result = UInt48.ReadLittleEndian(source);
 
         // Assert
-        result.Should().Be(UInt48.MaxValue);
+        result.ShouldBe(UInt48.MaxValue);
     }
 
     [Fact]
@@ -93,7 +90,7 @@ public sealed class UInt48Tests
         Action act = () => UInt48.ReadLittleEndian((ReadOnlySpan<byte>)source);
 
         // Assert
-        act.Should().Throw<ArgumentOutOfRangeException>();
+        act.ShouldThrow<ArgumentOutOfRangeException>();
     }
 
     [Fact]
@@ -107,7 +104,7 @@ public sealed class UInt48Tests
         UInt48.WriteLittleEndian((Span<byte>)destination, value);
 
         // Assert
-        destination.Should().Equal([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]);
+        destination.ShouldBe([0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF]);
     }
 
     [Fact]
@@ -121,7 +118,7 @@ public sealed class UInt48Tests
         Action act = () => UInt48.WriteLittleEndian((Span<byte>)destination, value);
 
         // Assert
-        act.Should().Throw<ArgumentOutOfRangeException>();
+        act.ShouldThrow<ArgumentOutOfRangeException>();
     }
 
     [Theory]
@@ -135,7 +132,7 @@ public sealed class UInt48Tests
         var toString = value1.ToString();
 
         // Assert
-        toString.Should().Be(expectedString);
+        toString.ShouldBe(expectedString);
     }
 
     [Theory]
@@ -147,10 +144,10 @@ public sealed class UInt48Tests
         var value2 = (UInt48)second;
 
         // Act & Assert
-        value1.Equals(value2).Should().Be(expectedResult);
-        value1.Equals((object?)value2).Should().Be(expectedResult);
-        (value1 == value2).Should().Be(expectedResult);
-        (value1 != value2).Should().Be(!expectedResult);
+        value1.Equals(value2).ShouldBe(expectedResult);
+        value1.Equals((object?)value2).ShouldBe(expectedResult);
+        (value1 == value2).ShouldBe(expectedResult);
+        (value1 != value2).ShouldBe(!expectedResult);
     }
 
     [Theory]
@@ -167,12 +164,12 @@ public sealed class UInt48Tests
         var value2 = (UInt48)second;
 
         // Act & Assert
-        value1.CompareTo(value2).Should().BeNegative();
-        (value1 < value2).Should().BeTrue();
-        (value1 <= value2).Should().BeTrue();
-        value2.CompareTo(value1).Should().BePositive();
-        (value1 > value2).Should().BeFalse();
-        (value1 >= value2).Should().BeFalse();
+        value1.CompareTo(value2).ShouldBeNegative();
+        (value1 < value2).ShouldBeTrue();
+        (value1 <= value2).ShouldBeTrue();
+        value2.CompareTo(value1).ShouldBePositive();
+        (value1 > value2).ShouldBeFalse();
+        (value1 >= value2).ShouldBeFalse();
     }
 
     [Theory]
@@ -183,10 +180,10 @@ public sealed class UInt48Tests
         var value1 = (UInt48)value;
         var value2 = (UInt48)value;
 
-        value1.CompareTo(value2).Should().Be(0);
-        (value1 >= value2).Should().BeTrue();
-        (value1 <= value2).Should().BeTrue();
-        value1.GetHashCode().Should().Be(value2.GetHashCode());
+        value1.CompareTo(value2).ShouldBe(0);
+        (value1 >= value2).ShouldBeTrue();
+        (value1 <= value2).ShouldBeTrue();
+        value1.GetHashCode().ShouldBe(value2.GetHashCode());
     }
 
     [Fact]
@@ -197,7 +194,7 @@ public sealed class UInt48Tests
         // Act
         var formatted = value.ToString("X12", CultureInfo.InvariantCulture);
         // Assert: 12 hex digits, uppercase
-        formatted.Should().Be("AABBCCDDEEFF");
+        formatted.ShouldBe("AABBCCDDEEFF");
     }
 
     [Theory]
@@ -211,9 +208,9 @@ public sealed class UInt48Tests
         // Act
         bool result = u48.TryFormat(buffer, out int charsWritten, "X12".AsSpan(), CultureInfo.InvariantCulture);
         // Assert
-        result.Should().BeTrue();
-        charsWritten.Should().Be(12);
-        new string(buffer).Should().Be(expectedHexString);
+        result.ShouldBeTrue();
+        charsWritten.ShouldBe(12);
+        new string(buffer).ShouldBe(expectedHexString);
     }
 
     [Theory]
@@ -226,7 +223,7 @@ public sealed class UInt48Tests
         var u48 = UInt48.ToUInt48(original);
         var roundTripped = u48.ToUInt64();
         // Assert
-        roundTripped.Should().Be(original);
+        roundTripped.ShouldBe(original);
     }
 
     [Theory]
@@ -242,7 +239,7 @@ public sealed class UInt48Tests
         UInt48.WriteLittleEndian(bytes, u48);
         UInt48 readBack = UInt48.ReadLittleEndian(bytes);
         // Assert
-        readBack.Should().Be(u48);
+        readBack.ShouldBe(u48);
     }
 
     [Fact]
@@ -251,7 +248,7 @@ public sealed class UInt48Tests
         // Act
         ulong zero = UInt48.MinValue.ToUInt64();
         // Assert
-        zero.Should().Be(0UL);
+        zero.ShouldBe(0UL);
     }
 
     [Fact]
@@ -260,7 +257,7 @@ public sealed class UInt48Tests
         // Act
         int size = Marshal.SizeOf<UInt48>();
         // Assert
-        size.Should().Be(6);
+        size.ShouldBe(6);
     }
 
     [Fact]
@@ -273,6 +270,6 @@ public sealed class UInt48Tests
         int h1 = v1.GetHashCode();
         int h2 = v2.GetHashCode();
         // Assert
-        h1.Should().NotBe(h2);
+        h1.ShouldNotBe(h2);
     }
 }

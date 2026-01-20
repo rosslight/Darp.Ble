@@ -1,6 +1,5 @@
 using Darp.Ble.Data;
-using Darp.Ble.Tests.TestUtils;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Tests.Data;
 
@@ -13,8 +12,8 @@ public sealed class BleAddressTests
         var value = (UInt48)rawValue;
         var address = new BleAddress(value);
 
-        address.Type.Should().Be(BleAddressType.NotAvailable);
-        address.Value.Should().Be(value);
+        address.Type.ShouldBe(BleAddressType.NotAvailable);
+        address.Value.ShouldBe(value);
     }
 
     [Theory]
@@ -24,8 +23,8 @@ public sealed class BleAddressTests
         var value = (UInt48)rawValue;
         var address = new BleAddress(addressType, value);
 
-        address.Type.Should().Be(addressType);
-        address.Value.Should().Be(value);
+        address.Type.ShouldBe(addressType);
+        address.Value.ShouldBe(value);
     }
 
     [Theory]
@@ -38,12 +37,12 @@ public sealed class BleAddressTests
         bool success = BleAddress.TryParse(input, provider: null, out BleAddress? result);
         BleAddress result2 = BleAddress.Parse(input, provider: null);
 
-        success.Should().BeTrue();
-        result.Should().NotBeNull();
-        result!.Type.Should().Be(BleAddressType.NotAvailable);
-        result.Value.Should().Be(expectedValue);
-        result2.Type.Should().Be(BleAddressType.NotAvailable);
-        result2.Value.Should().Be(expectedValue);
+        success.ShouldBeTrue();
+        result.ShouldNotBeNull();
+        result!.Type.ShouldBe(BleAddressType.NotAvailable);
+        result.Value.ShouldBe(expectedValue);
+        result2.Type.ShouldBe(BleAddressType.NotAvailable);
+        result2.Value.ShouldBe(expectedValue);
     }
 
     [Theory]
@@ -64,9 +63,9 @@ public sealed class BleAddressTests
 
         // Assert
         if (input is not null)
-            act.Should().Throw<FormatException>();
-        success.Should().BeFalse();
-        result.Should().BeNull();
+            act.ShouldThrow<FormatException>();
+        success.ShouldBeFalse();
+        result.ShouldBeNull();
     }
 
     [Fact]
@@ -80,7 +79,7 @@ public sealed class BleAddressTests
         UInt48 value = bleAddress;
 
         // Assert
-        value.Should().Be(expectedValue);
+        value.ShouldBe(expectedValue);
     }
 
     [Fact]
@@ -93,8 +92,8 @@ public sealed class BleAddressTests
         var bleAddress = (BleAddress)value;
 
         // Assert
-        bleAddress.Value.Should().Be(value);
-        bleAddress.Type.Should().Be(BleAddressType.NotAvailable);
+        bleAddress.Value.ShouldBe(value);
+        bleAddress.Type.ShouldBe(BleAddressType.NotAvailable);
     }
 
     [Fact]
@@ -105,7 +104,7 @@ public sealed class BleAddressTests
         // Act
         string s = addr.ToString();
         // Assert
-        s.Should().Be("0A1B2C3D4E5F");
+        s.ShouldBe("0A1B2C3D4E5F");
     }
 
     [Fact]
@@ -116,8 +115,8 @@ public sealed class BleAddressTests
         // Act
         bool ok = BleAddress.TryParse(input, provider: null, out var result);
         // Assert
-        ok.Should().BeTrue();
-        result!.Value.Should().Be((UInt48)0xAABBCCDDEEFF);
+        ok.ShouldBeTrue();
+        result!.Value.ShouldBe((UInt48)0xAABBCCDDEEFF);
     }
 
     [Fact]
@@ -129,10 +128,10 @@ public sealed class BleAddressTests
         var secondPublicAddress = new BleAddress(BleAddressType.Public, (UInt48)value);
         BleAddress? nullAddr = null;
 
-        publicAddress.Equals(publicAddress).Should().BeTrue();
-        publicAddress.Equals(randomAddress).Should().BeFalse();
-        publicAddress.Equals(secondPublicAddress).Should().BeTrue();
-        publicAddress.Equals(nullAddr).Should().BeFalse();
+        publicAddress.Equals(publicAddress).ShouldBeTrue();
+        publicAddress.Equals(randomAddress).ShouldBeFalse();
+        publicAddress.Equals(secondPublicAddress).ShouldBeTrue();
+        publicAddress.Equals(nullAddr).ShouldBeFalse();
     }
 
     [Theory]
@@ -144,10 +143,10 @@ public sealed class BleAddressTests
         var otherU48 = (UInt48)otherValue;
         var address = new BleAddress(BleAddressType.Public, u48);
 
-        address.Equals(u48).Should().BeTrue();
-        address.Equals(value).Should().BeTrue();
-        address.Equals(otherU48).Should().BeFalse();
-        address.Equals(otherValue).Should().BeFalse();
+        address.Equals(u48).ShouldBeTrue();
+        address.Equals(value).ShouldBeTrue();
+        address.Equals(otherU48).ShouldBeFalse();
+        address.Equals(otherValue).ShouldBeFalse();
     }
 
     [Theory]
@@ -160,16 +159,16 @@ public sealed class BleAddressTests
         var otherRandomAddress = new BleAddress(BleAddressType.RandomStatic, (UInt48)value);
         var publicAddress = new BleAddress(BleAddressType.Public, (UInt48)value);
 
-        randomAddress.GetHashCode().Should().Be(otherRandomAddress.GetHashCode());
-        randomAddress.GetHashCode().Should().NotBe(publicAddress.GetHashCode());
+        randomAddress.GetHashCode().ShouldBe(otherRandomAddress.GetHashCode());
+        randomAddress.GetHashCode().ShouldNotBe(publicAddress.GetHashCode());
     }
 
     [Fact]
     public void NotAvailable_StaticProperty_IsZeroAndNotAvailableType()
     {
         BleAddress notAvailableAddress = BleAddress.NotAvailable;
-        notAvailableAddress.Type.Should().Be(BleAddressType.NotAvailable);
-        notAvailableAddress.Value.Should().Be(UInt48.Zero);
+        notAvailableAddress.Type.ShouldBe(BleAddressType.NotAvailable);
+        notAvailableAddress.Value.ShouldBe(UInt48.Zero);
     }
 
     [Fact]
@@ -179,8 +178,8 @@ public sealed class BleAddressTests
 
         // the top two bits of the 48‐bit value must be 11
         ulong hi2 = (rand.Value >> 46) & 0b11;
-        hi2.Should().Be(0b11);
-        rand.Type.Should().Be(BleAddressType.RandomStatic);
+        hi2.ShouldBe(0b11UL);
+        rand.Type.ShouldBe(BleAddressType.RandomStatic);
     }
 
     [Theory]
@@ -195,7 +194,7 @@ public sealed class BleAddressTests
         var u48 = (UInt48)raw;
 
         var addr = BleAddress.CreateRandomAddress(u48);
-        addr.Value.Should().Be(u48);
-        addr.Type.Should().Be(expectedType);
+        addr.Value.ShouldBe(u48);
+        addr.Type.ShouldBe(expectedType);
     }
 }

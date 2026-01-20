@@ -3,7 +3,7 @@ using System.Text;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Tests.Gap;
 
@@ -29,11 +29,11 @@ public sealed class AdvertisingDataExtensionsSetterTests
         AdvertisingData result = advertisingData.WithFlags(expectedFlags);
 
         // Assert
-        result.Count.Should().Be(1, because: "one Flags section should be added to empty data");
-        result.Contains(AdTypes.Flags).Should().BeTrue();
-        result[0].Type.Should().Be(AdTypes.Flags);
-        result[0].Bytes.Length.Should().Be(1);
-        result[0].Bytes.Span[0].Should().Be((byte)expectedFlags);
+        result.Count.ShouldBe(1, customMessage: "one Flags section should be added to empty data");
+        result.Contains(AdTypes.Flags).ShouldBeTrue();
+        result[0].Type.ShouldBe(AdTypes.Flags);
+        result[0].Bytes.Length.ShouldBe(1);
+        result[0].Bytes.Span[0].ShouldBe((byte)expectedFlags);
     }
 
     [Fact]
@@ -49,11 +49,11 @@ public sealed class AdvertisingDataExtensionsSetterTests
         AdvertisingData result = advertisingData.WithFlags(newFlags);
 
         // Assert
-        result.Count.Should().Be(1, because: "the existing Flags section should be replaced, not appended");
-        result.Contains(AdTypes.Flags).Should().BeTrue();
-        result[0].Type.Should().Be(AdTypes.Flags);
-        result[0].Bytes.Length.Should().Be(1);
-        result[0].Bytes.Span[0].Should().Be((byte)newFlags);
+        result.Count.ShouldBe(1, customMessage: "the existing Flags section should be replaced, not appended");
+        result.Contains(AdTypes.Flags).ShouldBeTrue();
+        result[0].Type.ShouldBe(AdTypes.Flags);
+        result[0].Bytes.Length.ShouldBe(1);
+        result[0].Bytes.Span[0].ShouldBe((byte)newFlags);
     }
 
     [Fact]
@@ -66,12 +66,12 @@ public sealed class AdvertisingDataExtensionsSetterTests
         AdvertisingData result = PowerLevelData.WithFlags(flags);
 
         // Assert
-        result.Count.Should().Be(2, because: "a new Flags section should be added alongside existing sections");
-        result.Contains(AdTypes.TxPowerLevel).Should().BeTrue();
-        result.Contains(AdTypes.Flags).Should().BeTrue();
-        result[^1].Type.Should().Be(AdTypes.Flags);
-        result[^1].Bytes.Length.Should().Be(1);
-        result[^1].Bytes.Span[0].Should().Be((byte)flags);
+        result.Count.ShouldBe(2, customMessage: "a new Flags section should be added alongside existing sections");
+        result.Contains(AdTypes.TxPowerLevel).ShouldBeTrue();
+        result.Contains(AdTypes.Flags).ShouldBeTrue();
+        result[^1].Type.ShouldBe(AdTypes.Flags);
+        result[^1].Bytes.Length.ShouldBe(1);
+        result[^1].Bytes.Span[0].ShouldBe((byte)flags);
     }
 
     [Fact]
@@ -85,12 +85,12 @@ public sealed class AdvertisingDataExtensionsSetterTests
 
         // Assert
         // Original should remain unchanged
-        original.Count.Should().Be(1);
-        original.Contains(AdTypes.Flags).Should().BeFalse();
+        original.Count.ShouldBe(1);
+        original.Contains(AdTypes.Flags).ShouldBeFalse();
 
         // Modified should have both TxPowerLevel and Flags
-        modified.Count.Should().Be(2);
-        modified.Contains(AdTypes.Flags).Should().BeTrue();
+        modified.Count.ShouldBe(2);
+        modified.Contains(AdTypes.Flags).ShouldBeTrue();
     }
 
     [Fact]
@@ -104,12 +104,12 @@ public sealed class AdvertisingDataExtensionsSetterTests
         AdvertisingData result = advertisingData.WithCompleteLocalName(newName);
 
         // Assert
-        result.Count.Should().Be(1, because: "one CompleteLocalName section should be added to empty data");
-        result.Contains(AdTypes.CompleteLocalName).Should().BeTrue();
-        result[0].Type.Should().Be(AdTypes.CompleteLocalName);
+        result.Count.ShouldBe(1, customMessage: "one CompleteLocalName section should be added to empty data");
+        result.Contains(AdTypes.CompleteLocalName).ShouldBeTrue();
+        result[0].Type.ShouldBe(AdTypes.CompleteLocalName);
         // Verify the UTF-8 bytes match "MyDevice"
         string resultName = Encoding.UTF8.GetString(result[0].Bytes.Span);
-        resultName.Should().Be(newName);
+        resultName.ShouldBe(newName);
     }
 
     [Fact]
@@ -124,13 +124,14 @@ public sealed class AdvertisingDataExtensionsSetterTests
 
         // Assert
         // The existing CompleteLocalName section should be replaced
-        result
-            .Count.Should()
-            .Be(1, because: "the existing CompleteLocalName section should be replaced, not appended");
-        result.Contains(AdTypes.CompleteLocalName).Should().BeTrue();
-        result[0].Type.Should().Be(AdTypes.CompleteLocalName);
+        result.Count.ShouldBe(
+            1,
+            customMessage: "the existing CompleteLocalName section should be replaced, not appended"
+        );
+        result.Contains(AdTypes.CompleteLocalName).ShouldBeTrue();
+        result[0].Type.ShouldBe(AdTypes.CompleteLocalName);
         string resultName = Encoding.UTF8.GetString(result[0].Bytes.Span);
-        resultName.Should().Be(newName);
+        resultName.ShouldBe(newName);
     }
 
     [Fact]
@@ -145,12 +146,12 @@ public sealed class AdvertisingDataExtensionsSetterTests
 
         // Assert
         // Original remains the same
-        original.Count.Should().Be(1);
-        original.Contains(AdTypes.CompleteLocalName).Should().BeFalse();
+        original.Count.ShouldBe(1);
+        original.Contains(AdTypes.CompleteLocalName).ShouldBeFalse();
 
         // Modified now has an extra CompleteLocalName section
-        modified.Count.Should().Be(2);
-        modified.Contains(AdTypes.CompleteLocalName).Should().BeTrue();
+        modified.Count.ShouldBe(2);
+        modified.Contains(AdTypes.CompleteLocalName).ShouldBeTrue();
     }
 
     [Fact]
@@ -164,11 +165,11 @@ public sealed class AdvertisingDataExtensionsSetterTests
         AdvertisingData result = advertisingData.WithShortenedLocalName(shortName);
 
         // Assert
-        result.Count.Should().Be(1, because: "one ShortenedLocalName section should be added to empty data");
-        result.Contains(AdTypes.ShortenedLocalName).Should().BeTrue();
-        result[0].Type.Should().Be(AdTypes.ShortenedLocalName);
+        result.Count.ShouldBe(1, customMessage: "one ShortenedLocalName section should be added to empty data");
+        result.Contains(AdTypes.ShortenedLocalName).ShouldBeTrue();
+        result[0].Type.ShouldBe(AdTypes.ShortenedLocalName);
         string resultName = Encoding.UTF8.GetString(result[0].Bytes.Span);
-        resultName.Should().Be(shortName);
+        resultName.ShouldBe(shortName);
     }
 
     [Fact]
@@ -182,13 +183,14 @@ public sealed class AdvertisingDataExtensionsSetterTests
         AdvertisingData result = original.WithShortenedLocalName(newShortName);
 
         // Assert
-        result
-            .Count.Should()
-            .Be(1, because: "the existing ShortenedLocalName section should be replaced, not appended");
-        result.Contains(AdTypes.ShortenedLocalName).Should().BeTrue();
-        result[0].Type.Should().Be(AdTypes.ShortenedLocalName);
+        result.Count.ShouldBe(
+            1,
+            customMessage: "the existing ShortenedLocalName section should be replaced, not appended"
+        );
+        result.Contains(AdTypes.ShortenedLocalName).ShouldBeTrue();
+        result[0].Type.ShouldBe(AdTypes.ShortenedLocalName);
         string resultName = Encoding.UTF8.GetString(result[0].Bytes.Span);
-        resultName.Should().Be(newShortName);
+        resultName.ShouldBe(newShortName);
     }
 
     [Fact]
@@ -205,12 +207,12 @@ public sealed class AdvertisingDataExtensionsSetterTests
 
         // Assert
         // Original remains the same
-        original.Count.Should().Be(1);
-        original.Contains(AdTypes.ShortenedLocalName).Should().BeFalse();
+        original.Count.ShouldBe(1);
+        original.Contains(AdTypes.ShortenedLocalName).ShouldBeFalse();
 
         // Modified now has an extra ShortenedLocalName section
-        modified.Count.Should().Be(2);
-        modified.Contains(AdTypes.ShortenedLocalName).Should().BeTrue();
+        modified.Count.ShouldBe(2);
+        modified.Contains(AdTypes.ShortenedLocalName).ShouldBeTrue();
     }
 
     [Fact]
@@ -225,18 +227,18 @@ public sealed class AdvertisingDataExtensionsSetterTests
         AdvertisingData result = advertisingData.WithManufacturerSpecificData(companyId, [0xAA, 0xBB, 0xCC]);
 
         // Assert
-        result.Count.Should().Be(1, because: "one ManufacturerSpecificData section should be added to empty data");
-        result.Contains(AdTypes.ManufacturerSpecificData).Should().BeTrue();
-        result[0].Type.Should().Be(AdTypes.ManufacturerSpecificData);
+        result.Count.ShouldBe(1, customMessage: "one ManufacturerSpecificData section should be added to empty data");
+        result.Contains(AdTypes.ManufacturerSpecificData).ShouldBeTrue();
+        result[0].Type.ShouldBe(AdTypes.ManufacturerSpecificData);
 
         // Verify the content: 2 bytes for company ID + the original data
-        result[0].Bytes.Length.Should().Be(2 + data.Length);
+        result[0].Bytes.Length.ShouldBe(2 + data.Length);
         ushort writtenCompanyId = BinaryPrimitives.ReadUInt16LittleEndian(result[0].Bytes.Span[..2]);
-        writtenCompanyId.Should().Be((ushort)companyId);
+        writtenCompanyId.ShouldBe((ushort)companyId);
 
         // Remaining part should match data
         ReadOnlyMemory<byte> readData = result[0].Bytes[2..];
-        readData.Span.ToArray().Should().BeEquivalentTo(data.ToArray());
+        readData.Span.ToArray().ShouldBe(data.ToArray());
     }
 
     [Fact]
@@ -254,15 +256,15 @@ public sealed class AdvertisingDataExtensionsSetterTests
 
         // Assert
         // The existing ManufacturerSpecificData section should be replaced
-        result.Count.Should().Be(1, because: "the existing ManufacturerSpecificData section should be replaced");
-        result.Contains(AdTypes.ManufacturerSpecificData).Should().BeTrue();
-        result[0].Type.Should().Be(AdTypes.ManufacturerSpecificData);
+        result.Count.ShouldBe(1, customMessage: "the existing ManufacturerSpecificData section should be replaced");
+        result.Contains(AdTypes.ManufacturerSpecificData).ShouldBeTrue();
+        result[0].Type.ShouldBe(AdTypes.ManufacturerSpecificData);
 
         // Verify the content
         ushort writtenCompanyId = BinaryPrimitives.ReadUInt16LittleEndian(result[0].Bytes.Span[..2]);
-        writtenCompanyId.Should().Be((ushort)companyId);
+        writtenCompanyId.ShouldBe((ushort)companyId);
         ReadOnlyMemory<byte> replacedData = result[0].Bytes[2..];
-        replacedData.Span.ToArray().Should().BeEquivalentTo(newData.ToArray());
+        replacedData.Span.ToArray().ShouldBe(newData.ToArray());
     }
 
     [Fact]
@@ -278,12 +280,12 @@ public sealed class AdvertisingDataExtensionsSetterTests
 
         // Assert
         // Original remains unchanged
-        original.Count.Should().Be(1);
-        original.Contains(AdTypes.ManufacturerSpecificData).Should().BeFalse();
+        original.Count.ShouldBe(1);
+        original.Contains(AdTypes.ManufacturerSpecificData).ShouldBeFalse();
 
         // Modified has an extra ManufacturerSpecificData section
-        modified.Count.Should().Be(2);
-        modified.Contains(AdTypes.ManufacturerSpecificData).Should().BeTrue();
+        modified.Count.ShouldBe(2);
+        modified.Contains(AdTypes.ManufacturerSpecificData).ShouldBeTrue();
     }
 
     [Fact]
@@ -297,17 +299,17 @@ public sealed class AdvertisingDataExtensionsSetterTests
         AdvertisingData result = advertisingData.WithCompleteListOfServiceUuids(Uuid16BitHeartRate);
 
         // Assert
-        // Because we have a single 16-bit UUID, we should get exactly one new section:
+        // customMessage we have a single 16-bit UUID, we should get exactly one new section:
         // AdTypes.CompleteListOf16BitServiceOrServiceClassUuids
-        result.Count.Should().Be(1, "one Complete 16-bit Service UUID section should be added to empty data");
-        result.Contains(AdTypes.CompleteListOf16BitServiceOrServiceClassUuids).Should().BeTrue();
+        result.Count.ShouldBe(1, "one Complete 16-bit Service UUID section should be added to empty data");
+        result.Contains(AdTypes.CompleteListOf16BitServiceOrServiceClassUuids).ShouldBeTrue();
 
         // Verify the bytes are exactly 2 bytes of 0x180D
-        result[0].Type.Should().Be(AdTypes.CompleteListOf16BitServiceOrServiceClassUuids);
-        result[0].Bytes.Length.Should().Be(2);
+        result[0].Type.ShouldBe(AdTypes.CompleteListOf16BitServiceOrServiceClassUuids);
+        result[0].Bytes.Length.ShouldBe(2);
         // 0x180D in little-endian is 0x0D, 0x18
-        result[0].Bytes.Span[0].Should().Be(0x0D);
-        result[0].Bytes.Span[1].Should().Be(0x18);
+        result[0].Bytes.Span[0].ShouldBe<byte>(0x0D);
+        result[0].Bytes.Span[1].ShouldBe<byte>(0x18);
     }
 
     [Fact]
@@ -327,13 +329,13 @@ public sealed class AdvertisingDataExtensionsSetterTests
         // Assert
         // We expect two new sections: one for 16-bit and one for 128-bit
         // (assuming none are 32-bit in this set)
-        result.Count.Should().Be(2, "existing 16-bit section should be replaced, plus a new 128-bit section added");
+        result.Count.ShouldBe(2, "existing 16-bit section should be replaced, plus a new 128-bit section added");
 
-        result[0].Type.Should().Be(AdTypes.CompleteListOf16BitServiceOrServiceClassUuids);
-        result[0].Bytes.Length.Should().Be(4);
-        result[0].Bytes.ToArray().Should().BeEquivalentTo([0x0D, 0x18, 0x0A, 0x18]);
-        result[1].Type.Should().Be(AdTypes.CompleteListOf128BitServiceOrServiceClassUuids);
-        result[1].Bytes.Length.Should().Be(16);
+        result[0].Type.ShouldBe(AdTypes.CompleteListOf16BitServiceOrServiceClassUuids);
+        result[0].Bytes.Length.ShouldBe(4);
+        result[0].Bytes.ToArray().ShouldBe([0x0D, 0x18, 0x0A, 0x18]);
+        result[1].Type.ShouldBe(AdTypes.CompleteListOf128BitServiceOrServiceClassUuids);
+        result[1].Bytes.Length.ShouldBe(16);
     }
 
     [Fact]
@@ -349,12 +351,12 @@ public sealed class AdvertisingDataExtensionsSetterTests
 
         // Assert
         // Original remains the same
-        original.Count.Should().Be(1);
-        original.Contains(AdTypes.CompleteListOf16BitServiceOrServiceClassUuids).Should().BeFalse();
+        original.Count.ShouldBe(1);
+        original.Contains(AdTypes.CompleteListOf16BitServiceOrServiceClassUuids).ShouldBeFalse();
 
         // Modified now has 2 sections: Flags + CompleteListOf16Bit
-        modified.Count.Should().Be(2);
-        modified.Contains(AdTypes.CompleteListOf32BitServiceOrServiceClassUuids).Should().BeTrue();
+        modified.Count.ShouldBe(2);
+        modified.Contains(AdTypes.CompleteListOf32BitServiceOrServiceClassUuids).ShouldBeTrue();
     }
 
     [Fact]
@@ -368,17 +370,17 @@ public sealed class AdvertisingDataExtensionsSetterTests
         AdvertisingData result = advertisingData.WithIncompleteListOfServiceUuids(Uuid16BitHeartRate);
 
         // Assert
-        // Because we have a single 16-bit UUID, we should get exactly one new section:
+        // customMessage we have a single 16-bit UUID, we should get exactly one new section:
         // AdTypes.IncompleteListOf16BitServiceOrServiceClassUuids
-        result.Count.Should().Be(1, "one Complete 16-bit Service UUID section should be added to empty data");
-        result.Contains(AdTypes.IncompleteListOf16BitServiceOrServiceClassUuids).Should().BeTrue();
+        result.Count.ShouldBe(1, "one Complete 16-bit Service UUID section should be added to empty data");
+        result.Contains(AdTypes.IncompleteListOf16BitServiceOrServiceClassUuids).ShouldBeTrue();
 
         // Verify the bytes are exactly 2 bytes of 0x180D
-        result[0].Type.Should().Be(AdTypes.IncompleteListOf16BitServiceOrServiceClassUuids);
-        result[0].Bytes.Length.Should().Be(2);
+        result[0].Type.ShouldBe(AdTypes.IncompleteListOf16BitServiceOrServiceClassUuids);
+        result[0].Bytes.Length.ShouldBe(2);
         // 0x180D in little-endian is 0x0D, 0x18
-        result[0].Bytes.Span[0].Should().Be(0x0D);
-        result[0].Bytes.Span[1].Should().Be(0x18);
+        result[0].Bytes.Span[0].ShouldBe<byte>(0x0D);
+        result[0].Bytes.Span[1].ShouldBe<byte>(0x18);
     }
 
     [Fact]
@@ -398,13 +400,13 @@ public sealed class AdvertisingDataExtensionsSetterTests
         // Assert
         // We expect two new sections: one for 16-bit and one for 128-bit
         // (assuming none are 32-bit in this set)
-        result.Count.Should().Be(2, "existing 16-bit section should be replaced, plus a new 128-bit section added");
+        result.Count.ShouldBe(2, "existing 16-bit section should be replaced, plus a new 128-bit section added");
 
-        result[0].Type.Should().Be(AdTypes.IncompleteListOf16BitServiceOrServiceClassUuids);
-        result[0].Bytes.Length.Should().Be(4);
-        result[0].Bytes.ToArray().Should().BeEquivalentTo([0x0D, 0x18, 0x0A, 0x18]);
-        result[1].Type.Should().Be(AdTypes.IncompleteListOf128BitServiceOrServiceClassUuids);
-        result[1].Bytes.Length.Should().Be(16);
+        result[0].Type.ShouldBe(AdTypes.IncompleteListOf16BitServiceOrServiceClassUuids);
+        result[0].Bytes.Length.ShouldBe(4);
+        result[0].Bytes.ToArray().ShouldBe([0x0D, 0x18, 0x0A, 0x18]);
+        result[1].Type.ShouldBe(AdTypes.IncompleteListOf128BitServiceOrServiceClassUuids);
+        result[1].Bytes.Length.ShouldBe(16);
     }
 
     [Fact]
@@ -420,12 +422,12 @@ public sealed class AdvertisingDataExtensionsSetterTests
 
         // Assert
         // Original remains the same
-        original.Count.Should().Be(1);
-        original.Contains(AdTypes.IncompleteListOf16BitServiceOrServiceClassUuids).Should().BeFalse();
+        original.Count.ShouldBe(1);
+        original.Contains(AdTypes.IncompleteListOf16BitServiceOrServiceClassUuids).ShouldBeFalse();
 
         // Modified now has 2 sections: Flags + IncompleteListOf16Bit
-        modified.Count.Should().Be(2);
-        modified.Contains(AdTypes.IncompleteListOf32BitServiceOrServiceClassUuids).Should().BeTrue();
+        modified.Count.ShouldBe(2);
+        modified.Contains(AdTypes.IncompleteListOf32BitServiceOrServiceClassUuids).ShouldBeTrue();
     }
 
     [Fact]
@@ -436,10 +438,10 @@ public sealed class AdvertisingDataExtensionsSetterTests
 
         AdvertisingData result = advertisingData.WithTxPower(expected);
 
-        result.Count.Should().Be(1, "one TxPowerLevel section should be added");
-        result.Contains(AdTypes.TxPowerLevel).Should().BeTrue();
-        result[0].Type.Should().Be(AdTypes.TxPowerLevel);
-        result[0].Bytes.Span[0].Should().Be((byte)expected);
+        result.Count.ShouldBe(1, "one TxPowerLevel section should be added");
+        result.Contains(AdTypes.TxPowerLevel).ShouldBeTrue();
+        result[0].Type.ShouldBe(AdTypes.TxPowerLevel);
+        result[0].Bytes.Span[0].ShouldBe((byte)expected);
     }
 
     [Fact]
@@ -450,8 +452,8 @@ public sealed class AdvertisingDataExtensionsSetterTests
 
         AdvertisingData result = original.WithTxPower(newLevel);
 
-        result.Count.Should().Be(1, "existing TxPowerLevel should be replaced");
-        result[0].Bytes.Span[0].Should().Be((byte)newLevel);
+        result.Count.ShouldBe(1, "existing TxPowerLevel should be replaced");
+        result[0].Bytes.Span[0].ShouldBe((byte)newLevel);
     }
 
     [Fact]
@@ -460,8 +462,8 @@ public sealed class AdvertisingDataExtensionsSetterTests
         var original = AdvertisingData.Empty;
         AdvertisingData modified = original.WithTxPower((TxPowerLevel)1);
 
-        original.Count.Should().Be(0);
-        modified.Count.Should().Be(1);
+        original.Count.ShouldBe(0);
+        modified.Count.ShouldBe(1);
     }
 
     // New tests for WithServiceData
@@ -473,14 +475,14 @@ public sealed class AdvertisingDataExtensionsSetterTests
 
         AdvertisingData result = advertisingData.WithServiceData(Uuid16BitHeartRate, svcData);
 
-        result.Count.Should().Be(1);
-        result[0].Type.Should().Be(AdTypes.ServiceData16BitUuid);
+        result.Count.ShouldBe(1);
+        result[0].Type.ShouldBe(AdTypes.ServiceData16BitUuid);
         // first two bytes are the UUID in little-endian
-        result[0].Bytes.Span[0].Should().Be(0x0D);
-        result[0].Bytes.Span[1].Should().Be(0x18);
+        result[0].Bytes.Span[0].ShouldBe<byte>(0x0D);
+        result[0].Bytes.Span[1].ShouldBe<byte>(0x18);
         // then service data
-        result[0].Bytes.Span[2].Should().Be(0xAA);
-        result[0].Bytes.Span[3].Should().Be(0xBB);
+        result[0].Bytes.Span[2].ShouldBe<byte>(0xAA);
+        result[0].Bytes.Span[3].ShouldBe<byte>(0xBB);
     }
 
     [Fact]
@@ -491,15 +493,15 @@ public sealed class AdvertisingDataExtensionsSetterTests
 
         AdvertisingData result = advertisingData.WithServiceData(Uuid32, svcData);
 
-        result.Count.Should().Be(1);
-        result[0].Type.Should().Be(AdTypes.ServiceData32BitUuid);
+        result.Count.ShouldBe(1);
+        result[0].Type.ShouldBe(AdTypes.ServiceData32BitUuid);
         // first 4 bytes are the UUID
         var span = result[0].Bytes.Span;
-        span[0].Should().Be(0xDD);
-        span[1].Should().Be(0xCC);
-        span[2].Should().Be(0xBB);
-        span[3].Should().Be(0xAA);
-        span[4].Should().Be(0x01);
+        span[0].ShouldBe<byte>(0xDD);
+        span[1].ShouldBe<byte>(0xCC);
+        span[2].ShouldBe<byte>(0xBB);
+        span[3].ShouldBe<byte>(0xAA);
+        span[4].ShouldBe<byte>(0x01);
     }
 
     [Fact]
@@ -510,9 +512,9 @@ public sealed class AdvertisingDataExtensionsSetterTests
 
         AdvertisingData result = advertisingData.WithServiceData(Uuid128BitCustom, svcData);
 
-        result.Count.Should().Be(1);
-        result[0].Type.Should().Be(AdTypes.ServiceData128BitUuid);
-        result[0].Bytes.Length.Should().Be(16 + 1);
+        result.Count.ShouldBe(1);
+        result[0].Type.ShouldBe(AdTypes.ServiceData128BitUuid);
+        result[0].Bytes.Length.ShouldBe(16 + 1);
     }
 
     [Fact]
@@ -520,6 +522,6 @@ public sealed class AdvertisingDataExtensionsSetterTests
     {
         byte[] svcData = [0x00];
         Func<AdvertisingData> act = () => AdvertisingData.Empty.WithServiceData(null!, svcData);
-        act.Should().Throw<ArgumentNullException>();
+        act.ShouldThrow<ArgumentNullException>();
     }
 }
