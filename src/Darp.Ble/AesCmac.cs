@@ -31,7 +31,7 @@ public sealed class AesCmac : IDisposable
     /// <returns> The encrypted message. Always of length 16 </returns>
     public byte[] Encrypt(ReadOnlySpan<byte> message)
     {
-        ICryptoTransform encryptor = _aes.CreateEncryptor();
+        using ICryptoTransform encryptor = _aes.CreateEncryptor();
 
         // Step 1
         Span<byte> subKey1 = stackalloc byte[16];
