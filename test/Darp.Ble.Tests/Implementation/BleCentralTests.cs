@@ -15,6 +15,8 @@ namespace Darp.Ble.Tests.Implementation;
 
 public sealed class BleCentralTests
 {
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
     private static async Task<IBleDevice> GetMockDeviceAsync(BleMockFactory.InitializeSimpleAsync? configure = null)
     {
         configure ??= _ => Task.CompletedTask;
@@ -128,13 +130,13 @@ public sealed class BleCentralTests
         });
 
         IGattServerPeer serverPeer = await device.Central.ConnectToPeripheral(address).FirstAsync();
-        IGattServerService service = await serverPeer.DiscoverServiceAsync(0xABCD);
-        var notifyChar = await service.DiscoverCharacteristicAsync<Properties.Notify>(0x1234);
-        var writeChar = await service.DiscoverCharacteristicAsync<Properties.Write>(0x5678);
+        IGattServerService service = await serverPeer.DiscoverServiceAsync(0xABCD, Token);
+        var notifyChar = await service.DiscoverCharacteristicAsync<Properties.Notify>(0x1234, Token);
+        var writeChar = await service.DiscoverCharacteristicAsync<Properties.Write>(0x5678, Token);
 
-        await using IDisposableObservable<byte[]> notifyObservable = await notifyChar.OnNotifyAsync();
+        await using IDisposableObservable<byte[]> notifyObservable = await notifyChar.OnNotifyAsync(Token);
         Task<byte[]> notifyTask = notifyObservable.FirstAsync().ToTask();
-        await writeChar.WriteAsync(dataToWrite);
+        await writeChar.WriteAsync(dataToWrite, Token);
         byte[] result = await notifyTask;
 
         result.Should().BeEquivalentTo(dataToWrite);

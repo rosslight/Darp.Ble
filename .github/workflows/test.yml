@@ -14,9 +14,9 @@ jobs:
   build-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
 
       - uses: actions/cache@v4
         with:
@@ -33,16 +33,27 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
       - name: Install workloads
-        run: |
-          dotnet workload install android
+        run: dotnet workload install android
 
       - name: Check format
         run: |
           dotnet tool restore
           dotnet csharpier check .
+
       - name: Restore dependencies
         run:  dotnet restore /p:EnableWindowsTargeting=true
       - name: Build
         run: dotnet build --no-restore --configuration Release /p:EnableWindowsTargeting=true
       - name: Test
-        run: dotnet test --no-build --configuration Release
+        run: |
+          dotnet test ${{ env.SOLUTION_NAME }} --no-build --configuration Release \
+            --collect:"XPlat Code Coverage;Format=cobertura" \
+            --results-directory ./coverage-results
+
+      - name: Post Coverage Report
+        uses: rosslight/pr-code-coverage-visualizer@v2.2.0
+        with:
+          files: |
+            coverage-results/**/coverage.cobertura.xml
+          exclude-files: |
+            *.g.cs

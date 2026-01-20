@@ -4,7 +4,6 @@ using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
-using Darp.Ble.Mock;
 using Darp.Ble.Mock.Gatt;
 using FluentAssertions;
 using Microsoft.Extensions.Logging;

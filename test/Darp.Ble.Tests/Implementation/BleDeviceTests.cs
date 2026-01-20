@@ -18,13 +18,15 @@ namespace Darp.Ble.Tests.Implementation;
 
 public sealed class BleDeviceTests
 {
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
     [Fact]
     public async Task InitializeAsync_ShouldLog()
     {
         var loggerFactory = new TestLoggerFactory();
         BleManager manager = new BleManagerBuilder().SetLogger(loggerFactory).AddMock().CreateManager();
         IBleDevice device = manager.EnumerateDevices().First();
-        await device.InitializeAsync();
+        await device.InitializeAsync(Token);
         loggerFactory
             .GetLogger<MockBleDevice>()
             .LogEntries.Should()
@@ -41,7 +43,7 @@ public sealed class BleDeviceTests
             .InvokeNonPublicMethod("InitializeAsyncCore", Arg.Any<CancellationToken>())
             .Returns(Task.FromResult(InitializeResult.DeviceNotAvailable));
 
-        InitializeResult result = await device.InitializeAsync();
+        InitializeResult result = await device.InitializeAsync(Token);
 
         result.Should().Be(InitializeResult.DeviceNotAvailable);
     }
@@ -63,8 +65,8 @@ public sealed class BleDeviceTests
                     .ToTask()
             );
 
-        Task<InitializeResult> init1Task = device.InitializeAsync();
-        Task<InitializeResult> init2Task = device.InitializeAsync();
+        Task<InitializeResult> init1Task = device.InitializeAsync(Token);
+        Task<InitializeResult> init2Task = device.InitializeAsync(Token);
 
         testScheduler.AdvanceTo(TimeSpan.FromMilliseconds(1001).Ticks);
 
@@ -83,11 +85,11 @@ public sealed class BleDeviceTests
             .Returns(_ => Task.FromResult(InitializeResult.Success));
 
         device.IsInitialized.Should().BeFalse();
-        InitializeResult init1 = await device.InitializeAsync();
+        InitializeResult init1 = await device.InitializeAsync(Token);
         init1.Should().Be(InitializeResult.Success);
 
         device.IsInitialized.Should().BeTrue();
-        InitializeResult init2 = await device.InitializeAsync();
+        InitializeResult init2 = await device.InitializeAsync(Token);
         init2.Should().Be(InitializeResult.Success);
     }
 
@@ -109,7 +111,7 @@ public sealed class BleDeviceTests
             .InvokeNonPublicMethod("InitializeAsyncCore", Arg.Any<CancellationToken>())
             .Returns(_ => Task.FromResult(InitializeResult.Success));
 
-        await device.InitializeAsync();
+        await device.InitializeAsync(Token);
 
         Action act = () => _ = device.Observer;
         act.Should().Throw<NotSupportedException>();
@@ -135,10 +137,10 @@ public sealed class BleDeviceTests
                 .AddPeripheral(async d => await d.Broadcaster.StartAdvertisingAsync(interval: ScanTiming.Ms1000))
                 .EnumerateDevices(NullServiceProvider.Instance)
                 .First();
-        await device.InitializeAsync();
+        await device.InitializeAsync(Token);
 
         IObservable<IGapAdvertisement> advObservable = device.Observer.OnAdvertisement();
-        await device.Observer.StartObservingAsync();
+        await device.Observer.StartObservingAsync(Token);
         IGattServerPeer peer = await advObservable.ConnectToPeripheral().FirstAsync();
         await peer.DisposeAsync();
     }
