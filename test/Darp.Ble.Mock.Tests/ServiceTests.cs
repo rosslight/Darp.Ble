@@ -1,11 +1,9 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gatt;
-using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Gatt.Services;
 using Darp.Ble.Mock.Testing;
@@ -19,6 +17,8 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
 {
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
 
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
     [Fact]
     public async Task GapService_ShouldWork()
     {
@@ -26,13 +26,13 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
 
         GattServerGapService service = await MockHelpers.CreateMockedService(
             peripheral => peripheral.Device.Name = expectedDeviceName,
-            peer => peer.DiscoverGapServiceAsync(),
+            peer => peer.DiscoverGapServiceAsync(Token),
             _loggerFactory
         );
 
-        string deviceName = await service.DeviceName.ReadAsync();
+        string deviceName = await service.DeviceName.ReadAsync(Token);
         deviceName.Should().Be(expectedDeviceName);
-        AppearanceValues appearance = await service.Appearance.ReadAsync();
+        AppearanceValues appearance = await service.Appearance.ReadAsync(Token);
         appearance.Should().Be(AppearanceValues.Unknown);
     }
 
@@ -43,11 +43,11 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
 
         GattServerDeviceInformationService service = await MockHelpers.CreateMockedService(
             peripheral => peripheral.AddDeviceInformationService(expectedManufacturerName),
-            peer => peer.DiscoverDeviceInformationServiceAsync(),
+            peer => peer.DiscoverDeviceInformationServiceAsync(Token),
             _loggerFactory
         );
 
-        string manufacturerName = await service.ManufacturerName!.ReadAsync();
+        string manufacturerName = await service.ManufacturerName!.ReadAsync(Token);
         manufacturerName.Should().Be(expectedManufacturerName);
         service.ModelNumber.Should().BeNull();
         service.SerialNumber.Should().BeNull();
@@ -68,11 +68,11 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
 
         GattServerEchoService service = await MockHelpers.CreateMockedService(
             peripheral => peripheral.AddEchoService(serviceUuid, writeUuid, notifyUuid),
-            peer => peer.DiscoverEchoServiceAsync(serviceUuid, writeUuid, notifyUuid),
+            peer => peer.DiscoverEchoServiceAsync(serviceUuid, writeUuid, notifyUuid, Token),
             _loggerFactory
         );
 
-        byte[] response = await service.QueryOneAsync(content);
+        byte[] response = await service.QueryOneAsync(content, cancellationToken: Token);
 
         response.Should().BeEquivalentTo(content);
     }
@@ -113,17 +113,17 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
             },
             _loggerFactory
         );
-        GattServerHeartRateService service = await peer.DiscoverHeartRateServiceAsync();
+        GattServerHeartRateService service = await peer.DiscoverHeartRateServiceAsync(Token);
 
         service.BodySensorLocation.Should().NotBeNull();
-        HeartRateBodySensorLocation sensorLocation = await service.BodySensorLocation!.ReadAsync();
+        HeartRateBodySensorLocation sensorLocation = await service.BodySensorLocation!.ReadAsync(Token);
         sensorLocation.Should().Be(expectedSensorLocation);
 
         await using IDisposableObservable<HeartRateMeasurement> observable =
-            await service.HeartRateMeasurement.OnNotifyAsync();
+            await service.HeartRateMeasurement.OnNotifyAsync(Token);
 
         service.HeartRateControlPoint.Should().NotBeNull();
-        await service.HeartRateControlPoint!.WriteAsync([0x01]);
+        await service.HeartRateControlPoint!.WriteAsync([0x01], Token);
         HeartRateMeasurement measurement = await observable.FirstAsync();
         measurement.Value.Should().Be(expectedValue);
         measurement.EnergyExpended.Should().Be(0);
@@ -155,13 +155,13 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
             },
             _loggerFactory
         );
-        GattServerBatteryService service = await peer.DiscoverBatteryServiceAsync();
+        GattServerBatteryService service = await peer.DiscoverBatteryServiceAsync(Token);
 
-        string userDescription = await service.BatteryLevel.ReadUserDescriptionAsync();
+        string userDescription = await service.BatteryLevel.ReadUserDescriptionAsync(Token);
         userDescription.Should().Be(expectedUserDescription);
-        var readLevel = await service.BatteryLevel.ReadAsync<byte>();
+        var readLevel = await service.BatteryLevel.ReadAsync<byte>(Token);
         readLevel.Should().Be(expectedValue);
-        await using IDisposableObservable<byte> notifyable = await service.BatteryLevel.OnNotifyAsync<byte>();
+        await using IDisposableObservable<byte> notifyable = await service.BatteryLevel.OnNotifyAsync<byte>(Token);
         byte notifiedLevel = await notifyable.FirstAsync();
         notifiedLevel.Should().Be(readLevel);
     }

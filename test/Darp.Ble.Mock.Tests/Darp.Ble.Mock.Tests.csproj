@@ -22,9 +22,9 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Serilog" />
-    <PackageReference Include="Serilog.Sinks.XUnit" />
+    <PackageReference Include="Serilog.Sinks.XUnit3" />
     <PackageReference Include="System.Reactive.Linq" />
-    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.v3" />
     <PackageReference Include="Xunit.DependencyInjection.Logging" />
     <PackageReference Include="xunit.runner.visualstudio" />
   </ItemGroup>

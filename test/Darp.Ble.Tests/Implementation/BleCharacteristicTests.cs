@@ -15,6 +15,8 @@ namespace Darp.Ble.Tests.Implementation;
 
 public sealed class BleCharacteristicTests
 {
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
     private static GattServerCharacteristic<TProperty> CreateCharacteristic<TProperty>(
         out IGattClientCharacteristic<TProperty> clientCharacteristic,
         out IGattClientPeer? clientPeer
@@ -68,7 +70,7 @@ public sealed class BleCharacteristicTests
             out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
             out IGattClientPeer? clientPeer
         );
-        await using IDisposableObservable<byte[]> observable = await newChar.OnNotifyAsync();
+        await using IDisposableObservable<byte[]> observable = await newChar.OnNotifyAsync(Token);
         Task<byte[]> resultTask = observable.FirstAsync().ToTask();
         await clientCharacteristic.NotifyAsync(clientPeer, bytes);
         resultTask.Status.Should().Be(TaskStatus.RanToCompletion);
@@ -86,7 +88,7 @@ public sealed class BleCharacteristicTests
             out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
             out IGattClientPeer? clientPeer
         );
-        IDisposableObservable<byte[]> observable = await newChar.OnNotifyAsync();
+        IDisposableObservable<byte[]> observable = await newChar.OnNotifyAsync(Token);
         Task<byte[]> resultTask = observable.FirstAsync().ToTask();
         await observable.DisposeAsync();
         resultTask.Status.Should().Be(TaskStatus.Faulted);
@@ -102,8 +104,8 @@ public sealed class BleCharacteristicTests
             out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
             out IGattClientPeer? clientPeer
         );
-        IDisposableObservable<byte[]> observable1 = await newChar.OnNotifyAsync();
-        IDisposableObservable<byte[]> observable2 = await newChar.OnNotifyAsync();
+        IDisposableObservable<byte[]> observable1 = await newChar.OnNotifyAsync(Token);
+        IDisposableObservable<byte[]> observable2 = await newChar.OnNotifyAsync(Token);
         Task<byte[]> resultTask1 = observable1.FirstAsync().ToTask();
         Task<byte[]> resultTask2 = observable2.FirstAsync().ToTask();
         await clientCharacteristic.NotifyAsync(clientPeer, bytes);
@@ -122,8 +124,8 @@ public sealed class BleCharacteristicTests
             out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
             out IGattClientPeer? clientPeer
         );
-        IDisposableObservable<byte[]> observable1 = await newChar.OnNotifyAsync();
-        IDisposableObservable<byte[]> observable2 = await newChar.OnNotifyAsync();
+        IDisposableObservable<byte[]> observable1 = await newChar.OnNotifyAsync(Token);
+        IDisposableObservable<byte[]> observable2 = await newChar.OnNotifyAsync(Token);
         Task<byte[]> resultTask1 = observable1.FirstAsync().ToTask();
         Task<byte[]> resultTask2 = observable2.FirstAsync().ToTask();
         await observable1.DisposeAsync();
@@ -145,12 +147,12 @@ public sealed class BleCharacteristicTests
             out IGattClientCharacteristic<Properties.Notify> clientCharacteristic,
             out IGattClientPeer? clientPeer
         );
-        IDisposableObservable<byte[]> notifyObservable = await newChar.OnNotifyAsync();
+        IDisposableObservable<byte[]> notifyObservable = await newChar.OnNotifyAsync(Token);
         Task<byte[]> resultTask = notifyObservable.FirstAsync().ToTask();
         await clientCharacteristic.NotifyAsync(clientPeer, bytes);
         resultTask.Status.Should().Be(TaskStatus.RanToCompletion);
         await notifyObservable.DisposeAsync();
-        IDisposableObservable<byte[]> notifyObservable2 = await newChar.OnNotifyAsync();
+        IDisposableObservable<byte[]> notifyObservable2 = await newChar.OnNotifyAsync(Token);
         Task<byte[]> resultTask2 = notifyObservable2.FirstAsync().ToTask();
         await clientCharacteristic.NotifyAsync(clientPeer, bytes);
         resultTask2.Status.Should().Be(TaskStatus.RanToCompletion);

@@ -21,6 +21,8 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private const string AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName = "0201010908546573744E616D65";
 
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
+
     private async Task<IBleDevice> GetMockDeviceAsync(
         BleMockFactory.InitializeSimpleAsync configure,
         IScheduler scheduler
@@ -67,7 +69,7 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
 
         // Act
         Task<IGapAdvertisement> task = device.Observer.OnAdvertisement().FirstAsync().ToTask();
-        await device.Observer.StartObservingAsync();
+        await device.Observer.StartObservingAsync(Token);
         scheduler.AdvanceTo(TimeSpan.FromMilliseconds(999).Ticks);
         task.IsCompleted.Should().BeFalse();
         scheduler.AdvanceTo(TimeSpan.FromMilliseconds(1000).Ticks);
@@ -89,7 +91,7 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
         // Act
         Task<IGapAdvertisement> task1 = device.Observer.OnAdvertisement().FirstAsync().ToTask();
         Task<IGapAdvertisement> task2 = device.Observer.OnAdvertisement().FirstAsync().ToTask();
-        await device.Observer.StartObservingAsync();
+        await device.Observer.StartObservingAsync(Token);
 
         await device.Observer.StopObservingAsync();
         task1.Status.Should().Be(TaskStatus.WaitingForActivation);
