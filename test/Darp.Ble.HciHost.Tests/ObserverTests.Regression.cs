@@ -13,19 +13,19 @@ public sealed partial class ObserverTests
         (IBleObserver observer, ReplayTransportLayer replay) = await CreateDefaultObserver(Token);
         await observer.StartObservingAsync(Token);
 
-        var callsB = 0;
+        var numberOfCalls = 0;
         IDisposable subscriptionA = observer.OnAdvertisement(_ => { });
 
         observer.OnAdvertisement(_ =>
         {
-            callsB++;
+            numberOfCalls++;
             subscriptionA.Dispose();
         });
 
         replay.Push(SingleAdv);
 
         // Even if we dispose the subscription in the handler we should still receive a single advertisement only
-        callsB.ShouldBe(1);
+        numberOfCalls.ShouldBe(1);
     }
 
     [Fact(Timeout = 5000)]
@@ -34,13 +34,13 @@ public sealed partial class ObserverTests
         (IBleObserver observer, ReplayTransportLayer replay) = await CreateDefaultObserver(Token);
         await observer.StartObservingAsync(Token);
 
-        var callsC = 0;
+        var numberOfCalls = 0;
         IDisposable subscriptionA = observer.OnAdvertisement(_ => { });
         IDisposable subscriptionB = observer.OnAdvertisement(_ => { });
 
         observer.OnAdvertisement(_ =>
         {
-            callsC++;
+            numberOfCalls++;
             subscriptionA.Dispose();
             subscriptionB.Dispose();
         });
@@ -48,7 +48,7 @@ public sealed partial class ObserverTests
         replay.Push(SingleAdv);
 
         // Even if we dispose multiple subscriptions in the handler we should still receive a single advertisement only
-        callsC.ShouldBe(1);
+        numberOfCalls.ShouldBe(1);
     }
 
     [Fact(Timeout = 5000)]

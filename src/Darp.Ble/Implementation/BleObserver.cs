@@ -124,7 +124,7 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
                 (BleObserver self, Action<IGapAdvertisement> handler) = tuple;
                 lock (self._handlersLock)
                 {
-                    if (Helpers.TryRemove(self._handlers, handler, out Action<IGapAdvertisement>[]? newHandlers))
+                    if (Helpers.TryRemoveImmutable(self._handlers, handler, out var newHandlers))
                         Volatile.Write(ref self._handlers, newHandlers);
                 }
             }

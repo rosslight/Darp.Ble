@@ -4,7 +4,7 @@ namespace Darp.Ble.Utils;
 
 internal static class Helpers
 {
-    public static bool TryRemove<T>(T[] array, T item, [NotNullWhen(true)] out T[]? newArray)
+    public static bool TryRemoveImmutable<T>(T[] array, T item, [NotNullWhen(true)] out T[]? newArray)
     {
         // Check if there is a handler to remove
         int handlerIndex = Array.IndexOf(array, item);
