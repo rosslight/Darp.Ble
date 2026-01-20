@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "changelog-path": "CHANGELOG.md",
+  "packages": {
+    ".": {
+      "include-v-in-tag": true,
+      "include-component-in-tag": false,
+      "package-name": "Darp.Ble",
+      "release-type": "simple",
+      "extra-files": [
+        {
+          "type": "xml",
+          "path": "/src/Directory.Build.props",
+          "xpath": "/Project/PropertyGroup/Version"
+        }
+      ]
+    }
+  }
+}
