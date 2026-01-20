@@ -16,22 +16,7 @@ public static class BleObserverExtensions
     public static IObservable<IGapAdvertisement> OnAdvertisement(this IBleObserver observer)
     {
         ArgumentNullException.ThrowIfNull(observer);
-        return Observable.Create<IGapAdvertisement>(advObserver =>
-            observer.OnAdvertisement(
-                advObserver,
-                static (advObserver, advertisement) => advObserver.OnNext(advertisement)
-            )
-        );
-    }
-
-    /// <summary> Register a callback called when an advertisement was received </summary>
-    /// <param name="bleObserver">The instance of <see cref="IBleObserver"/> that will monitor BLE advertisements.</param>
-    /// <param name="onAdvertisement"> The callback </param>
-    /// <returns> A disposable to unsubscribe the callback </returns>
-    public static IDisposable OnAdvertisement(this IBleObserver bleObserver, Action<IGapAdvertisement> onAdvertisement)
-    {
-        ArgumentNullException.ThrowIfNull(bleObserver);
-        return bleObserver.OnAdvertisement(onAdvertisement, static (action, advertisement) => action(advertisement));
+        return Observable.Create<IGapAdvertisement>(advObserver => observer.OnAdvertisement(advObserver.OnNext));
     }
 
     /// <summary> Publish the observer to allow observing advertisements without having to start/stop observation manually </summary>
@@ -43,10 +28,7 @@ public static class BleObserverExtensions
 
         IObservable<IGapAdvertisement> inner = Observable.Create<IGapAdvertisement>(async observer =>
         {
-            IDisposable unhook = bleObserver.OnAdvertisement(
-                observer,
-                onAdvertisement: static (observer, adv) => observer.OnNext(adv)
-            );
+            IDisposable unhook = bleObserver.OnAdvertisement(onAdvertisement: observer.OnNext);
 
             await bleObserver.StartObservingAsync().ConfigureAwait(false);
 

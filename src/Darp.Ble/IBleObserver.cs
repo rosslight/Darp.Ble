@@ -25,11 +25,9 @@ public interface IBleObserver
     bool Configure(BleObservationParameters parameters);
 
     /// <summary> Register a callback called when an advertisement was received </summary>
-    /// <param name="state"> A state to be passed to the callback </param>
     /// <param name="onAdvertisement"> The callback </param>
-    /// <typeparam name="T"> The type of the state </typeparam>
     /// <returns> A disposable to unsubscribe the callback </returns>
-    IDisposable OnAdvertisement<T>(T state, Action<T, IGapAdvertisement> onAdvertisement);
+    IDisposable OnAdvertisement(Action<IGapAdvertisement> onAdvertisement);
 
     /// <summary> Start observing for advertisements. </summary>
     /// <param name="cancellationToken"> The CancellationToken to cancel the initial starting process </param>

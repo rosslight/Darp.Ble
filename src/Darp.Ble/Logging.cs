@@ -16,4 +16,16 @@ internal static partial class Logging
 
     [LoggerMessage(Level = LogLevel.Trace, Message = "Ble server peer '{Address}' disposed!")]
     public static partial void LogBleServerPeerDisposed(this ILogger logger, BleAddress address);
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "Started advertising observation")]
+    public static partial void LogObserverStarted(this ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "Stopped advertising observation")]
+    public static partial void LogObserverStopped(this ILogger logger);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Exception while handling advertisement event")]
+    public static partial void LogObservationErrorDuringAdvertisementHandling(this ILogger logger, Exception e);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Exception while stopping observation")]
+    public static partial void LogObserverErrorDuringStopping(this ILogger logger, Exception e);
 }
