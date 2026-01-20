@@ -66,14 +66,12 @@ public sealed class ReplayTransportLayer(
     ];
 
     public static readonly HciMessage[] InitializeBleDeviceMessages = InitializeHciDeviceMessages
-        .Concat(
-            [
-                // HCI_LE_Set_Random_Address
-                HciMessage.CommandCompleteEventToHost("01052000"),
-                // HCI_LE_READ_MAXIMUM_ADVERTISING_DATA_LENGTH
-                HciMessage.CommandCompleteEventToHost("013A20003E00"),
-            ]
-        )
+        .Concat([
+            // HCI_LE_Set_Random_Address
+            HciMessage.CommandCompleteEventToHost("01052000"),
+            // HCI_LE_READ_MAXIMUM_ADVERTISING_DATA_LENGTH
+            HciMessage.CommandCompleteEventToHost("013A20003E00"),
+        ])
         .ToArray();
 
     /// <summary> Provides all messages sent to the controller. Skips the defined number of messages </summary>

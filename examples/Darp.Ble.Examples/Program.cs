@@ -290,12 +290,10 @@ async Task AdvertiseApi(IBleDevice device)
 
     await device.Broadcaster.StartAdvertisingAsync(
         BleEventType.Connectable,
-        data: AdvertisingData.From(
-            [
-                (AdTypes.CompleteListOf16BitServiceOrServiceClassUuids, [0x34, 0x12]),
-                (AdTypes.ManufacturerSpecificData, [0x04, 0x00, 0x01, 0x02, 0x03, 0x04]),
-            ]
-        ),
+        data: AdvertisingData.From([
+            (AdTypes.CompleteListOf16BitServiceOrServiceClassUuids, [0x34, 0x12]),
+            (AdTypes.ManufacturerSpecificData, [0x04, 0x00, 0x01, 0x02, 0x03, 0x04]),
+        ]),
         interval: ScanTiming.Ms100
     );
     IAdvertisingSet advertisingSet = await device.Broadcaster.CreateAdvertisingSetAsync();

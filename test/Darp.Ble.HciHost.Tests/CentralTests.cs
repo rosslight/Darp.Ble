@@ -19,14 +19,12 @@ public sealed class CentralTests
         const ushort connectionHandle = 0x0001;
         var peerAddress = BleAddress.CreateRandomAddress((UInt48)0x112233445566);
 
-        ReplayTransportLayer replay = ReplayTransportLayer.ReplayAfterBleDeviceInitialization(
-            [
-                HciMessages.HciLeExtendedCreateConnectionCommandStatusEvent(),
-                HciMessages.HciLeReadPhyEvent(connectionHandle, txPhy: 0x01, rxPhy: 0x01),
-                HciMessages.AttExchangeMtuResponse(connectionHandle, serverRxMtu: 65),
-                HciMessages.HciDisconnectionCompleteEvent(connectionHandle),
-            ]
-        );
+        ReplayTransportLayer replay = ReplayTransportLayer.ReplayAfterBleDeviceInitialization([
+            HciMessages.HciLeExtendedCreateConnectionCommandStatusEvent(),
+            HciMessages.HciLeReadPhyEvent(connectionHandle, txPhy: 0x01, rxPhy: 0x01),
+            HciMessages.AttExchangeMtuResponse(connectionHandle, serverRxMtu: 65),
+            HciMessages.HciDisconnectionCompleteEvent(connectionHandle),
+        ]);
 
         await using IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(replay, token: Token);
 
