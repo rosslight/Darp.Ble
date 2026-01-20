@@ -2,11 +2,13 @@ using System.Reactive.Concurrency;
 using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
+using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Client;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Mock;
+using Darp.Ble.Tests.TestUtils;
 using Shouldly;
 
 namespace Darp.Ble.Tests.Implementation;
@@ -66,16 +68,10 @@ public sealed class BleCentralTests
             new BleConnectionParameters { ConnectionInterval = connectionInterval }
         );
 
-        IGattServerPeer? peer = await observable.SingleOrDefaultAsync();
         if (expectedResult)
-        {
-            peer.ShouldNotBeNull();
-            peer.Address.ShouldBe(address);
-        }
+            await observable.ShouldPushAtLeastAsync(1);
         else
-        {
-            peer.ShouldBeNull();
-        }
+            await observable.ShouldThrowAsync<BleCentralConnectionFailedException>();
     }
 
     [Theory(Timeout = 5000)]
@@ -95,16 +91,10 @@ public sealed class BleCentralTests
             scanParameters: new BleObservationParameters { ScanInterval = scanInterval, ScanWindow = scanWindow }
         );
 
-        IGattServerPeer? peer = await observable.SingleOrDefaultAsync();
         if (expectedResult)
-        {
-            peer.ShouldNotBeNull();
-            peer.Address.ShouldBe(address);
-        }
+            await observable.ShouldPushAtLeastAsync(1);
         else
-        {
-            peer.ShouldBeNull();
-        }
+            await observable.ShouldThrowAsync<BleCentralConnectionFailedException>();
     }
 
     [Fact]
