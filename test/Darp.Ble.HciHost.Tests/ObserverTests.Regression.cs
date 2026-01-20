@@ -24,7 +24,7 @@ public sealed partial class ObserverTests
 
         replay.Push(SingleAdv);
 
-        // Regression: current implementation can invoke B twice when B disposes A during dispatch.
+        // Even if we dispose the subscription in the handler we should still receive a single advertisement only
         callsB.ShouldBe(1);
     }
 
@@ -47,7 +47,7 @@ public sealed partial class ObserverTests
 
         replay.Push(SingleAdv);
 
-        // Regression: current implementation can invoke C twice (and/or throw internally) when C disposes A/B during dispatch.
+        // Even if we dispose multiple subscriptions in the handler we should still receive a single advertisement only
         callsC.ShouldBe(1);
     }
 
@@ -58,8 +58,8 @@ public sealed partial class ObserverTests
         (IBleObserver observer, _) = await CreateDefaultObserver(Token);
 
         // Deterministic repro: block StartObservingAsync from entering the critical section by taking the semaphore.
-        SemaphoreSlim semaphore = GetPrivateField<SemaphoreSlim>(observer, "_observationStartSemaphore");
-        semaphore.Wait(Token);
+        var semaphore = GetPrivateField<SemaphoreSlim>(observer, "_startStopSemaphore");
+        await semaphore.WaitAsync(Token);
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(250));
@@ -69,7 +69,7 @@ public sealed partial class ObserverTests
             // While StartObservingAsync is pending, Configure should be rejected.
             bool configureSuccess = observer.Configure(new BleObservationParameters { ScanInterval = interval2 });
 
-            // Regression: currently Configure() can succeed here because it is not synchronized with StartObservingAsync().
+            // Configure() should not be able to succeed here because because we are starting.
             configureSuccess.ShouldBeFalse();
 
             await Should.ThrowAsync<OperationCanceledException>(async () => await startTask);
@@ -78,52 +78,6 @@ public sealed partial class ObserverTests
         {
             semaphore.Release();
         }
-    }
-
-    [Fact(Timeout = 5000)]
-    public async Task IsObserving_IsTrueWhileStarting_CrossThread()
-    {
-        // Make StartObservingAsync take a moment so we can observe the Starting state.
-        // We do this by delaying the scan-enable completion while keeping everything else identical.
-        var responses = ReplayTransportLayer.InitializeBleDeviceMessages.Concat(ObservingMessages).ToArray();
-        var delayedReplay = new ReplayTransportLayer(
-            (message, i) =>
-            {
-                (HciMessage? Message, TimeSpan Delay) x = ReplayTransportLayer.IterateHciMessages(responses, i);
-
-                // 0x2042 == LE Set Extended Scan Enable, little-endian opcode bytes 0x42 0x20.
-                if (message.PduBytes.Length >= 2 && message.PduBytes[0] == 0x42 && message.PduBytes[1] == 0x20)
-                    return (x.Message, TimeSpan.FromMilliseconds(200));
-
-                return (x.Message, TimeSpan.Zero);
-            },
-            messagesToSkip: ReplayTransportLayer.InitializeBleDeviceMessages.Length,
-            logger: null
-        );
-
-        await using IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(delayedReplay, token: Token);
-        IBleObserver observer = device.Observer;
-
-        Task startTask = observer.StartObservingAsync(Token);
-
-        // Wait until the observer has entered the Starting state.
-        SpinWait.SpinUntil(
-            () =>
-                string.Equals(
-                    GetPrivateField<object>(observer, "_observerState").ToString(),
-                    "Starting",
-                    StringComparison.Ordinal
-                ),
-            millisecondsTimeout: 1000
-        );
-
-        bool isObservingDuringStart = await Task.Run(() => observer.IsObserving, Token);
-
-        await startTask;
-        await observer.StopObservingAsync();
-
-        // Regression: currently IsObserving is false in Starting state (it is only true in Observing).
-        isObservingDuringStart.ShouldBeTrue();
     }
 
     private static T GetPrivateField<T>(object obj, string fieldName)

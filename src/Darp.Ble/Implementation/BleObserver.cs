@@ -1,8 +1,8 @@
-using System.Diagnostics;
 using System.Reactive.Disposables;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
 using Darp.Ble.Gap;
+using Darp.Ble.Utils;
 using Microsoft.Extensions.Logging;
 #if !NET9_0_OR_GREATER
 using Lock = System.Object;
@@ -22,13 +22,14 @@ internal enum ObserverState
 /// <summary> The ble observer </summary>
 /// <param name="device"> The ble device </param>
 /// <param name="logger"> The logger </param>
-public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger) : IAsyncDisposable, IBleObserver
+public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger) : IBleObserver, IAsyncDisposable
 {
     private readonly BleDevice _bleDevice = device;
-    private readonly List<Action<IGapAdvertisement>> _actions = [];
-    private readonly Lock _lock = new();
-    private readonly SemaphoreSlim _observationStartSemaphore = new(1, 1);
-    private ObserverState _observerState = ObserverState.Stopped;
+    private readonly SemaphoreSlim _startStopSemaphore = new(1, 1);
+    private readonly Lock _handlersLock = new();
+    private Action<IGapAdvertisement>[] _handlers = [];
+
+    private volatile ObserverState _observerState = ObserverState.Stopped;
 
     /// <summary> The logger </summary>
     protected ILogger<BleObserver> Logger { get; } = logger;
@@ -54,10 +55,21 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
     /// <inheritdoc />
     public bool Configure(BleObservationParameters parameters)
     {
-        if (_observerState is not ObserverState.Stopped)
+        ObjectDisposedException.ThrowIf(_bleDevice.IsDisposing, nameof(BleObserver));
+
+        if (!_startStopSemaphore.Wait(0))
             return false;
-        Parameters = parameters;
-        return true;
+        try
+        {
+            if (_observerState is not ObserverState.Stopped)
+                return false;
+            Parameters = parameters;
+            return true;
+        }
+        finally
+        {
+            _startStopSemaphore.Release();
+        }
     }
 
     /// <inheritdoc />
@@ -65,17 +77,18 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
     {
         ObjectDisposedException.ThrowIf(_bleDevice.IsDisposing, nameof(BleObserver));
 
-        await _observationStartSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await _startStopSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             if (_observerState is ObserverState.Observing)
                 return;
+            if (_observerState is not ObserverState.Stopped)
+                throw new InvalidOperationException($"Observer is in invalid state {_observerState}");
 
-            Debug.Assert(_observerState == ObserverState.Stopped);
             _observerState = ObserverState.Starting;
             await StartObservingAsyncCore(cancellationToken).ConfigureAwait(false);
             _observerState = ObserverState.Observing;
-            Logger.LogTrace("Started advertising observation");
+            Logger.LogObserverStarted();
         }
         catch (Exception e) when (e is not BleObservationStartException)
         {
@@ -85,28 +98,34 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
         }
         finally
         {
-            _observationStartSemaphore.Release();
+            _startStopSemaphore.Release();
         }
     }
 
     /// <inheritdoc />
-    public IDisposable OnAdvertisement<T>(T state, Action<T, IGapAdvertisement> onAdvertisement)
+    public IDisposable OnAdvertisement(Action<IGapAdvertisement> onAdvertisement)
     {
         ObjectDisposedException.ThrowIf(_bleDevice.IsDisposing, nameof(BleObserver));
-        Action<IGapAdvertisement> action = advertisement => onAdvertisement(state, advertisement);
-        lock (_lock)
+
+        // Extend handlers list
+        lock (_handlersLock)
         {
-            _actions.Add(action);
+            Action<IGapAdvertisement>[] oldHandlers = _handlers;
+            var newArr = new Action<IGapAdvertisement>[oldHandlers.Length + 1];
+            Array.Copy(oldHandlers, newArr, oldHandlers.Length);
+            newArr[^1] = onAdvertisement;
+            Volatile.Write(ref _handlers, newArr);
         }
 
         return Disposable.Create(
-            (this, action),
+            (this, onAdvertisement),
             static tuple =>
             {
-                (BleObserver bleObserver, Action<IGapAdvertisement> action) = tuple;
-                lock (bleObserver._lock)
+                (BleObserver self, Action<IGapAdvertisement> handler) = tuple;
+                lock (self._handlersLock)
                 {
-                    bleObserver._actions.Remove(action);
+                    if (Helpers.TryRemove(self._handlers, handler, out Action<IGapAdvertisement>[]? newHandlers))
+                        Volatile.Write(ref self._handlers, newHandlers);
                 }
             }
         );
@@ -116,19 +135,25 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
     /// <param name="advertisement"> The advertisement </param>
     protected void OnNext(IGapAdvertisement advertisement)
     {
-        lock (_lock)
+        // Try to suppress receival of advertisements after stopping/disposal
+        // Best-effort only. No thread safety guarantees
+        if (_bleDevice.IsDisposing || _observerState is ObserverState.Stopping or ObserverState.Stopped)
+            return;
+
+        // Taking the current snapshot of the handlers.
+        // In case of an unsubscription of a handler we might have taken the reference here already and call it afterward.
+        // This is a known tradeoff
+        Action<IGapAdvertisement>[] handlers = Volatile.Read(ref _handlers);
+        foreach (Action<IGapAdvertisement> handler in handlers)
         {
-            for (int i = _actions.Count - 1; i >= 0; i--)
+            try
             {
-                try
-                {
-                    var onAdvertisement = _actions[i];
-                    onAdvertisement(advertisement);
-                }
-                catch (Exception e)
-                {
-                    Logger.LogWarning(e, "Exception while handling advertisement event: {Message}", e.Message);
-                }
+                handler(advertisement);
+            }
+            catch (Exception e)
+            {
+                // An exception inside the handler should not crash all observers. Logging and ignoring ...
+                Logger.LogObservationErrorDuringAdvertisementHandling(e);
             }
         }
     }
@@ -141,7 +166,7 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
     /// <inheritdoc />
     public async Task StopObservingAsync()
     {
-        await _observationStartSemaphore.WaitAsync().ConfigureAwait(false);
+        await _startStopSemaphore.WaitAsync().ConfigureAwait(false);
         try
         {
             // Return early if
@@ -149,16 +174,29 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
             // Stopping -> Some recursive call has lead to us being here
             if (_observerState is ObserverState.Stopping or ObserverState.Stopped)
                 return;
+            if (_observerState is not ObserverState.Observing)
+                throw new InvalidOperationException($"Observer is in invalid state {_observerState}");
 
-            Debug.Assert(_observerState == ObserverState.Observing);
             _observerState = ObserverState.Stopping;
-            await StopObservingAsyncCore().ConfigureAwait(false);
-            Logger.LogTrace("Stopped advertising observation");
+
+            try
+            {
+                await StopObservingAsyncCore().ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                Logger.LogObserverErrorDuringStopping(e);
+                // In case of an error when stopping we assume we are still observing
+                // Not ideal, but better than to wait for ever
+                _observerState = ObserverState.Observing;
+                throw;
+            }
+            Logger.LogObserverStopped();
             _observerState = ObserverState.Stopped;
         }
         finally
         {
-            _observationStartSemaphore.Release();
+            _startStopSemaphore.Release();
         }
     }
 
@@ -171,11 +209,11 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
     {
         GC.SuppressFinalize(this);
         await StopObservingAsync().ConfigureAwait(false);
-        lock (_lock)
+        lock (_handlersLock)
         {
-            _actions.Clear();
+            _handlers = [];
         }
-        _observationStartSemaphore.Dispose();
+        _startStopSemaphore.Dispose();
         await DisposeAsyncCore().ConfigureAwait(false);
     }
 
