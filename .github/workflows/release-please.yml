@@ -1,0 +1,90 @@
+name: release-please
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write       # required for tags + releases
+  pull-requests: write  # required for release PRs
+
+env:
+  SOLUTION_NAME: "Darp.Ble.slnx"
+
+jobs:
+  release-please:
+    outputs:
+      release_created: ${{ steps.release.outputs.release_created }}
+      tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run release-please
+        id: release
+        uses: googleapis/release-please-action@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          manifest-file: .release-please-manifest.json
+          config-file: release-please-config.json
+
+  publish:
+    needs:
+      - release-please
+    if: needs.release-please.outputs.release_created
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', 'Directory.Packages.props', 'nuget.config') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install workloads
+        run: |
+          dotnet workload install android
+
+      - name: Restore
+        run: dotnet restore /p:EnableWindowsTargeting=true
+      - name: Build
+        run: dotnet build --configuration Release --no-restore /p:EnableWindowsTargeting=true
+      - name: Test
+        run: dotnet test --configuration Release --no-build --no-restore
+
+      - name: Pack and push to nuget.org
+        run: |
+          for file_name in ./src/**/*.csproj; do
+            dotnet pack $file_name --configuration Release --artifacts-path build/noncommercial /p:PackageLicenseFile=LICENSE.md /p:Version=${{ needs.release-please.outputs.version }}
+            dotnet pack $file_name --configuration Release --artifacts-path build/commercial /p:PackageLicenseFile=LICENSE-COMMERCIAL.md /p:Version=${{ needs.release-please.outputs.version }}
+          done
+          for pkg_name in ./build/noncommercial/package**/*.nupkg; do
+            dotnet nuget push $pkg_name --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+          done
+          dotnet nuget add source ${{ env.AZURE_ARTIFACTS_FEED_URL }} --name AzureFeed --username ${{ secrets.AZURE_USERNAME }} --password ${{ secrets.AZURE_DEVOPS_TOKEN }} --store-password-in-clear-text
+          for pkg_name in ./build/commercial/package**/*.nupkg; do
+            dotnet nuget push $pkg_name --api-key AzureArtifacts --source AzureFeed --skip-duplicate
+          done
+        env:
+          AZURE_ARTIFACTS_FEED_URL: https://pkgs.dev.azure.com/rosslight-engineering/darp.ble/_packaging/darp.ble.subscription/nuget/v3/index.json
+
+      - name: Attach .nupkg to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload "${{ needs.release-please.outputs.tag_name }}" ./build/noncommercial/package**/*.nupkg \
+            --repo "${{ github.repository }}"
