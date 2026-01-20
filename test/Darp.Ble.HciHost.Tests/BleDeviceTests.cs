@@ -35,9 +35,9 @@ public sealed class BleDeviceTests
     public async Task SetRandomAddress()
     {
         var newAddress = BleAddress.CreateRandomAddress((UInt48)0x112233445566);
-        ReplayTransportLayer replayTransportLayer = ReplayTransportLayer.ReplayAfterBleDeviceInitialization(
-            [HciMessage.CommandCompleteEventToHost("01052000")]
-        );
+        ReplayTransportLayer replayTransportLayer = ReplayTransportLayer.ReplayAfterBleDeviceInitialization([
+            HciMessage.CommandCompleteEventToHost("01052000"),
+        ]);
         await using IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(
             replayTransportLayer,
             token: Token
@@ -52,9 +52,10 @@ public sealed class BleDeviceTests
     [Fact]
     public async Task LaunchMultipleCommandsAtTheSameTime()
     {
-        ReplayTransportLayer replayTransportLayer = ReplayTransportLayer.ReplayAfterInitialization(
-            [HciMessage.CommandCompleteEventToHost("01392000"), HciMessage.CommandCompleteEventToHost("01352000")]
-        );
+        ReplayTransportLayer replayTransportLayer = ReplayTransportLayer.ReplayAfterInitialization([
+            HciMessage.CommandCompleteEventToHost("01392000"),
+            HciMessage.CommandCompleteEventToHost("01352000"),
+        ]);
         await using var device = new HciDevice(
             replayTransportLayer,
             0x112233445566,

@@ -22,9 +22,9 @@ public sealed class PeripheralTests
         const ushort connectionHandle = 0x0001;
         var peerAddress = BleAddress.CreateRandomAddress((UInt48)0x112233445566);
 
-        ReplayTransportLayer replay = ReplayTransportLayer.ReplayAfterBleDeviceInitialization(
-            [HciMessages.HciDisconnectionCompleteEvent(connectionHandle)]
-        );
+        ReplayTransportLayer replay = ReplayTransportLayer.ReplayAfterBleDeviceInitialization([
+            HciMessages.HciDisconnectionCompleteEvent(connectionHandle),
+        ]);
 
         await using IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(replay, token: Token);
 
@@ -66,9 +66,9 @@ public sealed class PeripheralTests
         const ushort connectionHandle = 0x000F;
         var peerAddress = BleAddress.CreateRandomAddress((UInt48)0x112233445566);
 
-        ReplayTransportLayer replay = ReplayTransportLayer.ReplayAfterBleDeviceInitialization(
-            [HciMessages.HciDisconnectionCompleteEvent(connectionHandle)]
-        );
+        ReplayTransportLayer replay = ReplayTransportLayer.ReplayAfterBleDeviceInitialization([
+            HciMessages.HciDisconnectionCompleteEvent(connectionHandle),
+        ]);
 
         await using IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(replay, token: Token);
         device.Peripheral.AddGattService();

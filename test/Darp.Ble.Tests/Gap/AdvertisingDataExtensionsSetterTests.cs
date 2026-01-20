@@ -195,9 +195,9 @@ public sealed class AdvertisingDataExtensionsSetterTests
     public void WithShortenedLocalName_OriginalAdvertisingData_RemainsUnchanged()
     {
         // Arrange
-        AdvertisingData original = AdvertisingData.From(
-            [(AdTypes.Flags, [(byte)AdvertisingDataFlags.LimitedDiscoverableMode])]
-        );
+        AdvertisingData original = AdvertisingData.From([
+            (AdTypes.Flags, [(byte)AdvertisingDataFlags.LimitedDiscoverableMode]),
+        ]);
         const string newShortName = "MyShort";
 
         // Act
@@ -244,9 +244,9 @@ public sealed class AdvertisingDataExtensionsSetterTests
     {
         // Arrange
         const CompanyIdentifiers companyId = CompanyIdentifiers.NordicSemiconductorAsa;
-        AdvertisingData original = AdvertisingData.From(
-            [(AdTypes.ManufacturerSpecificData, [.. BitConverter.GetBytes((ushort)companyId), 0x01, 0x02])]
-        );
+        AdvertisingData original = AdvertisingData.From([
+            (AdTypes.ManufacturerSpecificData, [.. BitConverter.GetBytes((ushort)companyId), 0x01, 0x02]),
+        ]);
         ReadOnlyMemory<byte> newData = new byte[] { 0xAA, 0xBB, 0xCC };
 
         // Act
@@ -315,9 +315,9 @@ public sealed class AdvertisingDataExtensionsSetterTests
     {
         // Arrange
         // Create original data with an existing complete 16-bit section
-        AdvertisingData original = AdvertisingData.From(
-            [(AdTypes.CompleteListOf16BitServiceOrServiceClassUuids, [0x0D, 0x18])]
-        );
+        AdvertisingData original = AdvertisingData.From([
+            (AdTypes.CompleteListOf16BitServiceOrServiceClassUuids, [0x0D, 0x18]),
+        ]);
         // We will add two 16-bit and one 128-bit
         BleUuid[] newUuids = [Uuid16BitHeartRate, Uuid16BitDeviceInfo, Uuid128BitCustom];
 
@@ -340,9 +340,9 @@ public sealed class AdvertisingDataExtensionsSetterTests
     public void WithCompleteListOfServiceUuids_OriginalData_RemainsUnchanged()
     {
         // Arrange
-        AdvertisingData original = AdvertisingData.From(
-            [(AdTypes.Flags, [(byte)AdvertisingDataFlags.LimitedDiscoverableMode])]
-        );
+        AdvertisingData original = AdvertisingData.From([
+            (AdTypes.Flags, [(byte)AdvertisingDataFlags.LimitedDiscoverableMode]),
+        ]);
 
         // Act
         AdvertisingData modified = original.WithCompleteListOfServiceUuids(Uuid32);
@@ -386,9 +386,9 @@ public sealed class AdvertisingDataExtensionsSetterTests
     {
         // Arrange
         // Create original data with an existing complete 16-bit section
-        AdvertisingData original = AdvertisingData.From(
-            [(AdTypes.IncompleteListOf16BitServiceOrServiceClassUuids, [0x0D, 0x18])]
-        );
+        AdvertisingData original = AdvertisingData.From([
+            (AdTypes.IncompleteListOf16BitServiceOrServiceClassUuids, [0x0D, 0x18]),
+        ]);
         // We will add two 16-bit and one 128-bit
         BleUuid[] newUuids = [Uuid16BitHeartRate, Uuid16BitDeviceInfo, Uuid128BitCustom];
 
@@ -411,9 +411,9 @@ public sealed class AdvertisingDataExtensionsSetterTests
     public void WithIncompleteListOfServiceUuids_OriginalData_RemainsUnchanged()
     {
         // Arrange
-        AdvertisingData original = AdvertisingData.From(
-            [(AdTypes.Flags, [(byte)AdvertisingDataFlags.LimitedDiscoverableMode])]
-        );
+        AdvertisingData original = AdvertisingData.From([
+            (AdTypes.Flags, [(byte)AdvertisingDataFlags.LimitedDiscoverableMode]),
+        ]);
 
         // Act
         AdvertisingData modified = original.WithIncompleteListOfServiceUuids(Uuid32);
