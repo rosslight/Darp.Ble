@@ -1,5 +1,5 @@
 using Darp.Ble.Hci.Payload.Att;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Att;
 
@@ -8,8 +8,8 @@ public sealed class AttReadByTypeReqTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        AttReadByTypeReq<ushort>.ExpectedOpCode.Should().HaveValue(0x08);
-        AttReadByTypeReq<Guid>.ExpectedOpCode.Should().HaveValue(0x08);
+        AttReadByTypeReq<ushort>.ExpectedOpCode.ShouldHaveValue(0x08);
+        AttReadByTypeReq<Guid>.ExpectedOpCode.ShouldHaveValue(0x08);
     }
 
     [Theory]
@@ -31,10 +31,10 @@ public sealed class AttReadByTypeReqTests
 
         bool success = value.TryWriteLittleEndian(buffer);
 
-        value.OpCode.Should().Be(AttOpCode.ATT_READ_BY_TYPE_REQ);
-        value.GetByteCount().Should().Be(7);
-        success.Should().BeTrue();
-        Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
+        value.OpCode.ShouldBe(AttOpCode.ATT_READ_BY_TYPE_REQ);
+        value.GetByteCount().ShouldBe(7);
+        success.ShouldBeTrue();
+        Convert.ToHexString(buffer).ShouldBe(expectedHexBytes);
     }
 
     [Theory]
@@ -56,10 +56,10 @@ public sealed class AttReadByTypeReqTests
 
         bool success = value.TryWriteLittleEndian(buffer);
 
-        value.OpCode.Should().Be(AttOpCode.ATT_READ_BY_TYPE_REQ);
-        value.GetByteCount().Should().Be(21);
-        success.Should().BeTrue();
-        Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
+        value.OpCode.ShouldBe(AttOpCode.ATT_READ_BY_TYPE_REQ);
+        value.GetByteCount().ShouldBe(21);
+        success.ShouldBeTrue();
+        Convert.ToHexString(buffer).ShouldBe(expectedHexBytes);
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public sealed class AttReadByTypeReqTests
         };
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeFalse();
+        success.ShouldBeFalse();
     }
 
     [Fact]
@@ -89,6 +89,6 @@ public sealed class AttReadByTypeReqTests
         };
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeFalse();
+        success.ShouldBeFalse();
     }
 }

@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using Darp.Ble.Hci.Payload.Command;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Command;
 
@@ -9,7 +9,7 @@ public sealed class HciLeSetDataLengthCommandTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        HciLeSetDataLengthCommand.OpCode.Should().HaveValue(0x0022 | (0x08 << 10));
+        HciLeSetDataLengthCommand.OpCode.ShouldHaveValue(0x0022 | (0x08 << 10));
     }
 
     [Theory]
@@ -30,12 +30,12 @@ public sealed class HciLeSetDataLengthCommandTests
         };
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeTrue();
-        value.GetByteCount().Should().Be(6);
-        value.ConnectionHandle.Should().Be(handle);
-        value.TxOctets.Should().Be(txOctets);
-        value.TxTime.Should().Be(txTime);
-        Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
+        success.ShouldBeTrue();
+        value.GetByteCount().ShouldBe(6);
+        value.ConnectionHandle.ShouldBe(handle);
+        value.TxOctets.ShouldBe(txOctets);
+        value.TxTime.ShouldBe(txTime);
+        Convert.ToHexString(buffer).ShouldBe(expectedHexBytes);
     }
 
     [Fact]
@@ -45,6 +45,6 @@ public sealed class HciLeSetDataLengthCommandTests
         HciLeSetDataLengthCommand value = default;
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeFalse();
+        success.ShouldBeFalse();
     }
 }

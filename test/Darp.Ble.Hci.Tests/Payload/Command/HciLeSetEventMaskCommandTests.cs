@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using Darp.Ble.Hci.Payload.Command;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Command;
 
@@ -9,7 +9,7 @@ public sealed class HciLeSetEventMaskCommandTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        HciLeSetEventMaskCommand.OpCode.Should().HaveValue(0x0001 | (0x08 << 10));
+        HciLeSetEventMaskCommand.OpCode.ShouldHaveValue(0x0001 | (0x08 << 10));
     }
 
     [Theory]
@@ -20,10 +20,10 @@ public sealed class HciLeSetEventMaskCommandTests
         var value = new HciLeSetEventMaskCommand { Mask = mask };
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeTrue();
-        value.GetByteCount().Should().Be(8);
-        value.Mask.Should().Be(mask);
-        Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
+        success.ShouldBeTrue();
+        value.GetByteCount().ShouldBe(8);
+        value.Mask.ShouldBe(mask);
+        Convert.ToHexString(buffer).ShouldBe(expectedHexBytes);
     }
 
     [Fact]
@@ -33,6 +33,6 @@ public sealed class HciLeSetEventMaskCommandTests
         HciLeSetEventMaskCommand value = default;
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeFalse();
+        success.ShouldBeFalse();
     }
 }

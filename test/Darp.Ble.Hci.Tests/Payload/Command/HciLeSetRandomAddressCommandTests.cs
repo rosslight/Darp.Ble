@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using Darp.Ble.Hci.Payload.Command;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Command;
 
@@ -9,7 +9,7 @@ public sealed class HciLeSetRandomAddressCommandTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        HciLeSetRandomAddressCommand.OpCode.Should().HaveValue(0x0005 | (0x08 << 10));
+        HciLeSetRandomAddressCommand.OpCode.ShouldHaveValue(0x0005 | (0x08 << 10));
     }
 
     [Theory]
@@ -20,10 +20,10 @@ public sealed class HciLeSetRandomAddressCommandTests
         var value = new HciLeSetRandomAddressCommand { RandomAddress = address };
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeTrue();
-        value.GetByteCount().Should().Be(6);
-        value.RandomAddress.Should().Be((UInt48)address);
-        Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
+        success.ShouldBeTrue();
+        value.GetByteCount().ShouldBe(6);
+        value.RandomAddress.ShouldBe((UInt48)address);
+        Convert.ToHexString(buffer).ShouldBe(expectedHexBytes);
     }
 
     [Fact]
@@ -33,6 +33,6 @@ public sealed class HciLeSetRandomAddressCommandTests
         HciLeSetExtendedScanParametersCommand value = default;
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeFalse();
+        success.ShouldBeFalse();
     }
 }

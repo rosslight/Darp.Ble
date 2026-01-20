@@ -1,5 +1,5 @@
 using Darp.Ble.Hci.Payload.Att;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Att;
 
@@ -8,7 +8,7 @@ public sealed class AttReadByTypeRspTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        AttReadByTypeRsp.ExpectedOpCode.Should().HaveValue(0x09);
+        AttReadByTypeRsp.ExpectedOpCode.ShouldHaveValue(0x09);
     }
 
     [Theory]
@@ -19,7 +19,7 @@ public sealed class AttReadByTypeRspTests
         byte[] bytes = Convert.FromHexString(hexBytes);
         AttReadByTypeData[] dataList = typeData
             .Pairs()
-            .Select(x => new AttReadByTypeData()
+            .Select(x => new AttReadByTypeData
             {
                 Handle = (ushort)(int)x.First,
                 Value = Convert.FromHexString((string)x.Second),
@@ -28,17 +28,16 @@ public sealed class AttReadByTypeRspTests
 
         bool success = AttReadByTypeRsp.TryReadLittleEndian(bytes, out AttReadByTypeRsp value, out int decoded);
 
-        success.Should().BeTrue();
-        decoded.Should().Be(2 + 7 * dataList.Length);
-        value.OpCode.Should().Be(AttOpCode.ATT_READ_BY_TYPE_RSP);
-        value.Length.Should().Be(7);
+        success.ShouldBeTrue();
+        decoded.ShouldBe(2 + 7 * dataList.Length);
+        value.OpCode.ShouldBe(AttOpCode.ATT_READ_BY_TYPE_RSP);
+        value.Length.ShouldBe<byte>(7);
         value
             .AttributeDataList.Zip(dataList)
-            .Should()
-            .AllSatisfy(x =>
+            .ShouldAllSatisfy(x =>
             {
-                x.First.Handle.Should().Be(x.Second.Handle);
-                x.First.Value.ToArray().Should().BeEquivalentTo(x.Second.Value.ToArray());
+                x.First.Handle.ShouldBe(x.Second.Handle);
+                x.First.Value.ToArray().ShouldBe(x.Second.Value.ToArray());
             });
     }
 
@@ -54,7 +53,7 @@ public sealed class AttReadByTypeRspTests
         byte[] bytes = Convert.FromHexString(hexBytes);
         bool success = AttReadByTypeRsp.TryReadLittleEndian(bytes, out _, out int decoded);
 
-        success.Should().BeFalse();
-        decoded.Should().Be(expectedBytesDecoded);
+        success.ShouldBeFalse();
+        decoded.ShouldBe(expectedBytesDecoded);
     }
 }

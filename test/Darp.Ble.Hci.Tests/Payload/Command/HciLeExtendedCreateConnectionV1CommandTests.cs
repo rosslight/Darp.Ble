@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using Darp.Ble.Hci.Payload.Command;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Command;
 
@@ -9,7 +9,7 @@ public sealed class HciLeExtendedCreateConnectionV1CommandTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        HciLeExtendedCreateConnectionV1Command.OpCode.Should().HaveValue(0x0043 | (0x08 << 10));
+        HciLeExtendedCreateConnectionV1Command.OpCode.ShouldHaveValue(0x0043 | (0x08 << 10));
     }
 
     [Theory]
@@ -65,22 +65,22 @@ public sealed class HciLeExtendedCreateConnectionV1CommandTests
         };
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeTrue();
-        value.GetByteCount().Should().Be(26);
-        value.InitiatorFilterPolicy.Should().Be(initiatorFilterPolicy);
-        value.OwnAddressType.Should().Be(ownAddressType);
-        value.PeerAddressType.Should().Be(peerAddressType);
-        value.PeerAddress.Should().Be((UInt48)peerAddress);
-        value.InitiatingPhys.Should().Be(initiatingPhys);
-        value.ScanInterval.Should().Be(scanInterval);
-        value.ScanWindow.Should().Be(scanWindow);
-        value.ConnectionIntervalMin.Should().Be(connectionIntervalMin);
-        value.ConnectionIntervalMax.Should().Be(connectionIntervalMax);
-        value.MaxLatency.Should().Be(maxLatency);
-        value.SupervisionTimeout.Should().Be(supervisionTimeout);
-        value.MinCeLength.Should().Be(minCeLength);
-        value.MaxCeLength.Should().Be(maxCeLength);
-        Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
+        success.ShouldBeTrue();
+        value.GetByteCount().ShouldBe(26);
+        value.InitiatorFilterPolicy.ShouldBe(initiatorFilterPolicy);
+        value.OwnAddressType.ShouldBe(ownAddressType);
+        value.PeerAddressType.ShouldBe(peerAddressType);
+        value.PeerAddress.ShouldBe((UInt48)peerAddress);
+        value.InitiatingPhys.ShouldBe(initiatingPhys);
+        value.ScanInterval.ShouldBe(scanInterval);
+        value.ScanWindow.ShouldBe(scanWindow);
+        value.ConnectionIntervalMin.ShouldBe(connectionIntervalMin);
+        value.ConnectionIntervalMax.ShouldBe(connectionIntervalMax);
+        value.MaxLatency.ShouldBe(maxLatency);
+        value.SupervisionTimeout.ShouldBe(supervisionTimeout);
+        value.MinCeLength.ShouldBe(minCeLength);
+        value.MaxCeLength.ShouldBe(maxCeLength);
+        Convert.ToHexString(buffer).ShouldBe(expectedHexBytes);
     }
 
     [Fact]
@@ -90,6 +90,6 @@ public sealed class HciLeExtendedCreateConnectionV1CommandTests
         HciLeExtendedCreateConnectionV1Command value = default;
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeFalse();
+        success.ShouldBeFalse();
     }
 }

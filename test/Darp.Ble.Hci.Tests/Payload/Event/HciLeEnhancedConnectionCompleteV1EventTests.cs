@@ -1,6 +1,6 @@
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Event;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Event;
 
@@ -9,7 +9,7 @@ public sealed class HciLeEnhancedConnectionCompleteV1EventTests
     [Fact]
     public void SubEventType_ShouldBeValid()
     {
-        HciLeEnhancedConnectionCompleteV1Event.SubEventType.Should().HaveValue(0x0A);
+        HciLeEnhancedConnectionCompleteV1Event.SubEventType.ShouldHaveValue(0x0A);
     }
 
     [Theory]
@@ -65,21 +65,21 @@ public sealed class HciLeEnhancedConnectionCompleteV1EventTests
             out int decoded
         );
 
-        success.Should().BeTrue();
-        decoded.Should().Be(31);
-        value.ConnectionHandle.Should().Be(expectedValue.ConnectionHandle);
-        value.SubEventCode.Should().Be(expectedValue.SubEventCode);
-        value.Status.Should().Be(expectedValue.Status);
-        value.ConnectionHandle.Should().Be(expectedValue.ConnectionHandle);
-        value.Role.Should().Be(expectedValue.Role);
-        value.PeerAddressType.Should().Be(expectedValue.PeerAddressType);
-        value.PeerAddress.Should().Be(expectedValue.PeerAddress);
-        value.LocalResolvablePrivateAddress.Should().Be(expectedValue.LocalResolvablePrivateAddress);
-        value.PeerResolvablePrivateAddress.Should().Be(expectedValue.PeerResolvablePrivateAddress);
-        value.ConnectionInterval.Should().Be(expectedValue.ConnectionInterval);
-        value.PeripheralLatency.Should().Be(expectedValue.PeripheralLatency);
-        value.SupervisionTimeout.Should().Be(expectedValue.SupervisionTimeout);
-        value.CentralClockAccuracy.Should().Be(expectedValue.CentralClockAccuracy);
+        success.ShouldBeTrue();
+        decoded.ShouldBe(31);
+        value.ConnectionHandle.ShouldBe(expectedValue.ConnectionHandle);
+        value.SubEventCode.ShouldBe(expectedValue.SubEventCode);
+        value.Status.ShouldBe(expectedValue.Status);
+        value.ConnectionHandle.ShouldBe(expectedValue.ConnectionHandle);
+        value.Role.ShouldBe(expectedValue.Role);
+        value.PeerAddressType.ShouldBe(expectedValue.PeerAddressType);
+        value.PeerAddress.ShouldBe(expectedValue.PeerAddress);
+        value.LocalResolvablePrivateAddress.ShouldBe(expectedValue.LocalResolvablePrivateAddress);
+        value.PeerResolvablePrivateAddress.ShouldBe(expectedValue.PeerResolvablePrivateAddress);
+        value.ConnectionInterval.ShouldBe(expectedValue.ConnectionInterval);
+        value.PeripheralLatency.ShouldBe(expectedValue.PeripheralLatency);
+        value.SupervisionTimeout.ShouldBe(expectedValue.SupervisionTimeout);
+        value.CentralClockAccuracy.ShouldBe(expectedValue.CentralClockAccuracy);
     }
 
     [Theory]
@@ -94,7 +94,7 @@ public sealed class HciLeEnhancedConnectionCompleteV1EventTests
             out int decoded
         );
 
-        success.Should().BeFalse();
-        decoded.Should().Be(expectedBytesDecoded);
+        success.ShouldBeFalse();
+        decoded.ShouldBe(expectedBytesDecoded);
     }
 }

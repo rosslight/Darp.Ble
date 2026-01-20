@@ -2,7 +2,7 @@ using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.Hci.Payload.Result;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Event;
 
@@ -11,7 +11,7 @@ public sealed class HciCommandCompleteEventTests
     [Fact]
     public void EventCode_ShouldBeValid()
     {
-        HciCommandCompleteEvent<HciSetEventMaskResult>.EventCode.Should().HaveValue(0x0E);
+        HciCommandCompleteEvent<HciSetEventMaskResult>.EventCode.ShouldHaveValue(0x0E);
     }
 
     [Theory]
@@ -30,11 +30,11 @@ public sealed class HciCommandCompleteEventTests
             out int decoded
         );
 
-        success.Should().BeTrue();
-        decoded.Should().Be(4);
-        value.NumHciCommandPackets.Should().Be(expectedNumHciCommandPackets);
-        value.CommandOpCode.Should().Be(expectedCommandOpCode);
-        value.ReturnParameters.Status.Should().Be(expectedStatus);
+        success.ShouldBeTrue();
+        decoded.ShouldBe(4);
+        value.NumHciCommandPackets.ShouldBe(expectedNumHciCommandPackets);
+        value.CommandOpCode.ShouldBe(expectedCommandOpCode);
+        value.ReturnParameters.Status.ShouldBe(expectedStatus);
     }
 
     [Theory]
@@ -49,7 +49,7 @@ public sealed class HciCommandCompleteEventTests
             out int decoded
         );
 
-        success.Should().BeFalse();
-        decoded.Should().Be(expectedBytesDecoded);
+        success.ShouldBeFalse();
+        decoded.ShouldBe(expectedBytesDecoded);
     }
 }

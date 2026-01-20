@@ -1,5 +1,5 @@
 using Darp.Ble.Hci.Payload.Att;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Att;
 
@@ -8,7 +8,7 @@ public sealed class AttReadByGroupTypeRspTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        AttReadByGroupTypeRsp.ExpectedOpCode.Should().HaveValue(0x11);
+        AttReadByGroupTypeRsp.ExpectedOpCode.ShouldHaveValue(0x11);
     }
 
     [Theory]
@@ -48,15 +48,15 @@ public sealed class AttReadByGroupTypeRspTests
             out int decoded
         );
 
-        success.Should().BeTrue();
-        decoded.Should().Be(2 + 6 * attributeDataList.Length);
-        value.OpCode.Should().Be(AttOpCode.ATT_READ_BY_GROUP_TYPE_RSP);
-        value.Length.Should().Be(6);
+        success.ShouldBeTrue();
+        decoded.ShouldBe(2 + 6 * attributeDataList.Length);
+        value.OpCode.ShouldBe(AttOpCode.ATT_READ_BY_GROUP_TYPE_RSP);
+        value.Length.ShouldBe<byte>(6);
         foreach (var valueTuple in value.AttributeDataList.Zip(attributeDataList))
         {
-            valueTuple.First.Handle.Should().Be(valueTuple.Second.Handle);
-            valueTuple.First.EndGroup.Should().Be(valueTuple.Second.EndGroup);
-            valueTuple.First.Value.ToArray().Should().Equal(valueTuple.Second.Value.ToArray());
+            valueTuple.First.Handle.ShouldBe(valueTuple.Second.Handle);
+            valueTuple.First.EndGroup.ShouldBe(valueTuple.Second.EndGroup);
+            valueTuple.First.Value.ToArray().ShouldBe(valueTuple.Second.Value.ToArray());
         }
     }
 
@@ -78,15 +78,15 @@ public sealed class AttReadByGroupTypeRspTests
             out int decoded
         );
 
-        success.Should().BeTrue();
-        decoded.Should().Be(2 + 20 * attributeDataList.Length);
-        value.OpCode.Should().Be(AttOpCode.ATT_READ_BY_GROUP_TYPE_RSP);
-        value.Length.Should().Be(20);
+        success.ShouldBeTrue();
+        decoded.ShouldBe(2 + 20 * attributeDataList.Length);
+        value.OpCode.ShouldBe(AttOpCode.ATT_READ_BY_GROUP_TYPE_RSP);
+        value.Length.ShouldBe<byte>(20);
         foreach (var valueTuple in value.AttributeDataList.Zip(attributeDataList))
         {
-            valueTuple.First.Handle.Should().Be(valueTuple.Second.Handle);
-            valueTuple.First.EndGroup.Should().Be(valueTuple.Second.EndGroup);
-            valueTuple.First.Value.ToArray().Should().Equal(valueTuple.Second.Value.ToArray());
+            valueTuple.First.Handle.ShouldBe(valueTuple.Second.Handle);
+            valueTuple.First.EndGroup.ShouldBe(valueTuple.Second.EndGroup);
+            valueTuple.First.Value.ToArray().ShouldBe(valueTuple.Second.Value.ToArray());
         }
     }
 
@@ -101,7 +101,7 @@ public sealed class AttReadByGroupTypeRspTests
         byte[] bytes = Convert.FromHexString(hexBytes);
         bool success = AttReadByGroupTypeRsp.TryReadLittleEndian(bytes, out _, out int decoded);
 
-        success.Should().BeFalse();
-        decoded.Should().Be(expectedBytesDecoded);
+        success.ShouldBeFalse();
+        decoded.ShouldBe(expectedBytesDecoded);
     }
 }

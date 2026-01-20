@@ -1,6 +1,6 @@
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Event;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Event;
 
@@ -9,7 +9,7 @@ public sealed class HciDisconnectionCompleteEventTests
     [Fact]
     public void EventCode_ShouldBeValid()
     {
-        HciDisconnectionCompleteEvent.EventCode.Should().HaveValue(0x05);
+        HciDisconnectionCompleteEvent.EventCode.ShouldHaveValue(0x05);
     }
 
     [Theory]
@@ -30,10 +30,10 @@ public sealed class HciDisconnectionCompleteEventTests
 
         bool success = Extensions.TryReadLittleEndian(bytes, out HciDisconnectionCompleteEvent value, out int decoded);
 
-        success.Should().BeTrue();
-        decoded.Should().Be(4);
-        value.ConnectionHandle.Should().Be(expectedValue.ConnectionHandle);
-        value.Reason.Should().Be(expectedValue.Reason);
+        success.ShouldBeTrue();
+        decoded.ShouldBe(4);
+        value.ConnectionHandle.ShouldBe(expectedValue.ConnectionHandle);
+        value.Reason.ShouldBe(expectedValue.Reason);
     }
 
     [Theory]
@@ -44,7 +44,7 @@ public sealed class HciDisconnectionCompleteEventTests
         byte[] bytes = Convert.FromHexString(hexBytes);
         bool success = Extensions.TryReadLittleEndian(bytes, out HciCommandStatusEvent _, out int decoded);
 
-        success.Should().BeFalse();
-        decoded.Should().Be(expectedBytesDecoded);
+        success.ShouldBeFalse();
+        decoded.ShouldBe(expectedBytesDecoded);
     }
 }

@@ -1,7 +1,7 @@
 using System.Security.Cryptography;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Command;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Command;
 
@@ -10,7 +10,7 @@ public sealed class HciDisconnectCommandTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        HciDisconnectCommand.OpCode.Should().HaveValue(0x0006 | (0x01 << 10));
+        HciDisconnectCommand.OpCode.ShouldHaveValue(0x0006 | (0x01 << 10));
     }
 
     [Theory]
@@ -21,11 +21,11 @@ public sealed class HciDisconnectCommandTests
         var value = new HciDisconnectCommand { ConnectionHandle = handle, Reason = reason };
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeTrue();
-        value.GetByteCount().Should().Be(3);
-        value.ConnectionHandle.Should().Be(handle);
-        value.Reason.Should().Be(reason);
-        Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
+        success.ShouldBeTrue();
+        value.GetByteCount().ShouldBe(3);
+        value.ConnectionHandle.ShouldBe(handle);
+        value.Reason.ShouldBe(reason);
+        Convert.ToHexString(buffer).ShouldBe(expectedHexBytes);
     }
 
     [Fact]
@@ -35,6 +35,6 @@ public sealed class HciDisconnectCommandTests
         HciDisconnectCommand value = default;
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeFalse();
+        success.ShouldBeFalse();
     }
 }

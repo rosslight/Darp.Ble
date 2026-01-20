@@ -1,5 +1,5 @@
 using Darp.Ble.Hci.Payload.Att;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Att;
 
@@ -8,7 +8,7 @@ public sealed class AttExchangeMtuReqTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        AttExchangeMtuReq.ExpectedOpCode.Should().HaveValue(0x02);
+        AttExchangeMtuReq.ExpectedOpCode.ShouldHaveValue(0x02);
     }
 
     [Theory]
@@ -20,10 +20,10 @@ public sealed class AttExchangeMtuReqTests
 
         bool success = value.TryWriteLittleEndian(buffer);
 
-        value.OpCode.Should().Be(AttOpCode.ATT_EXCHANGE_MTU_REQ);
-        value.GetByteCount().Should().Be(3);
-        success.Should().BeTrue();
-        Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
+        value.OpCode.ShouldBe(AttOpCode.ATT_EXCHANGE_MTU_REQ);
+        value.GetByteCount().ShouldBe(3);
+        success.ShouldBeTrue();
+        Convert.ToHexString(buffer).ShouldBe(expectedHexBytes);
     }
 
     [Fact]
@@ -33,6 +33,6 @@ public sealed class AttExchangeMtuReqTests
         AttExchangeMtuReq value = default;
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeFalse();
+        success.ShouldBeFalse();
     }
 }

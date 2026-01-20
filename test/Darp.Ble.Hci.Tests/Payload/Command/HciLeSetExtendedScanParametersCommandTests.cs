@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using Darp.Ble.Hci.Payload.Command;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Command;
 
@@ -9,7 +9,7 @@ public sealed class HciLeSetExtendedScanParametersCommandTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        HciLeSetExtendedScanParametersCommand.OpCode.Should().HaveValue(0x0041 | (0x08 << 10));
+        HciLeSetExtendedScanParametersCommand.OpCode.ShouldHaveValue(0x0041 | (0x08 << 10));
     }
 
     [Theory]
@@ -36,15 +36,15 @@ public sealed class HciLeSetExtendedScanParametersCommandTests
         };
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeTrue();
-        value.GetByteCount().Should().Be(8);
-        value.OwnAddressType.Should().Be(ownAddressType);
-        value.ScanningFilterPolicy.Should().Be(scanningFilterPolicy);
-        value.ScanPhys.Should().Be(scanPhys);
-        value.ScanType.Should().Be(scanType);
-        value.ScanInterval.Should().Be(scanInterval);
-        value.ScanWindow.Should().Be(scanWindow);
-        Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
+        success.ShouldBeTrue();
+        value.GetByteCount().ShouldBe(8);
+        value.OwnAddressType.ShouldBe(ownAddressType);
+        value.ScanningFilterPolicy.ShouldBe(scanningFilterPolicy);
+        value.ScanPhys.ShouldBe(scanPhys);
+        value.ScanType.ShouldBe(scanType);
+        value.ScanInterval.ShouldBe(scanInterval);
+        value.ScanWindow.ShouldBe(scanWindow);
+        Convert.ToHexString(buffer).ShouldBe(expectedHexBytes);
     }
 
     [Fact]
@@ -54,6 +54,6 @@ public sealed class HciLeSetExtendedScanParametersCommandTests
         HciLeSetExtendedScanParametersCommand value = default;
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeFalse();
+        success.ShouldBeFalse();
     }
 }

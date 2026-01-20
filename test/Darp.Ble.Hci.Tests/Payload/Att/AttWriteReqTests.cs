@@ -1,5 +1,5 @@
 using Darp.Ble.Hci.Payload.Att;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Att;
 
@@ -8,7 +8,7 @@ public sealed class AttWriteReqTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        AttWriteReq.ExpectedOpCode.Should().HaveValue(0x12);
+        AttWriteReq.ExpectedOpCode.ShouldHaveValue(0x12);
     }
 
     [Theory]
@@ -21,10 +21,10 @@ public sealed class AttWriteReqTests
 
         bool success = value.TryWriteLittleEndian(buffer);
 
-        value.OpCode.Should().Be(AttOpCode.ATT_WRITE_REQ);
-        value.GetByteCount().Should().Be(3 + valueBytes.Length);
-        success.Should().BeTrue();
-        Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
+        value.OpCode.ShouldBe(AttOpCode.ATT_WRITE_REQ);
+        value.GetByteCount().ShouldBe(3 + valueBytes.Length);
+        success.ShouldBeTrue();
+        Convert.ToHexString(buffer).ShouldBe(expectedHexBytes);
     }
 
     [Fact]
@@ -34,6 +34,6 @@ public sealed class AttWriteReqTests
         AttWriteReq value = default;
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeFalse();
+        success.ShouldBeFalse();
     }
 }

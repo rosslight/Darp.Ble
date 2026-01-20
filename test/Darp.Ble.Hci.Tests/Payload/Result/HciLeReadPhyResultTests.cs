@@ -1,7 +1,7 @@
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.Hci.Payload.Result;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Event;
 
@@ -21,13 +21,13 @@ public sealed class HciLeReadPhyResultTests
 
         bool success = HciLeReadPhyResult.TryReadLittleEndian(bytes, out HciLeReadPhyResult value, out int decoded);
 
-        success.Should().BeTrue();
-        decoded.Should().Be(5);
+        success.ShouldBeTrue();
+        decoded.ShouldBe(5);
 
-        value.Status.Should().Be(expectedStatus);
-        value.ConnectionHandle.Should().Be(expectedConnectionHandle);
-        value.TxPhy.Should().Be(expectedTxPhy);
-        value.RxPhy.Should().Be(expectedRxPhy);
+        value.Status.ShouldBe(expectedStatus);
+        value.ConnectionHandle.ShouldBe(expectedConnectionHandle);
+        value.TxPhy.ShouldBe(expectedTxPhy);
+        value.RxPhy.ShouldBe(expectedRxPhy);
     }
 
     [Theory]
@@ -38,7 +38,7 @@ public sealed class HciLeReadPhyResultTests
         byte[] bytes = Convert.FromHexString(hexBytes);
         bool success = HciCommandCompleteEvent<HciLeReadPhyResult>.TryReadLittleEndian(bytes, out _, out int decoded);
 
-        success.Should().BeFalse();
-        decoded.Should().Be(expectedBytesDecoded);
+        success.ShouldBeFalse();
+        decoded.ShouldBe(expectedBytesDecoded);
     }
 }

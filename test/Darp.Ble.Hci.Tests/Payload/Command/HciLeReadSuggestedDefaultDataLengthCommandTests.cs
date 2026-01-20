@@ -1,5 +1,5 @@
 using Darp.Ble.Hci.Payload.Command;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Command;
 
@@ -8,7 +8,7 @@ public sealed class HciLeReadSuggestedDefaultDataLengthCommandTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        HciLeReadSuggestedDefaultDataLengthCommand.OpCode.Should().HaveValue(0x0023 | (0x08 << 10));
+        HciLeReadSuggestedDefaultDataLengthCommand.OpCode.ShouldHaveValue(0x0023 | (0x08 << 10));
     }
 
     [Fact]
@@ -18,7 +18,7 @@ public sealed class HciLeReadSuggestedDefaultDataLengthCommandTests
         var value = new HciLeReadSuggestedDefaultDataLengthCommand();
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeTrue();
-        value.GetByteCount().Should().Be(0);
+        success.ShouldBeTrue();
+        value.GetByteCount().ShouldBe(0);
     }
 }

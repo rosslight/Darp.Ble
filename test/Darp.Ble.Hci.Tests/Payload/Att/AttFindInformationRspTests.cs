@@ -1,6 +1,6 @@
 using System.Buffers.Binary;
 using Darp.Ble.Hci.Payload.Att;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Att;
 
@@ -9,7 +9,7 @@ public sealed class AttFindInformationRspTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        AttFindInformationRsp.ExpectedOpCode.Should().HaveValue(0x05);
+        AttFindInformationRsp.ExpectedOpCode.ShouldHaveValue(0x05);
     }
 
     [Theory]
@@ -38,7 +38,7 @@ public sealed class AttFindInformationRspTests
             {
                 var uuidBuffer = new byte[2];
                 BinaryPrimitives.WriteUInt16LittleEndian(uuidBuffer, (ushort)x.Second);
-                return new AttFindInformationData() { Handle = (ushort)x.First, Uuid = uuidBuffer };
+                return new AttFindInformationData { Handle = (ushort)x.First, Uuid = uuidBuffer };
             })
             .ToArray();
 
@@ -48,18 +48,17 @@ public sealed class AttFindInformationRspTests
             out int decoded
         );
 
-        success.Should().BeTrue();
-        decoded.Should().Be(2 + 4 * findInformationData.Length);
-        value.OpCode.Should().Be(AttOpCode.ATT_FIND_INFORMATION_RSP);
-        value.Format.Should().Be(AttFindInformationFormat.HandleAnd16BitUuid);
+        success.ShouldBeTrue();
+        decoded.ShouldBe(2 + 4 * findInformationData.Length);
+        value.OpCode.ShouldBe(AttOpCode.ATT_FIND_INFORMATION_RSP);
+        value.Format.ShouldBe(AttFindInformationFormat.HandleAnd16BitUuid);
         value
             .InformationData.ToArray()
             .Zip(findInformationData)
-            .Should()
-            .AllSatisfy(x =>
+            .ShouldAllSatisfy(x =>
             {
-                x.First.Handle.Should().Be(x.Second.Handle);
-                x.First.Uuid.ToArray().Should().BeEquivalentTo(x.Second.Uuid.ToArray());
+                x.First.Handle.ShouldBe(x.Second.Handle);
+                x.First.Uuid.ToArray().ShouldBe(x.Second.Uuid.ToArray());
             });
     }
 
@@ -77,19 +76,18 @@ public sealed class AttFindInformationRspTests
             out int decoded
         );
 
-        success.Should().BeTrue();
-        decoded.Should().Be(2 + 18 * findInformationData.Length);
-        value.OpCode.Should().Be(AttOpCode.ATT_FIND_INFORMATION_RSP);
-        value.Format.Should().Be(AttFindInformationFormat.HandleAnd128BitUuid);
+        success.ShouldBeTrue();
+        decoded.ShouldBe(2 + 18 * findInformationData.Length);
+        value.OpCode.ShouldBe(AttOpCode.ATT_FIND_INFORMATION_RSP);
+        value.Format.ShouldBe(AttFindInformationFormat.HandleAnd128BitUuid);
 
         value
             .InformationData.ToArray()
             .Zip(findInformationData)
-            .Should()
-            .AllSatisfy(x =>
+            .ShouldAllSatisfy(x =>
             {
-                x.First.Handle.Should().Be(x.Second.Handle);
-                x.First.Uuid.ToArray().Should().BeEquivalentTo(x.Second.Uuid.ToArray());
+                x.First.Handle.ShouldBe(x.Second.Handle);
+                x.First.Uuid.ToArray().ShouldBe(x.Second.Uuid.ToArray());
             });
     }
 
@@ -105,7 +103,7 @@ public sealed class AttFindInformationRspTests
         byte[] bytes = Convert.FromHexString(hexBytes);
         bool success = AttFindInformationRsp.TryReadLittleEndian(bytes, out _, out int decoded);
 
-        success.Should().BeFalse();
-        decoded.Should().Be(expectedBytesDecoded);
+        success.ShouldBeFalse();
+        decoded.ShouldBe(expectedBytesDecoded);
     }
 }
