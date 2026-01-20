@@ -7,7 +7,7 @@ using Shouldly;
 
 namespace Darp.Ble.HciHost.Tests;
 
-public sealed class ObserverTests
+public sealed partial class ObserverTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
