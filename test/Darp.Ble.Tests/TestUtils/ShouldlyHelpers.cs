@@ -8,7 +8,7 @@ public static class ShouldlyHelpers
 {
     public static async Task ShouldPushAtLeastAsync<T>(this IObservable<T> observable, int numberOfItems)
     {
-        await observable.Take(numberOfItems);
+        await observable.Take(numberOfItems).LastAsync().ToTask().ShouldNotThrowAsync();
     }
 
     public static async Task<Exception> ShouldThrowAsync<T>(this IObservable<object> observable)
