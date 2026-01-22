@@ -78,10 +78,3 @@ jobs:
           done
         env:
           AZURE_ARTIFACTS_FEED_URL: https://pkgs.dev.azure.com/rosslight-engineering/darp.ble/_packaging/darp.ble.subscription/nuget/v3/index.json
-
-      - name: Attach .nupkg to GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload "${{ needs.release-please.outputs.tag_name }}" ./build/noncommercial/package**/*.nupkg \
-            --repo "${{ github.repository }}"
