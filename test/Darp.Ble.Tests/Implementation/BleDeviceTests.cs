@@ -8,11 +8,11 @@ using Darp.Ble.Gatt.Server;
 using Darp.Ble.Implementation;
 using Darp.Ble.Mock;
 using Darp.Ble.Tests.TestUtils;
-using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Reactive.Testing;
 using NSubstitute;
+using Shouldly;
 
 namespace Darp.Ble.Tests.Implementation;
 
@@ -29,8 +29,7 @@ public sealed class BleDeviceTests
         await device.InitializeAsync(Token);
         loggerFactory
             .GetLogger<MockBleDevice>()
-            .LogEntries.Should()
-            .BeEquivalentTo([(LogLevel.Debug, $"Ble device '{device.Name}' initialized!")]);
+            .LogEntries.ShouldBe([(LogLevel.Debug, $"Ble device '{device.Name}' initialized!")]);
     }
 
     [Fact]
@@ -45,7 +44,7 @@ public sealed class BleDeviceTests
 
         InitializeResult result = await device.InitializeAsync(Token);
 
-        result.Should().Be(InitializeResult.DeviceNotAvailable);
+        result.ShouldBe(InitializeResult.DeviceNotAvailable);
     }
 
     [Fact]
@@ -70,8 +69,8 @@ public sealed class BleDeviceTests
 
         testScheduler.AdvanceTo(TimeSpan.FromMilliseconds(1001).Ticks);
 
-        (await init1Task).Should().Be(InitializeResult.Success);
-        (await init2Task).Should().Be(InitializeResult.AlreadyInitializing);
+        (await init1Task).ShouldBe(InitializeResult.Success);
+        (await init2Task).ShouldBe(InitializeResult.AlreadyInitializing);
     }
 
     [Fact]
@@ -84,13 +83,13 @@ public sealed class BleDeviceTests
             .InvokeNonPublicMethod("InitializeAsyncCore", Arg.Any<CancellationToken>())
             .Returns(_ => Task.FromResult(InitializeResult.Success));
 
-        device.IsInitialized.Should().BeFalse();
+        device.IsInitialized.ShouldBeFalse();
         InitializeResult init1 = await device.InitializeAsync(Token);
-        init1.Should().Be(InitializeResult.Success);
+        init1.ShouldBe(InitializeResult.Success);
 
-        device.IsInitialized.Should().BeTrue();
+        device.IsInitialized.ShouldBeTrue();
         InitializeResult init2 = await device.InitializeAsync(Token);
-        init2.Should().Be(InitializeResult.Success);
+        init2.ShouldBe(InitializeResult.Success);
     }
 
     [Fact]
@@ -98,7 +97,7 @@ public sealed class BleDeviceTests
     {
         var device = Substitute.For<BleDevice>(NullServiceProvider.Instance, NullLogger<BleDevice>.Instance);
         Action act = () => _ = device.Observer;
-        act.Should().Throw<NotInitializedException>();
+        act.ShouldThrow<NotInitializedException>();
     }
 
     [Fact]
@@ -114,7 +113,7 @@ public sealed class BleDeviceTests
         await device.InitializeAsync(Token);
 
         Action act = () => _ = device.Observer;
-        act.Should().Throw<NotSupportedException>();
+        act.ShouldThrow<NotSupportedException>();
     }
 
     [Fact]

@@ -1,5 +1,5 @@
 using Darp.Ble.Hci.Payload.Att;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Att;
 
@@ -10,7 +10,7 @@ public sealed class AttErrorRspTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        AttErrorRsp.ExpectedOpCode.Should().Be(ExpectedOpCode);
+        AttErrorRsp.ExpectedOpCode.ShouldBe(ExpectedOpCode);
     }
 
     [Theory]
@@ -27,12 +27,12 @@ public sealed class AttErrorRspTests
         byte[] bytes = Convert.FromHexString(hexBytes);
         bool success = AttErrorRsp.TryReadLittleEndian(bytes, out AttErrorRsp value, out int decoded);
 
-        success.Should().BeTrue();
-        decoded.Should().Be(5);
-        value.OpCode.Should().Be(ExpectedOpCode);
-        value.RequestOpCode.Should().Be(expectedRequestOpCode);
-        value.Handle.Should().Be(expectedHandle);
-        value.ErrorCode.Should().Be(expectedErrorCode);
+        success.ShouldBeTrue();
+        decoded.ShouldBe(5);
+        value.OpCode.ShouldBe(ExpectedOpCode);
+        value.RequestOpCode.ShouldBe(expectedRequestOpCode);
+        value.Handle.ShouldBe(expectedHandle);
+        value.ErrorCode.ShouldBe(expectedErrorCode);
     }
 
     [Theory]
@@ -44,7 +44,7 @@ public sealed class AttErrorRspTests
         byte[] bytes = Convert.FromHexString(hexBytes);
         bool success = AttErrorRsp.TryReadLittleEndian(bytes, out _, out int decoded);
 
-        success.Should().BeFalse();
-        decoded.Should().Be(expectedBytesDecoded);
+        success.ShouldBeFalse();
+        decoded.ShouldBe(expectedBytesDecoded);
     }
 }

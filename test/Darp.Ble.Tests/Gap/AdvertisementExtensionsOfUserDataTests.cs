@@ -1,7 +1,7 @@
 using System.Reactive.Linq;
 using Darp.Ble.Gap;
 using Darp.Ble.Linq;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Tests.Gap;
 
@@ -27,7 +27,7 @@ public sealed class AdvertisementExtensionsOfUserDataTests
             .OfUserData<string>()
             .FirstAsync();
 
-        result.Should().BeSameAs(adv);
+        result.ShouldBeSameAs(adv);
     }
 
     [Fact]
@@ -41,10 +41,10 @@ public sealed class AdvertisementExtensionsOfUserDataTests
             .OfUserData<int>()
             .FirstAsync();
 
-        result.UserData.Should().Be(12345);
-        result.AsByteArray().Should().BeEquivalentTo(advWithObject.AsByteArray());
-        result.Address.Should().Be(advWithObject.Address);
-        result.EventType.Should().Be(advWithObject.EventType);
+        result.UserData.ShouldBe(12345);
+        result.AsByteArray().ShouldBe(advWithObject.AsByteArray());
+        result.Address.ShouldBe(advWithObject.Address);
+        result.EventType.ShouldBe(advWithObject.EventType);
     }
 
     [Fact]
@@ -57,7 +57,7 @@ public sealed class AdvertisementExtensionsOfUserDataTests
             .OfUserData<int>()
             .FirstOrDefaultAsync();
 
-        result.Should().BeNull();
+        result.ShouldBeNull();
     }
 
     [Fact]
@@ -70,9 +70,9 @@ public sealed class AdvertisementExtensionsOfUserDataTests
             .OfUserData<Animal>()
             .FirstOrDefaultAsync();
 
-        result.Should().NotBeNull();
-        result!.UserData.Should().BeAssignableTo<Dog>();
-        result.AsByteArray().Should().BeEquivalentTo(adv.AsByteArray());
+        result.ShouldNotBeNull();
+        result!.UserData.ShouldBeAssignableTo<Dog>();
+        result.AsByteArray().ShouldBe(adv.AsByteArray());
     }
 
     [Fact]
@@ -85,8 +85,8 @@ public sealed class AdvertisementExtensionsOfUserDataTests
             .OfUserData<ICreature>()
             .FirstOrDefaultAsync();
 
-        result.Should().NotBeNull();
-        result!.UserData.Should().BeAssignableTo<Dog>();
+        result.ShouldNotBeNull();
+        result!.UserData.ShouldBeAssignableTo<Dog>();
     }
 
     [Fact]
@@ -99,7 +99,7 @@ public sealed class AdvertisementExtensionsOfUserDataTests
             .OfUserData<Dog>()
             .FirstOrDefaultAsync();
 
-        result.Should().BeNull();
+        result.ShouldBeNull();
     }
 
     [Fact]
@@ -112,8 +112,8 @@ public sealed class AdvertisementExtensionsOfUserDataTests
             .OfUserData<Animal>()
             .FirstAsync();
 
-        result.Should().BeSameAs(adv);
-        result.UserData.Should().BeAssignableTo<Dog>();
+        result.ShouldBeSameAs(adv);
+        result.UserData.ShouldBeAssignableTo<Dog>();
     }
 
     [Theory]
@@ -128,6 +128,6 @@ public sealed class AdvertisementExtensionsOfUserDataTests
         IGapAdvertisement<int?> result1 = await new[] { adv }.ToObservable().OfUserData<int?>().FirstAsync();
 
         // Assert
-        result1.UserData.Should().Be(data);
+        result1.UserData.ShouldBe(data);
     }
 }

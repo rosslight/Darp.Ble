@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using Darp.Ble.Hci.Payload.Command;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Command;
 
@@ -9,7 +9,7 @@ public sealed class HciLeSetExtendedAdvertisingEnableCommandTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        HciLeSetExtendedAdvertisingEnableCommand.OpCode.Should().HaveValue(0x0039 | (8 << 10));
+        HciLeSetExtendedAdvertisingEnableCommand.OpCode.ShouldHaveValue(0x0039 | (8 << 10));
     }
 
     [Theory]
@@ -34,14 +34,14 @@ public sealed class HciLeSetExtendedAdvertisingEnableCommandTests
         };
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeTrue();
-        value.GetByteCount().Should().Be(6);
-        value.Enable.Should().Be(enable);
-        value.NumSets.Should().Be(numSets);
-        value.AdvertisingHandle.ToArray().Should().BeEquivalentTo(advertisingHandle);
-        value.Duration.ToArray().Should().BeEquivalentTo(durations);
-        value.MaxExtendedAdvertisingEvents.ToArray().Should().BeEquivalentTo(maxExtendedAdvertisingEvents);
-        Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
+        success.ShouldBeTrue();
+        value.GetByteCount().ShouldBe(6);
+        value.Enable.ShouldBe(enable);
+        value.NumSets.ShouldBe(numSets);
+        value.AdvertisingHandle.ToArray().ShouldBe(advertisingHandle);
+        value.Duration.ToArray().ShouldBe(durations);
+        value.MaxExtendedAdvertisingEvents.ToArray().ShouldBe(maxExtendedAdvertisingEvents);
+        Convert.ToHexString(buffer).ShouldBe(expectedHexBytes);
     }
 
     [Fact]
@@ -51,6 +51,6 @@ public sealed class HciLeSetExtendedAdvertisingEnableCommandTests
         HciLeSetExtendedAdvertisingEnableCommand value = default;
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeFalse();
+        success.ShouldBeFalse();
     }
 }

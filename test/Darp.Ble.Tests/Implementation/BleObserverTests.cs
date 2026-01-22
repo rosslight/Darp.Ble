@@ -9,10 +9,10 @@ using Darp.Ble.Gatt.Server;
 using Darp.Ble.Implementation;
 using Darp.Ble.Mock;
 using Darp.Ble.Tests.TestUtils;
-using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Reactive.Testing;
 using NSubstitute;
+using Shouldly;
 
 namespace Darp.Ble.Tests.Implementation;
 
@@ -38,7 +38,7 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
             .CreateManager();
         IBleDevice device = bleManager.EnumerateDevices().First();
         InitializeResult result = await device.InitializeAsync();
-        result.Should().Be(InitializeResult.Success);
+        result.ShouldBe(InitializeResult.Success);
         return device;
     }
 
@@ -71,14 +71,12 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
         Task<IGapAdvertisement> task = device.Observer.OnAdvertisement().FirstAsync().ToTask();
         await device.Observer.StartObservingAsync(Token);
         scheduler.AdvanceTo(TimeSpan.FromMilliseconds(999).Ticks);
-        task.IsCompleted.Should().BeFalse();
+        task.IsCompleted.ShouldBeFalse();
         scheduler.AdvanceTo(TimeSpan.FromMilliseconds(1000).Ticks);
-        task.IsCompleted.Should().BeTrue();
+        task.IsCompleted.ShouldBeTrue();
 
         IGapAdvertisement adv = await task;
-        adv.Data.ToByteArray()
-            .Should()
-            .BeEquivalentTo(AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName.ToByteArray());
+        adv.Data.ToByteArray().ShouldBe(AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName.ToByteArray());
     }
 
     [Fact]
@@ -94,9 +92,9 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
         await device.Observer.StartObservingAsync(Token);
 
         await device.Observer.StopObservingAsync();
-        task1.Status.Should().Be(TaskStatus.WaitingForActivation);
-        task2.Status.Should().Be(TaskStatus.WaitingForActivation);
-        device.Observer.IsObserving.Should().BeFalse();
+        task1.Status.ShouldBe(TaskStatus.WaitingForActivation);
+        task2.Status.ShouldBe(TaskStatus.WaitingForActivation);
+        device.Observer.IsObserving.ShouldBeFalse();
     }
 
     [Fact]
@@ -112,9 +110,8 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
 
         Func<Task> act = async () => await observer.StartObservingAsync();
 
-        await act.Should()
-            .ThrowAsync<BleObservationStartException>()
-            .Where(x => typeof(DummyException).IsAssignableTo(x.InnerException!.GetType()));
+        var exception = await act.ShouldThrowAsync<BleObservationStartException>();
+        exception.InnerException.ShouldBeOfType<DummyException>();
     }
 
     [Fact]
@@ -130,7 +127,7 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
 
         Func<Task> act = async () => await observer.StartObservingAsync();
 
-        await act.Should().ThrowAsync<BleObservationException>();
+        await act.ShouldThrowAsync<BleObservationException>();
     }
 
     [Fact]
@@ -139,10 +136,10 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
         var targetParameters = new BleObservationParameters { ScanType = ScanType.Active };
         IBleDevice device = await GetMockDeviceAsync();
 
-        device.Observer.Parameters.Should().NotBe(targetParameters);
+        device.Observer.Parameters.ShouldNotBe(targetParameters);
         device.Observer.Configure(targetParameters);
 
-        device.Observer.Parameters.Should().Be(targetParameters);
+        device.Observer.Parameters.ShouldBe(targetParameters);
     }
 
     [Fact]
@@ -161,7 +158,7 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
 
         await device.DisposeAsync();
         Func<Task> xx = async () => await device.Observer.StartObservingAsync();
-        await xx.Should().ThrowAsync<ObjectDisposedException>();
+        await xx.ShouldThrowAsync<ObjectDisposedException>();
     }
 
     [Fact]
@@ -171,6 +168,6 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
 
         await device.DisposeAsync();
         Action xx = () => device.Observer.OnAdvertisement(_ => { });
-        xx.Should().Throw<ObjectDisposedException>();
+        xx.ShouldThrow<ObjectDisposedException>();
     }
 }

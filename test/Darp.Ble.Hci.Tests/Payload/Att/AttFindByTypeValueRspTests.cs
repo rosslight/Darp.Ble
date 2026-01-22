@@ -1,5 +1,5 @@
 using Darp.Ble.Hci.Payload.Att;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Att;
 
@@ -8,7 +8,7 @@ public sealed class AttFindByTypeValueRspTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        AttFindByTypeValueRsp.ExpectedOpCode.Should().HaveValue(0x07);
+        AttFindByTypeValueRsp.ExpectedOpCode.ShouldHaveValue(0x07);
     }
 
     [Theory]
@@ -33,10 +33,10 @@ public sealed class AttFindByTypeValueRspTests
             out int decoded
         );
 
-        success.Should().BeTrue();
-        decoded.Should().Be(expectedBytesRead);
-        value.OpCode.Should().Be(AttOpCode.ATT_FIND_BY_TYPE_VALUE_RSP);
-        value.HandlesInformationList.Should().BeEquivalentTo(handlesInformation);
+        success.ShouldBeTrue();
+        decoded.ShouldBe(expectedBytesRead);
+        value.OpCode.ShouldBe(AttOpCode.ATT_FIND_BY_TYPE_VALUE_RSP);
+        value.HandlesInformationList.ShouldBe(handlesInformation);
     }
 
     [Theory]
@@ -48,7 +48,7 @@ public sealed class AttFindByTypeValueRspTests
         byte[] bytes = Convert.FromHexString(hexBytes);
         bool success = AttFindByTypeValueRsp.TryReadLittleEndian(bytes, out _, out int decoded);
 
-        success.Should().BeFalse();
-        decoded.Should().Be(expectedBytesDecoded);
+        success.ShouldBeFalse();
+        decoded.ShouldBe(expectedBytesDecoded);
     }
 }

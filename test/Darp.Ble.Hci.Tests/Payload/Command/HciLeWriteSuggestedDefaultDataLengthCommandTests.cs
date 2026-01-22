@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using Darp.Ble.Hci.Payload.Command;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Command;
 
@@ -9,7 +9,7 @@ public sealed class HciLeWriteSuggestedDefaultDataLengthCommandTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        HciLeWriteSuggestedDefaultDataLengthCommand.OpCode.Should().HaveValue(0x0024 | (0x08 << 10));
+        HciLeWriteSuggestedDefaultDataLengthCommand.OpCode.ShouldHaveValue(0x0024 | (0x08 << 10));
     }
 
     [Theory]
@@ -28,11 +28,11 @@ public sealed class HciLeWriteSuggestedDefaultDataLengthCommandTests
         };
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeTrue();
-        value.GetByteCount().Should().Be(4);
-        value.SuggestedMaxTxOctets.Should().Be(suggestedMaxTxOctets);
-        value.SuggestedMaxTxTime.Should().Be(suggestedMaxTxTime);
-        Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
+        success.ShouldBeTrue();
+        value.GetByteCount().ShouldBe(4);
+        value.SuggestedMaxTxOctets.ShouldBe(suggestedMaxTxOctets);
+        value.SuggestedMaxTxTime.ShouldBe(suggestedMaxTxTime);
+        Convert.ToHexString(buffer).ShouldBe(expectedHexBytes);
     }
 
     [Fact]
@@ -42,6 +42,6 @@ public sealed class HciLeWriteSuggestedDefaultDataLengthCommandTests
         HciLeWriteSuggestedDefaultDataLengthCommand value = default;
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeFalse();
+        success.ShouldBeFalse();
     }
 }

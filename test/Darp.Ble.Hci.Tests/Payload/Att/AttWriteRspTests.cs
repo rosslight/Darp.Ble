@@ -1,5 +1,5 @@
 using Darp.Ble.Hci.Payload.Att;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Att;
 
@@ -8,7 +8,7 @@ public sealed class AttWriteRspTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        AttWriteRsp.ExpectedOpCode.Should().HaveValue(0x13);
+        AttWriteRsp.ExpectedOpCode.ShouldHaveValue(0x13);
     }
 
     [Theory]
@@ -20,9 +20,9 @@ public sealed class AttWriteRspTests
 
         bool success = AttWriteRsp.TryReadLittleEndian(bytes, out AttWriteRsp value, out int decoded);
 
-        success.Should().BeTrue();
-        decoded.Should().Be(1);
-        value.OpCode.Should().Be(AttOpCode.ATT_WRITE_RSP);
+        success.ShouldBeTrue();
+        decoded.ShouldBe(1);
+        value.OpCode.ShouldBe(AttOpCode.ATT_WRITE_RSP);
     }
 
     [Theory]
@@ -33,7 +33,7 @@ public sealed class AttWriteRspTests
         byte[] bytes = Convert.FromHexString(hexBytes);
         bool success = AttWriteRsp.TryReadLittleEndian(bytes, out _, out int decoded);
 
-        success.Should().BeFalse();
-        decoded.Should().Be(expectedBytesDecoded);
+        success.ShouldBeFalse();
+        decoded.ShouldBe(expectedBytesDecoded);
     }
 }

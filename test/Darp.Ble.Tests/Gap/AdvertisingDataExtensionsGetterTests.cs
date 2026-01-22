@@ -1,7 +1,7 @@
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Tests.Gap;
 
@@ -50,8 +50,8 @@ public sealed class AdvertisingDataExtensionsGetterTests
         bool result = data.TryGetFlags(out AdvertisingDataFlags flags);
 
         // Assert
-        result.Should().Be(expectedSuccess);
-        flags.Should().Be(expectedFlags);
+        result.ShouldBe(expectedSuccess);
+        flags.ShouldBe(expectedFlags);
     }
 
     [Theory]
@@ -74,8 +74,8 @@ public sealed class AdvertisingDataExtensionsGetterTests
         bool result = data.TryGetShortenedLocalName(out string? name);
 
         // Assert
-        result.Should().Be(expectedSuccess);
-        name.Should().Be(expectedName);
+        result.ShouldBe(expectedSuccess);
+        name.ShouldBe(expectedName);
     }
 
     [Theory]
@@ -100,8 +100,8 @@ public sealed class AdvertisingDataExtensionsGetterTests
         bool result = data.TryGetLocalName(out string? name);
 
         // Assert
-        result.Should().Be(expectedSuccess);
-        name.Should().Be(expectedName);
+        result.ShouldBe(expectedSuccess);
+        name.ShouldBe(expectedName);
     }
 
     [Theory]
@@ -137,7 +137,7 @@ public sealed class AdvertisingDataExtensionsGetterTests
         IEnumerable<BleUuid> result = data.GetServiceUuids();
 
         // Assert
-        result.Should().BeEquivalentTo(expectedUuids);
+        result.ShouldBe(expectedUuids);
     }
 
     [Theory]
@@ -147,7 +147,7 @@ public sealed class AdvertisingDataExtensionsGetterTests
     public void TryGetManufacturerSpecificData(
         string sections,
         bool expectedSuccess,
-        CompanyIdentifiers? expectedCompanyIdentifiers,
+        CompanyIdentifiers expectedCompanyIdentifiers,
         string expectedDataString
     )
     {
@@ -161,9 +161,9 @@ public sealed class AdvertisingDataExtensionsGetterTests
         );
 
         // Assert
-        result.Should().Be(expectedSuccess);
-        companyUuid.Should().Be(expectedCompanyIdentifiers);
-        manufacturerData.ToArray().Should().BeEquivalentTo(Convert.FromHexString(expectedDataString));
+        result.ShouldBe(expectedSuccess);
+        companyUuid.ShouldBe(expectedCompanyIdentifiers);
+        manufacturerData.ToArray().ShouldBe(Convert.FromHexString(expectedDataString));
     }
 
     [Theory]
@@ -186,10 +186,10 @@ public sealed class AdvertisingDataExtensionsGetterTests
         bool result = data.TryGetManufacturerSpecificData(companyUuid, out ReadOnlyMemory<byte> manufacturerData);
 
         // Assert
-        result.Should().Be(expectedSuccess);
+        result.ShouldBe(expectedSuccess);
         if (expectedSuccess)
         {
-            manufacturerData.ToArray().Should().BeEquivalentTo(expectedDataString.ToByteArray());
+            manufacturerData.ToArray().ShouldBe(expectedDataString.ToByteArray());
         }
     }
 
@@ -211,10 +211,10 @@ public sealed class AdvertisingDataExtensionsGetterTests
         bool result = data.TryGetServiceData(uuid, out ReadOnlyMemory<byte> serviceData);
 
         // Assert
-        result.Should().Be(expectedSuccess);
+        result.ShouldBe(expectedSuccess);
         if (expectedSuccess)
         {
-            serviceData.ToArray().Should().BeEquivalentTo(expectedDataString.ToByteArray());
+            serviceData.ToArray().ShouldBe(expectedDataString.ToByteArray());
         }
     }
 }

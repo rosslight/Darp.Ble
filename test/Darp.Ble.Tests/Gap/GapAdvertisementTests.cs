@@ -3,8 +3,8 @@ using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
 using Darp.Ble.Linq;
 using Darp.Ble.Mock;
-using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using Shouldly;
 
 namespace Darp.Ble.Tests.Gap;
 
@@ -71,25 +71,25 @@ public sealed class GapAdvertisementTests(ILoggerFactory loggerFactory)
         );
         string byteString = Convert.ToHexString(adv.AsByteArray());
 
-        byteString.Should().Be(expectedReportHex);
-        adv.EventType.Should().Be(eventType);
-        adv.Address.Type.Should().Be(addressType);
-        adv.Address.Value.Should().Be((UInt48)address);
-        adv.PrimaryPhy.Should().Be(primaryPhy);
-        adv.SecondaryPhy.Should().Be(secondaryPhy);
-        adv.AdvertisingSId.Should().Be(advertisingSId);
-        adv.TxPower.Should().Be(txPower);
-        adv.Rssi.Should().Be((Rssi)rssi);
-        adv.PeriodicAdvertisingInterval.Should().Be(periodicAdvertisingInterval);
-        adv.DirectAddress.Type.Should().Be(directAddressType);
-        adv.DirectAddress.Value.Should().Be((UInt48)directAddress);
-        adv.Data.Should().HaveCount(2);
+        byteString.ShouldBe(expectedReportHex);
+        adv.EventType.ShouldBe(eventType);
+        adv.Address.Type.ShouldBe(addressType);
+        adv.Address.Value.ShouldBe((UInt48)address);
+        adv.PrimaryPhy.ShouldBe(primaryPhy);
+        adv.SecondaryPhy.ShouldBe(secondaryPhy);
+        adv.AdvertisingSId.ShouldBe(advertisingSId);
+        adv.TxPower.ShouldBe(txPower);
+        adv.Rssi.ShouldBe((Rssi)rssi);
+        adv.PeriodicAdvertisingInterval.ShouldBe(periodicAdvertisingInterval);
+        adv.DirectAddress.Type.ShouldBe(directAddressType);
+        adv.DirectAddress.Value.ShouldBe((UInt48)directAddress);
+        adv.Data.Count.ShouldBe(2);
         (AdTypes Type, ReadOnlyMemory<byte> Bytes) dataSection1 = adv.Data[0];
-        dataSection1.Type.Should().Be(advertisingDataType1);
-        dataSection1.Bytes.ToArray().Should().BeEquivalentTo(sectionData1);
+        dataSection1.Type.ShouldBe(advertisingDataType1);
+        dataSection1.Bytes.ToArray().ShouldBe(sectionData1);
         (AdTypes Type, ReadOnlyMemory<byte> Bytes) dataSection2 = adv.Data[1];
-        dataSection2.Type.Should().Be(advertisingDataType2);
-        dataSection2.Bytes.ToArray().Should().BeEquivalentTo(sectionData2);
+        dataSection2.Type.ShouldBe(advertisingDataType2);
+        dataSection2.Bytes.ToArray().ShouldBe(sectionData2);
     }
 
     [Theory]
@@ -105,20 +105,20 @@ public sealed class GapAdvertisementTests(ILoggerFactory loggerFactory)
 
         IGapAdvertisement<int> advWithData = adv.WithUserData(testData);
 
-        advWithData.Observer.Should().Be(adv.Observer);
-        advWithData.Timestamp.Should().Be(adv.Timestamp);
-        advWithData.EventType.Should().Be(adv.EventType);
-        advWithData.Address.Should().Be(adv.Address);
-        advWithData.PrimaryPhy.Should().Be(adv.PrimaryPhy);
-        advWithData.SecondaryPhy.Should().Be(adv.SecondaryPhy);
-        advWithData.AdvertisingSId.Should().Be(adv.AdvertisingSId);
-        advWithData.TxPower.Should().Be(adv.TxPower);
-        advWithData.Rssi.Should().Be(adv.Rssi);
-        advWithData.PeriodicAdvertisingInterval.Should().Be(adv.PeriodicAdvertisingInterval);
-        advWithData.DirectAddress.Should().Be(adv.DirectAddress);
-        advWithData.Data.Should().BeEquivalentTo(adv.Data);
-        advWithData.UserData.Should().Be(testData);
-        (advWithData as IGapAdvertisementWithUserData)?.UserData.Should().Be(testData);
-        advWithData.AsByteArray().Should().BeEquivalentTo(adv.AsByteArray());
+        advWithData.Observer.ShouldBe(adv.Observer);
+        advWithData.Timestamp.ShouldBe(adv.Timestamp);
+        advWithData.EventType.ShouldBe(adv.EventType);
+        advWithData.Address.ShouldBe(adv.Address);
+        advWithData.PrimaryPhy.ShouldBe(adv.PrimaryPhy);
+        advWithData.SecondaryPhy.ShouldBe(adv.SecondaryPhy);
+        advWithData.AdvertisingSId.ShouldBe(adv.AdvertisingSId);
+        advWithData.TxPower.ShouldBe(adv.TxPower);
+        advWithData.Rssi.ShouldBe(adv.Rssi);
+        advWithData.PeriodicAdvertisingInterval.ShouldBe(adv.PeriodicAdvertisingInterval);
+        advWithData.DirectAddress.ShouldBe(adv.DirectAddress);
+        advWithData.Data.ShouldBe(adv.Data);
+        advWithData.UserData.ShouldBe(testData);
+        (advWithData as IGapAdvertisementWithUserData)?.UserData.ShouldBe(testData);
+        advWithData.AsByteArray().ShouldBe(adv.AsByteArray());
     }
 }

@@ -7,8 +7,8 @@ using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Gatt.Services;
 using Darp.Ble.Mock.Testing;
-using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using Shouldly;
 
 namespace Darp.Ble.Mock.Tests;
 
@@ -31,9 +31,9 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
         );
 
         string deviceName = await service.DeviceName.ReadAsync(Token);
-        deviceName.Should().Be(expectedDeviceName);
+        deviceName.ShouldBe(expectedDeviceName);
         AppearanceValues appearance = await service.Appearance.ReadAsync(Token);
-        appearance.Should().Be(AppearanceValues.Unknown);
+        appearance.ShouldBe(AppearanceValues.Unknown);
     }
 
     [Fact]
@@ -48,14 +48,14 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
         );
 
         string manufacturerName = await service.ManufacturerName!.ReadAsync(Token);
-        manufacturerName.Should().Be(expectedManufacturerName);
-        service.ModelNumber.Should().BeNull();
-        service.SerialNumber.Should().BeNull();
-        service.HardwareRevision.Should().BeNull();
-        service.FirmwareRevision.Should().BeNull();
-        service.SoftwareRevision.Should().BeNull();
-        service.SystemId.Should().BeNull();
-        service.RegulatoryCertificationData.Should().BeNull();
+        manufacturerName.ShouldBe(expectedManufacturerName);
+        service.ModelNumber.ShouldBeNull();
+        service.SerialNumber.ShouldBeNull();
+        service.HardwareRevision.ShouldBeNull();
+        service.FirmwareRevision.ShouldBeNull();
+        service.SoftwareRevision.ShouldBeNull();
+        service.SystemId.ShouldBeNull();
+        service.RegulatoryCertificationData.ShouldBeNull();
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
 
         byte[] response = await service.QueryOneAsync(content, cancellationToken: Token);
 
-        response.Should().BeEquivalentTo(content);
+        response.ShouldBe(content);
     }
 
     [Fact]
@@ -115,19 +115,19 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
         );
         GattServerHeartRateService service = await peer.DiscoverHeartRateServiceAsync(Token);
 
-        service.BodySensorLocation.Should().NotBeNull();
-        HeartRateBodySensorLocation sensorLocation = await service.BodySensorLocation!.ReadAsync(Token);
-        sensorLocation.Should().Be(expectedSensorLocation);
+        service.BodySensorLocation.ShouldNotBeNull();
+        HeartRateBodySensorLocation sensorLocation = await service.BodySensorLocation.ReadAsync(Token);
+        sensorLocation.ShouldBe(expectedSensorLocation);
 
         await using IDisposableObservable<HeartRateMeasurement> observable =
             await service.HeartRateMeasurement.OnNotifyAsync(Token);
 
-        service.HeartRateControlPoint.Should().NotBeNull();
-        await service.HeartRateControlPoint!.WriteAsync([0x01], Token);
+        service.HeartRateControlPoint.ShouldNotBeNull();
+        await service.HeartRateControlPoint.WriteAsync([0x01], Token);
         HeartRateMeasurement measurement = await observable.FirstAsync();
-        measurement.Value.Should().Be(expectedValue);
-        measurement.EnergyExpended.Should().Be(0);
-        measurement.IsSensorContactDetected.Should().Be(expectedIsSensorContactDetected);
+        measurement.Value.ShouldBe(expectedValue);
+        measurement.EnergyExpended.ShouldBe<ushort?>(0);
+        measurement.IsSensorContactDetected.ShouldBe(expectedIsSensorContactDetected);
     }
 
     [Fact]
@@ -158,11 +158,11 @@ public sealed class ServiceTests(ILoggerFactory loggerFactory)
         GattServerBatteryService service = await peer.DiscoverBatteryServiceAsync(Token);
 
         string userDescription = await service.BatteryLevel.ReadUserDescriptionAsync(Token);
-        userDescription.Should().Be(expectedUserDescription);
+        userDescription.ShouldBe(expectedUserDescription);
         var readLevel = await service.BatteryLevel.ReadAsync<byte>(Token);
-        readLevel.Should().Be(expectedValue);
+        readLevel.ShouldBe(expectedValue);
         await using IDisposableObservable<byte> notifyable = await service.BatteryLevel.OnNotifyAsync<byte>(Token);
         byte notifiedLevel = await notifyable.FirstAsync();
-        notifiedLevel.Should().Be(readLevel);
+        notifiedLevel.ShouldBe(readLevel);
     }
 }

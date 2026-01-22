@@ -6,9 +6,9 @@ using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Implementation;
 using Darp.Ble.Tests.TestUtils;
-using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using NSubstitute;
+using Shouldly;
 
 namespace Darp.Ble.Tests.Gatt.Server;
 
@@ -42,10 +42,10 @@ public sealed class GattServerPeerTests
 
         await serverPeer.DiscoverServicesAsync();
 
-        serverPeer.Services.Should().HaveCount(bleUuids.Length);
+        serverPeer.Services.Count.ShouldBe(bleUuids.Length);
         if (bleUuids.Length > 0)
         {
-            serverPeer.Services.Select(x => x.Uuid).Should().BeEquivalentTo(bleUuids);
+            serverPeer.Services.Select(x => x.Uuid).ShouldBe(bleUuids);
         }
     }
 

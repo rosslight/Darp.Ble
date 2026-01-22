@@ -1,7 +1,7 @@
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Event;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Event;
 
@@ -10,7 +10,7 @@ public sealed class HciCommandStatusEventTests
     [Fact]
     public void EventCode_ShouldBeValid()
     {
-        HciCommandStatusEvent.EventCode.Should().HaveValue(0x0F);
+        HciCommandStatusEvent.EventCode.ShouldHaveValue(0x0F);
     }
 
     [Theory]
@@ -32,11 +32,11 @@ public sealed class HciCommandStatusEventTests
 
         bool success = Extensions.TryReadLittleEndian(bytes, out HciCommandStatusEvent value, out int decoded);
 
-        success.Should().BeTrue();
-        decoded.Should().Be(4);
-        value.Status.Should().Be(expectedValue.Status);
-        value.NumHciCommandPackets.Should().Be(expectedValue.NumHciCommandPackets);
-        value.CommandOpCode.Should().Be(expectedValue.CommandOpCode);
+        success.ShouldBeTrue();
+        decoded.ShouldBe(4);
+        value.Status.ShouldBe(expectedValue.Status);
+        value.NumHciCommandPackets.ShouldBe(expectedValue.NumHciCommandPackets);
+        value.CommandOpCode.ShouldBe(expectedValue.CommandOpCode);
     }
 
     [Theory]
@@ -47,7 +47,7 @@ public sealed class HciCommandStatusEventTests
         byte[] bytes = Convert.FromHexString(hexBytes);
         bool success = Extensions.TryReadLittleEndian(bytes, out HciCommandStatusEvent _, out int decoded);
 
-        success.Should().BeFalse();
-        decoded.Should().Be(expectedBytesDecoded);
+        success.ShouldBeFalse();
+        decoded.ShouldBe(expectedBytesDecoded);
     }
 }

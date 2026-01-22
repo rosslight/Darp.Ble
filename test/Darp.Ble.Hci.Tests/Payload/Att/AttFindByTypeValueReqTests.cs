@@ -1,5 +1,5 @@
 using Darp.Ble.Hci.Payload.Att;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Att;
 
@@ -8,7 +8,7 @@ public sealed class AttFindByTypeValueReqTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        AttFindByTypeValueReq.ExpectedOpCode.Should().HaveValue(0x06);
+        AttFindByTypeValueReq.ExpectedOpCode.ShouldHaveValue(0x06);
     }
 
     [Theory]
@@ -32,10 +32,10 @@ public sealed class AttFindByTypeValueReqTests
 
         bool success = value.TryWriteLittleEndian(buffer);
 
-        value.OpCode.Should().Be(AttOpCode.ATT_FIND_BY_TYPE_VALUE_REQ);
-        value.GetByteCount().Should().Be(9);
-        success.Should().BeTrue();
-        Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
+        value.OpCode.ShouldBe(AttOpCode.ATT_FIND_BY_TYPE_VALUE_REQ);
+        value.GetByteCount().ShouldBe(9);
+        success.ShouldBeTrue();
+        Convert.ToHexString(buffer).ShouldBe(expectedHexBytes);
     }
 
     [Theory]
@@ -54,6 +54,6 @@ public sealed class AttFindByTypeValueReqTests
         };
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeFalse();
+        success.ShouldBeFalse();
     }
 }

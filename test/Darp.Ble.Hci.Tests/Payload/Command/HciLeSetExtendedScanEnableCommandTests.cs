@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using Darp.Ble.Hci.Payload.Command;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Command;
 
@@ -9,7 +9,7 @@ public sealed class HciLeSetExtendedScanEnableCommandTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        HciLeSetExtendedScanEnableCommand.OpCode.Should().HaveValue(0x0042 | (0x08 << 10));
+        HciLeSetExtendedScanEnableCommand.OpCode.ShouldHaveValue(0x0042 | (0x08 << 10));
     }
 
     [Theory]
@@ -32,13 +32,13 @@ public sealed class HciLeSetExtendedScanEnableCommandTests
         };
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeTrue();
-        value.GetByteCount().Should().Be(6);
-        value.Enable.Should().Be(enable);
-        value.FilterDuplicates.Should().Be(filterDuplicates);
-        value.Duration.Should().Be(duration);
-        value.Period.Should().Be(period);
-        Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
+        success.ShouldBeTrue();
+        value.GetByteCount().ShouldBe(6);
+        value.Enable.ShouldBe(enable);
+        value.FilterDuplicates.ShouldBe(filterDuplicates);
+        value.Duration.ShouldBe(duration);
+        value.Period.ShouldBe(period);
+        Convert.ToHexString(buffer).ShouldBe(expectedHexBytes);
     }
 
     [Fact]
@@ -48,6 +48,6 @@ public sealed class HciLeSetExtendedScanEnableCommandTests
         HciLeSetExtendedScanEnableCommand value = default;
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeFalse();
+        success.ShouldBeFalse();
     }
 }

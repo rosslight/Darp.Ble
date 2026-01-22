@@ -1,5 +1,5 @@
 using Darp.Ble.Hci.Payload.Att;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Att;
 
@@ -8,7 +8,7 @@ public sealed class AttHandleValueNtfTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        AttHandleValueNtf.ExpectedOpCode.Should().HaveValue(0x1B);
+        AttHandleValueNtf.ExpectedOpCode.ShouldHaveValue(0x1B);
     }
 
     [Theory]
@@ -21,11 +21,11 @@ public sealed class AttHandleValueNtfTests
 
         bool success = AttHandleValueNtf.TryReadLittleEndian(bytes, out AttHandleValueNtf value, out int decoded);
 
-        success.Should().BeTrue();
-        decoded.Should().Be(3 + valueBytes.Length);
-        value.OpCode.Should().Be(AttOpCode.ATT_HANDLE_VALUE_NTF);
-        value.Handle.Should().Be(handle);
-        value.Value.ToArray().Should().BeEquivalentTo(valueBytes);
+        success.ShouldBeTrue();
+        decoded.ShouldBe(3 + valueBytes.Length);
+        value.OpCode.ShouldBe(AttOpCode.ATT_HANDLE_VALUE_NTF);
+        value.Handle.ShouldBe(handle);
+        value.Value.ToArray().ShouldBe(valueBytes);
     }
 
     [Theory]
@@ -37,7 +37,7 @@ public sealed class AttHandleValueNtfTests
         byte[] bytes = Convert.FromHexString(hexBytes);
         bool success = AttHandleValueNtf.TryReadLittleEndian(bytes, out _, out int decoded);
 
-        success.Should().BeFalse();
-        decoded.Should().Be(expectedBytesDecoded);
+        success.ShouldBeFalse();
+        decoded.ShouldBe(expectedBytesDecoded);
     }
 }

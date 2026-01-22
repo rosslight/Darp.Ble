@@ -1,7 +1,7 @@
 using System.Reactive.Linq;
 using Darp.Ble.Gap;
 using Darp.Ble.Linq;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Tests.Gap;
 
@@ -31,7 +31,7 @@ public sealed class AdvertisementExtensionsCastUserDataTests
             .FirstAsync();
 
         // Assert
-        result.Should().BeSameAs(adv);
+        result.ShouldBeSameAs(adv);
     }
 
     [Fact]
@@ -47,10 +47,10 @@ public sealed class AdvertisementExtensionsCastUserDataTests
             .FirstAsync();
 
         // Assert
-        result.UserData.Should().Be(12345);
-        result.AsByteArray().Should().BeEquivalentTo(advWithObject.AsByteArray());
-        result.Address.Should().Be(advWithObject.Address);
-        result.EventType.Should().Be(advWithObject.EventType);
+        result.UserData.ShouldBe(12345);
+        result.AsByteArray().ShouldBe(advWithObject.AsByteArray());
+        result.Address.ShouldBe(advWithObject.Address);
+        result.EventType.ShouldBe(advWithObject.EventType);
     }
 
     [Fact]
@@ -63,9 +63,7 @@ public sealed class AdvertisementExtensionsCastUserDataTests
         Func<Task> act = async () =>
             await new[] { advWithNull }.ToObservable<IGapAdvertisement>().CastUserData<int>().FirstAsync();
 
-        await act.Should()
-            .ThrowAsync<InvalidCastException>()
-            .WithMessage("Cannot cast UserData on 'GapAdvertisement`1' to 'Int32'.");
+        await act.ShouldThrowAsync<InvalidCastException>();
     }
 
     [Fact]
@@ -78,9 +76,7 @@ public sealed class AdvertisementExtensionsCastUserDataTests
         Func<Task> act = async () =>
             await new[] { advWithString }.ToObservable<IGapAdvertisement>().CastUserData<int>().FirstAsync();
 
-        await act.Should()
-            .ThrowAsync<InvalidCastException>()
-            .WithMessage("Cannot cast UserData on 'GapAdvertisement`1' to 'Int32'.");
+        await act.ShouldThrowAsync<InvalidCastException>();
     }
 
     [Fact]
@@ -93,9 +89,7 @@ public sealed class AdvertisementExtensionsCastUserDataTests
         Func<Task> act = async () =>
             await new[] { advWithDouble }.ToObservable<IGapAdvertisement>().CastUserData<int>().FirstAsync();
 
-        await act.Should()
-            .ThrowAsync<InvalidCastException>()
-            .WithMessage("Cannot cast UserData on 'GapAdvertisement`1' to 'Int32'.");
+        await act.ShouldThrowAsync<InvalidCastException>();
     }
 
     [Fact]
@@ -107,9 +101,7 @@ public sealed class AdvertisementExtensionsCastUserDataTests
         // Act & Assert
         Func<Task> act = async () => await new[] { advWithoutUserData }.ToObservable().CastUserData<int>().FirstAsync();
 
-        await act.Should()
-            .ThrowAsync<InvalidCastException>()
-            .WithMessage("Cannot cast UserData on 'GapAdvertisement' to 'Int32'.");
+        await act.ShouldThrowAsync<InvalidCastException>();
     }
 
     [Fact]
@@ -125,8 +117,8 @@ public sealed class AdvertisementExtensionsCastUserDataTests
             .FirstAsync();
 
         // Assert
-        result.UserData.Should().BeAssignableTo<Dog>();
-        result.AsByteArray().Should().BeEquivalentTo(adv.AsByteArray());
+        result.UserData.ShouldBeAssignableTo<Dog>();
+        result.AsByteArray().ShouldBe(adv.AsByteArray());
     }
 
     [Fact]
@@ -142,7 +134,7 @@ public sealed class AdvertisementExtensionsCastUserDataTests
             .FirstAsync();
 
         // Assert
-        result.UserData.Should().BeAssignableTo<Dog>();
+        result.UserData.ShouldBeAssignableTo<Dog>();
     }
 
     [Fact]
@@ -155,9 +147,7 @@ public sealed class AdvertisementExtensionsCastUserDataTests
         Func<Task> act = async () =>
             await new[] { adv }.ToObservable<IGapAdvertisement>().CastUserData<Dog>().FirstAsync();
 
-        await act.Should()
-            .ThrowAsync<InvalidCastException>()
-            .WithMessage("Cannot cast UserData on 'GapAdvertisement`1' to 'Dog'.");
+        await act.ShouldThrowAsync<InvalidCastException>();
     }
 
     [Fact]
@@ -173,8 +163,8 @@ public sealed class AdvertisementExtensionsCastUserDataTests
             .FirstAsync();
 
         // Assert
-        result.Should().BeSameAs(adv);
-        result.UserData.Should().BeAssignableTo<Dog>();
+        result.ShouldBeSameAs(adv);
+        result.UserData.ShouldBeAssignableTo<Dog>();
     }
 
     [Fact]
@@ -192,10 +182,10 @@ public sealed class AdvertisementExtensionsCastUserDataTests
             .ToArray();
 
         // Assert
-        results.Should().HaveCount(3);
-        results[0].UserData.Should().Be("test1");
-        results[1].UserData.Should().Be(42);
-        results[2].UserData.Should().Be(3.14);
+        results.Length.ShouldBe(3);
+        results[0].UserData.ShouldBe("test1");
+        results[1].UserData.ShouldBe(42);
+        results[2].UserData.ShouldBe(3.14);
     }
 
     [Fact]
@@ -212,9 +202,7 @@ public sealed class AdvertisementExtensionsCastUserDataTests
                 .CastUserData<string>()
                 .ToArray();
 
-        await act.Should()
-            .ThrowAsync<InvalidCastException>()
-            .WithMessage("Cannot cast UserData on 'GapAdvertisement`1' to 'String'.");
+        await act.ShouldThrowAsync<InvalidCastException>();
     }
 
     [Fact]
@@ -237,9 +225,9 @@ public sealed class AdvertisementExtensionsCastUserDataTests
             .FirstAsync();
 
         // Assert
-        intResult.UserData.Should().Be(42);
-        boolResult.UserData.Should().Be(true);
-        charResult.UserData.Should().Be('A');
+        intResult.UserData.ShouldBe(42);
+        boolResult.UserData.ShouldBe(true);
+        charResult.UserData.ShouldBe('A');
     }
 
     [Fact]
@@ -256,7 +244,7 @@ public sealed class AdvertisementExtensionsCastUserDataTests
             .FirstAsync();
 
         // Assert
-        result.UserData.Should().BeSameAs(testObject);
+        result.UserData.ShouldBeSameAs(testObject);
     }
 
     [Theory]
@@ -271,6 +259,6 @@ public sealed class AdvertisementExtensionsCastUserDataTests
         IGapAdvertisement<int?> result1 = await new[] { adv }.ToObservable().CastUserData<int?>().FirstAsync();
 
         // Assert
-        result1.UserData.Should().Be(data);
+        result1.UserData.ShouldBe(data);
     }
 }

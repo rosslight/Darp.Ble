@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 using Darp.Ble.Hci.Payload.Command;
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Hci.Tests.Payload.Command;
 
@@ -9,7 +9,7 @@ public sealed class HciLeReadPhyCommandTests
     [Fact]
     public void ExpectedOpCode_ShouldBeValid()
     {
-        HciLeReadPhyCommand.OpCode.Should().HaveValue(0x0030 | (0x08 << 10));
+        HciLeReadPhyCommand.OpCode.ShouldHaveValue(0x0030 | (0x08 << 10));
     }
 
     [Theory]
@@ -21,11 +21,11 @@ public sealed class HciLeReadPhyCommandTests
         var value = new HciLeReadPhyCommand { ConnectionHandle = handle };
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeTrue();
-        value.GetByteCount().Should().Be(2);
-        value.ConnectionHandle.Should().Be(handle);
+        success.ShouldBeTrue();
+        value.GetByteCount().ShouldBe(2);
+        value.ConnectionHandle.ShouldBe(handle);
 
-        Convert.ToHexString(buffer).Should().Be(expectedHexBytes);
+        Convert.ToHexString(buffer).ShouldBe(expectedHexBytes);
     }
 
     [Fact]
@@ -35,6 +35,6 @@ public sealed class HciLeReadPhyCommandTests
         HciLeReadPhyCommand value = default;
 
         bool success = value.TryWriteLittleEndian(buffer);
-        success.Should().BeFalse();
+        success.ShouldBeFalse();
     }
 }

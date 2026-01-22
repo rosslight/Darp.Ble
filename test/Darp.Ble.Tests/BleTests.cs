@@ -4,8 +4,9 @@ using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Darp.Ble.Linq;
 using Darp.Ble.Mock;
-using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using Shouldly;
+using Shouldly.ShouldlyExtensionMethods;
 
 namespace Darp.Ble.Tests;
 
@@ -23,18 +24,18 @@ public sealed class BleTests(ILoggerFactory loggerFactory)
     {
         IBleDevice[] adapters = _manager.EnumerateDevices().ToArray();
 
-        adapters.Should().ContainSingle();
+        adapters.ShouldHaveSingleItem();
 
         IBleDevice device = adapters[0];
 
-        device.IsInitialized.Should().BeFalse();
-        device.Capabilities.Should().Be(Capabilities.None);
+        device.IsInitialized.ShouldBeFalse();
+        device.Capabilities.ShouldBe(Capabilities.None);
 
         InitializeResult initResult = await device.InitializeAsync();
-        initResult.Should().Be(InitializeResult.Success);
+        initResult.ShouldBe(InitializeResult.Success);
 
-        device.IsInitialized.Should().BeTrue();
-        device.Capabilities.Should().HaveFlag(Capabilities.Observer);
+        device.IsInitialized.ShouldBeTrue();
+        device.Capabilities.ShouldHaveFlag(Capabilities.Observer);
 
         IBleObserver observer = device.Observer;
 
@@ -48,9 +49,9 @@ public sealed class BleTests(ILoggerFactory loggerFactory)
         await observer.StartObservingAsync();
         IGapAdvertisement<string> adv = await advTask;
 
-        observer.IsObserving.Should().BeFalse();
+        observer.IsObserving.ShouldBeFalse();
 
-        adv.AsByteArray().Should().BeEquivalentTo(AdvBytes);
-        ((ulong)adv.Address.Value).Should().Be(0xAABBCCDDEEFF);
+        adv.AsByteArray().ShouldBe(AdvBytes);
+        ((ulong)adv.Address.Value).ShouldBe(0xAABBCCDDEEFFUL);
     }
 }

@@ -1,4 +1,4 @@
-using FluentAssertions;
+using Shouldly;
 
 namespace Darp.Ble.Tests.Gatt;
 
@@ -38,7 +38,7 @@ public sealed class AesCmacTests
         using var cmac = new AesCmac(key);
         byte[] encryptedMessage = cmac.Encrypt(message);
 
-        encryptedMessage.Should().BeEquivalentTo(expectedEncryption);
+        encryptedMessage.ShouldBe(expectedEncryption);
     }
 
     [Theory]
@@ -49,6 +49,6 @@ public sealed class AesCmacTests
 
         Func<AesCmac> func = () => new AesCmac(key);
 
-        func.Should().ThrowExactly<ArgumentOutOfRangeException>();
+        func.ShouldThrow<ArgumentOutOfRangeException>();
     }
 }
