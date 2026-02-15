@@ -26,6 +26,9 @@ public abstract class GattServerDescriptor(
 
     /// <inheritdoc />
     public abstract Task<bool> WriteAsync(byte[] bytes, CancellationToken cancellationToken = default);
+
+    /// <inheritdoc />
+    public abstract void WriteWithoutResponse(byte[] bytes);
 }
 
 /// <summary> The interface defining a gatt server characteristic </summary>

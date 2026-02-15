@@ -26,4 +26,9 @@ internal sealed class MockGattServerDescriptor(
         GattProtocolStatus result = await _mockDescriptor.WriteValueAsync(_clientPeer, bytes).ConfigureAwait(false);
         return result is GattProtocolStatus.Success;
     }
+
+    public override void WriteWithoutResponse(byte[] bytes)
+    {
+        throw new NotImplementedException();
+    }
 }
