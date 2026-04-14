@@ -22,6 +22,7 @@ public sealed class AclConnection : IDisposable
 {
     private readonly CancellationTokenSource _disconnectSource = new();
     private readonly IDisposable _subscription;
+    private bool _isDisposed;
 
     public AclConnection(
         HciDevice device,
@@ -125,9 +126,12 @@ public sealed class AclConnection : IDisposable
     /// <inheritdoc />
     public void Dispose()
     {
-        if (DisconnectToken.IsCancellationRequested)
+        if (_isDisposed)
             return;
-        _disconnectSource.Cancel();
+
+        _isDisposed = true;
+        if (!DisconnectToken.IsCancellationRequested)
+            _disconnectSource.Cancel();
         _disconnectSource.Dispose();
         _subscription.Dispose();
     }
