@@ -69,46 +69,28 @@ public sealed class AclConnection : IDisposable
         if (txTime is < 0x0148 or > 0x4290)
             throw new ArgumentOutOfRangeException(nameof(txOctets));
         ThrowIfDisconnected("set data length");
-        using var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(token, DisconnectToken);
-        try
-        {
-            await Device
-                .Host.QueryCommandCompletionAsync<HciLeSetDataLengthCommand, HciLeSetDataLengthResult>(
-                    new HciLeSetDataLengthCommand
-                    {
-                        ConnectionHandle = ConnectionHandle,
-                        TxOctets = txOctets,
-                        TxTime = txTime,
-                    },
-                    cancellationToken: tokenSource.Token
-                )
-                .ConfigureAwait(false);
-        }
-        catch (OperationCanceledException exception)
-            when (!token.IsCancellationRequested && DisconnectToken.IsCancellationRequested)
-        {
-            throw CreateDisconnectedException("set data length", exception);
-        }
+        await Device
+            .Host.QueryCommandCompletionAsync<HciLeSetDataLengthCommand, HciLeSetDataLengthResult>(
+                new HciLeSetDataLengthCommand
+                {
+                    ConnectionHandle = ConnectionHandle,
+                    TxOctets = txOctets,
+                    TxTime = txTime,
+                },
+                cancellationToken: token
+            )
+            .ConfigureAwait(false);
     }
 
     public async Task<HciLeReadPhyResult> ReadPhyAsync(CancellationToken token = default)
     {
         ThrowIfDisconnected("read phy");
-        using var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(token, DisconnectToken);
-        try
-        {
-            return await Device
-                .Host.QueryCommandCompletionAsync<HciLeReadPhyCommand, HciLeReadPhyResult>(
-                    new HciLeReadPhyCommand { ConnectionHandle = ConnectionHandle },
-                    cancellationToken: tokenSource.Token
-                )
-                .ConfigureAwait(false);
-        }
-        catch (OperationCanceledException exception)
-            when (!token.IsCancellationRequested && DisconnectToken.IsCancellationRequested)
-        {
-            throw CreateDisconnectedException("read phy", exception);
-        }
+        return await Device
+            .Host.QueryCommandCompletionAsync<HciLeReadPhyCommand, HciLeReadPhyResult>(
+                new HciLeReadPhyCommand { ConnectionHandle = ConnectionHandle },
+                cancellationToken: token
+            )
+            .ConfigureAwait(false);
     }
 
     internal void OnDisconnectEvent(HciDisconnectionCompleteEvent hciEvent)
@@ -140,6 +122,7 @@ public sealed class AclConnection : IDisposable
             .ConfigureAwait(false);
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
         if (DisconnectToken.IsCancellationRequested)
