@@ -1,0 +1,44 @@
+{
+  MessagesToController: [
+    {
+      Type: HciCommand,
+      OpCode: HCI_LE_Extended_Create_Connection_V1,
+      PduBytes: 0143201A00010255407182B45A01600060000C0018000000480000000000
+    },
+    {
+      Type: HciCommand,
+      OpCode: HCI_LE_READ_PHY,
+      PduBytes: 013020020000
+    },
+    {
+      Type: HciAclData,
+      AttOpCode: ATT_EXCHANGE_MTU_REQ,
+      PduBytes: 020000070003000400024100
+    }
+  ],
+  MessagesToHost: [
+    {
+      Type: HciEvent,
+      EventCode: HCI_Command_Status,
+      CommandOpCode: HCI_LE_Extended_Create_Connection_V1,
+      PduBytes: 040F0400014320
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_LE_Meta,
+      SubEventCode: HCI_LE_Enhanced_Connection_Complete_V1,
+      PduBytes: 043E1F0A000000000255407182B45A00000000000000000000000018000000480000
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_Command_Complete,
+      CommandOpCode: HCI_LE_READ_PHY,
+      PduBytes: 040E080130200000000101
+    },
+    {
+      Type: HciEvent,
+      EventCode: HCI_Disconnection_Complete,
+      PduBytes: 0405040000003E
+    }
+  ]
+}

@@ -26,6 +26,8 @@ public static class AclConnectionExtensions
     {
         ArgumentNullException.ThrowIfNull(connection);
         timeout ??= TimeSpan.FromMilliseconds(connection.Device.Settings.DefaultAttTimeoutMs);
+        if (connection.DisconnectToken.IsCancellationRequested)
+            throw connection.CreateDisconnectedException($"ATT query {request.OpCode}");
         using var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(
             cancellationToken,
             connection.DisconnectToken
@@ -47,6 +49,11 @@ public static class AclConnectionExtensions
             string responseName = response.OpCode.ToString().ToUpperInvariant();
             activity?.SetTag("Response.OpCode", responseName);
             return response;
+        }
+        catch (OperationCanceledException exception)
+            when (!cancellationToken.IsCancellationRequested && connection.DisconnectToken.IsCancellationRequested)
+        {
+            throw connection.CreateDisconnectedException($"ATT query {request.OpCode}", exception);
         }
         catch (Exception e)
         {

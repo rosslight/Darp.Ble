@@ -14,6 +14,6 @@ public class HciException : Exception
     /// <summary> Initialize a new <see cref="HciException"/> with a message and exception </summary>
     /// <param name="message"> The message of the exception </param>
     /// <param name="innerException"> The inner exception </param>
-    public HciException(string message, Exception innerException)
+    public HciException(string message, Exception? innerException)
         : base(message, innerException) { }
 }

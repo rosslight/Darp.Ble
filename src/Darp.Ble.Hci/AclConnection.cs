@@ -1,3 +1,4 @@
+using Darp.Ble.Hci.Exceptions;
 using Darp.Ble.Hci.Host;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Att;
@@ -59,6 +60,7 @@ public sealed class AclConnection : IDisposable
     public L2CapAssembler Assembler { get; }
     public IAclPacketQueue AclPacketQueue => Device.Host.AclPacketQueue;
     public CancellationToken DisconnectToken => _disconnectSource.Token;
+    public HciCommandStatus? LastDisconnectionReason { get; private set; }
 
     public async Task SetDataLengthAsync(ushort txOctets, ushort txTime, CancellationToken token = default)
     {
@@ -66,27 +68,47 @@ public sealed class AclConnection : IDisposable
             throw new ArgumentOutOfRangeException(nameof(txOctets));
         if (txTime is < 0x0148 or > 0x4290)
             throw new ArgumentOutOfRangeException(nameof(txOctets));
-        await Device
-            .Host.QueryCommandCompletionAsync<HciLeSetDataLengthCommand, HciLeSetDataLengthResult>(
-                new HciLeSetDataLengthCommand
-                {
-                    ConnectionHandle = ConnectionHandle,
-                    TxOctets = txOctets,
-                    TxTime = txTime,
-                },
-                cancellationToken: token
-            )
-            .ConfigureAwait(false);
+        ThrowIfDisconnected("set data length");
+        using var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(token, DisconnectToken);
+        try
+        {
+            await Device
+                .Host.QueryCommandCompletionAsync<HciLeSetDataLengthCommand, HciLeSetDataLengthResult>(
+                    new HciLeSetDataLengthCommand
+                    {
+                        ConnectionHandle = ConnectionHandle,
+                        TxOctets = txOctets,
+                        TxTime = txTime,
+                    },
+                    cancellationToken: tokenSource.Token
+                )
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException exception)
+            when (!token.IsCancellationRequested && DisconnectToken.IsCancellationRequested)
+        {
+            throw CreateDisconnectedException("set data length", exception);
+        }
     }
 
     public async Task<HciLeReadPhyResult> ReadPhyAsync(CancellationToken token = default)
     {
-        return await Device
-            .Host.QueryCommandCompletionAsync<HciLeReadPhyCommand, HciLeReadPhyResult>(
-                new HciLeReadPhyCommand { ConnectionHandle = ConnectionHandle },
-                cancellationToken: token
-            )
-            .ConfigureAwait(false);
+        ThrowIfDisconnected("read phy");
+        using var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(token, DisconnectToken);
+        try
+        {
+            return await Device
+                .Host.QueryCommandCompletionAsync<HciLeReadPhyCommand, HciLeReadPhyResult>(
+                    new HciLeReadPhyCommand { ConnectionHandle = ConnectionHandle },
+                    cancellationToken: tokenSource.Token
+                )
+                .ConfigureAwait(false);
+        }
+        catch (OperationCanceledException exception)
+            when (!token.IsCancellationRequested && DisconnectToken.IsCancellationRequested)
+        {
+            throw CreateDisconnectedException("read phy", exception);
+        }
     }
 
     internal void OnDisconnectEvent(HciDisconnectionCompleteEvent hciEvent)
@@ -98,6 +120,7 @@ public sealed class AclConnection : IDisposable
             hciEvent.ConnectionHandle,
             hciEvent.Reason
         );
+        LastDisconnectionReason = hciEvent.Reason;
         _disconnectSource.Cancel();
     }
 
@@ -124,6 +147,17 @@ public sealed class AclConnection : IDisposable
         _disconnectSource.Cancel();
         _disconnectSource.Dispose();
         _subscription.Dispose();
+    }
+
+    internal HciConnectionDisconnectedException CreateDisconnectedException(
+        string operation,
+        Exception? innerException = null
+    ) => new(ConnectionHandle, operation, LastDisconnectionReason, innerException);
+
+    private void ThrowIfDisconnected(string operation)
+    {
+        if (DisconnectToken.IsCancellationRequested)
+            throw CreateDisconnectedException(operation);
     }
 }
 

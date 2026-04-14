@@ -266,6 +266,8 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
             case HciEventCode.HCI_Disconnection_Complete
                 when HciDisconnectionCompleteEvent.TryReadLittleEndian(packet.DataBytes.Span, out var evt):
                 LogEventPacketControllerToHost(evt, packet.DataBytes);
+                if (Device.TryGetConnection(evt.ConnectionHandle, out AclConnection? connection))
+                    connection.OnDisconnectEvent(evt);
                 PublishMessage(evt);
                 Device.RemoveConnection(evt.ConnectionHandle);
                 break;
