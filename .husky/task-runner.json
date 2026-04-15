@@ -2,8 +2,8 @@
   "$schema": "https://alirezanet.github.io/Husky.Net/schema.json",
   "tasks": [{
     "name": "Run csharpier",
-    "command": "csharpier",
-    "args": [ "format", "${staged}" ],
+    "command": "dotnet",
+    "args": [ "csharpier", "format", "${staged}" ],
     "include": [ "**/*.cs" ]
   }]
 }
