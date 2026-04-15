@@ -27,6 +27,14 @@ internal sealed partial class HciHostBleObserver : BleObserver
     {
         _device = device;
         _subscription = Host.Subscribe(this);
+        Host.TransportFailed += OnTransportFailed;
+    }
+
+    private void OnTransportFailed(object? sender, HciTransportFailedEventArgs args)
+    {
+        _ = OnErrorAsync(
+            new BleObservationException(this, "The HCI transport failed while observing advertisements", args.Exception)
+        );
     }
 
     [MessageSink]
@@ -121,6 +129,7 @@ internal sealed partial class HciHostBleObserver : BleObserver
 
     protected override ValueTask DisposeAsyncCore()
     {
+        Host.TransportFailed -= OnTransportFailed;
         _subscription.Dispose();
         return base.DisposeAsyncCore();
     }

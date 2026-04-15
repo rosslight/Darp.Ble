@@ -15,6 +15,13 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci.Host;
 
+/// <summary> Provides the fatal exception raised by the transport layer. </summary>
+public sealed class HciTransportFailedEventArgs(Exception exception) : EventArgs
+{
+    /// <summary> The fatal transport exception. </summary>
+    public Exception Exception { get; } = exception;
+}
+
 /// <summary>
 /// The <see cref="HciHost"/> is responsible for all host-related commands.
 /// </summary>
@@ -28,6 +35,9 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
     private readonly SemaphoreSlim _packetInFlightSemaphore = new(1);
     private AclPacketQueue? _leAclPacketQueue;
     private bool _isResetDoneAtLeastOnce;
+
+    /// <summary> An event that notifies when the transport has failed </summary>
+    public event EventHandler<HciTransportFailedEventArgs>? TransportFailed;
 
     /// <summary> The HCI Device </summary>
     public HciDevice Device { get; } = hciDevice;
@@ -44,7 +54,7 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
     public async Task ResetAsync(CancellationToken token)
     {
         ObjectDisposedException.ThrowIf(Device.IsDisposed, this);
-        await _transportLayer.InitializeAsync(OnReceivedPacket, token).ConfigureAwait(false);
+        await _transportLayer.InitializeAsync(OnReceivedPacket, OnTransportFailed, token).ConfigureAwait(false);
         Activity? activity = Logging.StartInitializeHciHostActivity();
         try
         {
@@ -232,6 +242,11 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
                 }
                 break;
         }
+    }
+
+    private void OnTransportFailed(Exception exception)
+    {
+        TransportFailed?.Invoke(this, new HciTransportFailedEventArgs(exception));
     }
 
     private void OnReceivedHciEventPacket(HciPacketEvent packet)

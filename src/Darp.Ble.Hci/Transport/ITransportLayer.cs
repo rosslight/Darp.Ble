@@ -10,5 +10,9 @@ public interface ITransportLayer : IAsyncDisposable
     void Enqueue(IHciPacket packet);
 
     /// <summary> Initialize the transport layer </summary>
-    ValueTask InitializeAsync(Action<HciPacket> onReceived, CancellationToken cancellationToken);
+    ValueTask InitializeAsync(
+        Action<HciPacket> onReceived,
+        Action<Exception> onError,
+        CancellationToken cancellationToken
+    );
 }

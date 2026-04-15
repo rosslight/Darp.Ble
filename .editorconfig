@@ -40,6 +40,8 @@ dotnet_diagnostic.CS9124.severity = error
 dotnet_diagnostic.CA1819.severity = none
 dotnet_diagnostic.CA1716.severity = none
 dotnet_diagnostic.CA1043.severity = none
+# Do not warn catching general exception types. With c#, you never know which exceptions occur
+dotnet_diagnostic.CA1031.severity = none
 
 # ReSharper properties
 resharper_formatter_off_tag = @formatter:off

@@ -24,10 +24,15 @@ internal enum ObserverState
 /// <param name="logger"> The logger </param>
 public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger) : IBleObserver, IAsyncDisposable
 {
+    private readonly record struct AdvertisementHandlerSubscription(
+        Action<IGapAdvertisement> OnAdvertisement,
+        Action<Exception>? OnError
+    );
+
     private readonly BleDevice _bleDevice = device;
     private readonly SemaphoreSlim _startStopSemaphore = new(1, 1);
     private readonly Lock _handlersLock = new();
-    private Action<IGapAdvertisement>[] _handlers = [];
+    private AdvertisementHandlerSubscription[] _handlers = [];
 
     private volatile ObserverState _observerState = ObserverState.Stopped;
 
@@ -103,25 +108,27 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
     }
 
     /// <inheritdoc />
-    public IDisposable OnAdvertisement(Action<IGapAdvertisement> onAdvertisement)
+    public IDisposable OnAdvertisement(Action<IGapAdvertisement> onAdvertisement, Action<Exception>? onError = null)
     {
         ObjectDisposedException.ThrowIf(_bleDevice.IsDisposing, nameof(BleObserver));
+
+        var subscription = new AdvertisementHandlerSubscription(onAdvertisement, onError);
 
         // Extend handlers list
         lock (_handlersLock)
         {
-            Action<IGapAdvertisement>[] oldHandlers = _handlers;
-            var newArr = new Action<IGapAdvertisement>[oldHandlers.Length + 1];
+            AdvertisementHandlerSubscription[] oldHandlers = _handlers;
+            var newArr = new AdvertisementHandlerSubscription[oldHandlers.Length + 1];
             Array.Copy(oldHandlers, newArr, oldHandlers.Length);
-            newArr[^1] = onAdvertisement;
+            newArr[^1] = subscription;
             Volatile.Write(ref _handlers, newArr);
         }
 
         return Disposable.Create(
-            (this, onAdvertisement),
+            (this, subscription),
             static tuple =>
             {
-                (BleObserver self, Action<IGapAdvertisement> handler) = tuple;
+                (BleObserver self, AdvertisementHandlerSubscription handler) = tuple;
                 lock (self._handlersLock)
                 {
                     if (Helpers.TryRemoveImmutable(self._handlers, handler, out var newHandlers))
@@ -143,17 +150,63 @@ public abstract class BleObserver(BleDevice device, ILogger<BleObserver> logger)
         // Taking the current snapshot of the handlers.
         // In case of an unsubscription of a handler we might have taken the reference here already and call it afterward.
         // This is a known tradeoff
-        Action<IGapAdvertisement>[] handlers = Volatile.Read(ref _handlers);
-        foreach (Action<IGapAdvertisement> handler in handlers)
+        AdvertisementHandlerSubscription[] handlers = Volatile.Read(ref _handlers);
+        foreach (AdvertisementHandlerSubscription handler in handlers)
         {
             try
             {
-                handler(advertisement);
+                handler.OnAdvertisement(advertisement);
             }
             catch (Exception e)
             {
                 // An exception inside the handler should not crash all observers. Logging and ignoring ...
                 Logger.LogObservationErrorDuringAdvertisementHandling(e);
+            }
+        }
+    }
+
+    /// <summary> Notify subscribers of a fatal observation error. Existing subscriptions are terminated. </summary>
+    /// <param name="exception"> The exception that triggered the error </param>
+    protected async Task OnErrorAsync(Exception exception)
+    {
+        ArgumentNullException.ThrowIfNull(exception);
+
+        if (_bleDevice.IsDisposing)
+            return;
+
+        AdvertisementHandlerSubscription[] handlers;
+        await _startStopSemaphore.WaitAsync().ConfigureAwait(false);
+        try
+        {
+            handlers = Volatile.Read(ref _handlers);
+            if (handlers.Length == 0 && _observerState is ObserverState.Stopped)
+                return;
+
+            _observerState = ObserverState.Stopped;
+            lock (_handlersLock)
+            {
+                _handlers = [];
+            }
+        }
+        finally
+        {
+            _startStopSemaphore.Release();
+        }
+
+        Logger.LogObservationFailed(exception);
+
+        foreach (AdvertisementHandlerSubscription handler in handlers)
+        {
+            if (handler.OnError is null)
+                continue;
+
+            try
+            {
+                handler.OnError(exception);
+            }
+            catch (Exception e)
+            {
+                Logger.LogObservationErrorDuringErrorHandling(e);
             }
         }
     }

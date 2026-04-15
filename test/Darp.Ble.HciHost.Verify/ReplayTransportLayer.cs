@@ -38,6 +38,7 @@ public sealed class ReplayTransportLayer(
     private readonly ConcurrentQueue<HciMessage> _messagesToController = [];
     private readonly ConcurrentQueue<HciMessage> _messagesToHost = [];
     private Action<HciPacket>? _onReceived;
+    private Action<Exception>? _onError;
 
     public static readonly HciMessage[] InitializeHciDeviceMessages =
     [
@@ -114,6 +115,11 @@ public sealed class ReplayTransportLayer(
         _onReceived?.Invoke(new HciPacket(message.Type, message.PduBytes));
     }
 
+    public void Fail(Exception exception)
+    {
+        _onError?.Invoke(exception);
+    }
+
     void ITransportLayer.Enqueue(IHciPacket packet)
     {
         byte[] bytes = packet.ToArrayLittleEndian();
@@ -139,9 +145,14 @@ public sealed class ReplayTransportLayer(
         });
     }
 
-    ValueTask ITransportLayer.InitializeAsync(Action<HciPacket> onReceived, CancellationToken cancellationToken)
+    ValueTask ITransportLayer.InitializeAsync(
+        Action<HciPacket> onReceived,
+        Action<Exception> onError,
+        CancellationToken cancellationToken
+    )
     {
         _onReceived = onReceived;
+        _onError = onError;
         _logger?.LogDebug("ReplayTransportLayer: Initialized");
         return ValueTask.CompletedTask;
     }

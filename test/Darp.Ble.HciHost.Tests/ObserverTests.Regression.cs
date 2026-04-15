@@ -1,5 +1,9 @@
+using System.Reactive.Linq;
+using System.Reactive.Threading.Tasks;
 using System.Reflection;
 using Darp.Ble.Data;
+using Darp.Ble.Exceptions;
+using Darp.Ble.Gap;
 using Darp.Ble.HciHost.Verify;
 using Shouldly;
 
@@ -78,6 +82,27 @@ public sealed partial class ObserverTests
         {
             semaphore.Release();
         }
+    }
+
+    [Fact(Timeout = 5000)]
+    public async Task TransportFailureWhileObserving_FaultsAdvertisementObservable()
+    {
+        var transport = ReplayTransportLayer.ReplayAfterBleDeviceInitialization(ObservingMessages);
+        IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(transport, token: Token);
+        IBleObserver observer = device.Observer;
+        Task<IGapAdvertisement> observationTask = observer.OnAdvertisement().FirstAsync().ToTask(Token);
+
+        await observer.StartObservingAsync(Token);
+        observer.IsObserving.ShouldBeTrue();
+
+        transport.Fail(new InvalidOperationException("Serial connection lost"));
+
+        var exception = await Should.ThrowAsync<BleObservationException>(() => observationTask);
+        exception.InnerException.ShouldBeOfType<InvalidOperationException>();
+        observer.IsObserving.ShouldBeFalse();
+
+        await observer.StopObservingAsync();
+        await device.DisposeAsync();
     }
 
     private static T GetPrivateField<T>(object obj, string fieldName)

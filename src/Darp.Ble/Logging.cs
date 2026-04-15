@@ -26,6 +26,12 @@ internal static partial class Logging
     [LoggerMessage(Level = LogLevel.Error, Message = "Exception while handling advertisement event")]
     public static partial void LogObservationErrorDuringAdvertisementHandling(this ILogger logger, Exception e);
 
+    [LoggerMessage(Level = LogLevel.Error, Message = "Advertising observation failed")]
+    public static partial void LogObservationFailed(this ILogger logger, Exception e);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "Exception while handling advertisement error")]
+    public static partial void LogObservationErrorDuringErrorHandling(this ILogger logger, Exception e);
+
     [LoggerMessage(Level = LogLevel.Error, Message = "Exception while stopping observation")]
     public static partial void LogObserverErrorDuringStopping(this ILogger logger, Exception e);
 }
