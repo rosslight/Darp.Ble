@@ -10,7 +10,7 @@ public static class BleObserverExtensions
 {
     /// <summary>
     /// Observes advertisements broadcast by BLE devices using the provided <see cref="IBleObserver"/>.
-    /// Will error when a fatal error has occured
+    /// Will error when a fatal error has occurred
     /// </summary>
     /// <param name="observer">The instance of <see cref="IBleObserver"/> that will monitor BLE advertisements.</param>
     /// <returns>An observable sequence of <see cref="IGapAdvertisement"/> instances representing BLE advertisements.</returns>

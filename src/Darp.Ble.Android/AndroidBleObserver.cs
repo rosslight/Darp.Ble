@@ -41,8 +41,11 @@ public sealed class AndroidBleObserver(
             failure =>
             {
                 if (_scanCallback is not null)
+                {
                     _bluetoothLeScanner.StopScan(_scanCallback);
-                _scanCallback = null;
+                    _scanCallback.Dispose();
+                    _scanCallback = null;
+                }
                 _ = OnErrorAsync(
                     new BleObservationException(this, $"Scan failed because of {failure}", innerException: null)
                 );
