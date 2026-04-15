@@ -1,3 +1,4 @@
+using Darp.Ble.Hci.Exceptions;
 using Darp.Ble.Hci.Host;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Att;
@@ -21,6 +22,7 @@ public sealed class AclConnection : IDisposable
 {
     private readonly CancellationTokenSource _disconnectSource = new();
     private readonly IDisposable _subscription;
+    private bool _isDisposed;
 
     public AclConnection(
         HciDevice device,
@@ -59,6 +61,7 @@ public sealed class AclConnection : IDisposable
     public L2CapAssembler Assembler { get; }
     public IAclPacketQueue AclPacketQueue => Device.Host.AclPacketQueue;
     public CancellationToken DisconnectToken => _disconnectSource.Token;
+    public HciCommandStatus? LastDisconnectionReason { get; private set; }
 
     public async Task SetDataLengthAsync(ushort txOctets, ushort txTime, CancellationToken token = default)
     {
@@ -66,6 +69,7 @@ public sealed class AclConnection : IDisposable
             throw new ArgumentOutOfRangeException(nameof(txOctets));
         if (txTime is < 0x0148 or > 0x4290)
             throw new ArgumentOutOfRangeException(nameof(txOctets));
+        ThrowIfDisconnected("set data length");
         await Device
             .Host.QueryCommandCompletionAsync<HciLeSetDataLengthCommand, HciLeSetDataLengthResult>(
                 new HciLeSetDataLengthCommand
@@ -81,6 +85,7 @@ public sealed class AclConnection : IDisposable
 
     public async Task<HciLeReadPhyResult> ReadPhyAsync(CancellationToken token = default)
     {
+        ThrowIfDisconnected("read phy");
         return await Device
             .Host.QueryCommandCompletionAsync<HciLeReadPhyCommand, HciLeReadPhyResult>(
                 new HciLeReadPhyCommand { ConnectionHandle = ConnectionHandle },
@@ -98,6 +103,7 @@ public sealed class AclConnection : IDisposable
             hciEvent.ConnectionHandle,
             hciEvent.Reason
         );
+        LastDisconnectionReason = hciEvent.Reason;
         _disconnectSource.Cancel();
     }
 
@@ -117,13 +123,28 @@ public sealed class AclConnection : IDisposable
             .ConfigureAwait(false);
     }
 
+    /// <inheritdoc />
     public void Dispose()
     {
-        if (DisconnectToken.IsCancellationRequested)
+        if (_isDisposed)
             return;
-        _disconnectSource.Cancel();
+
+        _isDisposed = true;
+        if (!DisconnectToken.IsCancellationRequested)
+            _disconnectSource.Cancel();
         _disconnectSource.Dispose();
         _subscription.Dispose();
+    }
+
+    internal HciConnectionDisconnectedException CreateDisconnectedException(
+        string operation,
+        Exception? innerException = null
+    ) => new(ConnectionHandle, operation, LastDisconnectionReason, innerException);
+
+    private void ThrowIfDisconnected(string operation)
+    {
+        if (DisconnectToken.IsCancellationRequested)
+            throw CreateDisconnectedException(operation);
     }
 }
 

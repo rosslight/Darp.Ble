@@ -1,7 +1,9 @@
 using System.Reactive.Linq;
 using Darp.Ble.Data;
+using Darp.Ble.Exceptions;
 using Darp.Ble.Gatt.Server;
 using Darp.Ble.Hci;
+using Darp.Ble.Hci.Exceptions;
 using Darp.Ble.HciHost.Gatt.Server;
 using Darp.Ble.Implementation;
 using Microsoft.Extensions.Logging;
@@ -45,11 +47,41 @@ internal sealed class HciHostBleCentral(HciHostBleDevice device, ILogger<HciHost
             {
                 return Observable.FromAsync<IGattServerPeer>(async token =>
                 {
-                    var hciPeer = (HciHostGattServerPeer)peer;
-                    await hciPeer.ReadPhyAsync(token).ConfigureAwait(false);
-                    await hciPeer.RequestExchangeMtuAsync(65, token).ConfigureAwait(false);
+                    await RunInitializationStepAsync((HciHostGattServerPeer)peer, token).ConfigureAwait(false);
                     return peer;
                 });
             })
             .Concat();
+
+    private async Task RunInitializationStepAsync(HciHostGattServerPeer peer, CancellationToken token)
+    {
+        using var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(token, peer.Connection.DisconnectToken);
+        try
+        {
+            await peer.ReadPhyAsync(token).ConfigureAwait(false);
+            await peer.RequestExchangeMtuAsync(65, token).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (HciConnectionDisconnectedException exception)
+        {
+            throw new BleCentralConnectionInitializationFailedException(
+                this,
+                peer.Address,
+                peer.ConnectionHandle,
+                exception
+            );
+        }
+        catch (Exception exception)
+        {
+            throw new BleCentralConnectionInitializationFailedException(
+                this,
+                peer.Address,
+                peer.ConnectionHandle,
+                exception
+            );
+        }
+    }
 }
