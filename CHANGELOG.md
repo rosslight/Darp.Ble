@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.10.2](https://github.com/rosslight/Darp.Ble/compare/v1.10.1...v1.10.2) (2026-04-16)
+
+
+### Bug Fixes
+
+* Properly propagate transport errors ([#110](https://github.com/rosslight/Darp.Ble/issues/110)) ([bbc293b](https://github.com/rosslight/Darp.Ble/commit/bbc293b65df6a91fdb996a9b8d773b9a9a5c2760))
+* Throw targeted exceptions if disconnection event occurs ([#108](https://github.com/rosslight/Darp.Ble/issues/108)) ([deb60ca](https://github.com/rosslight/Darp.Ble/commit/deb60ca22568661dafb107875b7e522356f63f71))
+
 ## [1.10.1](https://github.com/rosslight/Darp.Ble/compare/v1.10.0...v1.10.1) (2026-01-20)
 
 
