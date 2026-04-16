@@ -53,8 +53,12 @@ internal sealed class WinBleObserver(BleDevice device, ILogger<WinBleObserver> l
         {
             if (args.Error is BluetoothError.Success)
                 return;
-            Logger.LogError("Watcher stopped with error {Error}", args.Error);
-            await StopObservingAsync().ConfigureAwait(false);
+            _observableSubscription?.Dispose();
+            _watcher = null;
+            await OnErrorAsync(
+                    new BleObservationException(this, $"Watcher stopped with error {args.Error}", innerException: null)
+                )
+                .ConfigureAwait(false);
         };
         _observableSubscription = Observable
             .FromEventPattern<
@@ -63,7 +67,7 @@ internal sealed class WinBleObserver(BleDevice device, ILogger<WinBleObserver> l
                 BluetoothLEAdvertisementReceivedEventArgs
             >(addHandler => _watcher.Received += addHandler, removeHandler => _watcher.Received -= removeHandler)
             .Select(adv => OnAdvertisementReport(this, adv))
-            .Subscribe(OnNext);
+            .Subscribe(adv => OnNext(adv));
         return Task.CompletedTask;
     }
 

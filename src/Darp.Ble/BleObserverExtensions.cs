@@ -10,13 +10,16 @@ public static class BleObserverExtensions
 {
     /// <summary>
     /// Observes advertisements broadcast by BLE devices using the provided <see cref="IBleObserver"/>.
+    /// Will error when a fatal error has occurred
     /// </summary>
     /// <param name="observer">The instance of <see cref="IBleObserver"/> that will monitor BLE advertisements.</param>
     /// <returns>An observable sequence of <see cref="IGapAdvertisement"/> instances representing BLE advertisements.</returns>
     public static IObservable<IGapAdvertisement> OnAdvertisement(this IBleObserver observer)
     {
         ArgumentNullException.ThrowIfNull(observer);
-        return Observable.Create<IGapAdvertisement>(advObserver => observer.OnAdvertisement(advObserver.OnNext));
+        return Observable.Create<IGapAdvertisement>(advObserver =>
+            observer.OnAdvertisement(advObserver.OnNext, advObserver.OnError)
+        );
     }
 
     /// <summary> Publish the observer to allow observing advertisements without having to start/stop observation manually </summary>
@@ -28,7 +31,10 @@ public static class BleObserverExtensions
 
         IObservable<IGapAdvertisement> inner = Observable.Create<IGapAdvertisement>(async observer =>
         {
-            IDisposable unhook = bleObserver.OnAdvertisement(onAdvertisement: observer.OnNext);
+            IDisposable unhook = bleObserver.OnAdvertisement(
+                onAdvertisement: observer.OnNext,
+                onError: observer.OnError
+            );
 
             await bleObserver.StartObservingAsync().ConfigureAwait(false);
 

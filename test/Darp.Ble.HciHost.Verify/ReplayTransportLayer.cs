@@ -38,6 +38,8 @@ public sealed class ReplayTransportLayer(
     private readonly ConcurrentQueue<HciMessage> _messagesToController = [];
     private readonly ConcurrentQueue<HciMessage> _messagesToHost = [];
     private Action<HciPacket>? _onReceived;
+    private Action<Exception>? _onError;
+    private int _isFaulted;
 
     public static readonly HciMessage[] InitializeHciDeviceMessages =
     [
@@ -109,13 +111,36 @@ public sealed class ReplayTransportLayer(
 
     public void Push(HciMessage message)
     {
+        if (Volatile.Read(ref _isFaulted) != 0)
+        {
+            throw new InvalidOperationException(
+                "ReplayTransportLayer is faulted. There should not be any additional messages"
+            );
+        }
         _logger?.LogDebug("ReplayTransportLayer: Packet to Host: {PacketBytes}", Convert.ToHexString(message.PduBytes));
         _messagesToHost.Enqueue(message);
         _onReceived?.Invoke(new HciPacket(message.Type, message.PduBytes));
     }
 
+    public void Fail(Exception exception)
+    {
+        if (Interlocked.Exchange(ref _isFaulted, 1) != 0)
+        {
+            throw new InvalidOperationException(
+                "ReplayTransportLayer is faulted. There should not be any additional fails"
+            );
+        }
+        _onError?.Invoke(exception);
+    }
+
     void ITransportLayer.Enqueue(IHciPacket packet)
     {
+        if (Volatile.Read(ref _isFaulted) != 0)
+        {
+            throw new InvalidOperationException(
+                "ReplayTransportLayer is faulted. There should not be any additional messages"
+            );
+        }
         byte[] bytes = packet.ToArrayLittleEndian();
         var message = new HciMessage(HciDirection.HostToController, packet.PacketType, bytes);
         _messagesToController.Enqueue(message);
@@ -128,6 +153,8 @@ public sealed class ReplayTransportLayer(
 
         _ = Task.Run(async () =>
         {
+            if (Volatile.Read(ref _isFaulted) != 0)
+                return;
             await Task.Delay(response.Value.Delay);
 
             _logger?.LogDebug(
@@ -139,9 +166,14 @@ public sealed class ReplayTransportLayer(
         });
     }
 
-    ValueTask ITransportLayer.InitializeAsync(Action<HciPacket> onReceived, CancellationToken cancellationToken)
+    ValueTask ITransportLayer.InitializeAsync(
+        Action<HciPacket> onReceived,
+        Action<Exception> onError,
+        CancellationToken cancellationToken
+    )
     {
         _onReceived = onReceived;
+        _onError = onError;
         _logger?.LogDebug("ReplayTransportLayer: Initialized");
         return ValueTask.CompletedTask;
     }

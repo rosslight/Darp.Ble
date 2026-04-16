@@ -26,21 +26,55 @@ public sealed class H4TransportLayer(string portName, ILogger<H4TransportLayer>?
     private readonly SerialPort _serialPort = new(portName);
     private readonly Channel<IHciPacket> _txQueue = Channel.CreateUnbounded<IHciPacket>();
     private readonly CancellationTokenSource _cancelSource = new();
+    private Action<Exception>? _onError;
     private bool _isDisposing;
+    private int _isFaulted;
     private Task? _rxTask;
     private Task? _txTask;
 
     private CancellationToken StopToken => _cancelSource.Token;
 
     /// <inheritdoc />
-    public ValueTask InitializeAsync(Action<HciPacket> onReceived, CancellationToken cancellationToken)
+    public ValueTask InitializeAsync(
+        Action<HciPacket> onReceived,
+        Action<Exception> onError,
+        CancellationToken cancellationToken
+    )
     {
         if (_txTask is not null || _rxTask is not null)
             throw new InvalidOperationException("Initialization can only be done once");
+        _onError = onError;
         _serialPort.Open();
         _txTask = Task.Run(RunTx, cancellationToken);
         _rxTask = Task.Run(() => RunRx(onReceived), cancellationToken);
         return ValueTask.CompletedTask;
+    }
+
+    private void ReportTransportFailure(Exception exception, string direction)
+    {
+        if (Interlocked.Exchange(ref _isFaulted, 1) != 0)
+            return;
+
+        _logger?.LogH4TransportWithError(exception, direction, exception.Message);
+        try
+        {
+            _cancelSource.Cancel();
+        }
+        catch
+        {
+            // Ignore cancellation errors while reporting a fatal transport failure
+        }
+
+        try
+        {
+            _serialPort.Close();
+        }
+        catch
+        {
+            // Ignore close errors while reporting a fatal transport failure
+        }
+
+        _onError?.Invoke(exception);
     }
 
     private async Task RunTx()
@@ -77,7 +111,7 @@ public sealed class H4TransportLayer(string portName, ILogger<H4TransportLayer>?
                 _logger?.LogH4TransportDisconnected("Tx");
                 return;
             }
-            _logger?.LogH4TransportWithError(e, "Tx", e.Message);
+            ReportTransportFailure(e, "Tx");
         }
 #pragma warning restore CA1031
     }
@@ -130,7 +164,7 @@ public sealed class H4TransportLayer(string portName, ILogger<H4TransportLayer>?
                 return;
             }
 
-            _logger?.LogH4TransportWithError(e, "Rx", e.Message);
+            ReportTransportFailure(e, "Rx");
         }
 #pragma warning restore CA1031
     }

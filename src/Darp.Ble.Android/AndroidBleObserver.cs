@@ -40,8 +40,15 @@ public sealed class AndroidBleObserver(
             },
             failure =>
             {
-                Logger.LogError("Scan failure because of {Failure}", failure);
-                _ = StopObservingAsync();
+                if (_scanCallback is not null)
+                {
+                    _bluetoothLeScanner.StopScan(_scanCallback);
+                    _scanCallback.Dispose();
+                    _scanCallback = null;
+                }
+                _ = OnErrorAsync(
+                    new BleObservationException(this, $"Scan failed because of {failure}", innerException: null)
+                );
             }
         );
         using var settingsBuilder = new ScanSettings.Builder();

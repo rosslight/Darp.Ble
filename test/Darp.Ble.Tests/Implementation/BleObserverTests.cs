@@ -18,6 +18,15 @@ namespace Darp.Ble.Tests.Implementation;
 
 public sealed class BleObserverTests(ILoggerFactory loggerFactory)
 {
+    private sealed class TestBleObserver(BleDevice device, ILogger<BleObserver> logger) : BleObserver(device, logger)
+    {
+        protected override Task StartObservingAsyncCore(CancellationToken cancellationToken) => Task.CompletedTask;
+
+        protected override Task StopObservingAsyncCore() => Task.CompletedTask;
+
+        public Task FailAsync(Exception exception) => OnErrorAsync(exception);
+    }
+
     private readonly ILoggerFactory _loggerFactory = loggerFactory;
     private const string AdDataFlagsLimitedDiscoverableShortenedLocalNameTestName = "0201010908546573744E616D65";
 
@@ -169,5 +178,83 @@ public sealed class BleObserverTests(ILoggerFactory loggerFactory)
         await device.DisposeAsync();
         Action xx = () => device.Observer.OnAdvertisement(_ => { });
         xx.ShouldThrow<ObjectDisposedException>();
+    }
+
+    [Fact]
+    public async Task OnAdvertisement_WhenObservationFails_ShouldInvokeErrorAndTerminateSubscription()
+    {
+        var device = Substitute.For<BleDevice>(null!, null!);
+        var observer = new TestBleObserver(device, _loggerFactory.CreateLogger<BleObserver>());
+        var exception = new BleObservationException(observer, "transport failed", innerException: null);
+        var receivedErrors = new List<Exception>();
+        var receivedAdvertisements = 0;
+
+        observer.OnAdvertisement(_ => receivedAdvertisements++, receivedErrors.Add);
+
+        await observer.StartObservingAsync(Token);
+        await observer.FailAsync(exception);
+
+        receivedAdvertisements.ShouldBe(0);
+        receivedErrors.ShouldHaveSingleItem();
+        receivedErrors[0].ShouldBe(exception);
+    }
+
+    [Fact]
+    public async Task OnAdvertisementObservable_WhenObservationFails_ShouldFault()
+    {
+        var device = Substitute.For<BleDevice>(null!, null!);
+        var observer = new TestBleObserver(device, _loggerFactory.CreateLogger<BleObserver>());
+        var exception = new BleObservationException(observer, "transport failed", innerException: null);
+        Task<IGapAdvertisement> task = observer.OnAdvertisement().FirstAsync().ToTask();
+        await observer.StartObservingAsync(Token);
+
+        await observer.FailAsync(exception);
+
+        var actualException = await Should.ThrowAsync<BleObservationException>(() => task);
+        actualException.ShouldBe(exception);
+    }
+
+    [Fact]
+    public async Task OnAdvertisementObservable_WhenNotStartedAndObservationFails_ShouldFault()
+    {
+        var device = Substitute.For<BleDevice>(null!, null!);
+        var observer = new TestBleObserver(device, _loggerFactory.CreateLogger<BleObserver>());
+        var exception = new BleObservationException(observer, "transport failed", innerException: null);
+        Task<IGapAdvertisement> task = observer.OnAdvertisement().FirstAsync().ToTask();
+
+        await observer.FailAsync(exception);
+
+        var actualException = await Should.ThrowAsync<BleObservationException>(() => task);
+        actualException.ShouldBe(exception);
+    }
+
+    [Fact]
+    public async Task OnAdvertisementObservable_WhenStoppedAndObservationFails_ShouldFault()
+    {
+        var device = Substitute.For<BleDevice>(null!, null!);
+        var observer = new TestBleObserver(device, _loggerFactory.CreateLogger<BleObserver>());
+        var exception = new BleObservationException(observer, "transport failed", innerException: null);
+        Task<IGapAdvertisement> task = observer.OnAdvertisement().FirstAsync().ToTask();
+        await observer.StartObservingAsync(Token);
+        await observer.StopObservingAsync();
+
+        await observer.FailAsync(exception);
+
+        var actualException = await Should.ThrowAsync<BleObservationException>(() => task);
+        actualException.ShouldBe(exception);
+    }
+
+    [Fact(Timeout = 5000)]
+    public async Task PublishObservable_WhenObservationFails_ShouldFault()
+    {
+        var device = Substitute.For<BleDevice>(null!, null!);
+        var observer = new TestBleObserver(device, _loggerFactory.CreateLogger<BleObserver>());
+        var exception = new BleObservationException(observer, "transport failed", innerException: null);
+        Task<IGapAdvertisement> task = observer.Publish().RefCount().FirstAsync().ToTask();
+
+        await observer.FailAsync(exception);
+
+        var actualException = await Should.ThrowAsync<BleObservationException>(() => task);
+        actualException.ShouldBe(exception);
     }
 }

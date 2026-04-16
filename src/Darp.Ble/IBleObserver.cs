@@ -26,8 +26,9 @@ public interface IBleObserver
 
     /// <summary> Register a callback called when an advertisement was received </summary>
     /// <param name="onAdvertisement"> The callback </param>
+    /// <param name="onError"> The callback for fatal observation errors </param>
     /// <returns> A disposable to unsubscribe the callback </returns>
-    IDisposable OnAdvertisement(Action<IGapAdvertisement> onAdvertisement);
+    IDisposable OnAdvertisement(Action<IGapAdvertisement> onAdvertisement, Action<Exception>? onError = null);
 
     /// <summary> Start observing for advertisements. </summary>
     /// <param name="cancellationToken"> The CancellationToken to cancel the initial starting process </param>
