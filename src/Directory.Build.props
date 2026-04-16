@@ -11,7 +11,7 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>BLE,communication,near-field,nordic,nrf52840,hci,windows,android</PackageTags>
     <!-- Version applied to all the packages. Automatically updated by release-please -->
-    <Version>1.10.2</Version>
+    <Version>1.10.1</Version>
   </PropertyGroup>
   <ItemGroup>
     <None Include="../../README.md" Pack="true" PackagePath="/"/>
