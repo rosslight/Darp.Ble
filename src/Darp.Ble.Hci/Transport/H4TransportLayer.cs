@@ -16,7 +16,7 @@ public readonly ref struct HciPacket(HciPacketType packetType, ReadOnlySpan<byte
     /// <summary>Gets the HCI packet type.</summary>
     public HciPacketType PacketType { get; } = packetType;
 
-    /// <summary>Gets the packet payload without the packet type byte.</summary>
+    /// <summary>Gets the packet body without the packet type byte (header + payload).</summary>
     public ReadOnlySpan<byte> Pdu { get; } = pdu;
 }
 
