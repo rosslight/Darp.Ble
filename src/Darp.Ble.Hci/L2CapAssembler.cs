@@ -7,15 +7,23 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci;
 
-/// <summary> An l2Cap assembler </summary>
+/// <summary>
+/// Reassembles complete L2CAP PDUs from incoming ACL packets.
+/// </summary>
 public interface IL2CapAssembler : IMessageSource
 {
+    /// <summary>
+    /// Processes an incoming ACL packet.
+    /// </summary>
+    /// <param name="packet">The ACL packet to incorporate into the current assembly state.</param>
     void OnAclPacket(HciAclPacket packet);
 }
 
-/// <summary> Assemble L2Cap packages from AclPackages </summary>
-/// <param name="connectionHandle"> The connection to filter for </param>
-/// <param name="logger"> The logger to use for logging </param>
+/// <summary>
+/// Reassembles L2CAP PDUs for a specific ACL connection.
+/// </summary>
+/// <param name="connectionHandle">The connection handle to filter for.</param>
+/// <param name="logger">An optional logger.</param>
 [MessageSource]
 public sealed partial class L2CapAssembler(ushort connectionHandle, ILogger<L2CapAssembler>? logger) : IL2CapAssembler
 {
@@ -24,6 +32,7 @@ public sealed partial class L2CapAssembler(ushort connectionHandle, ILogger<L2Ca
     private readonly List<byte> _dataBytes = [];
     private ushort _targetLength;
 
+    /// <inheritdoc />
     public void OnAclPacket(HciAclPacket packet)
     {
         if (packet.ConnectionHandle != _connectionHandle)

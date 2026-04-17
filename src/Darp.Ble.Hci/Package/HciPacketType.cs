@@ -10,7 +10,7 @@ public enum HciPacketType : byte
     /// <summary> The <see cref="HciCommandPacket{TParameters}"/> </summary>
     HciCommand = 0x01,
 
-    /// <summary> The <see cref="HciAclPacket{TData}"/> </summary>
+    /// <summary> The <see cref="HciAclPacket"/> </summary>
     HciAclData = 0x02,
 
     /// <summary> The Hci Synchronous data packet </summary>

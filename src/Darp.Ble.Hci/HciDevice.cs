@@ -16,38 +16,73 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci;
 
+/// <summary>
+/// Defines the packet queue and state exposed by an ACL connection.
+/// </summary>
 public interface IAclConnection : IMessageSinkProvider
 {
+    /// <summary>Gets the host that owns the connection.</summary>
     HciHost Host { get; }
+
+    /// <summary>Gets the controller-assigned connection handle.</summary>
     ushort ConnectionHandle { get; }
+
+    /// <summary>Gets the active ATT MTU for the connection.</summary>
     ushort AttMtu { get; }
+
+    /// <summary>Gets the ACL packet queue used to transmit packets.</summary>
     IAclPacketQueue AclPacketQueue { get; }
+
+    /// <summary>Gets the L2CAP assembler used for incoming data.</summary>
     IL2CapAssembler L2CapAssembler { get; }
 
-    /// <summary> A cancellationToken that will fire when the connection was disconnected </summary>
+    /// <summary>Gets a token that is canceled when the connection is disconnected.</summary>
     CancellationToken DisconnectToken { get; }
+
+    /// <summary>Gets the server address associated with the connection.</summary>
     ulong ServerAddress { get; }
+
+    /// <summary>Gets the client address associated with the connection.</summary>
     ulong ClientAddress { get; }
+
+    /// <summary>Gets the logger used for connection-specific diagnostics.</summary>
     protected internal ILogger Logger { get; }
 }
 
+/// <summary>
+/// Represents an L2CAP payload together with its channel identifier.
+/// </summary>
+/// <param name="channelId">The L2CAP channel identifier.</param>
+/// <param name="pdu">The L2CAP payload.</param>
 public readonly ref struct L2CapPdu(ushort channelId, ReadOnlySpan<byte> pdu)
 {
+    /// <summary>Gets the L2CAP channel identifier.</summary>
     public ushort ChannelId { get; } = channelId;
+
+    /// <summary>Gets the L2CAP payload.</summary>
     public ReadOnlySpan<byte> Pdu { get; } = pdu;
 }
 
+/// <summary>
+/// Represents the payload of a generic HCI event packet.
+/// </summary>
 [BinaryObject]
 public readonly partial struct HciPacketEvent
 {
+    /// <summary>Gets the event code reported by the controller.</summary>
     public required HciEventCode EventCode { get; init; }
+
+    /// <summary>Gets the number of bytes contained in <see cref="DataBytes"/>.</summary>
     public required byte ParameterTotalLength { get; init; }
 
+    /// <summary>Gets the raw event parameter bytes.</summary>
     [BinaryLength(nameof(ParameterTotalLength))]
     public required ReadOnlyMemory<byte> DataBytes { get; init; }
 }
 
-/// <summary> The HCI Device </summary>
+/// <summary>
+/// Represents a BLE HCI device together with its host, transport, and active connections.
+/// </summary>
 public sealed class HciDevice : IAsyncDisposable
 {
     private readonly ITransportLayer _transportLayer;
@@ -55,26 +90,28 @@ public sealed class HciDevice : IAsyncDisposable
     private bool _isInitializing;
     private readonly ConcurrentDictionary<ushort, AclConnection> _connections = [];
 
-    /// <summary> The HCI Host </summary>
+    /// <summary>Gets the HCI host used to send commands and receive events.</summary>
     public HciHost Host { get; }
 
-    /// <summary> The GATT Server </summary>
+    /// <summary>Gets the GATT server exposed by this device.</summary>
     public GattServer GattServer { get; }
     internal ILogger? Logger { get; }
 
     internal bool IsDisposed { get; private set; }
 
-    /// <summary> The random address </summary>
+    /// <summary>Gets the currently configured random device address.</summary>
     public ulong Address { get; private set; }
 
-    /// <summary> Settings to be used </summary>
+    /// <summary>Gets the settings used for controller and protocol timeouts.</summary>
     public HciSettings Settings { get; }
 
-    /// <summary> The HCI Host </summary>
-    /// <param name="transportLayer"> The transport layer </param>
-    /// <param name="randomAddress"> The random address of the device </param>
-    /// <param name="settings"> Settings for timings, etc </param>
-    /// <param name="loggerFactory"> An optional logger </param>
+    /// <summary>
+    /// Initializes a new HCI device wrapper.
+    /// </summary>
+    /// <param name="transportLayer">The transport used to exchange packets with the controller.</param>
+    /// <param name="randomAddress">The initial random device address.</param>
+    /// <param name="settings">The settings used for controller and protocol timeouts.</param>
+    /// <param name="loggerFactory">An optional logger factory.</param>
     public HciDevice(
         ITransportLayer transportLayer,
         ulong randomAddress,
@@ -91,8 +128,9 @@ public sealed class HciDevice : IAsyncDisposable
         GattServer = new GattServer(this, loggerFactory?.CreateLogger<GattServer>());
     }
 
-    /// <summary> Initialize the host </summary>
-    /// <param name="token"> The cancellationToken to cancel the operation </param>
+    /// <summary>Initializes the host and prepares the controller for use.</summary>
+    /// <param name="token">Cancels initialization while waiting for controller responses.</param>
+    /// <returns>A task that completes when the device has been initialized.</returns>
     public async Task InitializeAsync(CancellationToken token)
     {
         if (_isInitializing)
@@ -109,8 +147,15 @@ public sealed class HciDevice : IAsyncDisposable
         }
     }
 
+    /// <summary>Resets the host and re-applies the required controller configuration.</summary>
+    /// <param name="token">Cancels the reset while waiting for controller responses.</param>
+    /// <returns>A task that completes when the reset has finished.</returns>
     public Task ResetAsync(CancellationToken token) => Host.ResetAsync(token);
 
+    /// <summary>Attempts to retrieve an active ACL connection by its handle.</summary>
+    /// <param name="connectionHandle">The connection handle to look up.</param>
+    /// <param name="connection">The matching connection when the lookup succeeds.</param>
+    /// <returns><see langword="true"/> when the connection exists; otherwise, <see langword="false"/>.</returns>
     public bool TryGetConnection(ushort connectionHandle, [NotNullWhen(true)] out AclConnection? connection)
     {
         return _connections.TryGetValue(connectionHandle, out connection);
@@ -138,9 +183,10 @@ public sealed class HciDevice : IAsyncDisposable
         Debug.Assert(isAdded, $"Connection {connection.ConnectionHandle} could not be registered at host!");
     }
 
-    /// <summary> Writes a new, random address to the host </summary>
-    /// <param name="randomAddress"></param>
-    /// <param name="cancellationToken"></param>
+    /// <summary>Sets the random device address used by the controller.</summary>
+    /// <param name="randomAddress">The new random address to configure.</param>
+    /// <param name="cancellationToken">Cancels the command while waiting for the controller response.</param>
+    /// <returns>A task that completes when the address has been applied.</returns>
     public async Task SetRandomAddressAsync(ulong randomAddress, CancellationToken cancellationToken)
     {
         ObjectDisposedException.ThrowIf(IsDisposed, this);
@@ -157,6 +203,11 @@ public sealed class HciDevice : IAsyncDisposable
         Address = randomAddress;
     }
 
+    /// <summary>Initiates a new LE connection to a peer device.</summary>
+    /// <param name="peerAddressType">The peer address type expected by the controller.</param>
+    /// <param name="peerAddress">The peer device address.</param>
+    /// <param name="token">Cancels the connection attempt.</param>
+    /// <returns>The created ACL connection.</returns>
     public async Task<AclConnection> ConnectAsync(byte peerAddressType, UInt48 peerAddress, CancellationToken token)
     {
         var packet = new HciLeExtendedCreateConnectionV1Command

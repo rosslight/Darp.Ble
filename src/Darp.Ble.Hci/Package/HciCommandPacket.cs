@@ -12,10 +12,13 @@ public readonly partial struct HciCommandPacket : IHciPacket<HciCommandPacket>
     /// <inheritdoc />
     public static HciPacketType Type => HciPacketType.HciCommand;
 
+    /// <summary>Gets the opcode of the encoded HCI command.</summary>
     public required HciOpCode OpCode { get; init; }
 
+    /// <summary>Gets the number of bytes contained in <see cref="DataBytes"/>.</summary>
     public required byte ParameterTotalLength { get; init; }
 
+    /// <summary>Gets the raw encoded command parameters.</summary>
     [BinaryLength(nameof(ParameterTotalLength))]
     public required ReadOnlyMemory<byte> DataBytes { get; init; }
 }
