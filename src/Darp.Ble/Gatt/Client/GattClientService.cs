@@ -5,9 +5,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Gatt.Client;
 
-/// <summary> A gatt client service </summary>
-/// <param name="uuid"> The UUID of the client service </param>
-/// <param name="type"> The type of the client service </param>
+/// <summary>A GATT client service.</summary>
+/// <param name="blePeripheral">The peripheral that owns the service.</param>
+/// <param name="uuid">The UUID of the client service.</param>
+/// <param name="type">The service type.</param>
+/// <param name="logger">The logger used for client service diagnostics.</param>
 public abstract class GattClientService(
     BlePeripheral blePeripheral,
     BleUuid uuid,

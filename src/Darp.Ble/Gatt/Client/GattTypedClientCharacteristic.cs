@@ -10,8 +10,10 @@ namespace Darp.Ble.Gatt.Client;
 public interface IGattTypedClientCharacteristic<T, TProp1> : IGattTypedCharacteristic<T>, IGattClientCharacteristic
     where TProp1 : IBleProperty;
 
-/// <summary> The implementation of a gatt client characteristic with a single property </summary>
-/// <param name="characteristic"> The actual characteristic </param>
+/// <summary>The implementation of a typed GATT client characteristic with a single property.</summary>
+/// <param name="characteristic">The underlying characteristic.</param>
+/// <param name="onDecode">The decoder used to convert raw bytes into the typed value.</param>
+/// <param name="onEncode">The encoder used to convert the typed value into raw bytes.</param>
 /// <typeparam name="T"> The type of the characteristic value </typeparam>
 /// <typeparam name="TProp1"> The property </typeparam>
 [SuppressMessage(
@@ -71,8 +73,10 @@ public class GattTypedClientCharacteristic<T, TProp1>(
     byte[] IGattTypedCharacteristic<T>.Encode(T value) => Encode(value);
 }
 
-/// <summary> The implementation of a gatt client characteristic with a single property </summary>
-/// <param name="characteristic"> The actual characteristic </param>
+/// <summary>The implementation of a typed GATT client characteristic with two properties.</summary>
+/// <param name="characteristic">The underlying characteristic.</param>
+/// <param name="onDecode">The decoder used to convert raw bytes into the typed value.</param>
+/// <param name="onEncode">The encoder used to convert the typed value into raw bytes.</param>
 /// <typeparam name="T"> The type of the characteristic value </typeparam>
 /// <typeparam name="TProp1"> The first property </typeparam>
 /// <typeparam name="TProp2"> The second property </typeparam>

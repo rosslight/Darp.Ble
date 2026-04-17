@@ -9,7 +9,6 @@ public sealed class BleCentralConnectionInitializationFailedException : BleCentr
     /// <summary> Initialize a new exception when post-connect initialization failed </summary>
     /// <param name="central"> The central responsible for the connection </param>
     /// <param name="address"> The address of the peer that was being connected </param>
-    /// <param name="stage"> The initialization stage that failed </param>
     /// <param name="connectionHandle"> The connection handle, if known </param>
     /// <param name="innerException"> The underlying failure </param>
     public BleCentralConnectionInitializationFailedException(
