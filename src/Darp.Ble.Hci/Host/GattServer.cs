@@ -6,6 +6,11 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci.Host;
 
+/// <summary>
+/// Handles GATT server behavior for incoming ATT requests and related controller events.
+/// </summary>
+/// <param name="device">The device that owns the server.</param>
+/// <param name="logger">An optional logger.</param>
 public sealed class GattServer(HciDevice device, ILogger<GattServer>? logger)
 {
     private readonly HciDevice _device = device;

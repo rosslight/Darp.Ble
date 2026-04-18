@@ -41,7 +41,9 @@ internal sealed class AsyncDisposable : IAsyncDisposable
 public static class GattServerCharacteristicExtensions
 {
     /// <inheritdoc cref="IGattServerCharacteristic.OnNotifyAsync{TState}"/>
-    /// <param name="characteristic">The characteristic with notify property</param>
+    /// <param name="characteristic">The characteristic with the notify property.</param>
+    /// <param name="callback">The callback invoked for each notification payload.</param>
+    /// <param name="cancellationToken">Cancels the initial subscription process.</param>
     public static Task<IAsyncDisposable> OnNotifyAsync(
         this IGattServerCharacteristic<Notify> characteristic,
         Action<byte[]> callback,

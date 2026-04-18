@@ -10,8 +10,21 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci;
 
+/// <summary>
+/// Provides ATT and GATT helper methods for <see cref="AclConnection"/>.
+/// </summary>
 public static class AclConnectionExtensions
 {
+    /// <summary>
+    /// Sends an ATT request over the connection and waits for the matching response.
+    /// </summary>
+    /// <typeparam name="TAttRequest">The ATT request type to send.</typeparam>
+    /// <typeparam name="TResponse">The ATT response type expected in return.</typeparam>
+    /// <param name="connection">The connection used to send the request.</param>
+    /// <param name="request">The ATT request to transmit.</param>
+    /// <param name="timeout">The maximum time to wait for the ATT response.</param>
+    /// <param name="cancellationToken">Cancels the operation while waiting for the response.</param>
+    /// <returns>The ATT response or ATT error returned by the peer.</returns>
     public static async Task<AttResponse<TResponse>> QueryAttPduAsync<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TAttRequest,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TResponse
@@ -63,10 +76,13 @@ public static class AclConnectionExtensions
         }
     }
 
-    /// <summary> Enqueue a new acl packet </summary>
-    /// <param name="connection"> The connection to send this packet to </param>
-    /// <param name="attPdu"> The packet to be enqueued </param>
-    /// <param name="activity"></param>
+    /// <summary>
+    /// Encodes an ATT PDU and queues it on the connection's ATT channel.
+    /// </summary>
+    /// <typeparam name="TAttPdu">The ATT PDU type to send.</typeparam>
+    /// <param name="connection">The connection used to send the PDU.</param>
+    /// <param name="attPdu">The ATT PDU to encode and enqueue.</param>
+    /// <param name="activity">The activity to annotate with packet details.</param>
     public static void EnqueueGattPacket<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TAttPdu
     >(this AclConnection connection, TAttPdu attPdu, Activity? activity)
@@ -90,6 +106,14 @@ public static class AclConnectionExtensions
         connection.AclPacketQueue.EnqueueL2CapBasic(connection.ConnectionHandle, attCId, payloadBytes);
     }
 
+    /// <summary>
+    /// Queues an ATT error response for the specified request.
+    /// </summary>
+    /// <param name="connection">The connection used to send the response.</param>
+    /// <param name="requestOpCode">The opcode of the request being rejected.</param>
+    /// <param name="handle">The attribute handle associated with the error.</param>
+    /// <param name="errorCode">The ATT error code to return.</param>
+    /// <param name="activity">The activity to mark as failed.</param>
     public static void EnqueueGattErrorResponse(
         this AclConnection connection,
         AttOpCode requestOpCode,
@@ -101,9 +125,15 @@ public static class AclConnectionExtensions
         connection.EnqueueGattErrorResponse(exception: null, requestOpCode, handle, errorCode, activity);
     }
 
-    /// <summary> Enqueue a new acl packet </summary>
-    /// <param name="connection"> The connection to send this packet to </param>
-    /// <param name="attPdu"> The packet to be enqueued </param>
+    /// <summary>
+    /// Queues an ATT error response and records the associated exception details.
+    /// </summary>
+    /// <param name="connection">The connection used to send the response.</param>
+    /// <param name="exception">The exception that caused the error response, if any.</param>
+    /// <param name="requestOpCode">The opcode of the request being rejected.</param>
+    /// <param name="handle">The attribute handle associated with the error.</param>
+    /// <param name="errorCode">The ATT error code to return.</param>
+    /// <param name="activity">The activity to mark as failed.</param>
     public static void EnqueueGattErrorResponse(
         this AclConnection connection,
         Exception? exception,

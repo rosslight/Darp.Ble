@@ -9,8 +9,10 @@ namespace Darp.Ble.Gatt;
 public interface ITypedCharacteristicDeclaration<T, TProp1> : ICharacteristicDeclaration, IGattTypedCharacteristic<T>
     where TProp1 : IBleProperty;
 
-/// <summary> The typed characteristic declaration </summary>
-/// <param name="uuid"> The uuid of the characteristic </param>
+/// <summary>A typed characteristic declaration.</summary>
+/// <param name="uuid">The characteristic UUID.</param>
+/// <param name="onRead">The decoder used to convert raw bytes into the typed value.</param>
+/// <param name="onWrite">The encoder used to convert the typed value into raw bytes.</param>
 /// <typeparam name="T"> The type of the characteristic value </typeparam>
 /// <typeparam name="TProp1"> The type of the first property </typeparam>
 public class TypedCharacteristicDeclaration<T, TProp1>(
@@ -40,8 +42,10 @@ public class TypedCharacteristicDeclaration<T, TProp1>(
     byte[] IGattTypedCharacteristic<T>.Encode(T value) => WriteValue(value);
 }
 
-/// <summary> The typed characteristic declaration </summary>
-/// <param name="uuid"> The uuid of the characteristic </param>
+/// <summary>A typed characteristic declaration with two properties.</summary>
+/// <param name="uuid">The characteristic UUID.</param>
+/// <param name="onRead">The decoder used to convert raw bytes into the typed value.</param>
+/// <param name="onWrite">The encoder used to convert the typed value into raw bytes.</param>
 /// <typeparam name="T"> The type of the characteristic value </typeparam>
 /// <typeparam name="TProp1"> The type of the first property </typeparam>
 /// <typeparam name="TProp2"> The type of the second property </typeparam>

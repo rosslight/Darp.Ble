@@ -7,8 +7,12 @@ using Darp.Ble.HciHost.Gatt;
 
 namespace Darp.Ble.HciHost;
 
+/// <summary>
+/// Provides shared logging names for the HCI host package.
+/// </summary>
 public static class HciHostLoggingStrings
 {
+    /// <summary>Gets the activity source and logger category name for the HCI host package.</summary>
     public const string Name = "Darp.Ble.HciHost";
 }
 

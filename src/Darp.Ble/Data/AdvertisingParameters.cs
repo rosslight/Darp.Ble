@@ -1,5 +1,8 @@
 namespace Darp.Ble.Data;
 
+/// <summary>
+/// Defines how scan and connection requests are filtered while advertising.
+/// </summary>
 public enum AdvertisingFilterPolicy
 {
     /// <summary> Process scan and connection requests from all devices (i.e., the Filter Accept List is not in use) </summary>
@@ -15,7 +18,7 @@ public enum AdvertisingFilterPolicy
     AcceptKnownConnectionsAndScanRequests = 0x03,
 }
 
-/// <summary> Advertising channels </summary>
+/// <summary>Advertising channels used on the primary advertising PHY.</summary>
 [Flags]
 public enum AdvertisingChannelMap : byte
 {
@@ -29,47 +32,42 @@ public enum AdvertisingChannelMap : byte
     Channel39 = 1 << 2,
 }
 
-/// <summary>
-/// Represents configuration parameters for Bluetooth Low Energy (BLE) advertising operations.
-/// </summary>
+/// <summary>Represents configuration parameters for BLE advertising.</summary>
 public sealed record AdvertisingParameters
 {
-    /// <summary> The default advertising parameters </summary>
+    /// <summary>Gets the default advertising parameters.</summary>
     public static AdvertisingParameters Default { get; } = new();
 
-    /// <summary> The <see cref="BleEventType"/> to be used when sending the advertisement </summary>
+    /// <summary>Gets the advertising event type to use.</summary>
     public BleEventType Type { get; init; } = BleEventType.AdvNonConnInd;
 
-    /// <summary> The minimum time interval between advertising events on the primary phy. </summary>
+    /// <summary>Gets the minimum interval between primary advertising events.</summary>
     public ScanTiming MinPrimaryAdvertisingInterval { get; init; } = ScanTiming.Ms1000;
 
-    /// <summary> The maximum time interval between advertising events on the primary phy. </summary>
+    /// <summary>Gets the maximum interval between primary advertising events.</summary>
     public ScanTiming MaxPrimaryAdvertisingInterval { get; init; } = ScanTiming.Ms1000;
 
-    /// <summary> The advertising channel map of the primary phy. </summary>
+    /// <summary>Gets the advertising channel map for the primary PHY.</summary>
     public AdvertisingChannelMap PrimaryAdvertisingChannelMap { get; init; } =
         AdvertisingChannelMap.Channel37 | AdvertisingChannelMap.Channel38 | AdvertisingChannelMap.Channel39;
 
-    /// <summary> The address of the peer device, if <see cref="BleEventType.Directed"/> advertising is selected in the <see cref="Type"/> </summary>
+    /// <summary>Gets the peer address for directed advertising.</summary>
     public BleAddress? PeerAddress { get; init; }
 
-    /// <summary>
-    /// The Advertising_TX_Power parameter indicates the maximum power level at which the advertising packets are to be transmitted on the advertising physical channels.
-    /// The Controller shall choose a power level lower than or equal to the one specified by the Host
-    /// </summary>
+    /// <summary>Gets the maximum transmit power requested for advertising packets.</summary>
     public TxPowerLevel AdvertisingTxPower { get; init; } = TxPowerLevel.NotAvailable;
 
-    /// <summary> The filter policy </summary>
+    /// <summary>Gets the filter policy applied to scan and connection requests.</summary>
     public AdvertisingFilterPolicy FilterPolicy { get; init; } =
         AdvertisingFilterPolicy.AcceptAllConnectionsAndScanRequests;
 
-    /// <summary> The primary physical </summary>
-    /// <value> Only <see cref="Physical.Le1M"/> and <see cref="Physical.LeCoded"/> are allowed </value>
+    /// <summary>Gets the primary advertising PHY.</summary>
+    /// <value>Only <see cref="Physical.Le1M"/> and <see cref="Physical.LeCoded"/> are valid values.</value>
     public Physical PrimaryPhy { get; init; } = Physical.Le1M;
 
-    /// <summary> The secondary physical </summary>
+    /// <summary>Gets the secondary advertising PHY.</summary>
     public Physical SecondaryPhy { get; init; } = Physical.Le1M;
 
-    /// <summary> The advertising SId </summary>
+    /// <summary>Gets the advertising SID used for extended advertising.</summary>
     public AdvertisingSId AdvertisingSId { get; init; }
 }

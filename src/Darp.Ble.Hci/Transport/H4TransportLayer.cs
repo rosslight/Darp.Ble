@@ -13,7 +13,10 @@ namespace Darp.Ble.Hci.Transport;
 /// <param name="pdu"> The pdu </param>
 public readonly ref struct HciPacket(HciPacketType packetType, ReadOnlySpan<byte> pdu)
 {
+    /// <summary>Gets the HCI packet type.</summary>
     public HciPacketType PacketType { get; } = packetType;
+
+    /// <summary>Gets the packet body without the packet type byte (header + payload).</summary>
     public ReadOnlySpan<byte> Pdu { get; } = pdu;
 }
 

@@ -25,7 +25,9 @@ public sealed class HciTransportFailedEventArgs(Exception exception) : EventArgs
 /// <summary>
 /// The <see cref="HciHost"/> is responsible for all host-related commands.
 /// </summary>
-/// <param name="transportLayer"></param>
+/// <param name="hciDevice">The owning HCI device.</param>
+/// <param name="transportLayer">The transport used to exchange packets with the controller.</param>
+/// <param name="logger">An optional logger.</param>
 [MessageSource]
 public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transportLayer, ILogger<HciHost>? logger)
     : IDisposable
@@ -36,21 +38,23 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
     private AclPacketQueue? _leAclPacketQueue;
     private bool _isResetDoneAtLeastOnce;
 
-    /// <summary> An event that notifies when the transport has failed </summary>
+    /// <summary>Raised when the transport encounters a fatal failure.</summary>
     public event EventHandler<HciTransportFailedEventArgs>? TransportFailed;
 
-    /// <summary> The HCI Device </summary>
+    /// <summary>Gets the owning HCI device.</summary>
     public HciDevice Device { get; } = hciDevice;
 
-    /// <summary> True, if <see cref="ResetAsync"/> was called at least once. False otherwise </summary>
+    /// <summary>Gets whether the host has been initialized and its ACL queue is ready.</summary>
     [MemberNotNullWhen(true, nameof(_leAclPacketQueue))]
     public bool IsReady => _leAclPacketQueue is not null;
 
-    /// <summary> The ACL Packet queue </summary>
+    /// <summary>Gets the ACL packet queue created during initialization.</summary>
     public IAclPacketQueue AclPacketQueue =>
         _leAclPacketQueue ?? throw new InvalidOperationException("Not initialized yet");
 
-    /// <summary> Resets the controller and configures everything as needed </summary>
+    /// <summary>Resets the controller and applies the required host configuration.</summary>
+    /// <param name="token">Cancels initialization while waiting for controller responses.</param>
+    /// <returns>A task that completes when the host is ready for use.</returns>
     public async Task ResetAsync(CancellationToken token)
     {
         ObjectDisposedException.ThrowIf(Device.IsDisposed, this);

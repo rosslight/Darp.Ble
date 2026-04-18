@@ -5,9 +5,10 @@ using Darp.Ble.Gatt.Client;
 
 namespace Darp.Ble.Gatt.Database;
 
-/// <summary> A wrapper entry of the gatt database </summary>
-/// <param name="attribute"> The attribute </param>
-/// <param name="handle"> The handle of the attribute </param>
+/// <summary>A wrapper entry in the GATT database.</summary>
+/// <param name="gattDatabase">The database that owns the entry.</param>
+/// <param name="attribute">The attribute stored at the handle.</param>
+/// <param name="handle">The attribute handle.</param>
 public readonly struct GattDatabaseEntry(IGattDatabase gattDatabase, IGattAttribute attribute, ushort handle)
     : IGattAttribute,
         IEquatable<GattDatabaseEntry>,

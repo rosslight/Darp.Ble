@@ -3,6 +3,12 @@ using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Gatt.Server;
 
+/// <summary>
+/// Provides a base implementation for server-side GATT descriptors.
+/// </summary>
+/// <param name="characteristic">The characteristic that owns the descriptor.</param>
+/// <param name="uuid">The descriptor UUID.</param>
+/// <param name="logger">The logger used for descriptor diagnostics.</param>
 public abstract class GattServerDescriptor(
     GattServerCharacteristic characteristic,
     BleUuid uuid,
