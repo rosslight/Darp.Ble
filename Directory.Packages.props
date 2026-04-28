@@ -11,7 +11,7 @@
     </PackageVersion>
     <PackageVersion Include="Darp.BinaryObjects" Version="0.7.0" />
     <PackageVersion Include="Darp.Utils.Messaging" Version="1.19.2" />
-    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.48">
+    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.56">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
