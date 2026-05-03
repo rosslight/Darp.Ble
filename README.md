@@ -117,7 +117,7 @@ Note: The path `C:/work/...` is just an example
 After that, restore the dotnet workloads to install the required android workload.
 
 ```powershell
-dotnet build -t:InstallAndroidDependencies -f net8.0-android -p:AndroidSdkDirectory=c:\work\android-sdk -p:JavaSdkDirectory=c:\work\jdk -p:AcceptAndroidSdkLicenses=True
+dotnet build -t:InstallAndroidDependencies -f net10.0-android -p:AndroidSdkDirectory=c:\work\android-sdk -p:JavaSdkDirectory=c:\work\jdk -p:AcceptAndroidSdkLicenses=True
 setx JAVA_HOME C:\work\jdk\
 setx ANDROID_HOME C:\work\android-sdk\
 
