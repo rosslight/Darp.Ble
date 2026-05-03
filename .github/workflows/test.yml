@@ -51,7 +51,7 @@ jobs:
             --results-directory ./coverage-results
 
       - name: Post Coverage Report
-        uses: rosslight/pr-code-coverage-visualizer@v2.2.0
+        uses: rosslight/pr-code-coverage-visualizer@v2.2.1
         with:
           files: |
             coverage-results/**/coverage.cobertura.xml
