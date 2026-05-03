@@ -1,0 +1,3 @@
+# Licensing
+
+Licensing notes placeholder.

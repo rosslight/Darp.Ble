@@ -1,0 +1,3 @@
+# Advertising
+
+Advertising guide placeholder.

@@ -408,6 +408,7 @@ FodyWeavers.xsd
 # DocFX
 _site/
 _site_pdf/
+site/
 
 tools/AssignedNumbersCrawler/public/
 
@@ -415,3 +416,7 @@ tools/AssignedNumbersCrawler/public/
 *.verified.txt text eol=lf working-tree-encoding=UTF-8
 *.verified.xml text eol=lf working-tree-encoding=UTF-8
 *.verified.json text eol=lf working-tree-encoding=UTF-8
+
+# Zensical
+.venv/
+.python-version
