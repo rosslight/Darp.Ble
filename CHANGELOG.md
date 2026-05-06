@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.11.0](https://github.com/rosslight/Darp.Ble/compare/v1.10.2...v1.11.0) (2026-05-06)
+
+
+### Features
+
+* bump to net 10 ([#124](https://github.com/rosslight/Darp.Ble/issues/124)) ([74445b3](https://github.com/rosslight/Darp.Ble/commit/74445b3ba66cd0e831f72a0b41868d9a9abfe48c))
+
 ## [1.10.2](https://github.com/rosslight/Darp.Ble/compare/v1.10.1...v1.10.2) (2026-04-16)
 
 
