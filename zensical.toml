@@ -50,10 +50,10 @@ nav = [
   ]},
   {"Guides" = [
     "guides/index.md",
-    "guides/scanning.md",
-    "guides/connecting.md",
-    "guides/notifications.md",
-    "guides/advertising.md",
+    "guides/scan-advertisements.md",
+    "guides/connect-as-central.md",
+    "guides/broadcast-advertisements.md",
+    "guides/accept-connections.md",
     "guides/testing-with-mock.md",
   ]},
   {"Project" = [

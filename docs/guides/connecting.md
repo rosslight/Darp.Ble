@@ -1,3 +1,0 @@
-# Connecting
-
-Connecting guide placeholder.

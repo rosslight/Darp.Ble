@@ -58,8 +58,8 @@ The available roles depend on the selected implementation and hardware. For exam
 ## What to do next
 
 - Choose a backend in [Platforms](platforms/).
-- Scan for advertisements in [Scanning](guides/scanning/).
-- Connect to peripherals in [Connecting](guides/connecting/).
-- Receive characteristic updates in [Notifications](guides/notifications/).
-- Advertise local data in [Advertising](guides/advertising/).
+- Scan for advertisements in [Scan advertisements](guides/scan-advertisements/).
+- Connect, use remote GATT, and receive characteristic updates in [Connect as a central](guides/connect-as-central/).
+- Advertise local data in [Broadcast advertisements](guides/broadcast-advertisements/).
+- Host local GATT services in [Accept connections](guides/accept-connections/).
 - Build tests with [Testing with mock](guides/testing-with-mock/).

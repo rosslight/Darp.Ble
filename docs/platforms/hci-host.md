@@ -60,6 +60,7 @@ Advertising support uses the controller-reported maximum advertising data length
 
 ## Next steps
 
-- Use [Scanning](../../guides/scanning/) for observer workflows.
-- Use [Connecting](../../guides/connecting/) for central workflows.
-- Use [Advertising](../../guides/advertising/) for broadcaster/peripheral workflows.
+- Use [Scan advertisements](../../guides/scan-advertisements/) for observer workflows.
+- Use [Connect as a central](../../guides/connect-as-central/) for central workflows.
+- Use [Broadcast advertisements](../../guides/broadcast-advertisements/) for broadcaster workflows.
+- Use [Accept connections](../../guides/accept-connections/) for peripheral workflows.

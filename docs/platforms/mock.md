@@ -58,4 +58,4 @@ var manager = new BleManagerBuilder()
 ## Next steps
 
 - Use [Testing with mock](../../guides/testing-with-mock/) for test-focused patterns.
-- Use [Scanning](../../guides/scanning/) and [Connecting](../../guides/connecting/) to exercise application flows against mocked devices.
+- Use [Scan advertisements](../../guides/scan-advertisements/) and [Connect as a central](../../guides/connect-as-central/) to exercise application flows against mocked devices.

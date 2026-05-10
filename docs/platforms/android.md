@@ -56,6 +56,6 @@ if (GetSystemService(BluetoothService) is BluetoothManager bluetoothManager)
 
 ## Next steps
 
-- Use [Scanning](../../guides/scanning/) to observe advertisements.
+- Use [Scan advertisements](../../guides/scan-advertisements/) to observe advertisements.
 - Review Android permissions before relying on scan results.
 - Use another backend, such as [HciHost](../hci-host/), when you need central, broadcaster, or peripheral roles today.

@@ -49,6 +49,7 @@ WinRT maps Windows adapter flags to Darp.Ble roles:
 
 ## Next steps
 
-- Use [Scanning](../../guides/scanning/) to observe advertisements.
-- Use [Connecting](../../guides/connecting/) when the initialized device supports the central role.
-- Use [Advertising](../../guides/advertising/) when the initialized device supports broadcaster/peripheral roles.
+- Use [Scan advertisements](../../guides/scan-advertisements/) to observe advertisements.
+- Use [Connect as a central](../../guides/connect-as-central/) when the initialized device supports the central role.
+- Use [Broadcast advertisements](../../guides/broadcast-advertisements/) when the initialized device supports the broadcaster role.
+- Use [Accept connections](../../guides/accept-connections/) when the initialized device supports the peripheral role.
