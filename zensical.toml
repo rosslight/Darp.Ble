@@ -41,11 +41,6 @@ Copyright &copy; 2026 rosslight GmbH
 # Read more: https://zensical.org/docs/setup/navigation/
 nav = [
   {"Home" = "index.md"},
-  {"Getting started" = [
-    "getting-started/index.md",
-    "getting-started/installation.md",
-    "getting-started/first-device.md",
-  ]},
   {"Platforms" = [
     "platforms/index.md",
     "platforms/winrt.md",
@@ -91,8 +86,6 @@ features = [
   "navigation.indexes",
   "navigation.path",
   "toc.follow",
-  "content.action.view",
-  "content.action.edit",
 ]
 
 # ----------------------------------------------------------------------------
