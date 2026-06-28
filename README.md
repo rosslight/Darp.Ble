@@ -1,6 +1,6 @@
 # Darp.Ble
 
-[![.NET](https://github.com/rosslight/Darp.Ble/actions/workflows/test_and_publish.yml/badge.svg)](https://github.com/rosslight/Darp.Ble/actions/workflows/test_and_publish.yml)
+[![.NET](https://github.com/rosslight/Darp.Ble/actions/workflows/release-please.yml/badge.svg)](https://github.com/rosslight/Darp.Ble/actions/workflows/release-please.yml)
 [![NuGet](https://img.shields.io/nuget/v/Darp.Ble.svg)](https://www.nuget.org/packages/Darp.Ble)
 [![Downloads](https://img.shields.io/nuget/dt/Darp.Ble)](https://www.nuget.org/packages/Darp.Ble)
 ![License](https://img.shields.io/badge/license-AGPL--3.0%20or%20COMMERCIAL-blue)
@@ -124,3 +124,7 @@ setx ANDROID_HOME C:\work\android-sdk\
 # Restore android workload
 dotnet workload restore
 ```
+
+## About
+
+Darp.Ble is a project by [rosslight GmbH](https://engineering.rosslight.de/), see also [darp.ble Product Page](https://engineering.rosslight.de/ble-suite)
