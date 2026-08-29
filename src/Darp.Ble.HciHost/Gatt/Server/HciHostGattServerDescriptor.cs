@@ -16,7 +16,7 @@ internal sealed class HciHostGattServerDescriptor(
     private readonly HciHostGattServerPeer _peer = characteristic.Service.Peer;
     internal ushort AttributeHandle { get; } = attributeHandle;
 
-    public void WriteWithoutResponse(byte[] bytes)
+    public override void WriteWithoutResponse(byte[] bytes)
     {
         ArgumentOutOfRangeException.ThrowIfGreaterThan(bytes.Length, _peer.AttMtu, nameof(bytes));
         _peer.Connection.EnqueueGattPacket(new AttWriteCmd { Handle = AttributeHandle, Value = bytes }, activity: null);
@@ -38,8 +38,18 @@ internal sealed class HciHostGattServerDescriptor(
         return true;
     }
 
-    public override Task<byte[]> ReadAsync(CancellationToken cancellationToken = default)
+    public override async Task<byte[]> ReadAsync(CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        AttResponse<AttReadRsp> response = await _peer
+            .QueryAttPduAsync<AttReadReq, AttReadRsp>(
+                new AttReadReq { AttributeHandle = AttHandle },
+                cancellationToken: cancellationToken
+            )
+            .ConfigureAwait(false);
+        if (response.IsError)
+        {
+            throw new Exception($"Could not read because of: {response.Error.ErrorCode}");
+        }
+        return response.Value.AttributeValue.ToArray();
     }
 }
