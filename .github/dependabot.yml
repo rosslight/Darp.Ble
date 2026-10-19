@@ -4,3 +4,12 @@ updates:
   directory: "/"
   schedule:
     interval: daily
+  ignore:
+    # Verify 32.0.0 is the last release before its maintenance fee
+    - dependency-name: "Verify"
+      versions: [">32.0.0"]
+    - dependency-name: "Verify.XunitV3"
+      versions: [">32.0.0"]
+    # Verify.DiffPlex 3.4.0 requires Verify 33
+    - dependency-name: "Verify.DiffPlex"
+      versions: [">=3.4.0"]
