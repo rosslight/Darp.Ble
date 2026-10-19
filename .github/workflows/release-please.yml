@@ -3,6 +3,11 @@ name: release-please
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing release tag to publish again, e.g. v2.0.0-preview'
+        required: true
 
 permissions:
   contents: write       # required for tags + releases
@@ -10,10 +15,10 @@ permissions:
 
 jobs:
   release-please:
+    if: github.event_name == 'push'
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
-      version: ${{ steps.release.outputs.version }}
     runs-on: ubuntu-24.04
     steps:
       - name: Run release-please
@@ -27,12 +32,18 @@ jobs:
   publish:
     needs:
       - release-please
-    if: needs.release-please.outputs.release_created
+    if: ${{ !cancelled() && (needs.release-please.outputs.release_created == 'true' || github.event_name == 'workflow_dispatch') }}
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write   # required for NuGet trusted publishing
+    env:
+      RELEASE_TAG: ${{ needs.release-please.outputs.tag_name || inputs.tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
+          ref: ${{ env.RELEASE_TAG }}
           fetch-depth: 0
 
       - uses: actions/cache@v6
@@ -65,18 +76,34 @@ jobs:
       - name: Test
         run: dotnet test --configuration Release --no-build --no-restore
 
-      - name: Pack and push to nuget.org
+      - name: Pack
         run: |
-          for file_name in ./src/**/*.csproj; do
-            dotnet pack $file_name --configuration Release --artifacts-path build/noncommercial /p:PackageLicenseFile=LICENSE.md /p:Version=${{ needs.release-please.outputs.version }}
-            dotnet pack $file_name --configuration Release --artifacts-path build/commercial /p:PackageLicenseFile=LICENSE-COMMERCIAL.md /p:Version=${{ needs.release-please.outputs.version }}
+          version="${RELEASE_TAG#v}"
+          for file_name in src/*/*.csproj; do
+            dotnet pack "$file_name" --configuration Release --artifacts-path build/noncommercial /p:PackageLicenseFile=LICENSE.md /p:Version="$version"
+            dotnet pack "$file_name" --configuration Release --artifacts-path build/commercial /p:PackageLicenseFile=LICENSE-COMMERCIAL.md /p:Version="$version"
           done
-          for pkg_name in ./build/noncommercial/package**/*.nupkg; do
-            dotnet nuget push $pkg_name --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+
+      # The short-lived API key is valid for one hour, so request it right before pushing
+      - name: NuGet login
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
+      - name: Push to nuget.org
+        env:
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+        run: |
+          for pkg_name in build/noncommercial/package/release/*.nupkg; do
+            dotnet nuget push "$pkg_name" --api-key "$NUGET_API_KEY" --source https://api.nuget.org/v3/index.json --skip-duplicate
           done
-          dotnet nuget add source ${{ env.AZURE_ARTIFACTS_FEED_URL }} --name AzureFeed --username ${{ secrets.AZURE_USERNAME }} --password ${{ secrets.AZURE_DEVOPS_TOKEN }} --store-password-in-clear-text
-          for pkg_name in ./build/commercial/package**/*.nupkg; do
-            dotnet nuget push $pkg_name --api-key AzureArtifacts --source AzureFeed --skip-duplicate
-          done
+
+      - name: Push to Azure Artifacts
         env:
           AZURE_ARTIFACTS_FEED_URL: https://pkgs.dev.azure.com/rosslight-engineering/darp.ble/_packaging/darp.ble.subscription/nuget/v3/index.json
+        run: |
+          dotnet nuget add source "$AZURE_ARTIFACTS_FEED_URL" --name AzureFeed --username ${{ secrets.AZURE_USERNAME }} --password ${{ secrets.AZURE_DEVOPS_TOKEN }} --store-password-in-clear-text
+          for pkg_name in build/commercial/package/release/*.nupkg; do
+            dotnet nuget push "$pkg_name" --api-key AzureArtifacts --source AzureFeed --skip-duplicate
+          done
