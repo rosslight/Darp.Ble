@@ -32,6 +32,9 @@ jobs:
           distribution: 'temurin'
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          # The default also installs 'tools', which recent cmdline-tools no longer provide
+          packages: platform-tools
       - name: Install workloads
         run: dotnet workload install android
 
