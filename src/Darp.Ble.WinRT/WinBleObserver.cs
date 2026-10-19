@@ -99,7 +99,11 @@ internal sealed class WinBleObserver(BleDevice device, ILogger<WinBleObserver> l
             BluetoothLEAdvertisementType.ConnectableDirected => BleEventType.AdvDirectInd,
             BluetoothLEAdvertisementType.ScannableUndirected => BleEventType.AdvScanInd,
             BluetoothLEAdvertisementType.NonConnectableUndirected => BleEventType.AdvNonConnInd,
-            BluetoothLEAdvertisementType.ScanResponse => BleEventType.ScanResponse,
+            // A legacy scan response answers ADV_IND (connectable) or ADV_SCAN_IND, both scannable
+            BluetoothLEAdvertisementType.ScanResponse => BleEventType.Legacy
+                | BleEventType.Scannable
+                | BleEventType.ScanResponse
+                | (eventArgs.IsConnectable ? BleEventType.Connectable : BleEventType.None),
             _ => GetExtendedEventType(eventArgs),
         };
 
