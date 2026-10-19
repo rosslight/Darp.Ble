@@ -69,6 +69,32 @@ public sealed class AdvertisementExtensionsCombineWithScanResponseTests(ILoggerF
         combined.AsByteArray().ShouldBe(adv.AsByteArray());
     }
 
+    [Theory]
+    [InlineData(BleEventType.AdvScanInd, BleEventType.Legacy | BleEventType.Scannable | BleEventType.ScanResponse)]
+    [InlineData(
+        BleEventType.AdvInd,
+        BleEventType.Legacy | BleEventType.Connectable | BleEventType.Scannable | BleEventType.ScanResponse
+    )]
+    public async Task CombineWithScanResponse_WhenLegacyScanResponse_ShouldCombineAndEmitSingle(
+        BleEventType advEventType,
+        BleEventType scanResponseEventType
+    )
+    {
+        // Arrange
+        IBleObserver observer = await CreateBleObserverAsync(ScanType.Active);
+        BleAddress addr = CreateAddress();
+        const AdvertisingSId sid = AdvertisingSId.NoAdIProvided;
+        GapAdvertisement adv = CreateAdv(observer, advEventType, sid, addr, "020101");
+        GapAdvertisement scanRsp = CreateAdv(observer, scanResponseEventType, sid, addr, "050954657374");
+
+        // Act
+        IGapAdvertisement[] result = await new[] { adv, scanRsp }.ToObservable().CombineWithScanResponse().ToArray();
+
+        // Assert
+        var combined = result.ShouldHaveSingleItem().ShouldBeAssignableTo<IGapAdvertisementWithScanResponse>();
+        combined.Data.ToByteArray().ShouldBe("020101050954657374".ToByteArray());
+    }
+
     [Fact]
     public async Task CombineWithScanResponse_WhenPassiveScan_ShouldPassThroughBoth()
     {
