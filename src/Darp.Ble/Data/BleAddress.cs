@@ -36,7 +36,7 @@ public sealed record BleAddress : ISpanParsable<BleAddress>, IEquatable<UInt48>,
         {
             if (Type is not BleAddressType.Random)
                 return null;
-            return ((ulong)Value >> 46) switch
+            return (((ulong)Value >> 46) & 0b11) switch
             {
                 0b00 => BleRandomAddressKind.NonResolvablePrivate,
                 0b01 => BleRandomAddressKind.ResolvablePrivate,
