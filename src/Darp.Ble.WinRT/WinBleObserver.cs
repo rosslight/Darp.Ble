@@ -100,7 +100,7 @@ internal sealed class WinBleObserver(BleDevice device, ILogger<WinBleObserver> l
             BluetoothLEAdvertisementType.ScannableUndirected => BleEventType.AdvScanInd,
             BluetoothLEAdvertisementType.NonConnectableUndirected => BleEventType.AdvNonConnInd,
             BluetoothLEAdvertisementType.ScanResponse => BleEventType.ScanResponse,
-            _ => (BleEventType)eventArgs.AdvertisementType,
+            _ => GetExtendedEventType(eventArgs),
         };
 
         (AdTypes, ReadOnlyMemory<byte>)[] pduData = eventArgs
@@ -125,5 +125,20 @@ internal sealed class WinBleObserver(BleDevice device, ILogger<WinBleObserver> l
         );
 
         return advertisement;
+    }
+
+    /// <summary> Extended advertisements have no single PDU type, Windows reports their properties separately </summary>
+    private static BleEventType GetExtendedEventType(BluetoothLEAdvertisementReceivedEventArgs eventArgs)
+    {
+        var eventType = BleEventType.None;
+        if (eventArgs.IsConnectable)
+            eventType |= BleEventType.Connectable;
+        if (eventArgs.IsScannable)
+            eventType |= BleEventType.Scannable;
+        if (eventArgs.IsDirected)
+            eventType |= BleEventType.Directed;
+        if (eventArgs.IsScanResponse)
+            eventType |= BleEventType.ScanResponse;
+        return eventType;
     }
 }
