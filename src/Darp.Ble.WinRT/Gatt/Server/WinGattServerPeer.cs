@@ -1,6 +1,5 @@
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
-using System.Reactive.Windows.Foundation;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Gatt.Server;
@@ -48,8 +47,8 @@ internal sealed class WinGattServerPeer : GattServerPeer
                     observer.OnError(new Exception($"Access request disallowed: {accessStatus}..."));
                     return Disposable.Empty;
                 }
-                return getServices()
-                    .ToObservable()
+                return Observable
+                    .FromAsync(token => getServices().AsTask(token))
                     .Subscribe(
                         result =>
                         {

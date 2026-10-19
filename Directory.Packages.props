@@ -40,7 +40,6 @@
     <PackageVersion Include="System.Numerics.Tensors" Version="10.0.13" />
     <PackageVersion Include="System.Reactive" Version="7.0.0" />
     <PackageVersion Include="System.Reactive.Linq" Version="6.1.0" />
-    <PackageVersion Include="System.Reactive.WindowsRuntime" Version="7.0.0" />
     <!-- Last release before Verify introduced its maintenance fee. -->
     <PackageVersion Include="Verify" Version="32.0.0" />
     <PackageVersion Include="Verify.DiffPlex" Version="3.3.1" />

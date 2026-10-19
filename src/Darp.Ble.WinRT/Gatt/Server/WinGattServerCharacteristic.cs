@@ -1,5 +1,4 @@
 using System.Reactive.Linq;
-using System.Reactive.Windows.Foundation;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Darp.Ble.Data;
 using Darp.Ble.Exceptions;
@@ -31,9 +30,8 @@ internal sealed class WinGattServerCharacteristic(
     {
         return Observable.Create<IGattServerDescriptor>(observer =>
         {
-            return _gattCharacteristic
-                .GetDescriptorsAsync()
-                .ToObservable()
+            return Observable
+                .FromAsync(token => _gattCharacteristic.GetDescriptorsAsync().AsTask(token))
                 .Subscribe(
                     result =>
                     {
