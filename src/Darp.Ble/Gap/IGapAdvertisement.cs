@@ -43,8 +43,16 @@ public interface IGapAdvertisement : IEquatable<IGapAdvertisement>
     /// <summary> The data sections </summary>
     AdvertisingData Data { get; }
 
-    /// <summary> Gives back the underlying byte array representing the advertising report </summary>
-    /// <returns></returns>
+    /// <summary> Gives back the advertising report in the layout of a single report of the HCI LE Extended Advertising Report event </summary>
+    /// <remarks>
+    /// The bytes start at Event_Type and do not include the event header.
+    /// Only the HCI host receives these bytes from the controller.
+    /// Other backends, e.g. WinRT or Android, build them from the values the platform reports.
+    /// A value the platform does not report holds its "not available" value,
+    /// e.g. <see cref="Physical.NotAvailable"/> (0) for both PHYs on Windows, which a controller never reports as primary PHY.
+    /// Treat the bytes as a received HCI report only if the advertisement came from the HCI host.
+    /// </remarks>
+    /// <returns> The bytes of the advertising report </returns>
     byte[] AsByteArray();
 }
 
