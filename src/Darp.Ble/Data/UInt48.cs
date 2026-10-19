@@ -160,26 +160,18 @@ public readonly struct UInt48
     /// <summary> Cast an ulong to a 48 bit integer</summary>
     /// <param name="value"> The ulong to cast </param>
     /// <returns> The resulting 48 bit integer </returns>
-    public static UInt48 ToUInt48(ulong value)
-    {
-        unsafe
-        {
-            ulong* valuePtr = &value;
-            var resPtr = (UInt48*)valuePtr;
-            return *resPtr;
-        }
-    }
+    public static UInt48 ToUInt48(ulong value) =>
+        new(
+            (byte)value,
+            (byte)(value >> 8),
+            (byte)(value >> 16),
+            (byte)(value >> 24),
+            (byte)(value >> 32),
+            (byte)(value >> 40)
+        );
 
     /// <summary> Cast to an ulong </summary>
     /// <returns> An ulong </returns>
-    public ulong ToUInt64()
-    {
-        unsafe
-        {
-            UInt48 value = this;
-            UInt48* valuePtr = &value;
-            var resPtr = (ulong*)valuePtr;
-            return *resPtr;
-        }
-    }
+    public ulong ToUInt64() =>
+        _b0 | ((ulong)_b1 << 8) | ((ulong)_b2 << 16) | ((ulong)_b3 << 24) | ((ulong)_b4 << 32) | ((ulong)_b5 << 40);
 }
