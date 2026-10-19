@@ -34,15 +34,17 @@ public readonly record struct HciLeExtendedAdvertisingReportEvent : IHciLeMetaEv
     {
         bytesRead = 0;
         value = default;
+        if (source.Length < 2)
+            return false;
         byte subEventCode = source[0];
         byte numReports = source[1];
         var reports = new HciLeExtendedAdvertisingReport[numReports];
-        bytesRead = 2;
+        var offset = 2;
         for (var i = 0; i < numReports; i++)
         {
             if (
                 !HciLeExtendedAdvertisingReport.TryReadLittleEndian(
-                    source[bytesRead..],
+                    source[offset..],
                     out HciLeExtendedAdvertisingReport data,
                     out int dataBytesRead
                 )
@@ -50,9 +52,10 @@ public readonly record struct HciLeExtendedAdvertisingReportEvent : IHciLeMetaEv
             {
                 return false;
             }
-            bytesRead += dataBytesRead;
+            offset += dataBytesRead;
             reports[i] = data;
         }
+        bytesRead = offset;
         value = new HciLeExtendedAdvertisingReportEvent
         {
             SubEventCode = (HciLeMetaSubEventType)subEventCode,
