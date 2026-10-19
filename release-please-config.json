@@ -7,6 +7,9 @@
       "include-component-in-tag": false,
       "package-name": "Darp.Ble",
       "release-type": "simple",
+      "versioning": "prerelease",
+      "prerelease-type": "preview",
+      "prerelease": true,
       "extra-files": [
         {
           "type": "xml",
