@@ -1,6 +1,6 @@
 # Darp.Ble
 
-[![.NET](https://github.com/rosslight/Darp.Ble/actions/workflows/release-please.yml/badge.svg)](https://github.com/rosslight/Darp.Ble/actions/workflows/release-please.yml)
+[![Tests](https://github.com/rosslight/Darp.Ble/actions/workflows/ci.yml/badge.svg)](https://github.com/rosslight/Darp.Ble/actions/workflows/ci.yml)
 [![NuGet](https://img.shields.io/nuget/v/Darp.Ble.svg)](https://www.nuget.org/packages/Darp.Ble)
 [![Downloads](https://img.shields.io/nuget/dt/Darp.Ble)](https://www.nuget.org/packages/Darp.Ble)
 ![License](https://img.shields.io/badge/license-AGPL--3.0%20or%20COMMERCIAL-blue)
@@ -124,6 +124,27 @@ setx ANDROID_HOME C:\work\android-sdk\
 # Restore android workload
 dotnet workload restore
 ```
+
+## Development
+
+Open `Darp.Ble.slnx` to work with the full solution. Development uses the .NET 10 SDK selected by `global.json`.
+Package versions are managed centrally in `Directory.Packages.props`.
+
+### Code formatting
+
+This repository uses [CSharpier](https://csharpier.com/) for code formatting. CI fails on unformatted code.
+Install the local tool explicitly with `dotnet tool restore`, then run
+
+```shell
+dotnet csharpier format .
+```
+
+### Releases
+
+Release-please collects the conventional commits on `main` into a release PR and builds the changelog from them,
+so use conventional commit titles (PR titles, when squash-merging).
+Merging that PR updates the package version and changelog, creates a GitHub release,
+and publishes the packages to NuGet and the commercial packages to the Azure Artifacts feed.
 
 ## About
 

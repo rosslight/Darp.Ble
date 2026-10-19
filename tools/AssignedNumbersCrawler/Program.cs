@@ -34,10 +34,10 @@ string ReadAdTypes(string inputDir) =>
         {
             string name = FixNaming(value.Name, i);
             return $"""
-                /// <summary> {FixXmlDocNaming(value.Name)} </summary>
-                /// <remarks> {FixXmlDocNaming(value.Reference)} </remarks>
-                {name} = {value.Value},
-            """;
+                    /// <summary> {FixXmlDocNaming(value.Name)} </summary>
+                    /// <remarks> {FixXmlDocNaming(value.Reference)} </remarks>
+                    {name} = {value.Value},
+                """;
         }
     );
 
@@ -50,9 +50,9 @@ string ReadCompanyIdentifiers(string inputDir) =>
         {
             string name = FixNaming(value.Name, i);
             return $"""
-                /// <summary> {FixXmlDocNaming(value.Name)} </summary>
-                {name} = {value.Value},
-            """;
+                    /// <summary> {FixXmlDocNaming(value.Name)} </summary>
+                    {name} = {value.Value},
+                """;
         }
     );
 
@@ -71,9 +71,9 @@ string ReadCoreVersion(string inputDir) =>
             }
             name = FixNaming(name, i);
             return $"""
-                /// <summary> {FixXmlDocNaming(value.Name)} </summary>
-                {name} = {value.Value},
-            """;
+                    /// <summary> {FixXmlDocNaming(value.Name)} </summary>
+                    {name} = {value.Value},
+                """;
         }
     );
 
