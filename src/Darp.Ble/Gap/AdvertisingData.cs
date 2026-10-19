@@ -87,21 +87,22 @@ public sealed class AdvertisingData : IReadOnlyList<AdvertisingTypeWithData>
         ReadOnlySpan<byte> advertisingDataSpan = advertisingData.Span;
         var advertisementReports = new List<(AdTypes, ReadOnlyMemory<byte>)>();
 
-        byte index = 0;
+        var index = 0;
         // Iterate over all sections and return early if a section is invalid
         while (index < advertisingDataSpan.Length)
         {
             byte fieldLength = advertisingDataSpan[index];
             if (fieldLength == 0)
                 break;
-            if (index + fieldLength > advertisingDataSpan.Length)
+            // The section consists of the length byte and the number of bytes specified by it
+            if (index + 1 + fieldLength > advertisingDataSpan.Length)
                 break;
             var fieldType = (AdTypes)advertisingDataSpan[index + 1];
 
-            ReadOnlyMemory<byte> sectionMemory = advertisingData[(index + 2)..(index + 2 + fieldLength - 1)];
+            ReadOnlyMemory<byte> sectionMemory = advertisingData[(index + 2)..(index + 1 + fieldLength)];
             advertisementReports.Add((fieldType, sectionMemory));
 
-            index += (byte)(fieldLength + 1);
+            index += 1 + fieldLength;
         }
 
         return new AdvertisingData(advertisingData, advertisementReports.ToArray());
