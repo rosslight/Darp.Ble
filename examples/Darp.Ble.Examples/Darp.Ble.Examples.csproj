@@ -9,7 +9,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Darp.Ble.HciHost\Darp.Ble.HciHost.csproj" />
     <ProjectReference Include="..\..\src\Darp.Ble.WinRT\Darp.Ble.WinRT.csproj" />
-    <ProjectReference Include="..\..\test\Darp.Ble.Mock.Tests\Darp.Ble.Mock.Tests.csproj" />
+    <ProjectReference Include="..\..\src\Darp.Ble.Mock\Darp.Ble.Mock.csproj" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Serilog.Extensions.Logging" />

@@ -1,4 +1,4 @@
-{
+﻿{
   MessagesToController: [
     {
       Type: HciCommand,

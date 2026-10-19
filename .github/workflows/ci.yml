@@ -46,13 +46,13 @@ jobs:
       - name: Test
         run: |
           dotnet test --no-build --configuration Release \
-            --collect:"XPlat Code Coverage;Format=cobertura" \
+            --coverlet --coverlet-output-format cobertura \
             --results-directory ./coverage-results
 
       - name: Post Coverage Report
         uses: rosslight/pr-code-coverage-visualizer@v2.2.1
         with:
           files: |
-            coverage-results/**/coverage.cobertura.xml
+            coverage-results/**/coverage.cobertura*.xml
           exclude-files: |
             *.g.cs
