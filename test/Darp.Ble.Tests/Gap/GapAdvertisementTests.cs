@@ -31,6 +31,24 @@ public sealed class GapAdvertisementTests(ILoggerFactory loggerFactory)
         "AABB",
         "130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB"
     )]
+    [InlineData(
+        BleEventType.AdvNonConnInd,
+        BleAddressType.Random,
+        0x5A1122334455,
+        Physical.Le1M,
+        Physical.NotAvailable,
+        AdvertisingSId.NoAdIProvided,
+        TxPowerLevel.NotAvailable,
+        -40,
+        PeriodicAdvertisingInterval.NoPeriodicAdvertising,
+        BleAddressType.NotAvailable,
+        0x000000000000,
+        AdTypes.Flags,
+        "1A",
+        AdTypes.CompleteListOf16BitServiceOrServiceClassUuids,
+        "AABB",
+        "10000155443322115A0100FF7FD80000FF0000000000000702011A0303AABB"
+    )]
     public async Task Advertisement_FromExtendedAdvertisingReport(
         BleEventType eventType,
         BleAddressType addressType,
@@ -90,6 +108,25 @@ public sealed class GapAdvertisementTests(ILoggerFactory loggerFactory)
         (AdTypes Type, ReadOnlyMemory<byte> Bytes) dataSection2 = adv.Data[1];
         dataSection2.Type.ShouldBe(advertisingDataType2);
         dataSection2.Bytes.ToArray().ShouldBe(sectionData2);
+    }
+
+    [Theory]
+    [InlineData(0x00, BleAddressType.Public)]
+    [InlineData(0x01, BleAddressType.Random)]
+    [InlineData(0x02, BleAddressType.PublicIdentity)]
+    [InlineData(0x03, BleAddressType.RandomStaticIdentity)]
+    [InlineData(0xFF, BleAddressType.NotAvailable)]
+    public void FromExtendedAdvertisingReport_WithHciAddressType_ShouldHaveAddressType(
+        byte hciAddressType,
+        BleAddressType expectedAddressType
+    )
+    {
+        byte[] bytes = "130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB".ToByteArray();
+        bytes[2] = hciAddressType;
+
+        GapAdvertisement adv = GapAdvertisement.FromExtendedAdvertisingReport(null!, DateTimeOffset.UtcNow, bytes);
+
+        adv.Address.Type.ShouldBe(expectedAddressType);
     }
 
     [Theory]

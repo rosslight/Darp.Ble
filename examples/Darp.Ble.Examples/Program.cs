@@ -89,7 +89,7 @@ var provider = new ServiceCollection()
                     onInitialize: async device =>
                     {
                         await device.SetRandomAddressAsync(
-                            new BleAddress(BleAddressType.RandomStatic, (UInt48)0xF1F2F3F4F5F6)
+                            new BleAddress(BleAddressType.Random, (UInt48)0xF1F2F3F4F5F6)
                         );
                         GattClientGattService gattService = device.Peripheral.AddGattService();
                         device.Peripheral.AddDeviceInformationService(
@@ -117,7 +117,7 @@ var provider = new ServiceCollection()
                     onInitialize: async device =>
                     {
                         await device.SetRandomAddressAsync(
-                            new BleAddress(BleAddressType.RandomStatic, (UInt48)0xF2F3F4F5F6F7)
+                            new BleAddress(BleAddressType.Random, (UInt48)0xF2F3F4F5F6F7)
                         );
                         await device.Broadcaster.StartAdvertisingAsync(
                             type: BleEventType.AdvNonConnInd,
@@ -152,7 +152,7 @@ await device.InitializeAsync();
 await Observe(device);
 return;
 
-await device.SetRandomAddressAsync(new BleAddress(BleAddressType.RandomStatic, (UInt48)0xF2F2F3F4F5F6));
+await device.SetRandomAddressAsync(new BleAddress(BleAddressType.Random, (UInt48)0xF2F2F3F4F5F6));
 device.Peripheral.AddGattService();
 device.Peripheral.AddDeviceInformationService(
     manufacturerName: "rosslight GmbH",
@@ -187,7 +187,7 @@ await Task.Delay(10000000);
 
 return;
 
-//await x.SetRandomAddressAsync(new BleAddress(BleAddressType.RandomStatic, (UInt48)0xF0F1F2F3F4F5));
+//await x.SetRandomAddressAsync(new BleAddress(BleAddressType.Random, (UInt48)0xF0F1F2F3F4F5));
 await device.Observer.StartObservingAsync();
 IGattServerPeer connectedPeer = await device
     .Observer.OnAdvertisement()

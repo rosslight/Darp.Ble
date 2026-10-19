@@ -28,6 +28,24 @@ public sealed record BleAddress : ISpanParsable<BleAddress>, IEquatable<UInt48>,
     /// <summary> The 48bit address value </summary>
     public UInt48 Value { get; }
 
+    /// <summary> The kind of the address if the <see cref="Type"/> is <see cref="BleAddressType.Random"/> </summary>
+    /// <remarks> <c>null</c> for any other type or if the two most significant bits have the reserved value 0b10 </remarks>
+    public BleRandomAddressKind? RandomKind
+    {
+        get
+        {
+            if (Type is not BleAddressType.Random)
+                return null;
+            return ((ulong)Value >> 46) switch
+            {
+                0b00 => BleRandomAddressKind.NonResolvablePrivate,
+                0b01 => BleRandomAddressKind.ResolvablePrivate,
+                0b11 => BleRandomAddressKind.Static,
+                _ => null,
+            };
+        }
+    }
+
     /// <summary> Convert the ble address to it's underlying value </summary>
     /// <param name="bleAddress"> The ble address </param>
     /// <returns> The 48 bit address </returns>
@@ -159,7 +177,7 @@ public sealed record BleAddress : ISpanParsable<BleAddress>, IEquatable<UInt48>,
     /// <inheritdoc />
     public override int GetHashCode() => HashCode.Combine((int)Type, Value);
 
-    /// <summary> Creates a new random address with a <see cref="BleAddressType.RandomStatic"/> type </summary>
+    /// <summary> Creates a new random address of kind <see cref="BleRandomAddressKind.Static"/> </summary>
     /// <returns> The new address </returns>
     public static BleAddress NewRandomStaticAddress()
     {
@@ -167,23 +185,11 @@ public sealed record BleAddress : ISpanParsable<BleAddress>, IEquatable<UInt48>,
         RandomNumberGenerator.Fill(buffer);
         buffer[5] = (byte)(buffer[5] | 0b11000000);
         var value = new UInt48(buffer[0], buffer[1], buffer[2], buffer[3], buffer[4], buffer[5]);
-        return new BleAddress(BleAddressType.RandomStatic, value);
+        return new BleAddress(BleAddressType.Random, value);
     }
 
-    /// <summary> Create BleAddress from a uint48 and inter the random <see cref="BleAddressType"/> </summary>
+    /// <summary> Create a BleAddress of type <see cref="BleAddressType.Random"/> from a uint48 </summary>
     /// <param name="value"> The value to base the address on </param>
-    /// <returns> The BleAddress with the type inferred </returns>
-    /// <remarks> If the MSB bits of the provided <paramref name="value"/> are 0b10, the address type will be <see cref="NotAvailable"/> </remarks>
-    public static BleAddress CreateRandomAddress(UInt48 value)
-    {
-        ulong addressTypeBits = (value >> 46) & 0b11;
-        BleAddressType type = addressTypeBits switch
-        {
-            0b00 => BleAddressType.RandomPrivateNonResolvable,
-            0b01 => BleAddressType.RandomPrivateResolvable,
-            0b11 => BleAddressType.RandomStatic,
-            _ => BleAddressType.NotAvailable,
-        };
-        return new BleAddress(type, value);
-    }
+    /// <returns> The random BleAddress. Its <see cref="RandomKind"/> is inferred from the value </returns>
+    public static BleAddress CreateRandomAddress(UInt48 value) => new(BleAddressType.Random, value);
 }

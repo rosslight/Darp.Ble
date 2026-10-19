@@ -13,7 +13,7 @@ internal sealed class WinBleDevice(IServiceProvider serviceProvider, string name
     public override BleAddress RandomAddress =>
         _adapter?.BluetoothAddress is null
             ? BleAddress.NotAvailable
-            : new BleAddress(BleAddressType.RandomStatic, (UInt48)_adapter.BluetoothAddress);
+            : new BleAddress(BleAddressType.Random, (UInt48)_adapter.BluetoothAddress);
 
     protected override Task SetRandomAddressAsyncCore(BleAddress randomAddress, CancellationToken cancellationToken)
     {

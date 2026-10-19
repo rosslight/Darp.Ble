@@ -124,7 +124,7 @@ public sealed class BleAddressTests
     {
         const ulong value = 0x112233445566;
         var publicAddress = new BleAddress(BleAddressType.Public, (UInt48)value);
-        var randomAddress = new BleAddress(BleAddressType.RandomStatic, (UInt48)value);
+        var randomAddress = new BleAddress(BleAddressType.Random, (UInt48)value);
         var secondPublicAddress = new BleAddress(BleAddressType.Public, (UInt48)value);
         BleAddress? nullAddr = null;
 
@@ -155,8 +155,8 @@ public sealed class BleAddressTests
     [InlineData(0xFFFFFFFFFFFF)]
     public void GetHashCode_MatchesEqualityLogic(ulong value)
     {
-        var randomAddress = new BleAddress(BleAddressType.RandomStatic, (UInt48)value);
-        var otherRandomAddress = new BleAddress(BleAddressType.RandomStatic, (UInt48)value);
+        var randomAddress = new BleAddress(BleAddressType.Random, (UInt48)value);
+        var otherRandomAddress = new BleAddress(BleAddressType.Random, (UInt48)value);
         var publicAddress = new BleAddress(BleAddressType.Public, (UInt48)value);
 
         randomAddress.GetHashCode().ShouldBe(otherRandomAddress.GetHashCode());
@@ -172,29 +172,43 @@ public sealed class BleAddressTests
     }
 
     [Fact]
-    public void NewRandomStaticAddress_HasHighTwoBitsSetAndTypeRandomStatic()
+    public void NewRandomStaticAddress_HasHighTwoBitsSetAndStaticRandomKind()
     {
         var rand = BleAddress.NewRandomStaticAddress();
 
         // the top two bits of the 48‐bit value must be 11
         ulong hi2 = (rand.Value >> 46) & 0b11;
         hi2.ShouldBe(0b11UL);
-        rand.Type.ShouldBe(BleAddressType.RandomStatic);
+        rand.Type.ShouldBe(BleAddressType.Random);
+        rand.RandomKind.ShouldBe(BleRandomAddressKind.Static);
     }
 
     [Theory]
-    [InlineData(0b00, BleAddressType.RandomPrivateNonResolvable)]
-    [InlineData(0b01, BleAddressType.RandomPrivateResolvable)]
-    [InlineData(0b11, BleAddressType.RandomStatic)]
-    [InlineData(0b10, BleAddressType.NotAvailable)]
-    public void CreateRandomAddress_InfersTypeFromTopTwoBits(int bits, BleAddressType expectedType)
+    [InlineData(0b00, BleRandomAddressKind.NonResolvablePrivate)]
+    [InlineData(0b01, BleRandomAddressKind.ResolvablePrivate)]
+    [InlineData(0b11, BleRandomAddressKind.Static)]
+    [InlineData(0b10, null)]
+    public void CreateRandomAddress_InfersRandomKindFromTopTwoBits(int bits, BleRandomAddressKind? expectedKind)
     {
         // put bits into bits 47-46
-        ulong raw = ((ulong)bits << 46) | 0x0000_0000_0000UL;
-        var u48 = (UInt48)raw;
+        var u48 = (UInt48)(((ulong)bits << 46) | 0x1122_3344_5566UL);
 
         var addr = BleAddress.CreateRandomAddress(u48);
+
         addr.Value.ShouldBe(u48);
-        addr.Type.ShouldBe(expectedType);
+        addr.Type.ShouldBe(BleAddressType.Random);
+        addr.RandomKind.ShouldBe(expectedKind);
+    }
+
+    [Theory]
+    [InlineData(BleAddressType.Public)]
+    [InlineData(BleAddressType.PublicIdentity)]
+    [InlineData(BleAddressType.RandomStaticIdentity)]
+    [InlineData(BleAddressType.NotAvailable)]
+    public void RandomKind_AddressTypeIsNotRandom_IsNull(BleAddressType addressType)
+    {
+        var address = new BleAddress(addressType, (UInt48)0xC11122334455);
+
+        address.RandomKind.ShouldBeNull();
     }
 }
