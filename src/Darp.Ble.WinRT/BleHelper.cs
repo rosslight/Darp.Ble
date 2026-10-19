@@ -10,7 +10,7 @@ internal static class BleHelper
         BleAddressType addressType = winAddressType switch
         {
             BluetoothAddressType.Public => BleAddressType.Public,
-            BluetoothAddressType.Random => BleAddressType.RandomPrivateNonResolvable,
+            BluetoothAddressType.Random => BleAddressType.Random,
             _ => BleAddressType.NotAvailable,
         };
         return new BleAddress(addressType, (UInt48)winAddress);

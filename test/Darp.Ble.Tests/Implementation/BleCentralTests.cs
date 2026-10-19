@@ -61,7 +61,7 @@ public sealed class BleCentralTests
         bool expectedResult
     )
     {
-        var address = new BleAddress(BleAddressType.RandomStatic, (UInt48)0xD9A06403396C);
+        var address = new BleAddress(BleAddressType.Random, (UInt48)0xD9A06403396C);
         IBleDevice device = await GetMockDeviceAsync(async device => await device.SetRandomAddressAsync(address));
         IObservable<IGattServerPeer> observable = device.Central.ConnectToPeripheral(
             address,
@@ -84,7 +84,7 @@ public sealed class BleCentralTests
         bool expectedResult
     )
     {
-        var address = new BleAddress(BleAddressType.RandomStatic, (UInt48)0xD9A06403396C);
+        var address = new BleAddress(BleAddressType.Random, (UInt48)0xD9A06403396C);
         IBleDevice device = await GetMockDeviceAsync(async device => await device.SetRandomAddressAsync(address));
         IObservable<IGattServerPeer> observable = device.Central.ConnectToPeripheral(
             address,
@@ -101,7 +101,7 @@ public sealed class BleCentralTests
     public async Task ConnectToPeripheral_ShouldWork()
     {
         byte[] dataToWrite = [0x01, 0x02, 0x03, 0x04];
-        var address = new BleAddress(BleAddressType.RandomStatic, (UInt48)0xD9A06403396C);
+        var address = new BleAddress(BleAddressType.Random, (UInt48)0xD9A06403396C);
         IBleDevice device = await GetMockDeviceAsync(async d =>
         {
             await d.SetRandomAddressAsync(address);

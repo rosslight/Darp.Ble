@@ -26,7 +26,7 @@ internal sealed class WinBleCentral(BleDevice device, ILogger<WinBleCentral> log
                         address.Value,
                         address.Type switch
                         {
-                            BleAddressType.Public => BluetoothAddressType.Public,
+                            BleAddressType.Public or BleAddressType.PublicIdentity => BluetoothAddressType.Public,
                             BleAddressType.NotAvailable => BluetoothAddressType.Unspecified,
                             _ => BluetoothAddressType.Random,
                         }

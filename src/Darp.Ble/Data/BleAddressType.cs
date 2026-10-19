@@ -1,6 +1,7 @@
 namespace Darp.Ble.Data;
 
-/// <summary> Ble address type </summary>
+/// <summary> The address type as reported by the HCI, e.g. in the LE Extended Advertising Report event </summary>
+/// <remarks> The kind of a <see cref="Random"/> address is available via <see cref="BleAddress.RandomKind"/> </remarks>
 public enum BleAddressType : byte
 {
     /// <summary>
@@ -12,31 +13,29 @@ public enum BleAddressType : byte
 
     /// <summary>
     /// Random Device Address:
-    /// An address that must NOT be registered with the IEEE.
-    /// Can be either fixed for lifetime or be assigned on boot. Cannot change during runtime
+    /// An address that is not registered with the IEEE.
+    /// It is either a static, a resolvable private or a non-resolvable private address
     /// </summary>
-    RandomStatic = 0x01,
+    Random = 0x01,
 
     /// <summary>
     /// Public Identity Address:
-    /// An address, which can be resolved by using a key (IRK / Identity Resolving Key).
-    /// Purpose is to prevent malicious third-parties from tracking a Bluetooth device while still allowing one or more trusted parties from identifying the Bluetooth device of interest.
-    /// A trusted device is a bonded device.
+    /// The controller resolved a resolvable private address and reports the public identity address of the device
     /// </summary>
-    RandomPrivateResolvable = 0x02,
+    PublicIdentity = 0x02,
 
     /// <summary>
     /// Random (static) Identity Address:
-    /// An address, which changes periodically.
-    /// Unlike a resolvable addresses, it is not resolvable by any other device. The sole purpose of this type of address is to prevent tracking by any other BLE device.
+    /// The controller resolved a resolvable private address and reports the static random identity address of the device
     /// </summary>
-    RandomPrivateNonResolvable = 0x03,
-
-    /// <summary> Private resolvable address </summary>
-    ResolvablePrivateAddress = 0xFE,
+    RandomStaticIdentity = 0x03,
 
     /// <summary>
-    /// No address provided (anonymous)
+    /// Random Device Address which the controller was unable to resolve.
+    /// Only used for the address a directed advertisement is directed to
     /// </summary>
+    RandomUnresolved = 0xFE,
+
+    /// <summary> No address provided (anonymous) </summary>
     NotAvailable = 0xFF,
 }
