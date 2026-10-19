@@ -270,15 +270,14 @@ public static class AdvertisementExtensions
                         return;
                     }
                     var key = new AdvKey(advertisement.Address, advertisement.AdvertisingSId);
-                    if (isAdvScannable)
+                    // Scan responses carry the properties of the advertisement they answer, which is scannable
+                    if (isAdvScanResponse)
                     {
-                        advertisementDict[key] = advertisement;
+                        if (advertisementDict.TryRemove(key, out IGapAdvertisement? previousAdv))
+                            observer.OnNext(new GapAdvertisementWithScanResponse(previousAdv, advertisement));
                         return;
                     }
-                    if (isAdvScanResponse && advertisementDict.TryRemove(key, out IGapAdvertisement? previousAdv))
-                    {
-                        observer.OnNext(new GapAdvertisementWithScanResponse(previousAdv, advertisement));
-                    }
+                    advertisementDict[key] = advertisement;
                 },
                 observer.OnError,
                 observer.OnCompleted
