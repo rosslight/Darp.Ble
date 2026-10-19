@@ -96,6 +96,7 @@ public sealed class AttReadByGroupTypeRspTests
     [InlineData("110601000B0000", 0)]
     [InlineData("110601000B00001800", 0)]
     [InlineData("1106", 0)]
+    [InlineData("110001000B000018", 0)]
     public void TryReadLittleEndian_16Bit_ShouldBeInvalid(string hexBytes, int expectedBytesDecoded)
     {
         byte[] bytes = Convert.FromHexString(hexBytes);

@@ -38,7 +38,7 @@ public readonly record struct AttReadByGroupTypeRsp() : IAttPdu, IBinaryObject<A
         if (opCode != ExpectedOpCode)
             return false;
         byte length = source[1];
-        if ((source.Length - 2) % length != 0)
+        if (length == 0 || (source.Length - 2) % length != 0)
             return false;
         int numberOfAttributeData = (source.Length - 2) / length;
         var attributeDataList = new AttGroupTypeData[numberOfAttributeData];
