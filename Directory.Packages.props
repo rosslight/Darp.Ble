@@ -8,7 +8,7 @@
     <PackageVersion Include="coverlet.MTP" Version="10.1.0" />
     <PackageVersion Include="Darp.BinaryObjects" Version="0.7.0" />
     <PackageVersion Include="Darp.Utils.Messaging" Version="2.1.3" />
-    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.312">
+    <PackageVersion Include="Meziantou.Analyzer" Version="3.0.315">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageVersion>
