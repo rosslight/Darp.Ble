@@ -58,8 +58,6 @@ nav = [
   ]},
   {"Project" = [
     "project/index.md",
-    "project/licensing.md",
-    "project/changelog.md"
   ]},
 ]
 
