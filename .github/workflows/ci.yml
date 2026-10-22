@@ -3,8 +3,8 @@ name: Build and test
 on:
   push:
     branches: [ "main" ]
+  # Every target branch, so stacked pull requests are checked too
   pull_request:
-    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
