@@ -33,6 +33,11 @@ jobs:
         run:  dotnet restore /p:EnableWindowsTargeting=true
       - name: Build
         run: dotnet build --no-restore --configuration Release /p:EnableWindowsTargeting=true
+      - name: Build examples
+        run: |
+          for example in examples/*.cs; do
+            dotnet build "$example" --configuration Release
+          done
       # Without the include filter, coverlet.MTP skips assemblies named like the test assembly,
       # e.g. Darp.Ble.HciHost for Darp.Ble.HciHost.Tests
       - name: Test
