@@ -1,3 +1,4 @@
+using Darp.Ble.Gatt;
 using Shouldly;
 
 namespace Darp.Ble.Tests.Gatt;

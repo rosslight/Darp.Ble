@@ -1,4 +1,4 @@
-namespace Darp.Ble.Data;
+namespace Darp.Ble.Gatt;
 
 /// <summary> The gatt property of a characteristic </summary>
 [Flags]

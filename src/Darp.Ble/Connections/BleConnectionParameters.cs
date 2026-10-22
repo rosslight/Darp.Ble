@@ -1,4 +1,6 @@
-namespace Darp.Ble.Data;
+using Darp.Ble.Data;
+
+namespace Darp.Ble.Connections;
 
 /// <summary> The parameters used when configuring a ble scan </summary>
 public sealed record BleConnectionParameters

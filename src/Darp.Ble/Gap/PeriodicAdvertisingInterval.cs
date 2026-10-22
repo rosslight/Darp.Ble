@@ -1,4 +1,4 @@
-namespace Darp.Ble.Data;
+namespace Darp.Ble.Gap;
 
 /// <summary> The interval of periodic advertising events </summary>
 public enum PeriodicAdvertisingInterval : ushort

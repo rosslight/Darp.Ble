@@ -1,4 +1,4 @@
-namespace Darp.Ble.Data;
+namespace Darp.Ble.Gap;
 
 /// <summary> Supplement to the Bluetooth Core Specification | v11, Part A </summary>
 [Flags]

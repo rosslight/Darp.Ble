@@ -1,4 +1,4 @@
-namespace Darp.Ble.Data;
+namespace Darp.Ble.Gap;
 
 /// <summary>
 /// The event type of the advertising report

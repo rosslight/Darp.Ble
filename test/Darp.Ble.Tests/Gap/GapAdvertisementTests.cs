@@ -1,7 +1,6 @@
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
-using Darp.Ble.Linq;
 using Shouldly;
 
 namespace Darp.Ble.Tests.Gap;
