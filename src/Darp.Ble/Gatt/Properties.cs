@@ -1,8 +1,13 @@
-using Darp.Ble.Data;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Darp.Ble.Gatt;
 
 /// <summary> GattProperty definitions </summary>
+[SuppressMessage(
+    "Design",
+    "CA1034:Nested types should not be visible",
+    Justification = "Marker types read as Properties.Read in type arguments"
+)]
 public static class Properties
 {
     /// <summary> A class which represents the <see cref="GattProperty.Notify"/> </summary>

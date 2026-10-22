@@ -1,4 +1,4 @@
-namespace Darp.Ble.Data;
+namespace Darp.Ble.Gatt;
 
 /// <summary> The status of a Gatt request. </summary>
 /// <seealso href="https://www.bluetooth.com/wp-content/uploads/Files/Specification/HTML/CSS_v11/out/en/supplement-to-the-bluetooth-core-specification/common-profile-and-service-error-codes.html">Part B. Common Profile and Service Error Codes</seealso>

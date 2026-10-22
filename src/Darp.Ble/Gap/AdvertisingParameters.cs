@@ -1,4 +1,6 @@
-namespace Darp.Ble.Data;
+using Darp.Ble.Data;
+
+namespace Darp.Ble.Gap;
 
 /// <summary>
 /// Defines how scan and connection requests are filtered while advertising.

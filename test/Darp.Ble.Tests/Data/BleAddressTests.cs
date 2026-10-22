@@ -97,14 +97,24 @@ public sealed class BleAddressTests
     }
 
     [Fact]
-    public void ToString_Returns_12DigitUppercaseHex()
+    public void ToString_Returns_ColonSeparatedUppercaseHex()
     {
         // Arrange
         var addr = new BleAddress((UInt48)0x0a1b2c3d4e5f);
         // Act
         string s = addr.ToString();
         // Assert
-        s.ShouldBe("0A1B2C3D4E5F");
+        s.ShouldBe("0A:1B:2C:3D:4E:5F");
+    }
+
+    [Fact]
+    public void Parse_ReadsToString_Back()
+    {
+        var addr = new BleAddress(BleAddressType.Random, (UInt48)0xCCF372C11A0A);
+
+        BleAddress parsed = BleAddress.Parse(addr.ToString(), provider: null);
+
+        parsed.Value.ShouldBe(addr.Value);
     }
 
     [Fact]

@@ -1,7 +1,7 @@
 using System.Numerics.Tensors;
 using System.Security.Cryptography;
 
-namespace Darp.Ble;
+namespace Darp.Ble.Gatt;
 
 /// <summary> The AES-CMAC encryption algorithm </summary>
 public sealed class AesCmac : IDisposable

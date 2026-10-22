@@ -1,7 +1,14 @@
-namespace Darp.Ble.Data;
+using System.Diagnostics.CodeAnalysis;
+
+namespace Darp.Ble.Gap;
 
 /// <summary> Supplement to the Bluetooth Core Specification | v11, Part A </summary>
 [Flags]
+[SuppressMessage(
+    "Naming",
+    "CA1711:Identifiers should not have incorrect suffix",
+    Justification = "Named after the Flags AD type it holds"
+)]
 public enum AdvertisingDataFlags : byte
 {
     /// <summary>Specifies no flag.</summary>

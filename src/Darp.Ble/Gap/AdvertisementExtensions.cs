@@ -1,6 +1,4 @@
-using Darp.Ble.Gap;
-
-namespace Darp.Ble.Linq;
+namespace Darp.Ble.Gap;
 
 /// <summary> Extensions for handling advertising reports </summary>
 public static class AdvertisementExtensions
