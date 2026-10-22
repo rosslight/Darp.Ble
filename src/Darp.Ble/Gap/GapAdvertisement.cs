@@ -1,6 +1,5 @@
 using System.Buffers.Binary;
 using Darp.Ble.Data;
-using Darp.Ble.Implementation;
 
 namespace Darp.Ble.Gap;
 
@@ -9,14 +8,10 @@ public sealed class GapAdvertisement : IGapAdvertisement
 {
     private readonly byte[] _bytes;
 
-    private GapAdvertisement(byte[] bytes, IBleObserver bleObserver)
+    private GapAdvertisement(byte[] bytes)
     {
         _bytes = bytes;
-        Observer = bleObserver;
     }
-
-    /// <inheritdoc />
-    public IBleObserver Observer { get; }
 
     /// <inheritdoc />
     public required DateTimeOffset Timestamp { get; init; }
@@ -53,15 +48,10 @@ public sealed class GapAdvertisement : IGapAdvertisement
 
     /// <summary> Create an advertisement wrapper from bytes of an extended advertising report </summary>
     /// <remarks> BLUETOOTH CORE SPECIFICATION Version 5.4 | Vol 4, Part E, 7.7.65.13 LE Extended Advertising Report event </remarks>
-    /// <param name="bleObserver"> The observer which produced this advertisement report </param>
     /// <param name="timestamp"> The timestamp the record was recorded </param>
     /// <param name="bytes"> The bytes of a single extended advertising report </param>
     /// <returns> The advertisement </returns>
-    public static GapAdvertisement FromExtendedAdvertisingReport(
-        BleObserver bleObserver,
-        DateTimeOffset timestamp,
-        byte[] bytes
-    )
+    public static GapAdvertisement FromExtendedAdvertisingReport(DateTimeOffset timestamp, byte[] bytes)
     {
         ReadOnlySpan<byte> byteBuffer = bytes;
         ushort eventType = BinaryPrimitives.ReadUInt16LittleEndian(byteBuffer);
@@ -78,7 +68,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
         byte dataLength = byteBuffer[23];
         ReadOnlyMemory<byte> data = bytes.AsMemory()[24..(24 + dataLength)];
 
-        return new GapAdvertisement(bytes, bleObserver)
+        return new GapAdvertisement(bytes)
         {
             Timestamp = timestamp,
             EventType = (BleEventType)eventType,
@@ -95,7 +85,6 @@ public sealed class GapAdvertisement : IGapAdvertisement
     }
 
     /// <summary> Create from property values </summary>
-    /// <param name="bleObserver"> The observer which produced this advertisement report </param>
     /// <param name="timestamp"> The Timestamp when the report was received </param>
     /// <param name="eventType"> The type of the advertising event </param>
     /// <param name="address"> Settings of the primary physical the advertising device used </param>
@@ -109,7 +98,6 @@ public sealed class GapAdvertisement : IGapAdvertisement
     /// <param name="advertisingData"> The data sections </param>
     /// <returns> The GapAdvertisement </returns>
     public static GapAdvertisement FromExtendedAdvertisingReport(
-        IBleObserver bleObserver,
         DateTimeOffset timestamp,
         BleEventType eventType,
         BleAddress address,
@@ -142,7 +130,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
         UInt48.WriteLittleEndian(buffer[17..], directAddress.Value);
         buffer[23] = (byte)dataSpan.Length;
         dataSpan.CopyTo(buffer[24..]);
-        return new GapAdvertisement(bytes, bleObserver)
+        return new GapAdvertisement(bytes)
         {
             Timestamp = timestamp,
             EventType = eventType,
@@ -204,9 +192,6 @@ public sealed class GapAdvertisement<TUserData> : IGapAdvertisement<TUserData>
         UserData = userData;
         _advertisement = advertisement;
     }
-
-    /// <inheritdoc />
-    public IBleObserver Observer => _advertisement.Observer;
 
     /// <inheritdoc />
     public DateTimeOffset Timestamp => _advertisement.Timestamp;

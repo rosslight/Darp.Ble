@@ -79,10 +79,9 @@ jobs:
       - name: Pack
         run: |
           version="${RELEASE_TAG#v}"
-          for file_name in src/*/*.csproj; do
-            dotnet pack "$file_name" --configuration Release --artifacts-path build/noncommercial /p:PackageLicenseFile=LICENSE.md /p:Version="$version"
-            dotnet pack "$file_name" --configuration Release --artifacts-path build/commercial /p:PackageLicenseFile=LICENSE-COMMERCIAL.md /p:Version="$version"
-          done
+          # The solution lists the libraries that are ported to 2.0
+          dotnet pack --configuration Release --artifacts-path build/noncommercial /p:PackageLicenseFile=LICENSE.md /p:Version="$version"
+          dotnet pack --configuration Release --artifacts-path build/commercial /p:PackageLicenseFile=LICENSE-COMMERCIAL.md /p:Version="$version"
 
       # The short-lived API key is valid for one hour, so request it right before pushing
       - name: NuGet login

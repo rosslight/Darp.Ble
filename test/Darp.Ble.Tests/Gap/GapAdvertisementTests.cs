@@ -2,16 +2,12 @@ using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
 using Darp.Ble.Linq;
-using Darp.Ble.Mock;
-using Microsoft.Extensions.Logging;
 using Shouldly;
 
 namespace Darp.Ble.Tests.Gap;
 
-public sealed class GapAdvertisementTests(ILoggerFactory loggerFactory)
+public sealed class GapAdvertisementTests
 {
-    private readonly BleManager _manager = new BleManagerBuilder().SetLogger(loggerFactory).AddMock().CreateManager();
-
     [Theory]
     [InlineData(
         BleEventType.AdvInd,
@@ -49,7 +45,7 @@ public sealed class GapAdvertisementTests(ILoggerFactory loggerFactory)
         "AABB",
         "10000155443322115A0100FF7FD80000FF0000000000000702011A0303AABB"
     )]
-    public async Task Advertisement_FromExtendedAdvertisingReport(
+    public void Advertisement_FromExtendedAdvertisingReport(
         BleEventType eventType,
         BleAddressType addressType,
         ulong address,
@@ -70,11 +66,8 @@ public sealed class GapAdvertisementTests(ILoggerFactory loggerFactory)
     {
         byte[] sectionData1 = Convert.FromHexString(sectionDataHex1);
         byte[] sectionData2 = Convert.FromHexString(sectionDataHex2);
-        IBleDevice device = _manager.EnumerateDevices().First();
-        await device.InitializeAsync();
 
         GapAdvertisement adv = GapAdvertisement.FromExtendedAdvertisingReport(
-            device.Observer,
             DateTimeOffset.UtcNow,
             eventType,
             new BleAddress(addressType, (UInt48)address),
@@ -124,7 +117,7 @@ public sealed class GapAdvertisementTests(ILoggerFactory loggerFactory)
         byte[] bytes = "130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB".ToByteArray();
         bytes[2] = hciAddressType;
 
-        GapAdvertisement adv = GapAdvertisement.FromExtendedAdvertisingReport(null!, DateTimeOffset.UtcNow, bytes);
+        GapAdvertisement adv = GapAdvertisement.FromExtendedAdvertisingReport(DateTimeOffset.UtcNow, bytes);
 
         adv.Address.Type.ShouldBe(expectedAddressType);
     }
@@ -135,14 +128,12 @@ public sealed class GapAdvertisementTests(ILoggerFactory loggerFactory)
     {
         const int testData = 12345;
         GapAdvertisement adv = GapAdvertisement.FromExtendedAdvertisingReport(
-            null!,
             DateTimeOffset.UtcNow,
             reportHex.ToByteArray()
         );
 
         IGapAdvertisement<int> advWithData = adv.WithUserData(testData);
 
-        advWithData.Observer.ShouldBe(adv.Observer);
         advWithData.Timestamp.ShouldBe(adv.Timestamp);
         advWithData.EventType.ShouldBe(adv.EventType);
         advWithData.Address.ShouldBe(adv.Address);
