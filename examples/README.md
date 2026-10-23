@@ -14,5 +14,7 @@ dotnet run examples/list-adapters.cs
 | [`advertise.cs`](advertise.cs) | Advertise a name until Ctrl+C |
 | [`connect.cs`](connect.cs) | Find a peripheral by its service, connect, list its services and disconnect |
 | [`host-service.cs`](host-service.cs) | Host a service, advertise it and print the connected centrals until Ctrl+C |
+| [`read-write.cs`](read-write.cs) | Read a typed value, write a new one and read it back |
+| [`notifications.cs`](notifications.cs) | Subscribe to a characteristic and print what it notifies |
 
 The examples use the in-process mock backend, so they run without Bluetooth hardware.

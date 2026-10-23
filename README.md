@@ -84,14 +84,38 @@ foreach (RemoteGattCharacteristic characteristic in await service.DiscoverCharac
 
 Requests of a connection run one at a time, in call order. A request whose peer does not answer within 30 seconds ends the connection with `DisconnectReason.AttTimeout`, and requests of an ended connection throw a `BleDisconnectedException` with the same `DisconnectInfo`.
 
+### Read, write and notifications
+
+A characteristic declaration describes what a characteristic supports; `DiscoverCharacteristicAsync(declaration)` returns a characteristic that only offers those operations, typed when the declaration has a value type.
+`WriteWithoutResponseAsync` completes once the backend accepted the packet, so a loop of awaited writes is paced to what the radio can send.
+
+```csharp
+var setpoint = CharacteristicDeclaration.Create<ushort, Properties.Read, Properties.Write>(0xFFF1);
+var remote = await service.DiscoverCharacteristicAsync(setpoint);
+await remote.WriteAsync((ushort)22);
+ushort value = await remote.ReadAsync();
+```
+
+`Subscribe()` starts a stream without any I/O, so it can exist before notifications are on; `EnableNotificationsAsync()` turns them on once per connection.
+Each stream has its own queue. A stream ends with its connection: normally when you disconnected, with a `BleDisconnectedException` when the link was lost.
+
+```csharp
+using NotificationStream<byte[]> stream = measurement.Subscribe();
+await measurement.EnableNotificationsAsync();
+await foreach (byte[] value in stream)
+    Console.WriteLine(Convert.ToHexString(value));
+```
+
 ### Host a service
 
 `adapter.Peripheral.Gatt.AddServiceAsync(builder)` publishes a complete service. `ConnectedCentrals` lists the centrals that are connected.
+Read and write handlers get the `ConnectedCentral` that asked and a token that is cancelled when its connection ends; the handlers of one central run one at a time. `NotifyAsync(central, value)` notifies one central.
 A connection stops the advertising set it came through; `StartAdvertisingAsync(..., autoRestart: true)` starts it again once that central disconnected.
 
 ```csharp
 var service = new LocalGattServiceBuilder(0x180D);
-service.AddCharacteristic(0x2A37, GattProperty.Notify);
+LocalGattCharacteristic measurement = service.AddCharacteristic(0x2A37, GattProperty.Notify);
+service.AddCharacteristic(0x2A39, GattProperty.Write, onWrite: (central, value, ct) => ValueTask.FromResult(GattProtocolStatus.Success));
 await adapter.Peripheral.Gatt.AddServiceAsync(service);
 
 await using AdvertisingSet advertising = await adapter.Broadcaster.StartAdvertisingAsync(
