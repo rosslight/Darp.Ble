@@ -1,6 +1,7 @@
 using Darp.Ble.Backends;
 using Darp.Ble.Connections;
 using Darp.Ble.Data;
+using Darp.Ble.Gatt;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Connections;
@@ -38,10 +39,14 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
         _logger = logger;
         _requests = new RequestQueue(address, timeProvider, End, logger);
         Address = address;
+        Gatt = new GattClient(this, driver);
     }
 
     /// <summary> The address of the peripheral </summary>
     public BleAddress Address { get; }
+
+    /// <summary> The services of the peripheral </summary>
+    public GattClient Gatt { get; }
 
     /// <summary> The longest value a write can carry, from the MTU agreed when connecting </summary>
     public int MaxWritePayloadLength => _maxWritePayloadLength;
@@ -61,6 +66,10 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
     /// <summary> Ends the connection; the same as <see cref="DisconnectAsync"/> </summary>
     /// <returns> A task that completes once the connection ended </returns>
     public ValueTask DisposeAsync() => new(DisconnectAsync(CancellationToken.None));
+
+    /// <summary> Runs a request of this connection once the earlier ones ended </summary>
+    internal Task<T> RunAsync<T>(Func<GattRequest, Task<T>> send, CancellationToken cancellationToken) =>
+        _requests.RunAsync(send, cancellationToken);
 
     /// <summary> Why the connection ends, once it started ending </summary>
     internal DisconnectInfo? Ending

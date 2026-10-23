@@ -1,5 +1,6 @@
 using Darp.Ble.Backends;
 using Darp.Ble.Connections;
+using Darp.Ble.Gatt;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Connections;
@@ -13,16 +14,26 @@ public sealed class BlePeripheral
     private readonly Dictionary<ICentralConnectionDriver, ConnectedCentral> _centrals = [];
     private bool _closed;
 
+    // Set once disposal disconnected every central; a central reported later goes with the driver
+    private bool _drained;
+
+    // Publications; disposal waits for them
+    private readonly OperationTracker _operations = new();
+
     internal BlePeripheral(BleAdapter adapter, IPeripheralDriver driver, ILogger logger)
     {
         Adapter = adapter;
         _driver = driver;
         _logger = logger;
+        Gatt = new GattServer(driver, _operations);
         driver.Attach(new PeripheralEvents(this));
     }
 
     /// <summary> The adapter this peripheral belongs to </summary>
     public BleAdapter Adapter { get; }
+
+    /// <summary> The services the adapter hosts </summary>
+    public GattServer Gatt { get; }
 
     /// <summary> The connected centrals, as a snapshot </summary>
     public IReadOnlyList<ConnectedCentral> ConnectedCentrals
@@ -38,16 +49,19 @@ public sealed class BlePeripheral
     {
         var central = new ConnectedCentral(this, _driver, connection, _logger);
         bool closed;
+        bool drained;
         lock (_lock)
         {
             closed = _closed;
-            if (!closed)
+            drained = _drained;
+            // Disposal waits for every central it can still see, also one it rejects
+            if (!drained)
                 _centrals.Add(connection, central);
         }
         _logger.LogCentralConnected(central.Address);
-        // A central that connects while the adapter closes is let go at once
+        // A central that connects while the adapter closes is let go at once; after disposal the driver's own disposal ends it
         if (closed)
-            central.End(new DisconnectInfo(DisconnectReason.LocalRequest), takeLinkDown: true);
+            central.End(new DisconnectInfo(DisconnectReason.LocalRequest), takeLinkDown: !drained);
     }
 
     internal void OnCentralDisconnected(ICentralConnectionDriver connection, DisconnectInfo info)
@@ -66,15 +80,30 @@ public sealed class BlePeripheral
 
     internal void CloseAdmission()
     {
+        _operations.Close();
         lock (_lock)
             _closed = true;
     }
 
-    /// <summary> Disconnects every central </summary>
+    /// <summary> Waits for publications in flight, then disconnects every central </summary>
     internal async Task DisposeAsync()
     {
         CloseAdmission();
-        foreach (ConnectedCentral central in ConnectedCentrals)
-            await central.DisconnectAsync(CancellationToken.None).ConfigureAwait(false);
+        await _operations.CloseAndWaitAsync().ConfigureAwait(false);
+        while (true)
+        {
+            ConnectedCentral[] centrals;
+            lock (_lock)
+            {
+                centrals = [.. _centrals.Values];
+                if (centrals.Length == 0)
+                {
+                    _drained = true;
+                    return;
+                }
+            }
+            foreach (ConnectedCentral central in centrals)
+                await central.DisconnectAsync(CancellationToken.None).ConfigureAwait(false);
+        }
     }
 }

@@ -12,4 +12,9 @@ public interface IConnectionDriver : IAsyncDisposable
     /// <param name="request"> Reports the transaction and carries the caller's cancellation until it is sent </param>
     /// <returns> The agreed MTU, at least 23 </returns>
     Task<int> ExchangeMtuAsync(int clientMtu, GattRequest request);
+
+    /// <summary> Discovers the primary services of the peer </summary>
+    /// <param name="request"> Reports each transaction, e.g. each page; check <see cref="GattRequest.IsAbandoned"/> before the next one </param>
+    /// <returns> The services, in handle order </returns>
+    Task<IReadOnlyList<IRemoteServiceDriver>> DiscoverServicesAsync(GattRequest request);
 }
