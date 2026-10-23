@@ -2,7 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Darp.Ble;
 
-/// <summary> There are four GAP roles defined for devices operating over an LE physical transport </summary>
+/// <summary> The GAP roles and the optional features of an adapter </summary>
 [Flags]
 [SuppressMessage(
     "Usage",
@@ -34,4 +34,7 @@ public enum Capabilities
     /// A device that supports the Central role initiates the establishment of an LE active physical link
     /// </summary>
     Central = 0b1000 | Observer,
+
+    /// <summary> The adapter can set its own random address and that of its advertising sets </summary>
+    SetRandomAddress = 0b1_0000,
 }

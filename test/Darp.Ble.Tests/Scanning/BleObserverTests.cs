@@ -211,7 +211,7 @@ public sealed class BleObserverTests
     private async Task<BleAdapter> OpenAsync(ILoggerFactory? loggerFactory = null)
     {
         var manager = new BleManager(
-            builder => builder.AddBackend(new TestBackend(new TestScanAdapterDriver(_driver))),
+            builder => builder.AddBackend(new TestBackend(new TestAdapterDriver { Observer = _driver })),
             loggerFactory
         );
         IReadOnlyList<BleAdapterInfo> adapters = await manager.EnumerateAdaptersAsync(Token);

@@ -1,4 +1,3 @@
-using Darp.Ble.Backends;
 using Darp.Ble.Mock;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -104,7 +103,7 @@ public sealed class BleManagerTests
     [Fact]
     public async Task OpenAsync_WhenTheAdapterCannotBeCreated_AwaitsDisposingTheOpenedDriver()
     {
-        var driver = new TestAdapterDriver();
+        var driver = new TestAdapterDriver { HoldDisposal = true };
         var manager = new BleManager(
             builder => builder.AddBackend(new TestBackend(driver)),
             new RecordingLoggerFactory(throwOnLog: true)
@@ -122,7 +121,7 @@ public sealed class BleManagerTests
     [Fact]
     public async Task DisposeAsync_AwaitsTheDriversDisposalAndRunsItOnce()
     {
-        var driver = new TestAdapterDriver();
+        var driver = new TestAdapterDriver { HoldDisposal = true };
         var manager = new BleManager(builder => builder.AddBackend(new TestBackend(driver)));
         IReadOnlyList<BleAdapterInfo> adapters = await manager.EnumerateAdaptersAsync(Token);
         BleAdapter adapter = await adapters[0].OpenAsync(Token);
