@@ -122,7 +122,7 @@ public sealed class AdvertisingDataExtensionsGetterTests
         "aabbccdd-0000-1000-8000-00805f9b34fb",
         "aabbccee-0000-1000-8000-00805f9b34fb"
     )]
-    [InlineData(AdDataComplete128Uuids, BleUuidType.Uuid128, "ccddeeff-aabb-8899-7766-554433221100")]
+    [InlineData(AdDataComplete128Uuids, BleUuidType.Uuid128, "00112233-4455-6677-8899-aabbccddeeff")]
     public void GetServices_WithMultipleServiceUuids_ReturnsUuids(
         string sections,
         BleUuidType type,
