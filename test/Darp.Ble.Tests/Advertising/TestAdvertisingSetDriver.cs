@@ -11,6 +11,9 @@ internal sealed class TestAdvertisingSetDriver(TestBroadcasterDriver broadcaster
 
     public List<string> Calls { get; } = [];
 
+    /// <summary> When set, disposal waits until the test completes it </summary>
+    public TaskCompletionSource? HoldDisposal { get; set; }
+
     public BleAddress RandomAddress { get; private set; } = new(BleAddressType.Random, (UInt48)0xC0FFEE);
 
     public Task StartAsync(CancellationToken cancellationToken) => Record("start");
@@ -31,10 +34,11 @@ internal sealed class TestAdvertisingSetDriver(TestBroadcasterDriver broadcaster
         return Record("address");
     }
 
-    public ValueTask DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
+        if (HoldDisposal is not null)
+            await HoldDisposal.Task.ConfigureAwait(false);
         Calls.Add("dispose");
-        return ValueTask.CompletedTask;
     }
 
     private Task Record(string operation)

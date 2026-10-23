@@ -14,6 +14,9 @@ internal sealed class TestAdapterDriver : IBleAdapterDriver
 
     public IBroadcasterDriver? Broadcaster { get; init; }
 
+    /// <summary> When set, changing the address waits until the test completes it </summary>
+    public TaskCompletionSource? HoldAddressChange { get; init; }
+
     /// <summary> When true, disposal waits for <see cref="CompleteDisposal"/> </summary>
     public bool HoldDisposal { get; init; }
 
@@ -21,10 +24,11 @@ internal sealed class TestAdapterDriver : IBleAdapterDriver
 
     public int DisposeCount { get; private set; }
 
-    public Task SetRandomAddressAsync(BleAddress address, CancellationToken cancellationToken)
+    public async Task SetRandomAddressAsync(BleAddress address, CancellationToken cancellationToken)
     {
+        if (HoldAddressChange is not null)
+            await HoldAddressChange.Task.ConfigureAwait(false);
         RandomAddress = address;
-        return Task.CompletedTask;
     }
 
     public void CompleteDisposal() => _allowDisposal.TrySetResult();

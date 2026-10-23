@@ -11,7 +11,9 @@ public sealed class BleBroadcaster
     private readonly ILogger _logger;
     private readonly Lock _lock = new();
     private readonly List<AdvertisingSet> _sets = [];
-    private bool _closed;
+
+    // Disposal waits for every creation it admitted
+    private readonly OperationTracker _creations = new();
 
     internal BleBroadcaster(BleAdapter adapter, IBroadcasterDriver driver, ILogger logger)
     {
@@ -40,26 +42,32 @@ public sealed class BleBroadcaster
         ArgumentNullException.ThrowIfNull(parameters);
         parameters.Validate(nameof(parameters));
         data ??= AdvertisingData.Empty;
-        lock (_lock)
-            ObjectDisposedException.ThrowIf(_closed, typeof(BleBroadcaster));
-        IAdvertisingSetDriver setDriver = await _driver
-            .CreateAdvertisingSetAsync(parameters, data, scanResponseData, cancellationToken)
-            .ConfigureAwait(false);
-        var set = new AdvertisingSet(this, setDriver, parameters, data, scanResponseData, _logger);
-        bool closed;
-        lock (_lock)
+        _creations.Enter(typeof(BleBroadcaster));
+        try
         {
-            closed = _closed;
-            if (!closed)
-                _sets.Add(set);
+            IAdvertisingSetDriver setDriver = await _driver
+                .CreateAdvertisingSetAsync(parameters, data, scanResponseData, cancellationToken)
+                .ConfigureAwait(false);
+            var set = new AdvertisingSet(this, setDriver, parameters, data, scanResponseData, _logger);
+            bool closed;
+            lock (_lock)
+            {
+                closed = _creations.IsClosed;
+                if (!closed)
+                    _sets.Add(set);
+            }
+            if (closed)
+            {
+                // The adapter closed while the set was being created; release it before disposal continues
+                await set.DisposeAsync().ConfigureAwait(false);
+                throw new ObjectDisposedException(nameof(BleBroadcaster));
+            }
+            return set;
         }
-        if (closed)
+        finally
         {
-            // The adapter was disposed while the set was being created
-            await setDriver.DisposeAsync().ConfigureAwait(false);
-            throw new ObjectDisposedException(nameof(BleBroadcaster));
+            _creations.Exit();
         }
-        return set;
     }
 
     /// <summary> Creates an advertising set and starts it </summary>
@@ -103,15 +111,16 @@ public sealed class BleBroadcaster
             _sets.Remove(set);
     }
 
-    /// <summary> Closes admission and disposes every set; tries all of them even if one fails </summary>
+    /// <summary> Closes admission so no set can be created any more </summary>
+    internal void CloseAdmission() => _creations.Close();
+
+    /// <summary> Closes admission, waits for creations in flight, then disposes every set; tries all of them even if one fails </summary>
     internal async Task DisposeAsync()
     {
+        await _creations.CloseAndWaitAsync().ConfigureAwait(false);
         AdvertisingSet[] sets;
         lock (_lock)
-        {
-            _closed = true;
             sets = [.. _sets];
-        }
         List<Exception>? failures = null;
         foreach (AdvertisingSet set in sets)
         {

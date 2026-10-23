@@ -1,5 +1,4 @@
 using Darp.Ble.Backends;
-using Darp.Ble.Data;
 using Darp.Ble.Gap;
 
 namespace Darp.Ble.Tests.Scanning;
@@ -17,6 +16,11 @@ internal sealed class TestObserverDriver : IObserverDriver
 
     public Exception? StartFailure { get; set; }
 
+    public Exception? StopFailure { get; set; }
+
+    /// <summary> When set, stopping waits until the test completes it </summary>
+    public TaskCompletionSource? HoldStop { get; set; }
+
     /// <summary> The sink of the current or the last run </summary>
     public IScanSink Sink => _sink ?? throw new InvalidOperationException("The radio never scanned");
 
@@ -30,11 +34,14 @@ internal sealed class TestObserverDriver : IObserverDriver
         return Task.CompletedTask;
     }
 
-    public Task StopScanAsync(CancellationToken cancellationToken)
+    public async Task StopScanAsync(CancellationToken cancellationToken)
     {
         StopCount++;
+        if (HoldStop is not null)
+            await HoldStop.Task.ConfigureAwait(false);
+        if (StopFailure is not null)
+            throw StopFailure;
         IsScanning = false;
-        return Task.CompletedTask;
     }
 
     public void Report(params IGapAdvertisement[] advertisements)
