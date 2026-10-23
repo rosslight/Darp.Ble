@@ -3837,6 +3837,7 @@ Darp.Ble.Data.UInt48.TryFormat(System.Span<char> destination, out int charsWritt
 Darp.Ble.Data.UInt48.UInt48() -> void
 Darp.Ble.Data.UInt48.UInt48(byte b0, byte b1, byte b2, byte b3, byte b4, byte b5) -> void
 Darp.Ble.Gap.AdvertisementExtensions
+Darp.Ble.Gap.AdvertisementStreamExtensions
 Darp.Ble.Gap.AdvertisingChannelMap
 Darp.Ble.Gap.AdvertisingChannelMap.Channel37 = 1 -> Darp.Ble.Gap.AdvertisingChannelMap
 Darp.Ble.Gap.AdvertisingChannelMap.Channel38 = 2 -> Darp.Ble.Gap.AdvertisingChannelMap
@@ -4111,6 +4112,17 @@ static Darp.Ble.Data.UInt48.operator ==(Darp.Ble.Data.UInt48 left, Darp.Ble.Data
 static Darp.Ble.Data.UInt48.operator >(Darp.Ble.Data.UInt48 left, Darp.Ble.Data.UInt48 right) -> bool
 static Darp.Ble.Data.UInt48.operator >=(Darp.Ble.Data.UInt48 left, Darp.Ble.Data.UInt48 right) -> bool
 static Darp.Ble.Gap.AdvertisementExtensions.WithUserData<TUserData>(this Darp.Ble.Gap.IGapAdvertisement! advertisement, TUserData userData) -> Darp.Ble.Gap.IGapAdvertisement<TUserData>!
+static Darp.Ble.Gap.AdvertisementStreamExtensions.CastUserData<TUserData>(this System.Collections.Generic.IAsyncEnumerable<Darp.Ble.Gap.IGapAdvertisement!>! source) -> System.Collections.Generic.IAsyncEnumerable<Darp.Ble.Gap.IGapAdvertisement<TUserData>!>!
+static Darp.Ble.Gap.AdvertisementStreamExtensions.OfUserData<TUserData>(this System.Collections.Generic.IAsyncEnumerable<Darp.Ble.Gap.IGapAdvertisement!>! source) -> System.Collections.Generic.IAsyncEnumerable<Darp.Ble.Gap.IGapAdvertisement<TUserData>!>!
+static Darp.Ble.Gap.AdvertisementStreamExtensions.WhereAddress<TAdv>(this System.Collections.Generic.IAsyncEnumerable<TAdv>! source, Darp.Ble.Data.BleAddress? address) -> System.Collections.Generic.IAsyncEnumerable<TAdv>!
+static Darp.Ble.Gap.AdvertisementStreamExtensions.WhereAddress<TAdv>(this System.Collections.Generic.IAsyncEnumerable<TAdv>! source, ulong? address) -> System.Collections.Generic.IAsyncEnumerable<TAdv>!
+static Darp.Ble.Gap.AdvertisementStreamExtensions.WhereConnectable<TAdv>(this System.Collections.Generic.IAsyncEnumerable<TAdv>! source) -> System.Collections.Generic.IAsyncEnumerable<TAdv>!
+static Darp.Ble.Gap.AdvertisementStreamExtensions.WhereDirected<TAdv>(this System.Collections.Generic.IAsyncEnumerable<TAdv>! source) -> System.Collections.Generic.IAsyncEnumerable<TAdv>!
+static Darp.Ble.Gap.AdvertisementStreamExtensions.WhereScanResponse<TAdv>(this System.Collections.Generic.IAsyncEnumerable<TAdv>! source) -> System.Collections.Generic.IAsyncEnumerable<TAdv>!
+static Darp.Ble.Gap.AdvertisementStreamExtensions.WhereScannable<TAdv>(this System.Collections.Generic.IAsyncEnumerable<TAdv>! source) -> System.Collections.Generic.IAsyncEnumerable<TAdv>!
+static Darp.Ble.Gap.AdvertisementStreamExtensions.WhereService<TAdv>(this System.Collections.Generic.IAsyncEnumerable<TAdv>! source, Darp.Ble.Data.BleUuid? service) -> System.Collections.Generic.IAsyncEnumerable<TAdv>!
+static Darp.Ble.Gap.AdvertisementStreamExtensions.WhereService<TAdv>(this System.Collections.Generic.IAsyncEnumerable<TAdv>! source, ushort? service) -> System.Collections.Generic.IAsyncEnumerable<TAdv>!
+static Darp.Ble.Gap.AdvertisementStreamExtensions.WhereType<TAdv>(this System.Collections.Generic.IAsyncEnumerable<TAdv>! source, Darp.Ble.Gap.BleEventType type) -> System.Collections.Generic.IAsyncEnumerable<TAdv>!
 static Darp.Ble.Gap.AdvertisingData.Empty.get -> Darp.Ble.Gap.AdvertisingData!
 static Darp.Ble.Gap.AdvertisingData.From(System.Collections.Generic.IReadOnlyList<(Darp.Ble.Data.AssignedNumbers.AdTypes Section, System.ReadOnlyMemory<byte> Bytes)>! sections) -> Darp.Ble.Gap.AdvertisingData!
 static Darp.Ble.Gap.AdvertisingData.From(System.Collections.Generic.IReadOnlyList<(Darp.Ble.Data.AssignedNumbers.AdTypes Section, byte[]! Bytes)>! sections) -> Darp.Ble.Gap.AdvertisingData!
