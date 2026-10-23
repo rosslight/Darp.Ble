@@ -16,12 +16,14 @@ internal sealed class HciHostAdapterDriver : IBleAdapterDriver
     private readonly HciHostObserverDriver _observer;
     private readonly HciHostBroadcasterDriver _broadcaster;
     private readonly HciHostCentralDriver _central;
+    private readonly HciHostPeripheralDriver _peripheral;
 
     private HciHostAdapterDriver(HciDevice device, int maxAdvertisingDataLength, int numberOfAdvertisingSets)
     {
         _device = device;
         _observer = new HciHostObserverDriver(device);
         _central = new HciHostCentralDriver(device);
+        _peripheral = new HciHostPeripheralDriver(device);
         _broadcaster = new HciHostBroadcasterDriver(
             device,
             maxAdvertisingDataLength,
@@ -56,7 +58,12 @@ internal sealed class HciHostAdapterDriver : IBleAdapterDriver
     }
 
     public Capabilities Capabilities =>
-        Capabilities.Observer | Capabilities.Broadcaster | Capabilities.Central | Capabilities.SetRandomAddress;
+        Capabilities.Observer
+        | Capabilities.Broadcaster
+        | Capabilities.Central
+        | Capabilities.Peripheral
+        | Capabilities.SetRandomAddress
+        | Capabilities.SetGapIdentity;
 
     public IObserverDriver? Observer => _observer;
 
@@ -64,7 +71,7 @@ internal sealed class HciHostAdapterDriver : IBleAdapterDriver
 
     public ICentralDriver? Central => _central;
 
-    public IPeripheralDriver? Peripheral => null;
+    public IPeripheralDriver? Peripheral => _peripheral;
 
     public BleAddress RandomAddress => BleAddress.CreateRandomAddress((Data.UInt48)_device.Address);
 
@@ -74,6 +81,7 @@ internal sealed class HciHostAdapterDriver : IBleAdapterDriver
     public ValueTask DisposeAsync()
     {
         _observer.Dispose();
+        _peripheral.Dispose();
         return _device.DisposeAsync();
     }
 }

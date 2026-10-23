@@ -132,8 +132,9 @@ public sealed partial class L2CapAssembler(ushort connectionHandle, ILogger<L2Ca
                 when AttFindByTypeValueRsp.TryReadLittleEndian(l2Cap.Pdu, out var rsp):
                 PublishEventPacketAndLog(rsp, l2Cap.Pdu);
                 break;
+            // 128-bit types go on as the raw PDU
             case AttOpCode.ATT_READ_BY_TYPE_REQ
-                when AttReadByTypeReq<ushort>.TryReadLittleEndian(l2Cap.Pdu, out var req):
+                when l2Cap.Pdu.Length == 7 && AttReadByTypeReq<ushort>.TryReadLittleEndian(l2Cap.Pdu, out var req):
                 PublishEventPacketAndLog(req, l2Cap.Pdu);
                 break;
             case AttOpCode.ATT_READ_BY_TYPE_RSP when AttReadByTypeRsp.TryReadLittleEndian(l2Cap.Pdu, out var rsp):
@@ -146,7 +147,7 @@ public sealed partial class L2CapAssembler(ushort connectionHandle, ILogger<L2Ca
                 PublishEventPacketAndLog(rsp, l2Cap.Pdu);
                 break;
             case AttOpCode.ATT_READ_BY_GROUP_TYPE_REQ
-                when AttReadByGroupTypeReq<ushort>.TryReadLittleEndian(l2Cap.Pdu, out var req):
+                when l2Cap.Pdu.Length == 7 && AttReadByGroupTypeReq<ushort>.TryReadLittleEndian(l2Cap.Pdu, out var req):
                 PublishEventPacketAndLog(req, l2Cap.Pdu);
                 break;
             case AttOpCode.ATT_READ_BY_GROUP_TYPE_RSP
