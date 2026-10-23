@@ -1,5 +1,3 @@
-using Darp.Ble.Data;
-
 namespace Darp.Ble.Gatt;
 
 /// <summary> Discovery of characteristics by declaration </summary>
@@ -65,6 +63,40 @@ public static class RemoteGattServiceExtensions
         where TProp2 : IBleProperty =>
         new(await DiscoverAsync(service, declaration, cancellationToken).ConfigureAwait(false), declaration);
 
+    /// <summary> The characteristic a declaration describes among discovered ones, or null when there is none </summary>
+    /// <exception cref="GattException"> It exists but lacks a declared property (PropertyMismatch) </exception>
+    internal static RemoteGattCharacteristic? Match(
+        IReadOnlyList<RemoteGattCharacteristic> characteristics,
+        ICharacteristicDeclaration declaration
+    )
+    {
+        RemoteGattCharacteristic? characteristic = characteristics.FirstOrDefault(c => c.Uuid == declaration.Uuid);
+        if (characteristic is null)
+            return null;
+        GattProperty missing = declaration.Properties & ~characteristic.Properties;
+        if (missing is not GattProperty.None)
+        {
+            throw new GattException(
+                GattErrorKind.PropertyMismatch,
+                $"The characteristic {declaration.Uuid} does not support {missing}"
+            );
+        }
+        return characteristic;
+    }
+
+    /// <summary> The characteristic a declaration describes among discovered ones </summary>
+    /// <exception cref="GattException"> There is none (NotFound), or it lacks a declared property (PropertyMismatch) </exception>
+    internal static RemoteGattCharacteristic Require(
+        RemoteGattService service,
+        IReadOnlyList<RemoteGattCharacteristic> characteristics,
+        ICharacteristicDeclaration declaration
+    ) =>
+        Match(characteristics, declaration)
+        ?? throw new GattException(
+            GattErrorKind.NotFound,
+            $"The service {service.Uuid} has no characteristic {declaration.Uuid}"
+        );
+
     private static async Task<RemoteGattCharacteristic> DiscoverAsync(
         RemoteGattService service,
         ICharacteristicDeclaration declaration,
@@ -76,20 +108,6 @@ public static class RemoteGattServiceExtensions
         IReadOnlyList<RemoteGattCharacteristic> characteristics = await service
             .DiscoverCharacteristicsAsync(cancellationToken)
             .ConfigureAwait(false);
-        RemoteGattCharacteristic characteristic =
-            characteristics.FirstOrDefault(c => c.Uuid == declaration.Uuid)
-            ?? throw new GattException(
-                GattErrorKind.NotFound,
-                $"The service {service.Uuid} has no characteristic {declaration.Uuid}"
-            );
-        GattProperty missing = declaration.Properties & ~characteristic.Properties;
-        if (missing is not GattProperty.None)
-        {
-            throw new GattException(
-                GattErrorKind.PropertyMismatch,
-                $"The characteristic {declaration.Uuid} does not support {missing}"
-            );
-        }
-        return characteristic;
+        return Require(service, characteristics, declaration);
     }
 }
