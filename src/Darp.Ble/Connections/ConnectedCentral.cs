@@ -1,5 +1,7 @@
+using System.Diagnostics;
 using Darp.Ble.Backends;
 using Darp.Ble.Data;
+using Darp.Ble.Diagnostics;
 using Darp.Ble.Gatt;
 using Microsoft.Extensions.Logging;
 
@@ -17,6 +19,17 @@ public sealed class ConnectedCentral
     private readonly IPeripheralDriver _driver;
     private readonly ICentralConnectionDriver _connection;
     private readonly ILogger _logger;
+    private readonly TimeProvider _timeProvider;
+    private readonly DiagnosticsSettings _diagnostics;
+
+    // Whether this connection counts in darp.ble.connection.count; set when the peripheral takes it in
+    private bool _counted;
+
+    // Warns once when handlers still run 5 s after the connection started ending (D9)
+    private ITimer? _slowHandlers;
+
+    // Completes once the handlers admitted before the end returned; independent of the driver's teardown
+    private Task _handlersReturned = Task.CompletedTask;
     private readonly Lock _lock = new();
     private readonly TaskCompletionSource<DisconnectInfo> _disconnected = new(
         TaskCreationOptions.RunContinuationsAsynchronously
@@ -45,14 +58,19 @@ public sealed class ConnectedCentral
         BlePeripheral peripheral,
         IPeripheralDriver driver,
         ICentralConnectionDriver connection,
+        TimeProvider timeProvider,
+        DiagnosticsSettings diagnostics,
         ILogger logger
     )
     {
         _peripheral = peripheral;
         _driver = driver;
         _connection = connection;
+        _timeProvider = timeProvider;
         _logger = logger;
         Address = connection.Address;
+        Peer = diagnostics.Peer(connection.Address);
+        _diagnostics = diagnostics;
     }
 
     /// <summary> The address of the central </summary>
@@ -68,6 +86,22 @@ public sealed class ConnectedCentral
     {
         End(new DisconnectInfo(DisconnectReason.LocalRequest), takeLinkDown: true);
         await _disconnected.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary> The address as logs and spans may show it </summary>
+    internal object Peer { get; }
+
+    /// <summary> The peripheral took the connection in; it counts as open until it ends </summary>
+    internal void CountOpen()
+    {
+        lock (_lock)
+        {
+            // A connection that already started ending is never counted, so its teardown has nothing to take back
+            if (_ending is not null)
+                return;
+            _counted = true;
+        }
+        Telemetry.Connections.Add(1, Tags());
     }
 
     /// <summary> The peripheral role this central is connected to </summary>
@@ -161,7 +195,11 @@ public sealed class ConnectedCentral
 
     /// <summary> Runs a hosted handler for this central. An unexpected failure answers with <see cref="GattProtocolStatus.UnlikelyError"/> </summary>
     /// <remarks> Handlers of one central run one at a time; their token is cancelled when the connection ends </remarks>
-    internal async Task<T> RunHandlerAsync<T>(Func<CancellationToken, ValueTask<T>> handler)
+    internal async Task<T> RunHandlerAsync<T>(
+        string operation,
+        BleUuid uuid,
+        Func<CancellationToken, ValueTask<T>> handler
+    )
     {
         if (!_handlers.TryEnter())
             throw Ended();
@@ -176,24 +214,37 @@ public sealed class ConnectedCentral
             {
                 throw Ended();
             }
+            // One span per handler run, after its turn; the handler's own spans nest inside
+            using Activity? activity = Telemetry.Source.StartActivity("Handle {Operation} {Uuid}", ActivityKind.Server);
+            if (activity is { IsAllDataRequested: true })
+            {
+                activity.SetTag(Telemetry.OperationTag, operation);
+                activity.SetTag(Telemetry.UuidTag, Telemetry.Text(uuid));
+                activity.SetTag(Telemetry.AddressTag, Telemetry.Text(Peer));
+            }
             try
             {
                 // Off the driver's thread: a handler may block before its first await
-                return await Task.Run(async () => await handler(lifetime).ConfigureAwait(false), lifetime)
+                T result = await Task.Run(async () => await handler(lifetime).ConfigureAwait(false), lifetime)
                     .ConfigureAwait(false);
+                Telemetry.Finish(activity, Telemetry.Success);
+                return result;
             }
             catch (GattException e) when (e.AttStatus is not null)
             {
+                Telemetry.Finish(activity, Telemetry.AttError, e, _diagnostics);
                 throw;
             }
             catch (OperationCanceledException) when (lifetime.IsCancellationRequested)
             {
                 // The connection ends; there is nobody to answer
+                Telemetry.Finish(activity, Telemetry.Cancelled);
                 throw Ended();
             }
             catch (Exception e)
             {
-                _logger.LogHandlerFailed(Address, e);
+                _logger.LogHandlerFailed(Peer, _diagnostics.Exception(e));
+                Telemetry.Finish(activity, Telemetry.Error, e, _diagnostics);
                 throw new GattException(GattProtocolStatus.UnlikelyError, "The handler failed", e);
             }
             finally
@@ -220,8 +271,18 @@ public sealed class ConnectedCentral
             _subscriptions.Clear();
         }
         // No handler or notification starts from now on
-        _handlers.Close();
+        Task handlersReturned = _handlers.CloseAndWaitAsync();
         _notifications.Close();
+        lock (_lock)
+        {
+            _handlersReturned = handlersReturned;
+            _slowHandlers = _timeProvider.CreateTimer(
+                _ => WarnSlowHandlers(),
+                state: null,
+                SlowHandlerWarning,
+                Timeout.InfiniteTimeSpan
+            );
+        }
         // Off the caller's thread: the driver reports a disconnect from its own loop
         _ = Task.Run(() => TeardownAsync(info, takeLinkDown));
     }
@@ -236,7 +297,7 @@ public sealed class ConnectedCentral
         catch (Exception e)
         {
             // A failing callback of the app must not keep the link up
-            _logger.LogConnectionCleanupFailed(Address, e);
+            _logger.LogConnectionCleanupFailed(Peer, _diagnostics.Exception(e));
         }
         try
         {
@@ -246,19 +307,33 @@ public sealed class ConnectedCentral
         catch (Exception e)
         {
             // The connection is over either way; whoever waits learns it through Disconnected
-            _logger.LogConnectionCleanupFailed(Address, e);
+            _logger.LogConnectionCleanupFailed(Peer, _diagnostics.Exception(e));
         }
         finally
         {
             // A handler that ignores its token delays only this connection's end
-            await _handlers.CloseAndWaitAsync().ConfigureAwait(false);
+            Task handlersReturned;
+            lock (_lock)
+                handlersReturned = _handlersReturned;
+            await handlersReturned.ConfigureAwait(false);
+            ITimer? slowHandlers;
+            bool counted;
+            lock (_lock)
+            {
+                slowHandlers = _slowHandlers;
+                counted = _counted;
+            }
+            if (slowHandlers is not null)
+                await slowHandlers.DisposeAsync().ConfigureAwait(false);
+            if (counted)
+                Telemetry.Connections.Add(-1, Tags());
             await _notifications.CloseAndWaitAsync().ConfigureAwait(false);
             await DisposeStatesAsync().ConfigureAwait(false);
             _lifetime.Dispose();
             _handlerTurn.Dispose();
             _notifyTurn.Dispose();
             _peripheral.Remove(_connection);
-            _logger.LogCentralDisconnected(Address, info.Reason);
+            _logger.LogCentralDisconnected(Peer, info.Reason);
             _disconnected.TrySetResult(info);
         }
     }
@@ -304,8 +379,24 @@ public sealed class ConnectedCentral
             }
             catch (Exception e)
             {
-                _logger.LogStateDisposeFailed(Address, e);
+                _logger.LogStateDisposeFailed(Peer, _diagnostics.Exception(e));
             }
         }
     }
+
+    /// <summary> How long handlers may keep running after the connection started ending before a warning </summary>
+    private static readonly TimeSpan SlowHandlerWarning = TimeSpan.FromSeconds(5);
+
+    private void WarnSlowHandlers()
+    {
+        lock (_lock)
+        {
+            if (_handlersReturned.IsCompleted)
+                return;
+        }
+        _logger.LogSlowHandlers(Peer, SlowHandlerWarning);
+    }
+
+    private TagList Tags() =>
+        new() { { Telemetry.BackendTag, _peripheral.Adapter.Backend }, { Telemetry.RoleTag, "peripheral" } };
 }

@@ -1,6 +1,7 @@
 using Darp.Ble.Backends;
 using Darp.Ble.Connections;
 using Darp.Ble.Data;
+using Darp.Ble.Diagnostics;
 using Darp.Ble.Gatt;
 using Microsoft.Extensions.Logging;
 
@@ -23,10 +24,17 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
         TaskCreationOptions.RunContinuationsAsynchronously
     );
     private readonly RequestQueue _requests;
+
+    // The address as logs may show it
+    private readonly object _peer;
+    private readonly DiagnosticsSettings _diagnostics;
     private readonly Dictionary<IRemoteCharacteristicDriver, NotificationChannel> _notifications = [];
     private readonly Dictionary<(IRemoteCharacteristicDriver, Type), object> _helpers = [];
     private DisconnectInfo? _ending;
     private int _maxWritePayloadLength;
+
+    // Whether this connection counts in darp.ble.connection.count; set when it is handed out
+    private bool _counted;
 
     internal ConnectedPeripheral(
         BleCentral central,
@@ -34,15 +42,20 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
         IConnectionDriver driver,
         TimeProvider timeProvider,
         QueueOptions notificationQueue,
+        string backend,
+        DiagnosticsSettings diagnostics,
         ILogger logger
     )
     {
+        Backend = backend;
+        _peer = diagnostics.Peer(address);
+        _diagnostics = diagnostics;
         NotificationQueue = notificationQueue;
         TimeProvider = timeProvider;
         _central = central;
         _driver = driver;
         _logger = logger;
-        _requests = new RequestQueue(address, timeProvider, End, logger);
+        _requests = new RequestQueue(address, backend, diagnostics, timeProvider, End, logger);
         Address = address;
         Gatt = new GattClient(this, driver);
     }
@@ -73,19 +86,28 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
     public ValueTask DisposeAsync() => new(DisconnectAsync(CancellationToken.None));
 
     /// <summary> Runs a request of this connection once the earlier ones ended </summary>
-    internal Task<T> RunAsync<T>(Func<GattRequest, Task<T>> send, CancellationToken cancellationToken) =>
-        _requests.RunAsync(send, cancellationToken);
+    internal Task<T> RunAsync<T>(
+        GattOperation operation,
+        Func<GattRequest, Task<T>> send,
+        CancellationToken cancellationToken
+    ) => _requests.RunAsync(operation, send, cancellationToken);
 
     /// <summary> Runs a write without response in this connection's send order </summary>
     internal ValueTask RunCommandAsync(
+        GattOperation operation,
         IRemoteCharacteristicDriver characteristic,
         ReadOnlyMemory<byte> value,
         CancellationToken cancellationToken
-    ) => _requests.RunCommandAsync(characteristic, value, cancellationToken);
+    ) => _requests.RunCommandAsync(operation, characteristic, value, cancellationToken);
 
     /// <summary> Runs a request without a result of this connection once the earlier ones ended </summary>
-    internal Task RunAsync(Func<GattRequest, Task> send, CancellationToken cancellationToken) =>
+    internal Task RunAsync(
+        GattOperation operation,
+        Func<GattRequest, Task> send,
+        CancellationToken cancellationToken
+    ) =>
         _requests.RunAsync(
+            operation,
             async request =>
             {
                 await send(request).ConfigureAwait(false);
@@ -96,6 +118,9 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
 
     /// <summary> The queue of a stream that does not bring its own </summary>
     internal QueueOptions NotificationQueue { get; }
+
+    /// <summary> The backend, for spans and metrics </summary>
+    internal string Backend { get; }
 
     /// <summary> State a library helper shares across wrappers of the same characteristic, e.g. an echo query session </summary>
     internal T GetOrAddHelper<T>(IRemoteCharacteristicDriver characteristic, Func<T> create)
@@ -125,7 +150,7 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
             ending = _ending;
             if (!_notifications.TryGetValue(characteristic, out channel))
             {
-                channel = new NotificationChannel(characteristic);
+                channel = new NotificationChannel(characteristic, Backend);
                 _notifications.Add(characteristic, channel);
             }
         }
@@ -144,6 +169,22 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
         channel?.Deliver(value);
     }
 
+    /// <summary> The connection is handed out; it counts as open until it ends. Called under the central's lock </summary>
+    internal void CountOpen()
+    {
+        lock (_lock)
+        {
+            // A connection that already started ending is never counted, so its teardown has nothing to take back
+            if (_ending is not null)
+                return;
+            _counted = true;
+        }
+        Telemetry.Connections.Add(1, Tags());
+    }
+
+    private System.Diagnostics.TagList Tags() =>
+        new() { { Telemetry.BackendTag, Backend }, { Telemetry.RoleTag, "central" } };
+
     /// <summary> Why the connection ends, once it started ending </summary>
     internal DisconnectInfo? Ending
     {
@@ -158,7 +199,11 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
     internal async Task ExchangeMtuAsync(CancellationToken cancellationToken)
     {
         int mtu = await _requests
-            .RunAsync(request => _driver.ExchangeMtuAsync(ClientMtu, request), cancellationToken)
+            .RunAsync(
+                GattOperation.ExchangeMtu,
+                request => _driver.ExchangeMtuAsync(ClientMtu, request),
+                cancellationToken
+            )
             .ConfigureAwait(false);
         _maxWritePayloadLength = mtu - WriteHeaderLength;
     }
@@ -194,13 +239,18 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
         catch (Exception e)
         {
             // The connection is over either way; whoever waits learns it through Disconnected
-            _logger.LogConnectionCleanupFailed(Address, e);
+            _logger.LogConnectionCleanupFailed(_peer, _diagnostics.Exception(e));
         }
         finally
         {
             await _requests.DrainAsync().ConfigureAwait(false);
+            bool counted;
+            lock (_lock)
+                counted = _counted;
+            if (counted)
+                Telemetry.Connections.Add(-1, Tags());
             _central.Remove(this);
-            _logger.LogDisconnected(Address, info.Reason);
+            _logger.LogDisconnected(_peer, info.Reason);
             _disconnected.TrySetResult(info);
         }
     }

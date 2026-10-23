@@ -28,7 +28,8 @@ public sealed class BleManager
         (_backends, _options) = builder.Build();
         _context = new BleBackendContext(
             loggerFactory ?? NullLoggerFactory.Instance,
-            timeProvider ?? TimeProvider.System
+            timeProvider ?? TimeProvider.System,
+            _options.Diagnostics
         );
         _logger = _context.LoggerFactory.CreateLogger(Logging.Category);
     }
