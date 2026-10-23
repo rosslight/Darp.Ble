@@ -21,7 +21,14 @@ internal sealed class TestPeripheralDriver : IPeripheralDriver
 
     public GattServiceDefinition? Added { get; private set; }
 
-    public void Attach(IGattServerSink sink) => _sink = sink;
+    /// <summary> The driver calls the core made, in order </summary>
+    public List<string> Calls { get; } = [];
+
+    public void Attach(IGattServerSink sink)
+    {
+        Calls.Add("attach");
+        _sink = sink;
+    }
 
     public Task AddServiceAsync(GattServiceDefinition service, CancellationToken cancellationToken)
     {
@@ -68,6 +75,9 @@ internal sealed class TestPeripheralDriver : IPeripheralDriver
         lock (_lock)
             Accepted.Add((central.Address, value.ToArray()));
     }
+
+    public void SetGapIdentity(string deviceName, Darp.Ble.Data.AssignedNumbers.AppearanceValues appearance) =>
+        Calls.Add($"identity {deviceName}");
 
     public Task DisconnectAsync(ICentralConnectionDriver central, CancellationToken cancellationToken)
     {

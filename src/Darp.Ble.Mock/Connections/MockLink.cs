@@ -32,11 +32,15 @@ internal sealed class MockLink
         _centralSink = centralSink;
         _peripheralSink = peripheralSink;
         Central = new MockConnectionDriver(this);
+        GapService = new MockGapService(peripheral);
         Peripheral = new MockCentralConnection(this, centralAddress);
     }
 
     /// <summary> The peripheral role the central connected to </summary>
     public MockPeripheralDriver PeripheralDriver { get; }
+
+    /// <summary> The GAP service the peripheral serves itself </summary>
+    public MockGapService GapService { get; }
 
     /// <summary> The central's side </summary>
     public MockConnectionDriver Central { get; }

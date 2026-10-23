@@ -25,7 +25,7 @@ internal sealed class MockAdapterDriver : IBleAdapterDriver
         Central = new MockCentralDriver(air, this);
     }
 
-    public Capabilities Features => Capabilities.SetRandomAddress;
+    public Capabilities Features => Capabilities.SetRandomAddress | Capabilities.SetGapIdentity;
 
     public IObserverDriver? Observer { get; }
 

@@ -1,4 +1,3 @@
-using Darp.Ble.Data;
 using Darp.Ble.Mock;
 using Shouldly;
 
@@ -25,6 +24,7 @@ public sealed class MockBackendTests
                 | Capabilities.Central
                 | Capabilities.Peripheral
                 | Capabilities.SetRandomAddress
+                | Capabilities.SetGapIdentity
         );
     }
 

@@ -9,6 +9,11 @@ namespace Darp.Ble;
     "CA2217:Do not mark enums with FlagsAttribute",
     Justification = "Peripheral includes Broadcaster and Central includes Observer, as the roles require"
 )]
+[SuppressMessage(
+    "Design",
+    "MA0062:Non-flags enums should not be marked with \"FlagsAttribute\"",
+    Justification = "Peripheral includes Broadcaster and Central includes Observer, as the roles require"
+)]
 public enum Capabilities
 {
     /// <summary> A device with unknown capabilities </summary>
@@ -37,4 +42,7 @@ public enum Capabilities
 
     /// <summary> The adapter can set its own random address and that of its advertising sets </summary>
     SetRandomAddress = 0b1_0000,
+
+    /// <summary> The adapter's peripheral role serves a device name and appearance the app sets </summary>
+    SetGapIdentity = 0b10_0000,
 }

@@ -6,7 +6,8 @@ namespace Darp.Ble.Gatt;
 /// <summary> Describes a service to add with <see cref="Darp.Ble.Connections.BlePeripheral.AddServiceAsync"/>. A builder is used once and not shared between threads </summary>
 public sealed class LocalGattServiceBuilder
 {
-    private readonly BleUuid _uuid;
+    internal BleUuid Uuid { get; }
+
     private readonly bool _isPrimary;
     private readonly List<LocalGattCharacteristic> _characteristics = [];
     private bool _added;
@@ -17,7 +18,7 @@ public sealed class LocalGattServiceBuilder
     public LocalGattServiceBuilder(BleUuid uuid, bool isPrimary = true)
     {
         ArgumentNullException.ThrowIfNull(uuid);
-        _uuid = uuid;
+        Uuid = uuid;
         _isPrimary = isPrimary;
     }
 
@@ -67,7 +68,7 @@ public sealed class LocalGattServiceBuilder
             attributes.AddRange(characteristic.Freeze());
         }
         var definition = new GattServiceDefinition(
-            _uuid,
+            Uuid,
             _isPrimary,
             [.. _characteristics.Select(characteristic => characteristic.Definition)]
         );
@@ -84,9 +85,10 @@ public sealed class LocalGattServiceBuilder
 
     private void EnsureNotAdded()
     {
-        if (_added)
-            throw new InvalidOperationException(
-                "The service was already added with BlePeripheral.AddServiceAsync and can no longer change; use a new LocalGattServiceBuilder to add another service"
-            );
+        if (!_added)
+            return;
+        throw new InvalidOperationException(
+            "The service was already added with BlePeripheral.AddServiceAsync and can no longer change; use a new LocalGattServiceBuilder to add another service"
+        );
     }
 }
