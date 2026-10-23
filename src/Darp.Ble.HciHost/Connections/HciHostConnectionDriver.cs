@@ -113,9 +113,13 @@ internal sealed partial class HciHostConnectionDriver : IConnectionDriver
     )
     {
         CheckLength(value);
-        cancellationToken.ThrowIfCancellationRequested();
-        _connection.EnqueueGattPacket(new AttWriteCmd { Handle = handle, Value = value }, activity: null);
-        return ValueTask.CompletedTask;
+        // Completes once the controller has a buffer for the command, which paces a loop of writes (D8)
+        return _connection.SendGattPacketAsync(
+            new AttWriteCmd { Handle = handle, Value = value },
+            onHandOff: null,
+            cancellationToken,
+            connectionClosed
+        );
     }
 
     private async Task<byte[]> ReadCoreAsync(ushort handle, GattRequest request)

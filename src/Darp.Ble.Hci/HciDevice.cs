@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.AssignedNumbers;
+using Darp.Ble.Hci.Exceptions;
 using Darp.Ble.Hci.Host;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Att;
@@ -15,39 +16,6 @@ using Darp.Utils.Messaging;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci;
-
-/// <summary>
-/// Defines the packet queue and state exposed by an ACL connection.
-/// </summary>
-public interface IAclConnection : IMessageSinkProvider
-{
-    /// <summary>Gets the host that owns the connection.</summary>
-    HciHost Host { get; }
-
-    /// <summary>Gets the controller-assigned connection handle.</summary>
-    ushort ConnectionHandle { get; }
-
-    /// <summary>Gets the active ATT MTU for the connection.</summary>
-    ushort AttMtu { get; }
-
-    /// <summary>Gets the ACL packet queue used to transmit packets.</summary>
-    IAclPacketQueue AclPacketQueue { get; }
-
-    /// <summary>Gets the L2CAP assembler used for incoming data.</summary>
-    IL2CapAssembler L2CapAssembler { get; }
-
-    /// <summary>Gets a token that is canceled when the connection is disconnected.</summary>
-    CancellationToken DisconnectToken { get; }
-
-    /// <summary>Gets the server address associated with the connection.</summary>
-    ulong ServerAddress { get; }
-
-    /// <summary>Gets the client address associated with the connection.</summary>
-    ulong ClientAddress { get; }
-
-    /// <summary>Gets the logger used for connection-specific diagnostics.</summary>
-    protected internal ILogger Logger { get; }
-}
 
 /// <summary>
 /// Represents an L2CAP payload together with its channel identifier.
@@ -169,10 +137,16 @@ public sealed class HciDevice : IAsyncDisposable
         return _connections.TryGetValue(connectionHandle, out connection);
     }
 
-    internal void RemoveConnection(ushort connectionHandle)
+    internal void RemoveConnection(ushort connectionHandle, HciCommandStatus reason)
     {
-        if (_connections.TryRemove(connectionHandle, out AclConnection? removedConnection))
-            removedConnection.Dispose();
+        if (!_connections.TryRemove(connectionHandle, out AclConnection? removedConnection))
+            return;
+        // The controller freed the link's buffers; frames still waiting for one fail
+        Host.AclPacketQueue.Flush(
+            connectionHandle,
+            new HciException($"The link 0x{connectionHandle:X3} went down: {reason}")
+        );
+        removedConnection.Dispose();
     }
 
     internal void OnHciLeEnhancedConnectionCompleteV1EventPacket(HciLeEnhancedConnectionCompleteV1Event evt)
@@ -189,6 +163,7 @@ public sealed class HciDevice : IAsyncDisposable
             new AclConnectionParameters(evt.ConnectionInterval, evt.PeripheralLatency, evt.SupervisionTimeout, 0, 0),
             _loggerFactory
         );
+        Host.AclPacketQueue.AddLink(evt.ConnectionHandle);
         bool isAdded = _connections.TryAdd(evt.ConnectionHandle, connection);
         Debug.Assert(isAdded, $"Connection {connection.ConnectionHandle} could not be registered at host!");
     }
@@ -252,36 +227,4 @@ public sealed class HciDevice : IAsyncDisposable
         IsDisposed = true;
         await _transportLayer.DisposeAsync().ConfigureAwait(false);
     }
-}
-
-internal sealed partial class AttResponseMessageSinkProvider<TResponse>(AttOpCode expectedOpCode)
-    where TResponse : IAttPdu
-{
-    private readonly AttOpCode _expectedOpCode = expectedOpCode;
-
-    private readonly TaskCompletionSource<AttResponse<TResponse>> _tcs = new(
-        TaskCreationOptions.RunContinuationsAsynchronously
-    );
-
-    [MessageSink]
-    private void OnValue<T>(T value)
-        where T : allows ref struct
-    {
-        if (value is null)
-            throw new ArgumentNullException(nameof(value));
-        if (typeof(T) == typeof(TResponse))
-        {
-            TResponse response = Unsafe.As<T, TResponse>(ref value);
-            _tcs.TrySetResult(AttResponse<TResponse>.Ok(response));
-        }
-        else if (typeof(T) == typeof(AttErrorRsp))
-        {
-            AttErrorRsp errorResponse = Unsafe.As<T, AttErrorRsp>(ref value);
-            if (_expectedOpCode != errorResponse.RequestOpCode)
-                return;
-            _tcs.TrySetResult(AttResponse<TResponse>.Fail(errorResponse));
-        }
-    }
-
-    public Task<AttResponse<TResponse>> Task => _tcs.Task;
 }

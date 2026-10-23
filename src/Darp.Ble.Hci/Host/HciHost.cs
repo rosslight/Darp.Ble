@@ -50,7 +50,7 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
     public bool IsReady => _leAclPacketQueue is not null;
 
     /// <summary>Gets the ACL packet queue created during initialization.</summary>
-    public IAclPacketQueue AclPacketQueue =>
+    internal AclPacketQueue AclPacketQueue =>
         _leAclPacketQueue ?? throw new InvalidOperationException("Not initialized yet");
 
     /// <summary>Resets the controller and applies the required host configuration.</summary>
@@ -251,7 +251,9 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
 
     private void OnTransportFailed(Exception exception)
     {
+        // The owners of the links learn about it before anything waiting on the transport fails
         TransportFailed?.Invoke(this, new HciTransportFailedEventArgs(exception));
+        _leAclPacketQueue?.Close(exception);
     }
 
     private void OnReceivedHciEventPacket(HciPacketEvent packet)
@@ -290,7 +292,7 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
                 PublishMessage(evt);
                 if (Device.TryGetConnection(evt.ConnectionHandle, out AclConnection? connection))
                     connection.OnDisconnectEvent(evt);
-                Device.RemoveConnection(evt.ConnectionHandle);
+                Device.RemoveConnection(evt.ConnectionHandle, evt.Reason);
                 break;
             case HciEventCode.HCI_Command_Status
                 when HciCommandStatusEvent.TryReadLittleEndian(packet.DataBytes.Span, out var evt):

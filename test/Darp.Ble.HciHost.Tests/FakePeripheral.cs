@@ -81,8 +81,29 @@ internal sealed class FakePeripheral(FakeController controller, ushort handle)
     public Task DisconnectAsync(HciCommandStatus reason = HciCommandStatus.RemoteUserTerminatedConnection) =>
         _controller.PushAsync(HciMessages.HciDisconnectionCompleteEvent(Handle, reason));
 
-    /// <summary> Answers the ATT requests of every link until the controller is disposed </summary>
-    public static async Task ServeAsync(FakeController controller, params FakePeripheral[] peripherals)
+    private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<
+        FakeController,
+        List<FakePeripheral>
+    > Served = [];
+
+    /// <summary> Answers the ATT requests of the peripheral's link; one loop per controller serves every link </summary>
+    public static Task ServeAsync(FakeController controller, FakePeripheral peripheral)
+    {
+        List<FakePeripheral> peripherals;
+        bool first;
+        lock (Served)
+        {
+            first = !Served.TryGetValue(controller, out List<FakePeripheral>? known);
+            peripherals = known ?? [];
+            if (first)
+                Served.Add(controller, peripherals);
+        }
+        lock (peripherals)
+            peripherals.Add(peripheral);
+        return first ? RunAsync(controller, peripherals) : Task.CompletedTask;
+    }
+
+    private static async Task RunAsync(FakeController controller, List<FakePeripheral> peripherals)
     {
         var fragments = new Dictionary<ushort, List<byte>>();
         try
@@ -102,7 +123,9 @@ internal sealed class FakePeripheral(FakeController controller, ushort handle)
                     continue;
                 byte[] pdu = frame.Skip(4).ToArray();
                 fragments.Remove(linkHandle);
-                FakePeripheral? peripheral = peripherals.FirstOrDefault(p => p.Handle == linkHandle);
+                FakePeripheral? peripheral;
+                lock (peripherals)
+                    peripheral = peripherals.FirstOrDefault(p => p.Handle == linkHandle);
                 if (peripheral is not null)
                     await peripheral.OnPduAsync(pdu);
             }
