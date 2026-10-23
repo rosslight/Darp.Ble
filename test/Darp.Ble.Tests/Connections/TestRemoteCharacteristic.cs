@@ -8,6 +8,7 @@ namespace Darp.Ble.Tests.Connections;
 internal sealed class TestRemoteCharacteristic(TestConnectionDriver connection) : IRemoteCharacteristicDriver
 {
     private readonly TestConnectionDriver _connection = connection;
+    private readonly TestRemoteDescriptor _description = new();
 
     public BleUuid Uuid { get; } = BleUuid.FromUInt16(0x2A19);
 
@@ -18,6 +19,9 @@ internal sealed class TestRemoteCharacteristic(TestConnectionDriver connection) 
 
     public Task WriteAsync(ReadOnlyMemory<byte> value, GattRequest request) =>
         throw new NotSupportedException("Not used by the tests");
+
+    public Task<IReadOnlyList<IRemoteDescriptorDriver>> DiscoverDescriptorsAsync(GattRequest request) =>
+        Task.FromResult<IReadOnlyList<IRemoteDescriptorDriver>>([_description]);
 
     public Task SetNotificationsAsync(bool enabled, GattRequest request) =>
         throw new NotSupportedException("Not used by the tests");

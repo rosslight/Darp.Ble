@@ -66,6 +66,21 @@ public sealed class RemoteGattCharacteristic
         return _connection.RunCommandAsync(_driver, value, cancellationToken);
     }
 
+    /// <summary> Discovers the descriptors of the characteristic </summary>
+    /// <param name="cancellationToken"> Cancels discovery </param>
+    /// <returns> The descriptors, in the peripheral's order </returns>
+    /// <exception cref="GattException"> The peripheral answered with an ATT error </exception>
+    /// <exception cref="BleDisconnectedException"> The connection ended </exception>
+    public async Task<IReadOnlyList<RemoteDescriptor>> DiscoverDescriptorsAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        IReadOnlyList<IRemoteDescriptorDriver> descriptors = await _connection
+            .RunAsync(_driver.DiscoverDescriptorsAsync, cancellationToken)
+            .ConfigureAwait(false);
+        return [.. descriptors.Select(descriptor => new RemoteDescriptor(_connection, descriptor))];
+    }
+
     /// <summary> Turns notifications on for this connection; does nothing when they are on, whoever enabled them </summary>
     /// <param name="cancellationToken"> Cancels the change; after it was sent, only the wait ends and the device's answer still counts </param>
     /// <returns> A task that completes once notifications are on </returns>
