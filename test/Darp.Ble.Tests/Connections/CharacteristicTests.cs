@@ -130,13 +130,73 @@ public sealed class CharacteristicTests
         reads.ShouldBe(0);
     }
 
-    private async Task<RemoteGattCharacteristic> DiscoverAsync(BleAdapter adapter, BleUuid uuid)
+    [Fact]
+    public async Task ATypedCharacteristic_EncodesWritesAndDecodesReads_ThroughItsDeclaration()
+    {
+        var stored = new byte[] { 0 };
+        TypedCharacteristicDeclaration<byte, Properties.Read, Properties.Write> declaration =
+            CharacteristicDeclaration.Create<byte, Properties.Read, Properties.Write>(LevelUuid);
+        await using BleAdapter adapter = await OpenAsync(service =>
+            service.AddCharacteristic(
+                LevelUuid,
+                GattProperty.Read | GattProperty.Write,
+                onRead: (_, _) => ValueTask.FromResult(stored),
+                onWrite: (_, value, _) =>
+                {
+                    stored = value.ToArray();
+                    return ValueTask.FromResult(GattProtocolStatus.Success);
+                }
+            )
+        );
+        RemoteGattService service = await DiscoverServiceAsync(adapter);
+
+        TypedRemoteCharacteristic<byte, Properties.Read, Properties.Write> level =
+            await service.DiscoverCharacteristicAsync(declaration, Token);
+        await level.WriteAsync((byte)42, Token);
+
+        (await level.ReadAsync(Token)).ShouldBe((byte)42);
+        (await level.Characteristic.ReadAsync(Token)).ShouldBe([42]);
+    }
+
+    [Fact]
+    public async Task DiscoverCharacteristicAsync_WithADeclarationTheCharacteristicDoesNotMatch_FailsAsPropertyMismatch()
+    {
+        await using BleAdapter adapter = await OpenAsync(service =>
+            service.AddCharacteristic(LevelUuid, GattProperty.Read, onRead: (_, _) => ValueTask.FromResult<byte[]>([1]))
+        );
+        RemoteGattService service = await DiscoverServiceAsync(adapter);
+
+        GattException mismatch = await Should.ThrowAsync<GattException>(() =>
+            service.DiscoverCharacteristicAsync(new CharacteristicDeclaration<Properties.Write>(LevelUuid), Token)
+        );
+        GattException missing = await Should.ThrowAsync<GattException>(() =>
+            service.DiscoverCharacteristicAsync(
+                new CharacteristicDeclaration<Properties.Read>(BleUuid.FromUInt16(0x2A1A)),
+                Token
+            )
+        );
+        RemoteCharacteristic<Properties.Read> level = await service.DiscoverCharacteristicAsync(
+            new CharacteristicDeclaration<Properties.Read>(LevelUuid),
+            Token
+        );
+
+        mismatch.Kind.ShouldBe(GattErrorKind.PropertyMismatch);
+        missing.Kind.ShouldBe(GattErrorKind.NotFound);
+        (await level.ReadAsync(Token)).ShouldBe([1]);
+    }
+
+    private async Task<RemoteGattService> DiscoverServiceAsync(BleAdapter adapter)
     {
         ConnectedPeripheral connection = await adapter.Central.ConnectAsync(
             await _peripheralAddress.Task,
             cancellationToken: Token
         );
-        RemoteGattService service = await connection.Gatt.DiscoverServiceAsync(ServiceUuid, Token);
+        return await connection.Gatt.DiscoverServiceAsync(ServiceUuid, Token);
+    }
+
+    private async Task<RemoteGattCharacteristic> DiscoverAsync(BleAdapter adapter, BleUuid uuid)
+    {
+        RemoteGattService service = await DiscoverServiceAsync(adapter);
         IReadOnlyList<RemoteGattCharacteristic> characteristics = await service.DiscoverCharacteristicsAsync(Token);
         return characteristics.Single(characteristic => characteristic.Uuid == uuid);
     }
