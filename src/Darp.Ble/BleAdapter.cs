@@ -54,9 +54,9 @@ public sealed class BleAdapter : IAsyncDisposable
         if (driver.Broadcaster is not null)
             _broadcaster = new BleBroadcaster(this, driver.Broadcaster, logger);
         if (driver.Central is not null && _observer is not null)
-            _central = new BleCentral(this, driver.Central, _observer, timeProvider, options.NotificationQueue, logger);
+            _central = new BleCentral(this, driver.Central, _observer, timeProvider, options, logger);
         if (driver.Peripheral is not null)
-            _peripheral = new BlePeripheral(this, driver.Peripheral, logger);
+            _peripheral = new BlePeripheral(this, driver.Peripheral, timeProvider, options.Diagnostics, logger);
     }
 
     /// <summary> The backend of the adapter, e.g. <see cref="BleBackends.Mock"/> </summary>
@@ -110,7 +110,7 @@ public sealed class BleAdapter : IAsyncDisposable
         }
     }
 
-    /// <summary> Closes the adapter: ends its scans and advertising, then releases its driver. Calling it again waits for the same disposal </summary>
+    /// <summary> Closes the adapter: ends its scans, advertising and connections, disconnects its centrals, then releases its driver. Calling it again waits for the same disposal </summary>
     /// <returns> A task that completes once the driver is disposed </returns>
     public ValueTask DisposeAsync() => new(_disposal.Value);
 

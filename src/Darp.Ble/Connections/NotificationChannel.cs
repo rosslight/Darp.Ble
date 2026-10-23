@@ -1,40 +1,57 @@
 using Darp.Ble.Backends;
+using Darp.Ble.Diagnostics;
 using Darp.Ble.Gatt;
 
 namespace Darp.Ble.Connections;
 
-/// <summary> The notifications of one characteristic on one connection: whether they are on, and the queues of its streams (D7) </summary>
+/// <summary> The notifications of one characteristic on one connection: whether they are on, and the queues of its streams </summary>
 /// <remarks> The connection owns it; the same channel serves every wrapper of the characteristic </remarks>
-internal sealed class NotificationChannel
+internal sealed class NotificationChannel(IRemoteCharacteristicDriver driver, string backend)
 {
-    private readonly IRemoteCharacteristicDriver _driver;
-    private readonly Lock _lock = new();
-    private ItemQueue<byte[]>[] _queues = [];
-    private bool _isOn;
-    private int _enabling;
-    private Exception? _ended;
-    private bool _endedNormally;
+    private readonly IRemoteCharacteristicDriver _driver = driver;
+    private readonly string _backend = backend;
 
-    public NotificationChannel(IRemoteCharacteristicDriver driver)
-    {
-        _driver = driver;
-    }
+    // Guards the fields below: the driver's thread delivers while the app subscribes and the connection's requests run
+    private readonly Lock _lock = new();
+
+    // Copy-on-write, so delivering a notification doesn't allocate beyond each stream's copy
+    private ItemQueue<byte[]>[] _queues = [];
+
+    // The peripheral's CCCD as the last write left it
+    private bool _isOn;
+
+    // Enables still running; streams may be read meanwhile, and end if the last one left notifications off
+    private int _enabling;
+
+    // Why the connection ended, once it did
+    private DisconnectInfo? _end;
 
     /// <summary> Registers the queue of a new stream; a stream of an ended connection ends at once the same way </summary>
     public NotificationStream<T> Subscribe<T>(QueueOptions queue, Func<byte[], T> decode)
     {
-        var items = new ItemQueue<byte[]>(queue, onDrop: () => { });
-        bool ended;
+        var items = new ItemQueue<byte[]>(queue, onDrop: CountDrop);
+        DisconnectInfo? end;
         lock (_lock)
         {
-            ended = _ended is not null || _endedNormally;
-            if (!ended)
+            end = _end;
+            if (end is null)
                 _queues = [.. _queues, items];
         }
-        if (ended)
-            items.Complete(_ended);
+        if (end is not null)
+            items.Complete(ErrorOf(end));
         return new NotificationStream<T>(this, items, decode);
     }
+
+    /// <summary> Runs on the driver's thread; allocation-free with the fixed tags </summary>
+    private void CountDrop() =>
+        Telemetry.Dropped.Add(
+            1,
+            new System.Diagnostics.TagList
+            {
+                { Telemetry.BackendTag, _backend },
+                { Telemetry.QueueTag, "notifications" },
+            }
+        );
 
     public void Remove(ItemQueue<byte[]> queue)
     {
@@ -79,18 +96,20 @@ internal sealed class NotificationChannel
     /// <summary> The connection ended: streams end normally after a local end, with the disconnection otherwise </summary>
     public void End(DisconnectInfo info)
     {
-        Exception? error = info.Reason is DisconnectReason.LocalRequest ? null : new BleDisconnectedException(info);
         ItemQueue<byte[]>[] queues;
         lock (_lock)
         {
-            _ended = error;
-            _endedNormally = error is null;
+            _end = info;
             queues = _queues;
             _queues = [];
         }
+        Exception? error = ErrorOf(info);
         foreach (ItemQueue<byte[]> queue in queues)
             queue.Complete(error);
     }
+
+    private static BleDisconnectedException? ErrorOf(DisconnectInfo info) =>
+        info.Reason is DisconnectReason.LocalRequest ? null : new BleDisconnectedException(info);
 
     private async Task SetAsync(ConnectedPeripheral connection, bool enabled, CancellationToken cancellationToken)
     {
@@ -103,7 +122,11 @@ internal sealed class NotificationChannel
         try
         {
             await connection
-                .RunAsync(request => WriteCccdAsync(enabled, attempt, request), cancellationToken)
+                .RunAsync(
+                    GattOperation.SetNotifications(_driver.Uuid, enabled),
+                    request => WriteCccdAsync(enabled, attempt, request),
+                    cancellationToken
+                )
                 .ConfigureAwait(false);
         }
         finally

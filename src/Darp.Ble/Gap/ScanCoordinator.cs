@@ -1,33 +1,47 @@
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Backends;
-using Darp.Ble.Data;
-using Darp.Ble.Gap;
+using Darp.Ble.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Gap;
 
-/// <summary> Shares one radio scan between all scans of an observer (D6) </summary>
+/// <summary> Shares one radio scan between all scans of an observer </summary>
 /// <remarks>
-/// <see cref="_lock"/> guards the listeners, the current radio run and admission; it is held only for those fields.
-/// <see cref="_commands"/> serializes the asynchronous driver commands (start, stop, restart, pause, resume) and owns
-/// <see cref="_radioMayScan"/>: once a start was attempted, the radio counts as scanning until a stop succeeded.
-/// While <see cref="_pauses"/> is above zero, the radio does not scan and scans wait without a run
+/// The state has two owners: <see cref="_lock"/> guards what the driver's thread touches, and <see cref="_commands"/>
+/// serializes the asynchronous driver commands (start, stop, restart, pause, resume) and guards what only they use
 /// </remarks>
 [SuppressMessage(
     "Design",
     "CA1001:Types that own disposable fields should be disposable",
     Justification = "The semaphore outlives disposal: scans that end afterwards still wait on it. It holds no wait handle"
 )]
-internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
+internal sealed class ScanCoordinator(IObserverDriver driver, string backend, ILogger logger)
 {
     private readonly IObserverDriver _driver = driver;
+    private readonly string _backend = backend;
     private readonly ILogger _logger = logger;
+
+    // Guards the fields below; held only for them, never across a driver call
     private readonly Lock _lock = new();
-    private readonly SemaphoreSlim _commands = new(1, 1);
+
+    // Copy-on-write, so delivering a report doesn't allocate
     private ItemQueue<IGapAdvertisement>[] _listeners = [];
+
+    // The run whose reports and failures count; set before the driver starts, cleared when the scans pause or end
     private RadioRun? _run;
+
+    // Set synchronously by the adapter before it waits for disposal, so scans queued on _commands are rejected
     private bool _closed;
+
+    // Guards the fields below; Parameters is written under it too, while the app may read it at any time
+    private readonly SemaphoreSlim _commands = new(1, 1);
+
+    // Once a start was attempted, the radio counts as scanning until a stop succeeded. A start stops first while it
+    // is set, so the driver never starts twice, even after a failed run or a failed stop
     private bool _radioMayScan;
+
+    // Overlapping connects each hold a pause; the radio scans again only once the last one resumed
     private int _pauses;
 
     public BleScanParameters Parameters { get; private set; } = new();
@@ -39,7 +53,7 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
         CancellationToken cancellationToken
     )
     {
-        var listener = new ItemQueue<IGapAdvertisement>(queue, DropCounter.Increment);
+        var listener = new ItemQueue<IGapAdvertisement>(queue, CountDrop);
         await _commands.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
@@ -62,6 +76,16 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
         {
             _commands.Release();
         }
+    }
+
+    /// <summary> Runs on the driver's thread; allocation-free with the fixed tags </summary>
+    private void CountDrop()
+    {
+        DropCounter.Increment();
+        Telemetry.Dropped.Add(
+            1,
+            new TagList { { Telemetry.BackendTag, _backend }, { Telemetry.QueueTag, "advertisements" } }
+        );
     }
 
     public async Task RemoveListenerAsync(ItemQueue<IGapAdvertisement> listener)
@@ -178,10 +202,10 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
         await _commands.WaitAsync(CancellationToken.None).ConfigureAwait(false);
         try
         {
+            _pauses--;
             RadioRun? run = null;
             lock (_lock)
             {
-                _pauses--;
                 if (_pauses == 0 && !_closed && _listeners.Length > 0)
                 {
                     run = new RadioRun(this);
@@ -295,15 +319,21 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
 
     private void Fail(RadioRun run, Exception error)
     {
+        ItemQueue<IGapAdvertisement>[] listeners;
         lock (_lock)
         {
             if (!ReferenceEquals(_run, run))
                 return;
             _run = null;
+            // In the same step as the check: once the lock is released, a new scan may start a new run
+            listeners = _listeners;
+            _listeners = [];
         }
-        FailListeners(error);
+        foreach (ItemQueue<IGapAdvertisement> listener in listeners)
+            listener.Complete(error);
     }
 
+    /// <summary> Ends every scan with the error; only called under <see cref="_commands"/>, so no scan joins meanwhile </summary>
     private void FailListeners(Exception error)
     {
         ItemQueue<IGapAdvertisement>[] listeners;

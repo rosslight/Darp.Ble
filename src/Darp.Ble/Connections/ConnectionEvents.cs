@@ -18,7 +18,7 @@ internal sealed class ConnectionEvents : IConnectionSink
             if (connection is null)
                 _earlyDisconnect ??= info;
         }
-        connection?.End(info);
+        connection?.End(info, takeLinkDown: false);
     }
 
     /// <summary> A notification before the connection object exists has no stream and is dropped </summary>
@@ -39,6 +39,6 @@ internal sealed class ConnectionEvents : IConnectionSink
             earlyDisconnect = _earlyDisconnect;
         }
         if (earlyDisconnect is not null)
-            connection.End(earlyDisconnect);
+            connection.End(earlyDisconnect, takeLinkDown: false);
     }
 }

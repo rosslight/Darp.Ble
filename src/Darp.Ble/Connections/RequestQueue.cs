@@ -1,10 +1,12 @@
+using System.Diagnostics;
 using Darp.Ble.Backends;
 using Darp.Ble.Data;
+using Darp.Ble.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Connections;
 
-/// <summary> Hands a connection's operations to its driver in call order and ends the connection when the peer stops answering (D11) </summary>
+/// <summary> Hands a connection's operations to its driver in call order and ends the connection when the peer stops answering </summary>
 /// <remarks>
 /// Two things are separate: the send order, which every operation keeps, and the one ATT slot, which only requests take.
 /// An operation leaves the send order once it is on its way: a request at its first transaction, a write without response once
@@ -21,11 +23,12 @@ internal sealed class RequestQueue
     /// <summary> How long a peer may take to answer a transaction (Core spec Vol 3 Part F 3.3.3) </summary>
     private static readonly TimeSpan AttTimeout = TimeSpan.FromSeconds(30);
 
-    private readonly BleAddress _address;
+    private readonly string _backend;
+    private readonly object _peer;
+    private readonly DiagnosticsSettings _diagnostics;
     private readonly TimeProvider _timeProvider;
     private readonly Action<DisconnectInfo> _end;
     private readonly ILogger _logger;
-    private readonly Lock _lock = new();
     private readonly CancellationTokenSource _closed = new();
     private readonly ITimer _timer;
     private readonly TaskCompletionSource _handOffsEnded = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -33,6 +36,9 @@ internal sealed class RequestQueue
 
     // Holds the send order for a write without response that has no turn of its own
     private static readonly object FastCommand = new();
+
+    // Guards the fields below: callers, the driver's callbacks and the ATT timer all move operations along
+    private readonly Lock _lock = new();
 
     // Operations waiting for their turn, in call order
     private readonly LinkedList<Turn> _waiting = new();
@@ -46,6 +52,8 @@ internal sealed class RequestQueue
     // Driver calls in progress, and operations admitted but not finished
     private int _invoking;
     private int _unfinished;
+
+    // Why the connection ended, once it did; queued and new operations fail with it
     private DisconnectInfo? _closedInfo;
 
     // The transaction waiting for its answer, and when it was sent, as a monotonic timestamp of the time provider
@@ -54,12 +62,23 @@ internal sealed class RequestQueue
 
     /// <summary> Creates the queue of one connection </summary>
     /// <param name="address"> The peer, for logging </param>
+    /// <param name="backend"> The backend, for spans and metrics </param>
+    /// <param name="diagnostics"> What spans may contain </param>
     /// <param name="timeProvider"> The clock of the ATT timeout </param>
     /// <param name="end"> Ends the connection, when the peer stops answering </param>
     /// <param name="logger"> The logger </param>
-    public RequestQueue(BleAddress address, TimeProvider timeProvider, Action<DisconnectInfo> end, ILogger logger)
+    public RequestQueue(
+        BleAddress address,
+        string backend,
+        DiagnosticsSettings diagnostics,
+        TimeProvider timeProvider,
+        Action<DisconnectInfo> end,
+        ILogger logger
+    )
     {
-        _address = address;
+        _backend = backend;
+        _peer = diagnostics.Peer(address);
+        _diagnostics = diagnostics;
         _timeProvider = timeProvider;
         _end = end;
         _logger = logger;
@@ -84,13 +103,28 @@ internal sealed class RequestQueue
     }
 
     /// <summary> Runs a request, which takes the ATT slot until the driver's task ends </summary>
+    /// <param name="operation"> What the request is, for its span and metric </param>
     /// <param name="send"> Sends the request through the driver </param>
     /// <param name="cancellationToken"> Gives up waiting. A request still queued is dropped; a sent one ends abandoned </param>
     /// <exception cref="BleDisconnectedException"> The connection ended before or while the request ran </exception>
-    public async Task<T> RunAsync<T>(Func<GattRequest, Task<T>> send, CancellationToken cancellationToken)
+    public async Task<T> RunAsync<T>(
+        GattOperation operation,
+        Func<GattRequest, Task<T>> send,
+        CancellationToken cancellationToken
+    )
     {
+        // From enqueue to the end of the operation; the driver's own spans nest inside
+        var span = new Span(operation, operation.Start(_backend, _peer), _timeProvider.GetTimestamp());
         var turn = new Turn(isRequest: true);
-        await WaitForTurnAsync(turn, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await WaitForTurnAsync(turn, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            End(span, Telemetry.OutcomeOf(e), e);
+            throw;
+        }
         var request = GattRequest.ForRequest(this, turn, _timeProvider.GetTimestamp(), _closed.Token);
         // Cancels the hand-off as soon as the caller gives up, also while the driver still runs synchronously
         CancellationTokenRegistration registration = cancellationToken.Register(() => request.Cancel());
@@ -103,23 +137,17 @@ internal sealed class RequestQueue
         {
             EndInvocation();
         }
-        _ = answer.ContinueWith(
-            _ =>
-            {
-                registration.Dispose();
-                Complete(request, turn);
-            },
-            TaskScheduler.Default
-        );
+        // Owns the end of the operation, also after the caller gave up: telemetry first, then the turn, then the caller
+        Task<T> finished = FinishAsync(answer, span, request, turn, registration);
         T result;
         try
         {
-            result = await answer.WaitAsync(cancellationToken).ConfigureAwait(false);
+            result = await finished.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
             if (request.Cancel())
-                _logger.LogRequestAbandoned(_address);
+                _logger.LogRequestAbandoned(_peer);
             throw;
         }
         catch (Exception e) when (IsClosed)
@@ -133,10 +161,36 @@ internal sealed class RequestQueue
         return result;
     }
 
-    /// <summary> Runs a write without response, which leaves the send order once the backend accepted it (D8) </summary>
+    /// <summary> Runs a write without response, which leaves the send order once the backend accepted it </summary>
+    /// <param name="operation"> What the write is, for its span and metric </param>
+    /// <param name="driver"> The characteristic to write </param>
+    /// <param name="value"> The value </param>
+    /// <param name="cancellationToken"> Cancels the write until the backend accepted it </param>
     /// <remarks> With nothing queued and a driver that accepts at once, this allocates nothing </remarks>
     /// <exception cref="BleDisconnectedException"> The connection ended before the backend accepted the write </exception>
     public ValueTask RunCommandAsync(
+        GattOperation operation,
+        IRemoteCharacteristicDriver driver,
+        ReadOnlyMemory<byte> value,
+        CancellationToken cancellationToken
+    )
+    {
+        Activity? previous = Activity.Current;
+        var span = new Span(operation, operation.Start(_backend, _peer), _timeProvider.GetTimestamp());
+        try
+        {
+            return RunCommandCore(span, driver, value, cancellationToken);
+        }
+        finally
+        {
+            // This method is not async, so the span must not stay current for the caller
+            if (span.Activity is not null)
+                Activity.Current = previous;
+        }
+    }
+
+    private ValueTask RunCommandCore(
+        Span span,
         IRemoteCharacteristicDriver driver,
         ReadOnlyMemory<byte> value,
         CancellationToken cancellationToken
@@ -146,7 +200,11 @@ internal sealed class RequestQueue
         lock (_lock)
         {
             if (_closedInfo is not null)
-                return ValueTask.FromException(new BleDisconnectedException(_closedInfo));
+            {
+                var disconnected = new BleDisconnectedException(_closedInfo);
+                End(span, Telemetry.Disconnected, disconnected);
+                return ValueTask.FromException(disconnected);
+            }
             fast = _waiting.Count == 0 && _sending is null && !cancellationToken.IsCancellationRequested;
             if (fast)
             {
@@ -156,8 +214,8 @@ internal sealed class RequestQueue
             }
         }
         return fast
-            ? InvokeCommand(driver, value, turn: null, cancellationToken)
-            : QueueCommandAsync(driver, value, cancellationToken);
+            ? InvokeCommand(span, driver, value, turn: null, cancellationToken)
+            : QueueCommandAsync(span, driver, value, cancellationToken);
     }
 
     /// <summary> Fails queued and new operations with the end of the connection; running ones end with the driver. Called once </summary>
@@ -257,18 +315,28 @@ internal sealed class RequestQueue
     }
 
     private async ValueTask QueueCommandAsync(
+        Span span,
         IRemoteCharacteristicDriver driver,
         ReadOnlyMemory<byte> value,
         CancellationToken cancellationToken
     )
     {
         var turn = new Turn(isRequest: false);
-        await WaitForTurnAsync(turn, cancellationToken).ConfigureAwait(false);
-        await InvokeCommand(driver, value, turn, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            await WaitForTurnAsync(turn, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            End(span, Telemetry.OutcomeOf(e), e);
+            throw;
+        }
+        await InvokeCommand(span, driver, value, turn, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary> Hands a write without response to the driver; the operation holds the send order until the backend accepted it </summary>
     private ValueTask InvokeCommand(
+        Span span,
         IRemoteCharacteristicDriver driver,
         ReadOnlyMemory<byte> value,
         Turn? turn,
@@ -283,38 +351,102 @@ internal sealed class RequestQueue
         catch (Exception e)
         {
             FinishCommand(turn);
-            return ValueTask.FromException(Translate(e, cancellationToken));
+            Exception error = Translate(e, cancellationToken);
+            End(span, Telemetry.OutcomeOf(error), error);
+            return ValueTask.FromException(error);
         }
         finally
         {
             EndInvocation();
         }
         if (!accepted.IsCompletedSuccessfully)
-            return AwaitCommandAsync(accepted, turn, cancellationToken);
+            return AwaitCommandAsync(span, accepted, turn, cancellationToken);
         // Consumes the result, so a pooled source behind the task can be reused; it completed, so this never blocks
 #pragma warning disable CA1849
         accepted.GetAwaiter().GetResult();
 #pragma warning restore CA1849
         FinishCommand(turn);
-        return IsClosed ? ValueTask.FromException(Disconnected(innerException: null)) : ValueTask.CompletedTask;
+        if (IsClosed)
+        {
+            BleDisconnectedException disconnected = Disconnected(innerException: null);
+            End(span, Telemetry.Disconnected, disconnected);
+            return ValueTask.FromException(disconnected);
+        }
+        End(span, Telemetry.Success, exception: null);
+        return ValueTask.CompletedTask;
     }
 
-    private async ValueTask AwaitCommandAsync(ValueTask accepted, Turn? turn, CancellationToken cancellationToken)
+    private async ValueTask AwaitCommandAsync(
+        Span span,
+        ValueTask accepted,
+        Turn? turn,
+        CancellationToken cancellationToken
+    )
     {
+        Exception? error = null;
         try
         {
             await accepted.ConfigureAwait(false);
+            if (IsClosed)
+                error = Disconnected(innerException: null);
         }
         catch (Exception e)
         {
-            throw Translate(e, cancellationToken);
+            error = Translate(e, cancellationToken);
         }
         finally
         {
             FinishCommand(turn);
         }
-        if (IsClosed)
-            throw Disconnected(innerException: null);
+        End(span, error is null ? Telemetry.Success : Telemetry.OutcomeOf(error), error);
+        if (error is not null)
+            throw error;
+    }
+
+    /// <summary> Waits for the driver's task, then ends the request's span and gives up its turn, before the caller learns the result </summary>
+    private async Task<T> FinishAsync<T>(
+        Task<T> answer,
+        Span span,
+        GattRequest request,
+        Turn turn,
+        CancellationTokenRegistration registration
+    )
+    {
+        Exception? error = null;
+        try
+        {
+            return await answer.ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            error = e;
+            throw;
+        }
+        finally
+        {
+            string outcome =
+                IsClosed ? Telemetry.Disconnected
+                : request.IsAbandoned || error is OperationCanceledException ? Telemetry.Cancelled
+                : error is null ? Telemetry.Success
+                : Telemetry.OutcomeOf(error);
+            End(span, outcome, error);
+            await registration.DisposeAsync().ConfigureAwait(false);
+            Complete(request, turn);
+        }
+    }
+
+    private void End(Span span, string outcome, Exception? exception)
+    {
+        Telemetry.Finish(span.Activity, outcome, exception, _diagnostics);
+        Telemetry.RequestDuration.Record(
+            _timeProvider.GetElapsedTime(span.Started).TotalSeconds,
+            new TagList
+            {
+                { Telemetry.BackendTag, _backend },
+                { Telemetry.OperationTag, span.Operation.Name },
+                { Telemetry.OutcomeTag, outcome },
+            }
+        );
     }
 
     private Exception Translate(Exception exception, CancellationToken cancellationToken) =>
@@ -427,7 +559,7 @@ internal sealed class RequestQueue
         request.Complete();
         OnTransactionAnswered(request);
         if (request.IsAbandoned && _logger.IsEnabled(LogLevel.Debug))
-            _logger.LogAbandonedRequestCompleted(_address, _timeProvider.GetElapsedTime(request.StartedAt));
+            _logger.LogAbandonedRequestCompleted(_peer, _timeProvider.GetElapsedTime(request.StartedAt));
         Finish(turn);
     }
 
@@ -446,7 +578,7 @@ internal sealed class RequestQueue
             }
             _transaction = null;
         }
-        _logger.LogAttTimeout(_address);
+        _logger.LogAttTimeout(_peer);
         _end(new DisconnectInfo(DisconnectReason.AttTimeout));
     }
 
@@ -464,6 +596,9 @@ internal sealed class RequestQueue
         Granted,
         Dropped,
     }
+
+    /// <summary> The telemetry of one operation: its span, nothing when nobody listens, and when it was queued </summary>
+    private readonly record struct Span(GattOperation Operation, Activity? Activity, long Started);
 
     /// <summary> An operation waiting for its turn in the send order. Its state changes under the queue's lock </summary>
     private sealed class Turn(bool isRequest)

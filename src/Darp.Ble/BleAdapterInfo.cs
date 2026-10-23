@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using Darp.Ble.Backends;
+using Darp.Ble.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble;
@@ -34,10 +36,31 @@ public sealed class BleAdapterInfo
     public string? Name { get; }
 
     /// <summary> Opens the adapter </summary>
+    /// <remarks> Open an adapter once and share the open adapter, e.g. from one hosted service that owns it. The Mock throws
+    /// <see cref="InvalidOperationException"/> while it is open </remarks>
     /// <param name="cancellationToken"> Cancels opening </param>
     /// <returns> The ready adapter. The caller owns it; disposing it ends everything started on it </returns>
     /// <exception cref="BleOpenException"> The adapter could not be opened; <see cref="BleOpenException.Kind"/> says why </exception>
     public async Task<BleAdapter> OpenAsync(CancellationToken cancellationToken = default)
+    {
+        // From the driver's open to the ready adapter
+        using Activity? activity = Telemetry.Source.StartActivity("Open adapter {Backend}");
+        if (activity is { IsAllDataRequested: true })
+            activity.SetTag(Telemetry.BackendTag, Backend);
+        try
+        {
+            BleAdapter adapter = await OpenCoreAsync(cancellationToken).ConfigureAwait(false);
+            Telemetry.Finish(activity, Telemetry.Success);
+            return adapter;
+        }
+        catch (Exception e)
+        {
+            Telemetry.Finish(activity, Telemetry.OutcomeOf(e), e);
+            throw;
+        }
+    }
+
+    private async Task<BleAdapter> OpenCoreAsync(CancellationToken cancellationToken)
     {
         IBleAdapterDriver driver;
         try

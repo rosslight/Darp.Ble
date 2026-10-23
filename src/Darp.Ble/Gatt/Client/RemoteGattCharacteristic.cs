@@ -35,10 +35,11 @@ public sealed class RemoteGattCharacteristic
     /// <returns> The value </returns>
     /// <exception cref="GattException"> The characteristic does not support the operation, or the peripheral answered with an ATT error </exception>
     /// <exception cref="BleDisconnectedException"> The connection ended </exception>
+    /// <exception cref="BleException"> The platform refused the operation, e.g. it does not let this app use the device; the connection stays open </exception>
     public Task<byte[]> ReadAsync(CancellationToken cancellationToken = default)
     {
         EnsureSupports(GattProperty.Read);
-        return _connection.RunAsync(_driver.ReadAsync, cancellationToken);
+        return _connection.RunAsync(GattOperation.Read(Uuid), _driver.ReadAsync, cancellationToken);
     }
 
     /// <summary> Writes the value with a write request, which the peripheral answers </summary>
@@ -47,15 +48,22 @@ public sealed class RemoteGattCharacteristic
     /// <returns> A task that completes once the peripheral accepted the value </returns>
     /// <exception cref="GattException"> The characteristic does not support the operation, or the peripheral answered with an ATT error </exception>
     /// <exception cref="BleDisconnectedException"> The connection ended </exception>
+    /// <exception cref="BleException"> The platform refused the operation, e.g. it does not let this app use the device; the connection stays open </exception>
+    /// <exception cref="ArgumentOutOfRangeException"> The value is longer than <see cref="ConnectedPeripheral.MaxWritePayloadLength"/> </exception>
     public Task WriteAsync(ReadOnlyMemory<byte> value, CancellationToken cancellationToken = default)
     {
         EnsureSupports(GattProperty.Write);
+        _connection.EnsureFitsOneWrite(value);
         // An abandoned write keeps running; the copy makes it independent of the caller's buffer
         byte[] copy = value.ToArray();
-        return _connection.RunAsync(request => _driver.WriteAsync(copy, request), cancellationToken);
+        return _connection.RunAsync(
+            GattOperation.Write(Uuid),
+            request => _driver.WriteAsync(copy, request),
+            cancellationToken
+        );
     }
 
-    /// <summary> Writes the value with a write command, which the peripheral does not answer (D8) </summary>
+    /// <summary> Writes the value with a write command, which the peripheral does not answer </summary>
     /// <remarks> Completes once the backend accepted the packet, so a loop of awaited writes is paced to what the radio can send.
     /// It keeps the call order of the connection's operations, but does not wait for the answer of a request sent before it </remarks>
     /// <param name="value"> The value; the caller may reuse the buffer once the task completed </param>
@@ -63,13 +71,16 @@ public sealed class RemoteGattCharacteristic
     /// <returns> A task that completes once the backend accepted the write; not when the peripheral got it </returns>
     /// <exception cref="GattException"> The characteristic does not support writes without response </exception>
     /// <exception cref="BleDisconnectedException"> The connection ended </exception>
+    /// <exception cref="BleException"> The platform refused the operation, e.g. it does not let this app use the device; the connection stays open </exception>
+    /// <exception cref="ArgumentOutOfRangeException"> The value is longer than <see cref="ConnectedPeripheral.MaxWritePayloadLength"/> </exception>
     public ValueTask WriteWithoutResponseAsync(
         ReadOnlyMemory<byte> value,
         CancellationToken cancellationToken = default
     )
     {
         EnsureSupports(GattProperty.WriteWithoutResponse);
-        return _connection.RunCommandAsync(_driver, value, cancellationToken);
+        _connection.EnsureFitsOneWrite(value);
+        return _connection.RunCommandAsync(GattOperation.WriteWithoutResponse(Uuid), _driver, value, cancellationToken);
     }
 
     /// <summary> Discovers the descriptors of the characteristic </summary>
@@ -77,12 +88,13 @@ public sealed class RemoteGattCharacteristic
     /// <returns> The descriptors, in the peripheral's order </returns>
     /// <exception cref="GattException"> The peripheral answered with an ATT error </exception>
     /// <exception cref="BleDisconnectedException"> The connection ended </exception>
+    /// <exception cref="BleException"> The platform refused the operation, e.g. it does not let this app use the device; the connection stays open </exception>
     public async Task<IReadOnlyList<RemoteDescriptor>> DiscoverDescriptorsAsync(
         CancellationToken cancellationToken = default
     )
     {
         IReadOnlyList<IRemoteDescriptorDriver> descriptors = await _connection
-            .RunAsync(_driver.DiscoverDescriptorsAsync, cancellationToken)
+            .RunAsync(GattOperation.DiscoverDescriptors(Uuid), _driver.DiscoverDescriptorsAsync, cancellationToken)
             .ConfigureAwait(false);
         return [.. descriptors.Select(descriptor => new RemoteDescriptor(_connection, descriptor))];
     }
@@ -92,6 +104,7 @@ public sealed class RemoteGattCharacteristic
     /// <returns> A task that completes once notifications are on </returns>
     /// <exception cref="GattException"> The characteristic does not notify, or the peripheral answered with an ATT error </exception>
     /// <exception cref="BleDisconnectedException"> The connection ended </exception>
+    /// <exception cref="BleException"> The platform refused the operation, e.g. it does not let this app use the device; the connection stays open </exception>
     public Task EnableNotificationsAsync(CancellationToken cancellationToken = default)
     {
         EnsureSupports(GattProperty.Notify);
@@ -103,6 +116,7 @@ public sealed class RemoteGattCharacteristic
     /// <returns> A task that completes once notifications are off </returns>
     /// <exception cref="GattException"> The characteristic does not notify, or the peripheral answered with an ATT error </exception>
     /// <exception cref="BleDisconnectedException"> The connection ended </exception>
+    /// <exception cref="BleException"> The platform refused the operation, e.g. it does not let this app use the device; the connection stays open </exception>
     public Task DisableNotificationsAsync(CancellationToken cancellationToken = default)
     {
         EnsureSupports(GattProperty.Notify);

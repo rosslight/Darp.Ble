@@ -59,7 +59,11 @@ internal sealed class MockAdapterSource(MockSettings settings) : IBleAdapterSour
     )
     {
         var manager = new BleManager(
-            builder => builder.AddBackend(new MockPeripheralBackend(air, peripheral)),
+            // The simulated peripherals follow the mock adapter's diagnostics options
+            builder =>
+                builder
+                    .AddBackend(new MockPeripheralBackend(air, peripheral))
+                    .ConfigureDiagnostics(options => options.IncludeAddresses = context.IncludeAddresses),
             context.LoggerFactory,
             context.TimeProvider
         );
