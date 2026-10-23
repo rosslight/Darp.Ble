@@ -11,6 +11,10 @@ internal sealed class MockPeripheralDriver(bool includeGattService) : IPeriphera
     /// <summary> Whether centrals find the GATT service </summary>
     public bool IncludeGattService { get; } = includeGattService;
 
+    // Set once by the core before the adapter is handed out
+    private IGattServerSink? _sink;
+
+    // Guards the fields below: centrals in the air connect while the app adds services
     private readonly Lock _lock = new();
     private readonly List<MockLink> _links = [];
     private GattServiceDefinition[] _services = [];
@@ -26,7 +30,6 @@ internal sealed class MockPeripheralDriver(bool includeGattService) : IPeriphera
                 return _identity;
         }
     }
-    private IGattServerSink? _sink;
 
     /// <summary> The added services, in order </summary>
     public IReadOnlyList<GattServiceDefinition> Services
@@ -41,18 +44,41 @@ internal sealed class MockPeripheralDriver(bool includeGattService) : IPeriphera
     public void Attach(IGattServerSink sink) => _sink = sink;
 
     /// <summary> A central in the air connects to one of this adapter's advertising sets </summary>
-    public MockLink Accept(BleAddress centralAddress, IConnectionSink centralSink)
+    public MockLink Accept(MockCentralDriver central, IConnectionSink centralSink)
     {
         IGattServerSink sink = _sink ?? throw new InvalidOperationException("The core did not attach the peripheral");
-        var link = new MockLink(centralAddress, centralSink, this, sink);
+        var link = new MockLink(central, centralSink, this, sink);
         lock (_lock)
         {
             if (_closed)
                 throw new BleConnectException(BleConnectErrorKind.Unreachable, "The mock peripheral is closed");
-            _links.Add(link);
         }
         sink.OnCentralConnected(link.Peripheral);
+        // Known only once the core admitted the central, so nothing can end the link before the core knows it
+        bool closed;
+        lock (_lock)
+        {
+            closed = _closed;
+            if (!closed)
+                _links.Add(link);
+        }
+        // Closing did not see the link yet; it goes down as closing would have taken it
+        if (closed)
+            link.DisconnectFromPeripheral();
+        // A link that went down meanwhile already forgot itself, before it was added
+        else if (link.IsDown)
+            Forget(link);
         return link;
+    }
+
+    /// <summary> The links that are up </summary>
+    public MockLink[] Links
+    {
+        get
+        {
+            lock (_lock)
+                return [.. _links];
+        }
     }
 
     /// <summary> A link went down </summary>

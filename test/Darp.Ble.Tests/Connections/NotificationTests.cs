@@ -8,7 +8,7 @@ using Shouldly;
 
 namespace Darp.Ble.Tests.Connections;
 
-/// <summary> Notifications from a mock peripheral through the public API (seam 2, D7) </summary>
+/// <summary> Notifications from a mock peripheral through the public API </summary>
 public sealed class NotificationTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -33,6 +33,22 @@ public sealed class NotificationTests
         await NotifyAsync(central, 1);
 
         (await stream.FirstAsync(Token)).ShouldBe([1]);
+    }
+
+    [Fact]
+    public async Task ANotificationLongerThanTheMtuAllows_ArrivesCutToIt_AsOverTheAir()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        (RemoteGattCharacteristic measurement, ConnectedCentral central) = await ConnectAsync(adapter);
+        using NotificationStream<byte[]> stream = measurement.Subscribe();
+        await measurement.EnableNotificationsAsync(Token);
+        byte[] value = [.. Enumerable.Range(0, 300).Select(i => (byte)i)];
+
+        await (_measurement ?? throw new InvalidOperationException("Not hosted")).NotifyAsync(central, value, Token);
+
+        // A notification carries what a write can: the MTU less the header
+        int max = adapter.Central.Connections.Single().MaxWritePayloadLength;
+        (await stream.FirstAsync(Token)).ShouldBe(value[..max]);
     }
 
     [Fact]
@@ -173,12 +189,37 @@ public sealed class NotificationTests
         (await stream.FirstAsync(Token)).ShouldBe((byte)7);
     }
 
-    private ValueTask NotifyAsync(ConnectedCentral central, byte value) =>
-        (_measurement ?? throw new InvalidOperationException("Not hosted")).NotifyAsync(
-            central,
-            new[] { value },
+    [Fact]
+    public async Task AValueTheDeclarationCannotDecode_FailsThatEnumerationAsInvalidValue_AndTheNextOneContinues()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        (_, ConnectedCentral central) = await ConnectAsync(adapter);
+        RemoteGattService service = await adapter.Central.Connections.Single().DiscoverServiceAsync(ServiceUuid, Token);
+        TypedRemoteCharacteristic<ushort, Properties.Notify> measurement = await service.DiscoverCharacteristicAsync(
+            CharacteristicDeclaration.Create<ushort, Properties.Notify>(MeasurementUuid),
             Token
         );
+        using NotificationStream<ushort> stream = measurement.Subscribe();
+        await measurement.EnableNotificationsAsync(Token);
+        await NotifyAsync(central, [1, 0]);
+        await NotifyAsync(central, [2]);
+        await NotifyAsync(central, [3, 0]);
+
+        await using (IAsyncEnumerator<ushort> enumerator = stream.GetAsyncEnumerator(Token))
+        {
+            (await enumerator.MoveNextAsync()).ShouldBeTrue();
+            enumerator.Current.ShouldBe((ushort)1);
+            GattException exception = await Should.ThrowAsync<GattException>(() => enumerator.MoveNextAsync().AsTask());
+            exception.Kind.ShouldBe(GattErrorKind.InvalidValue);
+            exception.AttStatus.ShouldBeNull();
+        }
+        (await stream.FirstAsync(Token)).ShouldBe((ushort)3);
+    }
+
+    private ValueTask NotifyAsync(ConnectedCentral central, byte value) => NotifyAsync(central, [value]);
+
+    private ValueTask NotifyAsync(ConnectedCentral central, byte[] value) =>
+        (_measurement ?? throw new InvalidOperationException("Not hosted")).NotifyAsync(central, value, Token);
 
     private async Task<(RemoteGattCharacteristic Measurement, ConnectedCentral Central)> ConnectAsync(
         BleAdapter adapter

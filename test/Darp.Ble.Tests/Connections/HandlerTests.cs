@@ -3,12 +3,13 @@ using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Darp.Ble.Gatt;
 using Darp.Ble.Mock;
+using Darp.Ble.Testing;
 using Microsoft.Extensions.Time.Testing;
 using Shouldly;
 
 namespace Darp.Ble.Tests.Connections;
 
-/// <summary> How a mock peripheral runs its hosted handlers per central (seam 4, D9 without state) </summary>
+/// <summary> How a mock peripheral runs its hosted handlers per central </summary>
 public sealed class HandlerTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -26,7 +27,7 @@ public sealed class HandlerTests
     private LocalGattCharacteristic? _hosted;
 
     [Fact]
-    public async Task AHandlersToken_IsCancelledWhenItsCentralDisconnects_AndTheConnectionEndsAfterTheHandlerReturned()
+    public async Task AHandlersToken_IsCancelledWhenItsCentralDisconnects()
     {
         var started = new TaskCompletionSource();
         var returned = new TaskCompletionSource();
@@ -50,37 +51,78 @@ public sealed class HandlerTests
 
         await central.DisconnectAsync(Token);
 
-        returned.Task.IsCompleted.ShouldBeTrue();
+        await returned.Task;
         // The handler returned after its cancellation, so its answer races the link going down; the write ends either way
         await write.ContinueWith(_ => { }, TaskScheduler.Default);
     }
 
     [Fact]
+    public async Task AHandler_CanAwaitDisconnectingItsOwnCentral_AndTheHostStillWaitsForItToReturn()
+    {
+        var disconnected = new TaskCompletionSource<DisconnectInfo>();
+        var release = new TaskCompletionSource();
+        var returned = new TaskCompletionSource();
+        // Turns a disconnect that waits for its own handler into a failure instead of a hang
+        using var guard = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        _onRead = async (central, _) =>
+        {
+            await central.DisconnectAsync(guard.Token);
+            disconnected.SetResult(await central.Disconnected);
+            await release.Task;
+            returned.SetResult();
+            return [];
+        };
+        await using BleAdapter adapter = await OpenAsync();
+        (RemoteGattCharacteristic characteristic, _) = await ConnectAsync(adapter);
+        (BleAdapter host, _, _) = await _devices.Task;
+        Task read = characteristic.ReadAsync(Token);
+
+        DisconnectInfo info = await disconnected.Task.WaitAsync(guard.Token);
+
+        info.Reason.ShouldBe(DisconnectReason.LocalRequest);
+        // Taken while the handler still runs; asserted once it returned, so a failure cannot hang the test
+        IReadOnlyList<ConnectedCentral> listed = host.Peripheral.ConnectedCentrals;
+        Task disposing = host.DisposeAsync().AsTask();
+        disposing.IsCompleted.ShouldBeFalse();
+        release.SetResult();
+        await disposing.WaitAsync(TimeSpan.FromSeconds(5), TimeProvider.System, Token);
+        returned.Task.IsCompleted.ShouldBeTrue();
+        await read.ContinueWith(_ => { }, TaskScheduler.Default);
+        // Gone for the app once the link is down, though its handler still ran
+        listed.ShouldBeEmpty();
+    }
+
+    [Fact]
     public async Task HandlersOfOneCentral_RunOneAtATime()
     {
-        var gate = new TaskCompletionSource<GattProtocolStatus>();
-        var running = 0;
-        var mostAtOnce = 0;
-        _onWrite = async (_, value, _) =>
+        var events = new List<string>();
+        var firstRunning = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var releaseFirst = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _onWrite = async (_, value, ct) =>
         {
-            int now = Interlocked.Increment(ref running);
-            mostAtOnce = Math.Max(mostAtOnce, now);
-            GattProtocolStatus status = value.Span[0] == 1 ? await gate.Task : GattProtocolStatus.Success;
-            Interlocked.Decrement(ref running);
-            return status;
+            byte write = value.Span[0];
+            lock (events)
+                events.Add($"{write} entered");
+            if (write == 1)
+            {
+                firstRunning.SetResult();
+                await releaseFirst.Task.WaitAsync(ct);
+            }
+            lock (events)
+                events.Add($"{write} returned");
+            return GattProtocolStatus.Success;
         };
         await using BleAdapter adapter = await OpenAsync();
         (RemoteGattCharacteristic characteristic, _) = await ConnectAsync(adapter);
 
-        // The command's handler blocks; the request behind it must wait for it
+        // The command's handler holds the central's turn; the request behind it must wait for it
         await characteristic.WriteWithoutResponseAsync(new byte[] { 1 }, Token);
+        await firstRunning.Task.WithWatchdog();
         Task request = characteristic.WriteAsync(new byte[] { 2 }, Token);
-        await Task.Delay(TimeSpan.FromMilliseconds(20), TimeProvider.System, Token);
-        request.IsCompleted.ShouldBeFalse();
-        gate.SetResult(GattProtocolStatus.Success);
+        releaseFirst.SetResult();
+        await request.WithWatchdog();
 
-        await request;
-        mostAtOnce.ShouldBe(1);
+        events.ShouldBe(["1 entered", "1 returned", "2 entered", "2 returned"]);
     }
 
     [Fact]

@@ -172,6 +172,7 @@ Darp.Ble.Connections.BlePeripheral.Appearance.set -> void
 Darp.Ble.Connections.BlePeripheral.ConnectedCentrals.get -> System.Collections.Generic.IReadOnlyList<Darp.Ble.Connections.ConnectedCentral!>!
 Darp.Ble.Connections.BlePeripheral.DeviceName.get -> string!
 Darp.Ble.Connections.BlePeripheral.DeviceName.set -> void
+Darp.Ble.Connections.BlePeripheral.WatchCentralsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<Darp.Ble.Connections.ConnectedCentral!>!
 Darp.Ble.Connections.ConnectedCentral
 Darp.Ble.Connections.ConnectedCentral.Address.get -> Darp.Ble.Data.BleAddress!
 Darp.Ble.Connections.ConnectedCentral.DisconnectAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!

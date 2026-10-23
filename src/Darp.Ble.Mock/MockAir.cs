@@ -38,9 +38,12 @@ internal sealed class MockAir(TimeProvider timeProvider, Func<TxPowerLevel, Rssi
             _advertising.Remove(set);
     }
 
-    /// <summary> Finds a set that advertises connectable with this address, from another adapter than the central's </summary>
+    /// <summary> Finds a set that advertises connectable with this address, from another adapter in range than the central's </summary>
+    /// <returns> The set, or null also when the central is out of range </returns>
     public MockAdvertisingSetDriver? FindConnectable(MockAdapterDriver central, BleAddress address)
     {
+        if (!central.IsInRange)
+            return null;
         MockAdvertisingSetDriver[] advertising;
         lock (_lock)
             advertising = [.. _advertising];
@@ -49,14 +52,17 @@ internal sealed class MockAir(TimeProvider timeProvider, Func<TxPowerLevel, Rssi
             advertising,
             set =>
                 !ReferenceEquals(set.Adapter, central)
+                && set.Adapter.IsInRange
                 && set.RandomAddress == address
                 && set.Type.HasFlag(BleEventType.Connectable)
         );
     }
 
-    /// <summary> Delivers one advertising event of a set to every listening adapter except the sender </summary>
+    /// <summary> Delivers one advertising event of a set to every listening adapter in range except the sender </summary>
     public void Transmit(MockAdapterDriver sender, MockAdvertisingState advertising)
     {
+        if (!sender.IsInRange)
+            return;
         MockObserverDriver[] listeners;
         lock (_lock)
             listeners = _listeners;
@@ -64,7 +70,7 @@ internal sealed class MockAir(TimeProvider timeProvider, Func<TxPowerLevel, Rssi
         Rssi rssi = _txPowerToRssi(advertising.Parameters.AdvertisingTxPower);
         foreach (MockObserverDriver listener in listeners)
         {
-            if (!ReferenceEquals(listener.Adapter, sender))
+            if (!ReferenceEquals(listener.Adapter, sender) && listener.Adapter.IsInRange)
                 listener.Receive(advertising, now, rssi);
         }
     }
