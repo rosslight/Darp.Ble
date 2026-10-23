@@ -38,7 +38,7 @@ public static class AclConnectionExtensions
         where TResponse : struct, IAttPdu, IBinaryReadable<TResponse>
     {
         ArgumentNullException.ThrowIfNull(connection);
-        timeout ??= TimeSpan.FromMilliseconds(connection.Device.Settings.DefaultAttTimeoutMs);
+        timeout ??= TimeSpan.FromSeconds(30);
         if (connection.DisconnectToken.IsCancellationRequested)
             throw connection.CreateDisconnectedException($"ATT query {request.OpCode}");
         using var tokenSource = CancellationTokenSource.CreateLinkedTokenSource(
@@ -53,7 +53,7 @@ public static class AclConnectionExtensions
         {
             connection.EnqueueGattPacket(request, activity);
             AttResponse<TResponse> response = await responseSink
-                .Task.WaitAsync(timeout.Value, tokenSource.Token)
+                .Task.WaitAsync(timeout.Value, connection.Device.TimeProvider, tokenSource.Token)
                 .ConfigureAwait(false);
             if (response.IsSuccess)
                 activity?.SetDeconstructedTags("Response", response.Value, orderEntries: true);

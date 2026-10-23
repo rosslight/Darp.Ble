@@ -1,0 +1,15 @@
+﻿[
+  {
+    Direction: HostToController,
+    Type: HciCommand,
+    OpCode: HCI_LE_Set_Random_Address,
+    PduBytes: 01052006C6C5C4C3C2C1
+  },
+  {
+    Direction: ControllerToHost,
+    Type: HciEvent,
+    EventCode: HCI_Command_Complete,
+    CommandOpCode: HCI_LE_Set_Random_Address,
+    PduBytes: 040E0401052000
+  }
+]

@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 namespace Darp.Ble.HciHost.Usb;
 
 /// <summary> Helpers when working with USB ports </summary>
-public static class UsbPort
+internal static class UsbPort
 {
     /// <summary>
     /// Enumerates serial USB ports

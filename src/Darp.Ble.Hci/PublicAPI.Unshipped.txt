@@ -80,12 +80,13 @@ Darp.Ble.Hci.HciDevice.Address.get -> ulong
 Darp.Ble.Hci.HciDevice.ConnectAsync(byte peerAddressType, Darp.Ble.Hci.Payload.Command.UInt48 peerAddress, System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<Darp.Ble.Hci.AclConnection!>!
 Darp.Ble.Hci.HciDevice.DisposeAsync() -> System.Threading.Tasks.ValueTask
 Darp.Ble.Hci.HciDevice.GattServer.get -> Darp.Ble.Hci.Host.GattServer!
-Darp.Ble.Hci.HciDevice.HciDevice(Darp.Ble.Hci.Transport.ITransportLayer! transportLayer, ulong randomAddress, Darp.Ble.Hci.HciSettings! settings, Microsoft.Extensions.Logging.ILoggerFactory? loggerFactory) -> void
+Darp.Ble.Hci.HciDevice.HciDevice(Darp.Ble.Hci.Transport.ITransportLayer! transportLayer, ulong randomAddress, Darp.Ble.Hci.HciSettings! settings, System.TimeProvider! timeProvider, Microsoft.Extensions.Logging.ILoggerFactory? loggerFactory) -> void
 Darp.Ble.Hci.HciDevice.Host.get -> Darp.Ble.Hci.Host.HciHost!
 Darp.Ble.Hci.HciDevice.InitializeAsync(System.Threading.CancellationToken token) -> System.Threading.Tasks.Task!
 Darp.Ble.Hci.HciDevice.ResetAsync(System.Threading.CancellationToken token) -> System.Threading.Tasks.Task!
 Darp.Ble.Hci.HciDevice.SetRandomAddressAsync(ulong randomAddress, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Darp.Ble.Hci.HciDevice.Settings.get -> Darp.Ble.Hci.HciSettings!
+Darp.Ble.Hci.HciDevice.TimeProvider.get -> System.TimeProvider!
 Darp.Ble.Hci.HciDevice.TryGetConnection(ushort connectionHandle, out Darp.Ble.Hci.AclConnection? connection) -> bool
 Darp.Ble.Hci.HciLoggingStrings
 Darp.Ble.Hci.HciPacketEvent
@@ -103,13 +104,10 @@ Darp.Ble.Hci.HciPacketEvent.TryWriteLittleEndian(System.Span<byte> destination) 
 Darp.Ble.Hci.HciPacketEvent.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) -> bool
 Darp.Ble.Hci.HciSettings
 Darp.Ble.Hci.HciSettings.<Clone>$() -> Darp.Ble.Hci.HciSettings!
-Darp.Ble.Hci.HciSettings.Deconstruct(out int DefaultHciCommandTimeoutMs, out int DefaultAttTimeoutMs) -> void
-Darp.Ble.Hci.HciSettings.DefaultAttTimeoutMs.get -> int
-Darp.Ble.Hci.HciSettings.DefaultAttTimeoutMs.init -> void
-Darp.Ble.Hci.HciSettings.DefaultHciCommandTimeoutMs.get -> int
-Darp.Ble.Hci.HciSettings.DefaultHciCommandTimeoutMs.init -> void
+Darp.Ble.Hci.HciSettings.CommandTimeout.get -> System.TimeSpan
+Darp.Ble.Hci.HciSettings.CommandTimeout.init -> void
 Darp.Ble.Hci.HciSettings.Equals(Darp.Ble.Hci.HciSettings? other) -> bool
-Darp.Ble.Hci.HciSettings.HciSettings(int DefaultHciCommandTimeoutMs = 5000, int DefaultAttTimeoutMs = 30000) -> void
+Darp.Ble.Hci.HciSettings.HciSettings() -> void
 Darp.Ble.Hci.Host.GattClient
 Darp.Ble.Hci.Host.GattClient.GattClient(Darp.Ble.Hci.AclConnection! connection) -> void
 Darp.Ble.Hci.Host.GattServer
@@ -1725,6 +1723,7 @@ static Darp.Ble.Hci.HciPacketEvent.TryReadBigEndian(System.ReadOnlySpan<byte> so
 static Darp.Ble.Hci.HciPacketEvent.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.HciPacketEvent value, out int bytesRead) -> bool
 static Darp.Ble.Hci.HciPacketEvent.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.HciPacketEvent value) -> bool
 static Darp.Ble.Hci.HciPacketEvent.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.HciPacketEvent value, out int bytesRead) -> bool
+static Darp.Ble.Hci.HciSettings.Default.get -> Darp.Ble.Hci.HciSettings!
 static Darp.Ble.Hci.HciSettings.operator !=(Darp.Ble.Hci.HciSettings? left, Darp.Ble.Hci.HciSettings? right) -> bool
 static Darp.Ble.Hci.HciSettings.operator ==(Darp.Ble.Hci.HciSettings? left, Darp.Ble.Hci.HciSettings? right) -> bool
 static Darp.Ble.Hci.Host.HciHostExtensions.QueryCommandCompletionAsync<TCommand, TParameters>(this Darp.Ble.Hci.Host.HciHost! hciHost, TCommand command, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TParameters>!
@@ -2339,7 +2338,6 @@ static Darp.Ble.Hci.Payload.Result.HciSetExtendedScanParametersResult.TryReadLit
 static Darp.Ble.Hci.Payload.Result.HciSetExtendedScanParametersResult.operator !=(Darp.Ble.Hci.Payload.Result.HciSetExtendedScanParametersResult left, Darp.Ble.Hci.Payload.Result.HciSetExtendedScanParametersResult right) -> bool
 static Darp.Ble.Hci.Payload.Result.HciSetExtendedScanParametersResult.operator ==(Darp.Ble.Hci.Payload.Result.HciSetExtendedScanParametersResult left, Darp.Ble.Hci.Payload.Result.HciSetExtendedScanParametersResult right) -> bool
 static Darp.Ble.Hci.ReactiveExtensions.SelectWhere<T, TResult>(this System.IObservable<T>! source, Darp.Ble.Hci.ReactiveExtensions.TrySelector<T, TResult>! trySelector) -> System.IObservable<TResult>!
-static readonly Darp.Ble.Hci.HciSettings.Default -> Darp.Ble.Hci.HciSettings!
 virtual Darp.Ble.Hci.ReactiveExtensions.TrySelector<T, TResult>.Invoke(T value, out TResult? result) -> bool
 ~override Darp.Ble.Hci.AclConnectionParameters.Equals(object obj) -> bool
 ~override Darp.Ble.Hci.AclConnectionParameters.ToString() -> string
