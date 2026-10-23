@@ -8,6 +8,7 @@ namespace Darp.Ble;
 public sealed class BleManager
 {
     private readonly IBleBackend[] _backends;
+    private readonly BleCoreOptions _options;
     private readonly BleBackendContext _context;
     private readonly ILogger _logger;
 
@@ -24,7 +25,7 @@ public sealed class BleManager
         ArgumentNullException.ThrowIfNull(configure);
         var builder = new BleManagerBuilder();
         configure(builder);
-        _backends = builder.Build();
+        (_backends, _options) = builder.Build();
         _context = new BleBackendContext(
             loggerFactory ?? NullLoggerFactory.Instance,
             timeProvider ?? TimeProvider.System
@@ -46,7 +47,7 @@ public sealed class BleManager
                 .EnumerateAdaptersAsync(_context, cancellationToken)
                 .ConfigureAwait(false);
             foreach (IBleAdapterSource source in sources)
-                adapters.Add(new BleAdapterInfo(backend.Name, source, _context, _logger));
+                adapters.Add(new BleAdapterInfo(backend.Name, source, _context, _options, _logger));
         }
         return adapters;
     }

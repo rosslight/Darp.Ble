@@ -7,4 +7,7 @@ public interface IBleAdapterDriver : IAsyncDisposable
 {
     /// <summary> The features beyond the roles; the core adds the roles of the role drivers </summary>
     Capabilities Features { get; }
+
+    /// <summary> The observer role, or null if the adapter cannot scan </summary>
+    IObserverDriver? Observer { get; }
 }

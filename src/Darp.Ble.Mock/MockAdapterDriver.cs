@@ -7,5 +7,7 @@ internal sealed class MockAdapterDriver : IBleAdapterDriver
 {
     public Capabilities Features => Capabilities.None;
 
+    public IObserverDriver? Observer => null;
+
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

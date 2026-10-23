@@ -6,6 +6,7 @@ namespace Darp.Ble;
 public sealed class BleManagerBuilder
 {
     private readonly List<IBleBackend> _backends = [];
+    private readonly BleQueueDefaults _queues = new();
 
     internal BleManagerBuilder() { }
 
@@ -19,5 +20,16 @@ public sealed class BleManagerBuilder
         return this;
     }
 
-    internal IBleBackend[] Build() => [.. _backends];
+    /// <summary> Changes the default queues of streams, e.g. how many advertisements a scan buffers </summary>
+    /// <param name="configure"> Changes the defaults </param>
+    /// <returns> This builder </returns>
+    public BleManagerBuilder ConfigureQueues(Action<BleQueueDefaults> configure)
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        configure(_queues);
+        return this;
+    }
+
+    internal (IBleBackend[] Backends, BleCoreOptions Options) Build() =>
+        ([.. _backends], new BleCoreOptions(_queues.Advertisements));
 }
