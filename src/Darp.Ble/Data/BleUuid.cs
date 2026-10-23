@@ -6,6 +6,10 @@ using System.Globalization;
 namespace Darp.Ble.Data;
 
 /// <summary> The Ble Uuid </summary>
+/// <remarks>
+/// Two uuids are equal when their <see cref="Value"/> is, whatever their <see cref="Type"/>: the 16-bit, 32-bit and
+/// 128-bit forms of a uuid on the Bluetooth base are the same uuid. The type only decides how it is written
+/// </remarks>
 public sealed record BleUuid
     : ISpanParsable<BleUuid>,
         ISpanFormattable,
@@ -14,7 +18,7 @@ public sealed record BleUuid
         IEquatable<uint?>,
         IEquatable<ushort?>
 {
-    /// <summary> The type of the uuid </summary>
+    /// <summary> The width the uuid is written in; equality ignores it </summary>
     public required BleUuidType Type { get; init; }
 
     /// <summary> The underlying <see cref="Guid"/> value </summary>
@@ -111,25 +115,24 @@ public sealed record BleUuid
         return false;
     }
 
-    /// <inheritdoc />
-    /// <remarks> Infers type from the given Guid </remarks>
-    public bool Equals(Guid? other)
-    {
-        return Value == other && Type == InferType(other.Value);
-    }
+    /// <summary> Whether both are the same uuid, in whatever width each is written </summary>
+    /// <param name="other"> The other uuid </param>
+    /// <returns> True if both have the same <see cref="Value"/> </returns>
+    public bool Equals(BleUuid? other) => other is not null && Value == other.Value;
 
     /// <inheritdoc />
-    /// <remarks> Expects guid to be <see cref="BleUuidType.Uuid32"/> </remarks>
-    public bool Equals(uint? other) =>
-        other is not null && Type == BleUuidType.Uuid32 && Value == CreateGuid(other.Value);
+    public bool Equals(Guid? other) => Value == other;
 
     /// <inheritdoc />
-    /// <remarks> Expects guid to be <see cref="BleUuidType.Uuid16"/> </remarks>
-    public bool Equals(ushort? other) =>
-        other is not null && Type == BleUuidType.Uuid16 && Value == CreateGuid(other.Value);
+    /// <remarks> Compares with the 32-bit uuid on the Bluetooth base </remarks>
+    public bool Equals(uint? other) => other is not null && Value == CreateGuid(other.Value);
 
     /// <inheritdoc />
-    public override int GetHashCode() => HashCode.Combine(Type, Value);
+    /// <remarks> Compares with the 16-bit uuid on the Bluetooth base </remarks>
+    public bool Equals(ushort? other) => other is not null && Value == CreateGuid(other.Value);
+
+    /// <inheritdoc />
+    public override int GetHashCode() => Value.GetHashCode();
 
     /// <inheritdoc />
     public override string ToString() =>
@@ -149,7 +152,12 @@ public sealed record BleUuid
             _ => Value.ToString(format, formatProvider),
         };
 
-    /// <inheritdoc cref="Guid.TryFormat(System.Span{char},out int,System.ReadOnlySpan{char})"/>/>
+    /// <inheritdoc cref="Guid.TryFormat(System.Span{char},out int,System.ReadOnlySpan{char})"/>
+    [SuppressMessage(
+        "ApiDesign",
+        "RS0026:Do not add multiple public overloads with optional parameters",
+        Justification = "Mirrors the overloads of Guid.TryFormat"
+    )]
     public bool TryFormat(
         Span<char> destination,
         out int charsWritten,
@@ -163,7 +171,12 @@ public sealed record BleUuid
             _ => Value.TryFormat(destination, out charsWritten, format),
         };
 
-    /// <inheritdoc cref="Guid.TryFormat(System.Span{byte},out int,System.ReadOnlySpan{char})"/>/>
+    /// <inheritdoc cref="Guid.TryFormat(System.Span{byte},out int,System.ReadOnlySpan{char})"/>
+    [SuppressMessage(
+        "ApiDesign",
+        "RS0026:Do not add multiple public overloads with optional parameters",
+        Justification = "Mirrors the overloads of Guid.TryFormat"
+    )]
     public bool TryFormat(
         Span<byte> utf8Destination,
         out int bytesWritten,
@@ -227,7 +240,13 @@ public sealed record BleUuid
             }
             case BleUuidType.Uuid128:
             default:
-                return Value.TryWriteBytes(destination);
+            {
+                // Bluetooth sends 128-bit UUIDs least significant byte first, the reverse of how they are written
+                if (destination.Length < 16 || !Value.TryWriteBytes(destination[..16], bigEndian: true, out _))
+                    return false;
+                destination[..16].Reverse();
+                return true;
+            }
         }
     }
 
@@ -258,10 +277,19 @@ public sealed record BleUuid
         {
             2 => FromUInt16(BinaryPrimitives.ReadUInt16LittleEndian(source)),
             4 => FromUInt32(BinaryPrimitives.ReadUInt32LittleEndian(source)),
-            >= 16 => FromGuid(new Guid(source[..16]), inferType: false),
+            >= 16 => FromGuid(ReadGuid(source[..16]), inferType: false),
             _ => null,
         };
         return uuid is not null;
+    }
+
+    /// <summary> A 128-bit UUID in Bluetooth byte order, least significant byte first </summary>
+    private static Guid ReadGuid(ReadOnlySpan<byte> source)
+    {
+        Span<byte> bigEndian = stackalloc byte[16];
+        source.CopyTo(bigEndian);
+        bigEndian.Reverse();
+        return new Guid(bigEndian, bigEndian: true);
     }
 
     /// <summary> Write the ble uuid to a byte array </summary>

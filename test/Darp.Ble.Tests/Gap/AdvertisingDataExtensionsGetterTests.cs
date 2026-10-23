@@ -122,7 +122,7 @@ public sealed class AdvertisingDataExtensionsGetterTests
         "aabbccdd-0000-1000-8000-00805f9b34fb",
         "aabbccee-0000-1000-8000-00805f9b34fb"
     )]
-    [InlineData(AdDataComplete128Uuids, BleUuidType.Uuid128, "ccddeeff-aabb-8899-7766-554433221100")]
+    [InlineData(AdDataComplete128Uuids, BleUuidType.Uuid128, "00112233-4455-6677-8899-aabbccddeeff")]
     public void GetServices_WithMultipleServiceUuids_ReturnsUuids(
         string sections,
         BleUuidType type,
@@ -201,6 +201,8 @@ public sealed class AdvertisingDataExtensionsGetterTests
     [InlineData(AdDataService16Uuid, "26FF", false, "")]
     [InlineData(AdDataService16Uuid, "26FE3E0A", false, "")]
     [InlineData(AdDataService16Uuid, "26FE", true, "3E0A6E")]
+    // 0xFE26 in its 128-bit form, least significant byte first
+    [InlineData(AdDataService16Uuid, "FB349B5F800000800010000026FE0000", true, "3E0A6E")]
     public void TryGetServiceData(string sections, string uuidBytes, bool expectedSuccess, string expectedDataString)
     {
         // Arrange

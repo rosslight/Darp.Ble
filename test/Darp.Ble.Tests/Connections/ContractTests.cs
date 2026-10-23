@@ -1,4 +1,5 @@
 using Darp.Ble.Connections;
+using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
 using Darp.Ble.Gatt;
@@ -9,7 +10,7 @@ using Shouldly;
 
 namespace Darp.Ble.Tests.Connections;
 
-/// <summary> Library service contracts and the GAP identity through the Mock (seam 4 of PR 4b) </summary>
+/// <summary> Library service contracts and the GAP identity through the Mock </summary>
 public sealed class ContractTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -47,6 +48,13 @@ public sealed class ContractTests
 
         await Should.ThrowAsync<InvalidOperationException>(() =>
             adapter.Peripheral.AddServiceAsync(new LocalGattServiceBuilder(GapServiceContract.GapService), Token)
+        );
+        // Also when written in 128 bits
+        await Should.ThrowAsync<InvalidOperationException>(() =>
+            adapter.Peripheral.AddServiceAsync(
+                new LocalGattServiceBuilder(BleUuid.FromGuid(GapServiceContract.GapService.Uuid.Value)),
+                Token
+            )
         );
     }
 

@@ -62,6 +62,19 @@ public sealed class BleUuidTests
         bytesUuid.ShouldBe(uint16Uuid);
     }
 
+    [Fact]
+    public void A128BitUuid_IsReadAndWrittenInBluetoothByteOrder()
+    {
+        // The Nordic UART service as advertised and sent over ATT: least significant byte first
+        byte[] onAir = Convert.FromHexString("9ECADC240EE5A9E093F3A3B50100406E");
+        BleUuid expected = BleUuid.FromGuid(Guid.Parse("6E400001-B5A3-F393-E0A9-E50E24DCCA9E"));
+
+        BleUuid read = BleUuid.Read(onAir);
+
+        read.ShouldBe(expected);
+        expected.ToByteArray().ShouldBe(onAir);
+    }
+
     [Theory]
     [InlineData("0229", BleUuidType.Uuid16)]
     [InlineData("AABBCCDD", BleUuidType.Uuid32)]
@@ -347,7 +360,7 @@ public sealed class BleUuidTests
     {
         // Arrange
         var testGuid = new Guid("01020304-0506-0708-090a-0b0c0d0e0f10");
-        // [ 04, 03, 02, 01, 06, 05, 08, 07, 09, 0A, 0B, 0C, 0D, 0E, 0F, 10 ]
+        // Bluetooth byte order, least significant byte first: [ 10, 0F, ..., 02, 01 ]
         BleUuid bleUuid = BleUuid.FromGuid(testGuid);
 
         Span<byte> destination = new byte[16];
@@ -360,7 +373,7 @@ public sealed class BleUuidTests
         destination.Length.ShouldBe(16);
         destination
             .ToArray()
-            .ShouldBe([0x04, 0x03, 0x02, 0x01, 0x06, 0x05, 0x08, 0x07, 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10]);
+            .ShouldBe([0x10, 0x0F, 0x0E, 0x0D, 0x0C, 0x0B, 0x0A, 0x09, 0x08, 0x07, 0x06, 0x05, 0x04, 0x03, 0x02, 0x01]);
     }
 
     [Fact]
@@ -477,8 +490,8 @@ public sealed class BleUuidTests
     [InlineData("78563412", "12345678-0000-1000-8000-00805F9B34FB", BleUuidType.Uuid32)]
     [InlineData("DDCCBBAA", "AABBCCDD-0000-1000-8000-00805F9B34FB", BleUuidType.Uuid32)]
     [InlineData("00000000000000000000000000000000", "00000000-0000-0000-0000-000000000000", BleUuidType.Uuid128)]
-    [InlineData("0018000000000000800000805f9b34fb", "00001800-0000-0000-8000-00805F9B34FB", BleUuidType.Uuid128)]
-    [InlineData("0018000000000000800000805f9b34fb00", "00001800-0000-0000-8000-00805F9B34FB", BleUuidType.Uuid128)]
+    [InlineData("fb349b5f800000800000000000180000", "00001800-0000-0000-8000-00805F9B34FB", BleUuidType.Uuid128)]
+    [InlineData("fb349b5f80000080000000000018000000", "00001800-0000-0000-8000-00805F9B34FB", BleUuidType.Uuid128)]
     public void TryRead_ValidLengths_ReturnsTrueAndCorrectType(
         string hexString,
         string expectedGuidString,
@@ -497,7 +510,7 @@ public sealed class BleUuidTests
     [Theory]
     [InlineData("00001800-0000-0000-8000-00805F9B34FB", BleUuidType.Uuid16, "0018")]
     [InlineData("00001800-0000-0000-8000-00805F9B34FB", BleUuidType.Uuid32, "00180000")]
-    [InlineData("00001800-0000-0000-8000-00805F9B34FB", BleUuidType.Uuid128, "0018000000000000800000805f9b34fb")]
+    [InlineData("00001800-0000-0000-8000-00805F9B34FB", BleUuidType.Uuid128, "fb349b5f800000800000000000180000")]
     public void ToByteArray_ShouldWork(string guidString, BleUuidType uuidType, string expectedBytesString)
     {
         byte[] expectedBytes = Convert.FromHexString(expectedBytesString);
@@ -516,7 +529,7 @@ public sealed class BleUuidTests
         BleUuid uuid = BleUuid.FromGuid(baseGuid, inferType: true);
         uuid.Type.ShouldBe(BleUuidType.Uuid16);
         uuid.Equals(baseGuid).ShouldBeTrue();
-        uuid.Equals((uint)shortUuid).ShouldBeFalse(); // 16-bit only matches ushort
+        uuid.Equals((uint)shortUuid).ShouldBeTrue();
         uuid.Equals(shortUuid).ShouldBeTrue();
     }
 
@@ -535,5 +548,21 @@ public sealed class BleUuidTests
         uuid.Equals(baseGuid).ShouldBeTrue();
         uuid.Equals(shortUuid).ShouldBeFalse();
         uuid.Equals(intUuid).ShouldBeTrue();
+    }
+
+    [Fact]
+    public void Equality_ComparesTheUuid_NotTheWidthItIsWrittenIn()
+    {
+        BleUuid uuid16 = BleUuid.FromUInt16(0x180F);
+        BleUuid uuid32 = BleUuid.FromUInt32(0x180F);
+        BleUuid uuid128 = BleUuid.FromGuid(uuid16.Value);
+
+        uuid16.ShouldBe(uuid32);
+        uuid16.ShouldBe(uuid128);
+        (uuid16 == uuid128).ShouldBeTrue();
+        new HashSet<BleUuid> { uuid16, uuid32, uuid128 }.Count.ShouldBe(1);
+        uuid16.ShouldNotBe(BleUuid.FromUInt16(0x180A));
+        // The width stays what it was written in, for how it is sent
+        uuid128.ToByteArray().Length.ShouldBe(16);
     }
 }
