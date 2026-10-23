@@ -211,19 +211,22 @@ public sealed class BleObserverTests
     [Fact]
     public async Task OpenAsync_WhenTheCapabilitiesDoNotMatchTheDrivers_ThrowsAndDisposesTheDriver()
     {
-        var driver = new MismatchedAdapterDriver();
+        var driver = new TestAdapterDriver { Capabilities = Capabilities.Observer };
         var manager = new BleManager(builder => builder.AddBackend(new TestBackend(driver)));
         IReadOnlyList<BleAdapterInfo> adapters = await manager.EnumerateAdaptersAsync(Token);
 
         await Should.ThrowAsync<InvalidOperationException>(() => adapters[0].OpenAsync(Token));
 
-        driver.IsDisposed.ShouldBeTrue();
+        driver.DisposeCount.ShouldBe(1);
     }
 
     private async Task<BleAdapter> OpenAsync(ILoggerFactory? loggerFactory = null)
     {
         var manager = new BleManager(
-            builder => builder.AddBackend(new TestBackend(new TestScanAdapterDriver(_driver))),
+            builder =>
+                builder.AddBackend(
+                    new TestBackend(new TestAdapterDriver { Capabilities = Capabilities.Observer, Observer = _driver })
+                ),
             loggerFactory
         );
         IReadOnlyList<BleAdapterInfo> adapters = await manager.EnumerateAdaptersAsync(Token);
@@ -267,21 +270,6 @@ public sealed class BleObserverTests
                 Advertisements[number] = advertisement;
             }
             return advertisement;
-        }
-    }
-
-    private sealed class MismatchedAdapterDriver : Darp.Ble.Backends.IBleAdapterDriver
-    {
-        public Capabilities Capabilities => Capabilities.Observer;
-
-        public Darp.Ble.Backends.IObserverDriver? Observer => null;
-
-        public bool IsDisposed { get; private set; }
-
-        public ValueTask DisposeAsync()
-        {
-            IsDisposed = true;
-            return ValueTask.CompletedTask;
         }
     }
 }

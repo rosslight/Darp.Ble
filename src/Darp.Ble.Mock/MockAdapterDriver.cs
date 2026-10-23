@@ -9,5 +9,12 @@ internal sealed class MockAdapterDriver : IBleAdapterDriver
 
     public IObserverDriver? Observer => null;
 
+    public IBroadcasterDriver? Broadcaster => null;
+
+    public BleAddress RandomAddress => BleAddress.NotAvailable;
+
+    public Task SetRandomAddressAsync(BleAddress address, CancellationToken cancellationToken) =>
+        throw new NotSupportedException("The mock adapter cannot set its address yet");
+
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

@@ -13,6 +13,7 @@ public sealed class BleAdapter : IAsyncDisposable
     private readonly ILogger _logger;
     private readonly Lazy<Task> _disposal;
     private readonly BleObserver? _observer;
+    private readonly BleBroadcaster? _broadcaster;
 
     internal BleAdapter(string backend, string? name, IBleAdapterDriver driver, BleCoreOptions options, ILogger logger)
     {
@@ -23,8 +24,11 @@ public sealed class BleAdapter : IAsyncDisposable
         _logger = logger;
         _disposal = new Lazy<Task>(DisposeCoreAsync);
         EnsureRoleMatches(Capabilities.Observer, driver.Observer);
+        EnsureRoleMatches(Capabilities.Broadcaster, driver.Broadcaster);
         if (driver.Observer is not null)
             _observer = new BleObserver(this, driver.Observer, options.AdvertisementQueue, logger);
+        if (driver.Broadcaster is not null)
+            _broadcaster = new BleBroadcaster(this, driver.Broadcaster, logger);
     }
 
     /// <summary> The backend of the adapter, e.g. <see cref="BleBackends.Mock"/> </summary>
@@ -40,12 +44,32 @@ public sealed class BleAdapter : IAsyncDisposable
     /// <exception cref="NotSupportedException"> The adapter cannot scan; see <see cref="Capabilities"/> </exception>
     public BleObserver Observer => _observer ?? throw MissingRole(nameof(Observer));
 
-    /// <summary> Closes the adapter: ends its scans, then releases its driver. Calling it again waits for the same disposal </summary>
+    /// <summary> Advertises with advertising sets </summary>
+    /// <exception cref="NotSupportedException"> The adapter cannot advertise; see <see cref="Capabilities"/> </exception>
+    public BleBroadcaster Broadcaster => _broadcaster ?? throw MissingRole(nameof(Broadcaster));
+
+    /// <summary> The adapter's own random address </summary>
+    public BleAddress RandomAddress => _driver.RandomAddress;
+
+    /// <summary> Changes the adapter's own random address </summary>
+    /// <param name="address"> The new address </param>
+    /// <param name="cancellationToken"> Cancels the change </param>
+    /// <returns> A task that completes once the address applies </returns>
+    /// <exception cref="NotSupportedException"> The adapter cannot set random addresses; see <see cref="Capabilities"/> </exception>
+    public Task SetRandomAddressAsync(BleAddress address, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(address);
+        EnsureCanSetRandomAddress();
+        return _driver.SetRandomAddressAsync(address, cancellationToken);
+    }
+
+    /// <summary> Closes the adapter: ends its scans and advertising, then releases its driver. Calling it again waits for the same disposal </summary>
     /// <returns> A task that completes once the driver is disposed </returns>
     public ValueTask DisposeAsync() => new(_disposal.Value);
 
     private async Task DisposeCoreAsync()
     {
+        // Every step runs even if an earlier one fails
         try
         {
             if (_observer is not null)
@@ -53,9 +77,23 @@ public sealed class BleAdapter : IAsyncDisposable
         }
         finally
         {
-            await _driver.DisposeAsync().ConfigureAwait(false);
-            _logger.LogAdapterDisposed(Backend, Name);
+            try
+            {
+                if (_broadcaster is not null)
+                    await _broadcaster.DisposeAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                await _driver.DisposeAsync().ConfigureAwait(false);
+                _logger.LogAdapterDisposed(Backend, Name);
+            }
         }
+    }
+
+    internal void EnsureCanSetRandomAddress()
+    {
+        if (!Capabilities.HasFlag(Capabilities.SetRandomAddress))
+            throw new NotSupportedException($"The adapter {Name} of backend {Backend} cannot set random addresses");
     }
 
     private void EnsureRoleMatches(Capabilities role, object? roleDriver)

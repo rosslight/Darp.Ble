@@ -72,4 +72,20 @@ internal static partial class Logging
         Message = "A scan ended because its queue of {Capacity} advertisements was full"
     )]
     public static partial void LogScanQueueOverflow(this ILogger logger, int capacity);
+
+    [LoggerMessage(
+        EventId = 1200,
+        EventName = "AdvertisingStarted",
+        Level = LogLevel.Debug,
+        Message = "Advertising set {Address} started"
+    )]
+    public static partial void LogAdvertisingStarted(this ILogger logger, BleAddress address);
+
+    [LoggerMessage(
+        EventId = 1201,
+        EventName = "AdvertisingStopped",
+        Level = LogLevel.Debug,
+        Message = "Advertising set {Address} stopped"
+    )]
+    public static partial void LogAdvertisingStopped(this ILogger logger, BleAddress address);
 }
