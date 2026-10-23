@@ -5,6 +5,8 @@
     <OutputType>Exe</OutputType>
     <IsTestProject>true</IsTestProject>
     <LangVersion>13</LangVersion>
+    <!-- Optimized code from the first call, so the allocation tests measure what an app runs -->
+    <TieredCompilation>false</TieredCompilation>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="coverlet.MTP">
