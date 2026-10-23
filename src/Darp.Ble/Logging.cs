@@ -1,3 +1,4 @@
+using Darp.Ble.Connections;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Microsoft.Extensions.Logging;
@@ -88,4 +89,44 @@ internal static partial class Logging
         Message = "Advertising set {Address} stopped"
     )]
     public static partial void LogAdvertisingStopped(this ILogger logger, BleAddress address);
+
+    [LoggerMessage(
+        EventId = 1300,
+        EventName = "Connecting",
+        Level = LogLevel.Debug,
+        Message = "Connecting to {Address}"
+    )]
+    public static partial void LogConnecting(this ILogger logger, BleAddress address);
+
+    [LoggerMessage(EventId = 1301, EventName = "Connected", Level = LogLevel.Debug, Message = "Connected to {Address}")]
+    public static partial void LogConnected(this ILogger logger, BleAddress address);
+
+    [LoggerMessage(
+        EventId = 1302,
+        EventName = "ConnectFailed",
+        Level = LogLevel.Warning,
+        Message = "Connecting to {Address} failed: {Kind}"
+    )]
+    public static partial void LogConnectFailed(
+        this ILogger logger,
+        BleAddress address,
+        BleConnectErrorKind kind,
+        Exception exception
+    );
+
+    [LoggerMessage(
+        EventId = 1303,
+        EventName = "Disconnected",
+        Level = LogLevel.Debug,
+        Message = "Connection to {Address} ended: {Reason}"
+    )]
+    public static partial void LogDisconnected(this ILogger logger, BleAddress address, DisconnectReason reason);
+
+    [LoggerMessage(
+        EventId = 1307,
+        EventName = "ConnectionCleanupFailed",
+        Level = LogLevel.Warning,
+        Message = "Releasing the connection to {Address} failed"
+    )]
+    public static partial void LogConnectionCleanupFailed(this ILogger logger, BleAddress address, Exception exception);
 }

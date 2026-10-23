@@ -19,6 +19,17 @@ internal sealed class MockAdvertisingSetDriver(MockAir air, MockAdapterDriver ad
     private MockAdvertisingState _state = state;
     private ITimer? _timer;
 
+    public MockAdapterDriver Adapter => _adapter;
+
+    public BleEventType Type
+    {
+        get
+        {
+            lock (_lock)
+                return _state.Parameters.Type;
+        }
+    }
+
     public BleAddress RandomAddress
     {
         get
@@ -33,8 +44,11 @@ internal sealed class MockAdvertisingSetDriver(MockAir air, MockAdapterDriver ad
         lock (_lock)
         {
             TimeSpan interval = _state.Parameters.MinPrimaryAdvertisingInterval;
-            _timer ??= _air.TimeProvider.CreateTimer(_ => Transmit(), state: null, interval, interval);
+            if (_timer is not null)
+                return Task.CompletedTask;
+            _timer = _air.TimeProvider.CreateTimer(_ => Transmit(), state: null, interval, interval);
         }
+        _air.StartAdvertising(this);
         return Task.CompletedTask;
     }
 
@@ -46,9 +60,11 @@ internal sealed class MockAdvertisingSetDriver(MockAir air, MockAdapterDriver ad
             timer = _timer;
             _timer = null;
         }
+        if (timer is null)
+            return;
+        _air.StopAdvertising(this);
         // Waits for a transmission that is still running
-        if (timer is not null)
-            await timer.DisposeAsync().ConfigureAwait(false);
+        await timer.DisposeAsync().ConfigureAwait(false);
     }
 
     public Task SetParametersAsync(AdvertisingParameters parameters, CancellationToken cancellationToken) =>
