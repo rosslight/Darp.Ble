@@ -41,4 +41,18 @@ internal sealed class MockRemoteCharacteristic(MockLink link, GattCharacteristic
             request.OnTransactionAnswered();
         }
     }
+
+    public Task SetNotificationsAsync(bool enabled, GattRequest request)
+    {
+        request.OnTransactionSent();
+        try
+        {
+            _link.SetSubscribed(_definition, enabled);
+        }
+        finally
+        {
+            request.OnTransactionAnswered();
+        }
+        return Task.CompletedTask;
+    }
 }

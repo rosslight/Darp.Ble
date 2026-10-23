@@ -47,6 +47,24 @@ public sealed class ConnectedCentral
         await _disconnected.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary> The peripheral role this central is connected to </summary>
+    internal BlePeripheral Peripheral => _peripheral;
+
+    /// <summary> Sends a notification to this central </summary>
+    internal ValueTask NotifyAsync(
+        GattCharacteristicDefinition characteristic,
+        ReadOnlyMemory<byte> value,
+        CancellationToken cancellationToken
+    )
+    {
+        DisconnectInfo? ending;
+        lock (_lock)
+            ending = _ending;
+        if (ending is not null)
+            throw new BleDisconnectedException(ending);
+        return _driver.NotifyAsync(_connection, characteristic, value, cancellationToken);
+    }
+
     /// <summary> Runs a hosted handler for this central. An unexpected failure answers with <see cref="GattProtocolStatus.UnlikelyError"/> </summary>
     internal async Task<T> RunHandlerAsync<T>(Func<CancellationToken, ValueTask<T>> handler)
     {

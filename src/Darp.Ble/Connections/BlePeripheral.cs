@@ -59,6 +59,8 @@ public sealed class BlePeripheral
                 Unhost(characteristics);
                 throw;
             }
+            foreach (LocalGattCharacteristic characteristic in characteristics)
+                characteristic.MarkLive(this);
             return new LocalGattService(definition.Uuid);
         }
         finally

@@ -67,6 +67,18 @@ internal sealed class MockPeripheralDriver : IPeripheralDriver
         return Task.CompletedTask;
     }
 
+    public ValueTask NotifyAsync(
+        ICentralConnectionDriver central,
+        GattCharacteristicDefinition characteristic,
+        ReadOnlyMemory<byte> value,
+        CancellationToken cancellationToken
+    )
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        ((MockCentralConnection)central).Link.Notify(characteristic, value.Span);
+        return ValueTask.CompletedTask;
+    }
+
     public Task DisconnectAsync(ICentralConnectionDriver central, CancellationToken cancellationToken)
     {
         ((MockCentralConnection)central).Link.DisconnectFromPeripheral();

@@ -31,5 +31,5 @@ public sealed class BleManagerBuilder
     }
 
     internal (IBleBackend[] Backends, BleCoreOptions Options) Build() =>
-        ([.. _backends], new BleCoreOptions(_queues.Advertisements));
+        ([.. _backends], new BleCoreOptions(_queues.Advertisements, _queues.Notifications));
 }

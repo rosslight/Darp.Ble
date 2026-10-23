@@ -21,6 +21,15 @@ internal sealed class ConnectionEvents : IConnectionSink
         connection?.End(info);
     }
 
+    /// <summary> A notification before the connection object exists has no stream and is dropped </summary>
+    public void OnNotification(IRemoteCharacteristicDriver characteristic, ReadOnlySpan<byte> value)
+    {
+        ConnectedPeripheral? connection;
+        lock (_lock)
+            connection = _connection;
+        connection?.OnNotification(characteristic, value);
+    }
+
     public void Attach(ConnectedPeripheral connection)
     {
         DisconnectInfo? earlyDisconnect;

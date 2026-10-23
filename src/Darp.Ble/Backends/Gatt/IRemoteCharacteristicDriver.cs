@@ -24,4 +24,11 @@ public interface IRemoteCharacteristicDriver
     /// <returns> A task that completes once the peripheral accepted the value </returns>
     /// <exception cref="GattException"> The peripheral answered with an ATT error </exception>
     Task WriteAsync(ReadOnlyMemory<byte> value, GattRequest request);
+
+    /// <summary> Writes the client characteristic configuration descriptor to turn notifications on or off </summary>
+    /// <param name="enabled"> Whether notifications are on afterwards </param>
+    /// <param name="request"> Reports the transaction </param>
+    /// <returns> A task that completes once the peripheral accepted the change </returns>
+    /// <exception cref="GattException"> The peripheral answered with an ATT error </exception>
+    Task SetNotificationsAsync(bool enabled, GattRequest request);
 }

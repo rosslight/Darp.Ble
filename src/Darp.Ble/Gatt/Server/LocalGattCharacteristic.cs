@@ -10,6 +10,9 @@ public sealed class LocalGattCharacteristic
     private readonly OnReadHandler? _onRead;
     private readonly OnWriteHandler? _onWrite;
 
+    // The peripheral that hosts the characteristic, once its service is live
+    private BlePeripheral? _host;
+
     internal LocalGattCharacteristic(
         GattCharacteristicDefinition definition,
         OnReadHandler? onRead,
@@ -28,6 +31,33 @@ public sealed class LocalGattCharacteristic
     public GattProperty Properties => Definition.Properties;
 
     internal GattCharacteristicDefinition Definition { get; }
+
+    /// <summary> Sends a notification to a central </summary>
+    /// <param name="central"> A central connected to the adapter that hosts the characteristic </param>
+    /// <param name="value"> The value; the caller may reuse the buffer once the task completed </param>
+    /// <param name="cancellationToken"> Cancels waiting to send; once the backend accepted the notification, only the wait ends </param>
+    /// <returns> A task that completes once the backend accepted the notification; not when the central got it </returns>
+    /// <exception cref="InvalidOperationException"> The characteristic does not notify, its service was not added, or the central belongs to another adapter </exception>
+    /// <exception cref="BleDisconnectedException"> The central's connection ended </exception>
+    public ValueTask NotifyAsync(
+        ConnectedCentral central,
+        ReadOnlyMemory<byte> value,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(central);
+        if (!Properties.HasFlag(GattProperty.Notify))
+            throw new InvalidOperationException($"The characteristic {Uuid} does not notify");
+        BlePeripheral? host = _host;
+        if (host is null)
+            throw new InvalidOperationException($"The characteristic {Uuid} is not live; add its service first");
+        if (!ReferenceEquals(central.Peripheral, host))
+            throw new InvalidOperationException("The central is connected to another adapter");
+        return central.NotifyAsync(Definition, value, cancellationToken);
+    }
+
+    /// <summary> The service is live on this peripheral </summary>
+    internal void MarkLive(BlePeripheral host) => _host = host;
 
     /// <summary> Answers a read of a central, through its handler </summary>
     internal ValueTask<byte[]> ReadAsync(ConnectedCentral central, CancellationToken cancellationToken) =>

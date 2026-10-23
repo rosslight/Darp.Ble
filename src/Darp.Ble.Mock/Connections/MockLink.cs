@@ -13,6 +13,7 @@ internal sealed class MockLink
     private readonly Lock _lock = new();
     private readonly Dictionary<GattServiceDefinition, MockRemoteService> _services = [];
     private readonly Dictionary<GattCharacteristicDefinition, MockRemoteCharacteristic> _characteristics = [];
+    private readonly HashSet<GattCharacteristicDefinition> _subscribed = [];
     private bool _down;
 
     public MockLink(
@@ -75,6 +76,33 @@ internal sealed class MockLink
     {
         EnsureUp();
         return _peripheralSink.OnWriteRequest(Peripheral, characteristic, value);
+    }
+
+    /// <summary> The central writes the CCCD of a characteristic </summary>
+    public void SetSubscribed(GattCharacteristicDefinition characteristic, bool enabled)
+    {
+        lock (_lock)
+        {
+            if (_down)
+                throw new IOException("The mock link is down");
+            if (enabled)
+                _subscribed.Add(characteristic);
+            else
+                _subscribed.Remove(characteristic);
+        }
+    }
+
+    /// <summary> The peripheral notifies; the central gets it while it subscribed, as a peripheral's stack decides </summary>
+    public void Notify(GattCharacteristicDefinition characteristic, ReadOnlySpan<byte> value)
+    {
+        lock (_lock)
+        {
+            if (_down)
+                throw new IOException("The mock link is down");
+            if (!_subscribed.Contains(characteristic))
+                return;
+        }
+        _centralSink.OnNotification(GetCharacteristic(characteristic), value);
     }
 
     public void DisconnectFromCentral()
