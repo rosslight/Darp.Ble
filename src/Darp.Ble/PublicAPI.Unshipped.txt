@@ -4174,6 +4174,11 @@ Darp.Ble.Gatt.IGattTypedCharacteristic<T>.Decode(System.ReadOnlySpan<byte> sourc
 Darp.Ble.Gatt.IGattTypedCharacteristic<T>.DecodeFunc
 Darp.Ble.Gatt.IGattTypedCharacteristic<T>.Encode(T value) -> byte[]!
 Darp.Ble.Gatt.IGattTypedCharacteristic<T>.EncodeFunc
+Darp.Ble.Gatt.ILocalCharacteristic
+Darp.Ble.Gatt.ILocalCharacteristic.Characteristic.get -> Darp.Ble.Gatt.LocalGattCharacteristic!
+Darp.Ble.Gatt.ILocalCharacteristic.Properties.get -> Darp.Ble.Gatt.GattProperty
+Darp.Ble.Gatt.ILocalCharacteristic.Uuid.get -> Darp.Ble.Data.BleUuid!
+Darp.Ble.Gatt.ILocalCharacteristic<TProp1>
 Darp.Ble.Gatt.IRemoteCharacteristic
 Darp.Ble.Gatt.IRemoteCharacteristic.Characteristic.get -> Darp.Ble.Gatt.RemoteGattCharacteristic!
 Darp.Ble.Gatt.IRemoteCharacteristic.Properties.get -> Darp.Ble.Gatt.GattProperty
@@ -4182,10 +4187,20 @@ Darp.Ble.Gatt.IRemoteCharacteristic<TProp1>
 Darp.Ble.Gatt.IServiceDeclaration
 Darp.Ble.Gatt.IServiceDeclaration.Type.get -> Darp.Ble.Gatt.GattServiceType
 Darp.Ble.Gatt.ITypedCharacteristicDeclaration<T, TProp1>
+Darp.Ble.Gatt.ITypedLocalCharacteristic<T, TProp1, TProp2>
+Darp.Ble.Gatt.ITypedLocalCharacteristic<T, TProp1, TProp2>.Declaration.get -> Darp.Ble.Gatt.IGattTypedCharacteristic<T>!
+Darp.Ble.Gatt.ITypedLocalCharacteristic<T, TProp1>
+Darp.Ble.Gatt.ITypedLocalCharacteristic<T, TProp1>.Declaration.get -> Darp.Ble.Gatt.IGattTypedCharacteristic<T>!
 Darp.Ble.Gatt.ITypedRemoteCharacteristic<T, TProp1, TProp2>
 Darp.Ble.Gatt.ITypedRemoteCharacteristic<T, TProp1, TProp2>.Declaration.get -> Darp.Ble.Gatt.IGattTypedCharacteristic<T>!
 Darp.Ble.Gatt.ITypedRemoteCharacteristic<T, TProp1>
 Darp.Ble.Gatt.ITypedRemoteCharacteristic<T, TProp1>.Declaration.get -> Darp.Ble.Gatt.IGattTypedCharacteristic<T>!
+Darp.Ble.Gatt.LocalCharacteristic<TProp1, TProp2>
+Darp.Ble.Gatt.LocalCharacteristic<TProp1>
+Darp.Ble.Gatt.LocalCharacteristic<TProp1>.Characteristic.get -> Darp.Ble.Gatt.LocalGattCharacteristic!
+Darp.Ble.Gatt.LocalCharacteristic<TProp1>.Properties.get -> Darp.Ble.Gatt.GattProperty
+Darp.Ble.Gatt.LocalCharacteristic<TProp1>.Uuid.get -> Darp.Ble.Data.BleUuid!
+Darp.Ble.Gatt.LocalCharacteristicExtensions
 Darp.Ble.Gatt.LocalGattCharacteristic
 Darp.Ble.Gatt.LocalGattCharacteristic.NotifyAsync(Darp.Ble.Connections.ConnectedCentral! central, System.ReadOnlyMemory<byte> value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
 Darp.Ble.Gatt.LocalGattCharacteristic.Properties.get -> Darp.Ble.Gatt.GattProperty
@@ -4196,11 +4211,14 @@ Darp.Ble.Gatt.LocalGattServiceBuilder
 Darp.Ble.Gatt.LocalGattServiceBuilder.AddCharacteristic(Darp.Ble.Data.BleUuid! uuid, Darp.Ble.Gatt.GattProperty properties, Darp.Ble.Gatt.OnReadHandler? onRead = null, Darp.Ble.Gatt.OnWriteHandler? onWrite = null) -> Darp.Ble.Gatt.LocalGattCharacteristic!
 Darp.Ble.Gatt.LocalGattServiceBuilder.LocalGattServiceBuilder(Darp.Ble.Data.BleUuid! uuid, bool isPrimary = true) -> void
 Darp.Ble.Gatt.LocalGattServiceBuilder.LocalGattServiceBuilder(Darp.Ble.Gatt.ServiceDeclaration! declaration) -> void
+Darp.Ble.Gatt.LocalGattServiceBuilderExtensions
 Darp.Ble.Gatt.NotificationStream<T>
 Darp.Ble.Gatt.NotificationStream<T>.Dispose() -> void
 Darp.Ble.Gatt.NotificationStream<T>.GetAsyncEnumerator(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerator<T>!
 Darp.Ble.Gatt.OnReadHandler
+Darp.Ble.Gatt.OnReadHandler<T>
 Darp.Ble.Gatt.OnWriteHandler
+Darp.Ble.Gatt.OnWriteHandler<T>
 Darp.Ble.Gatt.Properties
 Darp.Ble.Gatt.Properties.Indicate
 Darp.Ble.Gatt.Properties.Indicate.Indicate() -> void
@@ -4248,6 +4266,16 @@ Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>.ReadValue(System.ReadOnl
 Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>.TypedCharacteristicDeclaration(Darp.Ble.Data.BleUuid! uuid, Darp.Ble.Gatt.IGattTypedCharacteristic<T>.DecodeFunc! onRead, Darp.Ble.Gatt.IGattTypedCharacteristic<T>.EncodeFunc! onWrite) -> void
 Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>.Uuid.get -> Darp.Ble.Data.BleUuid!
 Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>.WriteValue(T value) -> byte[]!
+Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1, TProp2>
+Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1, TProp2>.Characteristic.get -> Darp.Ble.Gatt.LocalGattCharacteristic!
+Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1, TProp2>.Declaration.get -> Darp.Ble.Gatt.IGattTypedCharacteristic<T>!
+Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1, TProp2>.Properties.get -> Darp.Ble.Gatt.GattProperty
+Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1, TProp2>.Uuid.get -> Darp.Ble.Data.BleUuid!
+Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1>
+Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1>.Characteristic.get -> Darp.Ble.Gatt.LocalGattCharacteristic!
+Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1>.Declaration.get -> Darp.Ble.Gatt.IGattTypedCharacteristic<T>!
+Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1>.Properties.get -> Darp.Ble.Gatt.GattProperty
+Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1>.Uuid.get -> Darp.Ble.Data.BleUuid!
 Darp.Ble.Gatt.TypedRemoteCharacteristic<T, TProp1, TProp2>
 Darp.Ble.Gatt.TypedRemoteCharacteristic<T, TProp1, TProp2>.Characteristic.get -> Darp.Ble.Gatt.RemoteGattCharacteristic!
 Darp.Ble.Gatt.TypedRemoteCharacteristic<T, TProp1, TProp2>.Declaration.get -> Darp.Ble.Gatt.IGattTypedCharacteristic<T>!
@@ -4398,6 +4426,15 @@ static Darp.Ble.Gatt.DescriptorDeclaration.CharacteristicUserDescription.get -> 
 static Darp.Ble.Gatt.DescriptorDeclaration.ClientCharacteristicConfiguration.get -> Darp.Ble.Gatt.DescriptorDeclaration!
 static Darp.Ble.Gatt.DescriptorDeclaration.ServerCharacteristicConfiguration.get -> Darp.Ble.Gatt.DescriptorDeclaration!
 static Darp.Ble.Gatt.GattClientExtensions.DiscoverServiceAsync(this Darp.Ble.Gatt.GattClient! gatt, Darp.Ble.Gatt.ServiceDeclaration! declaration, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gatt.RemoteGattService!>!
+static Darp.Ble.Gatt.LocalCharacteristicExtensions.NotifyAsync(this Darp.Ble.Gatt.ILocalCharacteristic<Darp.Ble.Gatt.Properties.Notify!>! characteristic, Darp.Ble.Connections.ConnectedCentral! central, System.ReadOnlyMemory<byte> value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+static Darp.Ble.Gatt.LocalCharacteristicExtensions.NotifyAsync<T, TOther>(this Darp.Ble.Gatt.ITypedLocalCharacteristic<T, Darp.Ble.Gatt.Properties.Notify!, TOther>! characteristic, Darp.Ble.Connections.ConnectedCentral! central, T value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+static Darp.Ble.Gatt.LocalCharacteristicExtensions.NotifyAsync<T, TOther>(this Darp.Ble.Gatt.ITypedLocalCharacteristic<T, TOther, Darp.Ble.Gatt.Properties.Notify!>! characteristic, Darp.Ble.Connections.ConnectedCentral! central, T value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+static Darp.Ble.Gatt.LocalCharacteristicExtensions.NotifyAsync<T>(this Darp.Ble.Gatt.ITypedLocalCharacteristic<T, Darp.Ble.Gatt.Properties.Notify!>! characteristic, Darp.Ble.Connections.ConnectedCentral! central, T value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+static Darp.Ble.Gatt.LocalGattServiceBuilderExtensions.AddCharacteristic<T, TProp1, TProp2>(this Darp.Ble.Gatt.LocalGattServiceBuilder! service, Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1, TProp2>! declaration, Darp.Ble.Gatt.OnWriteHandler<T>? onWrite = null, Darp.Ble.Gatt.OnReadHandler<T>? onRead = null) -> Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1, TProp2>!
+static Darp.Ble.Gatt.LocalGattServiceBuilderExtensions.AddCharacteristic<T, TProp1>(this Darp.Ble.Gatt.LocalGattServiceBuilder! service, Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>! declaration, Darp.Ble.Gatt.OnWriteHandler<T>? onWrite = null, Darp.Ble.Gatt.OnReadHandler<T>? onRead = null) -> Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1>!
+static Darp.Ble.Gatt.LocalGattServiceBuilderExtensions.AddCharacteristic<TProp1, TProp2>(this Darp.Ble.Gatt.LocalGattServiceBuilder! service, Darp.Ble.Gatt.CharacteristicDeclaration<TProp1, TProp2>! declaration, Darp.Ble.Gatt.OnWriteHandler? onWrite = null, Darp.Ble.Gatt.OnReadHandler? onRead = null) -> Darp.Ble.Gatt.LocalCharacteristic<TProp1, TProp2>!
+static Darp.Ble.Gatt.LocalGattServiceBuilderExtensions.AddCharacteristic<TProp1>(this Darp.Ble.Gatt.LocalGattServiceBuilder! service, Darp.Ble.Data.BleUuid! uuid, Darp.Ble.Gatt.OnWriteHandler? onWrite = null, Darp.Ble.Gatt.OnReadHandler? onRead = null) -> Darp.Ble.Gatt.LocalCharacteristic<TProp1>!
+static Darp.Ble.Gatt.LocalGattServiceBuilderExtensions.AddCharacteristic<TProp1>(this Darp.Ble.Gatt.LocalGattServiceBuilder! service, Darp.Ble.Gatt.CharacteristicDeclaration<TProp1>! declaration, Darp.Ble.Gatt.OnWriteHandler? onWrite = null, Darp.Ble.Gatt.OnReadHandler? onRead = null) -> Darp.Ble.Gatt.LocalCharacteristic<TProp1>!
 static Darp.Ble.Gatt.RemoteCharacteristicExtensions.DisableNotificationsAsync(this Darp.Ble.Gatt.IRemoteCharacteristic<Darp.Ble.Gatt.Properties.Notify!>! characteristic, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 static Darp.Ble.Gatt.RemoteCharacteristicExtensions.EnableNotificationsAsync(this Darp.Ble.Gatt.IRemoteCharacteristic<Darp.Ble.Gatt.Properties.Notify!>! characteristic, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 static Darp.Ble.Gatt.RemoteCharacteristicExtensions.ReadAsync(this Darp.Ble.Gatt.IRemoteCharacteristic<Darp.Ble.Gatt.Properties.Read!>! characteristic, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<byte[]!>!
@@ -4436,5 +4473,7 @@ virtual Darp.Ble.Gatt.CharacteristicDeclaration<TProp1>.Properties.get -> Darp.B
 virtual Darp.Ble.Gatt.IGattTypedCharacteristic<T>.DecodeFunc.Invoke(System.ReadOnlySpan<byte> source) -> T
 virtual Darp.Ble.Gatt.IGattTypedCharacteristic<T>.EncodeFunc.Invoke(T value) -> byte[]!
 virtual Darp.Ble.Gatt.OnReadHandler.Invoke(Darp.Ble.Connections.ConnectedCentral! central, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<byte[]!>
+virtual Darp.Ble.Gatt.OnReadHandler<T>.Invoke(Darp.Ble.Connections.ConnectedCentral! central, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<T>
 virtual Darp.Ble.Gatt.OnWriteHandler.Invoke(Darp.Ble.Connections.ConnectedCentral! central, System.ReadOnlyMemory<byte> value, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Darp.Ble.Gatt.GattProtocolStatus>
+virtual Darp.Ble.Gatt.OnWriteHandler<T>.Invoke(Darp.Ble.Connections.ConnectedCentral! central, T value, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Darp.Ble.Gatt.GattProtocolStatus>
 virtual Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>.Properties.get -> Darp.Ble.Gatt.GattProperty

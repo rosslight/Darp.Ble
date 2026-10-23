@@ -158,8 +158,21 @@ public static class CharacteristicDeclaration
         return Create<string, TProp1, TProp2>(uuid, encoding.GetString, encoding.GetBytes);
     }
 
+    /// <summary> Reads a value of exactly the size of <typeparamref name="T"/> </summary>
+    /// <exception cref="GattException"> The value has another size (InvalidAttributeValueLength) </exception>
     private static T ToStruct<T>(this in ReadOnlySpan<byte> bytes)
-        where T : unmanaged => MemoryMarshal.Read<T>(bytes);
+        where T : unmanaged
+    {
+        int size = GetSizeOfTOrEnum<T>();
+        if (bytes.Length != size)
+        {
+            throw new GattException(
+                GattProtocolStatus.InvalidAttributeValueLength,
+                $"The value has {bytes.Length} bytes instead of {size}"
+            );
+        }
+        return MemoryMarshal.Read<T>(bytes);
+    }
 
     private static byte[] ToByteArray<T>(this T value)
         where T : unmanaged
