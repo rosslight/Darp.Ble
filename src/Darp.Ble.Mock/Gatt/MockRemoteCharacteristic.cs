@@ -55,4 +55,12 @@ internal sealed class MockRemoteCharacteristic(MockLink link, GattCharacteristic
         }
         return Task.CompletedTask;
     }
+
+    /// <summary> Accepted at once; the peripheral's handler runs without the central waiting for it </summary>
+    public ValueTask WriteWithoutResponseAsync(ReadOnlyMemory<byte> value, GattRequest request)
+    {
+        request.HandOffToken.ThrowIfCancellationRequested();
+        _link.WriteWithoutResponse(_definition, value);
+        return ValueTask.CompletedTask;
+    }
 }

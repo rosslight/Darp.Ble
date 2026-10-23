@@ -81,6 +81,14 @@ internal sealed class MockLink
         return _peripheralSink.OnWriteRequest(Peripheral, characteristic, value);
     }
 
+    /// <summary> The central writes with a write command; the peripheral's handler runs on its own, its answer is dropped </summary>
+    public void WriteWithoutResponse(GattCharacteristicDefinition characteristic, ReadOnlyMemory<byte> value)
+    {
+        EnsureUp();
+        // The core copies the value before the handler runs, so the caller's buffer is free once this returns
+        _peripheralSink.OnWriteCommand(Peripheral, characteristic, value);
+    }
+
     /// <summary> The central writes the CCCD of a characteristic </summary>
     public void SetSubscribed(GattCharacteristicDefinition characteristic, bool enabled)
     {

@@ -49,6 +49,23 @@ public sealed class RemoteGattCharacteristic
         return _connection.RunAsync(request => _driver.WriteAsync(copy, request), cancellationToken);
     }
 
+    /// <summary> Writes the value with a write command, which the peripheral does not answer (D8) </summary>
+    /// <remarks> Completes once the backend accepted the packet, so a loop of awaited writes is paced to what the radio can send.
+    /// It keeps the call order of the connection's operations, but does not wait for the answer of a request sent before it </remarks>
+    /// <param name="value"> The value; the caller may reuse the buffer once the task completed </param>
+    /// <param name="cancellationToken"> Cancels the write until the backend accepted it </param>
+    /// <returns> A task that completes once the backend accepted the write; not when the peripheral got it </returns>
+    /// <exception cref="GattException"> The characteristic does not support writes without response </exception>
+    /// <exception cref="BleDisconnectedException"> The connection ended </exception>
+    public ValueTask WriteWithoutResponseAsync(
+        ReadOnlyMemory<byte> value,
+        CancellationToken cancellationToken = default
+    )
+    {
+        EnsureSupports(GattProperty.WriteWithoutResponse);
+        return _connection.RunCommandAsync(_driver, value, cancellationToken);
+    }
+
     /// <summary> Turns notifications on for this connection; does nothing when they are on, whoever enabled them </summary>
     /// <param name="cancellationToken"> Cancels the change; after it was sent, only the wait ends and the device's answer still counts </param>
     /// <returns> A task that completes once notifications are on </returns>

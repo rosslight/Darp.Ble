@@ -215,6 +215,60 @@ public static class TypedRemoteCharacteristicExtensions
             queue ?? throw new ArgumentNullException(nameof(queue))
         );
 
+    /// <summary> Encodes and writes the value with a write command, which the peripheral does not answer </summary>
+    /// <param name="characteristic"> The characteristic </param>
+    /// <param name="value"> The value </param>
+    /// <param name="cancellationToken"> Cancels the write until the backend accepted it </param>
+    /// <typeparam name="T"> The type of the value </typeparam>
+    /// <returns> A task that completes once the backend accepted the write </returns>
+    public static ValueTask WriteWithoutResponseAsync<T>(
+        this ITypedRemoteCharacteristic<T, Properties.WriteWithoutResponse> characteristic,
+        T value,
+        CancellationToken cancellationToken = default
+    ) => WriteWithoutResponseCoreAsync(characteristic, characteristic?.Declaration, value, cancellationToken);
+
+    /// <summary> Encodes and writes the value with a write command, which the peripheral does not answer </summary>
+    /// <param name="characteristic"> The characteristic </param>
+    /// <param name="value"> The value </param>
+    /// <param name="cancellationToken"> Cancels the write until the backend accepted it </param>
+    /// <typeparam name="T"> The type of the value </typeparam>
+    /// <typeparam name="TOther"> The other property marker </typeparam>
+    /// <returns> A task that completes once the backend accepted the write </returns>
+    public static ValueTask WriteWithoutResponseAsync<T, TOther>(
+        this ITypedRemoteCharacteristic<T, Properties.WriteWithoutResponse, TOther> characteristic,
+        T value,
+        CancellationToken cancellationToken = default
+    )
+        where TOther : IBleProperty =>
+        WriteWithoutResponseCoreAsync(characteristic, characteristic?.Declaration, value, cancellationToken);
+
+    /// <summary> Encodes and writes the value with a write command, which the peripheral does not answer </summary>
+    /// <param name="characteristic"> The characteristic </param>
+    /// <param name="value"> The value </param>
+    /// <param name="cancellationToken"> Cancels the write until the backend accepted it </param>
+    /// <typeparam name="T"> The type of the value </typeparam>
+    /// <typeparam name="TOther"> The other property marker </typeparam>
+    /// <returns> A task that completes once the backend accepted the write </returns>
+    public static ValueTask WriteWithoutResponseAsync<T, TOther>(
+        this ITypedRemoteCharacteristic<T, TOther, Properties.WriteWithoutResponse> characteristic,
+        T value,
+        CancellationToken cancellationToken = default
+    )
+        where TOther : IBleProperty =>
+        WriteWithoutResponseCoreAsync(characteristic, characteristic?.Declaration, value, cancellationToken);
+
+    private static ValueTask WriteWithoutResponseCoreAsync<T>(
+        IRemoteCharacteristic? characteristic,
+        IGattTypedCharacteristic<T>? declaration,
+        T value,
+        CancellationToken cancellationToken
+    )
+    {
+        ArgumentNullException.ThrowIfNull(characteristic);
+        ArgumentNullException.ThrowIfNull(declaration);
+        return characteristic.Characteristic.WriteWithoutResponseAsync(declaration.Encode(value), cancellationToken);
+    }
+
     private static RemoteGattCharacteristic Untyped(IRemoteCharacteristic? characteristic)
     {
         ArgumentNullException.ThrowIfNull(characteristic);

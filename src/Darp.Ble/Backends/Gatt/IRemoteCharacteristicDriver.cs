@@ -25,6 +25,13 @@ public interface IRemoteCharacteristicDriver
     /// <exception cref="GattException"> The peripheral answered with an ATT error </exception>
     Task WriteAsync(ReadOnlyMemory<byte> value, GattRequest request);
 
+    /// <summary> Writes the value with a write command, which the peripheral does not answer (D8) </summary>
+    /// <param name="value"> The value; the driver takes what it needs before the task completes </param>
+    /// <param name="request"> Its <see cref="GattRequest.HandOffToken"/> is the caller's token, honoured while waiting for buffer space </param>
+    /// <returns> A task that completes once the backend accepted the packet; never only once the peripheral got it.
+    /// It completes synchronously when there is buffer space </returns>
+    ValueTask WriteWithoutResponseAsync(ReadOnlyMemory<byte> value, GattRequest request);
+
     /// <summary> Writes the client characteristic configuration descriptor to turn notifications on or off </summary>
     /// <param name="enabled"> Whether notifications are on afterwards </param>
     /// <param name="request"> Reports the transaction </param>
