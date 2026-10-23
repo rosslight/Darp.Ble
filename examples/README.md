@@ -16,5 +16,6 @@ dotnet run examples/list-adapters.cs
 | [`host-service.cs`](host-service.cs) | Host a service, advertise it and print the connected centrals until Ctrl+C |
 | [`read-write.cs`](read-write.cs) | Read a typed value, write a new one and read it back |
 | [`notifications.cs`](notifications.cs) | Subscribe to a characteristic and print what it notifies |
+| [`request-response.cs`](request-response.cs) | Host an echo service and query it: write a request, get the reply as a notification |
 
 The examples use the in-process mock backend, so they run without Bluetooth hardware.
