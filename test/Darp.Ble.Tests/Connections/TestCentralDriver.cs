@@ -11,18 +11,27 @@ internal sealed class TestCentralDriver : ICentralDriver
         TaskCreationOptions.RunContinuationsAsynchronously
     );
 
+    /// <summary> When set, connecting waits until the test completes it </summary>
+    public TaskCompletionSource? HoldConnect { get; init; }
+
+    /// <summary> Completes when a connect reached the driver </summary>
+    public TaskCompletionSource Connecting { get; } = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
     /// <summary> The connection opened last </summary>
     public Task<TestConnectionDriver> Connection => _connected.Task;
 
-    public Task<IConnectionDriver> ConnectAsync(
+    public async Task<IConnectionDriver> ConnectAsync(
         BleAddress address,
         BleConnectionParameters parameters,
         IConnectionSink sink,
         CancellationToken cancellationToken
     )
     {
+        Connecting.TrySetResult();
+        if (HoldConnect is not null)
+            await HoldConnect.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
         var connection = new TestConnectionDriver(sink);
         _connected.TrySetResult(connection);
-        return Task.FromResult<IConnectionDriver>(connection);
+        return connection;
     }
 }

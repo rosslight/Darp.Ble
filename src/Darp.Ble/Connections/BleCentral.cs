@@ -1,6 +1,7 @@
 using Darp.Ble.Backends;
 using Darp.Ble.Connections;
 using Darp.Ble.Data;
+using Darp.Ble.Gap;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Connections;
@@ -14,6 +15,7 @@ namespace Darp.Ble.Connections;
 public sealed class BleCentral
 {
     private readonly ICentralDriver _driver;
+    private readonly BleObserver _observer;
     private readonly TimeProvider _timeProvider;
     private readonly ILogger _logger;
     private readonly Lock _lock = new();
@@ -23,10 +25,17 @@ public sealed class BleCentral
     private readonly OperationTracker _attempts = new();
     private readonly CancellationTokenSource _closing = new();
 
-    internal BleCentral(BleAdapter adapter, ICentralDriver driver, TimeProvider timeProvider, ILogger logger)
+    internal BleCentral(
+        BleAdapter adapter,
+        ICentralDriver driver,
+        BleObserver observer,
+        TimeProvider timeProvider,
+        ILogger logger
+    )
     {
         Adapter = adapter;
         _driver = driver;
+        _observer = observer;
         _timeProvider = timeProvider;
         _logger = logger;
     }
@@ -45,6 +54,7 @@ public sealed class BleCentral
     }
 
     /// <summary> Connects to a peripheral </summary>
+    /// <remarks> The adapter's scans pause while the link comes up and continue afterwards </remarks>
     /// <param name="address"> The address of the peripheral </param>
     /// <param name="parameters"> How the connection runs; the defaults when null </param>
     /// <param name="cancellationToken"> Cancels connecting </param>
@@ -88,6 +98,8 @@ public sealed class BleCentral
         _logger.LogConnecting(address);
         var events = new ConnectionEvents();
         IConnectionDriver driver;
+        // The adapter's scans pause until the link is up (D6)
+        await _observer.PauseAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             driver = await _driver.ConnectAsync(address, parameters, events, cancellationToken).ConfigureAwait(false);
@@ -96,6 +108,10 @@ public sealed class BleCentral
         {
             _logger.LogConnectFailed(address, e.Kind, e);
             throw;
+        }
+        finally
+        {
+            await _observer.ResumeAsync().ConfigureAwait(false);
         }
         // Until the caller gets it, this method owns the connection
         var connection = new ConnectedPeripheral(this, address, driver, _timeProvider, _logger);

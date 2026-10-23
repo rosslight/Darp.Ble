@@ -87,6 +87,12 @@ public sealed class BleObserver
 
     internal Task DisposeAsync() => _coordinator.DisposeAsync();
 
+    /// <summary> Stops the radio scan while the adapter connects; scans stay registered </summary>
+    internal Task PauseAsync(CancellationToken cancellationToken) => _coordinator.PauseAsync(cancellationToken);
+
+    /// <summary> Ends one pause; never throws, failures end the scans </summary>
+    internal Task ResumeAsync() => _coordinator.ResumeAsync();
+
     private async Task<bool> WaitForAdvertisementsAsync(ScanListener listener, CancellationToken cancellationToken)
     {
         try
