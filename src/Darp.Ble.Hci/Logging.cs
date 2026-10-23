@@ -45,45 +45,17 @@ internal static partial class Logging
         return activity;
     }
 
-    public static Activity? StartHandleQueryAttPduActivity<
-        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TAttPdu
-    >(TAttPdu request, AclConnection aclConnection)
-        where TAttPdu : IAttPdu, IBinaryWritable
-    {
-        Activity? activity = HciActivity.StartActivity("Query ATT {Name}");
-        if (activity is null)
-            return activity;
-
-        string requestName = request.OpCode.ToString().ToUpperInvariant();
-        activity.SetTag("Name", requestName);
-        activity.SetTag("Connection.Handle", $"{aclConnection.ConnectionHandle:X4}");
-        activity.SetTag("Connection.Address", aclConnection.Address);
-        activity.SetTag("Connection.PeerAddress", aclConnection.PeerAddress);
-        activity.SetTag("Connection.Role", aclConnection.Role);
-
-        activity.SetDeconstructedTags("Request", request, orderEntries: true);
-        activity.SetTag("Request.OpCode", requestName);
-        return activity;
-    }
-
-    public static Activity? StartWaitForEventActivity(HciEventCode eventCode, ulong deviceAddress)
-    {
-        Activity? activity = HciTracingActivity.StartActivity("Wait for event {Name}");
-        activity?.SetTag("Name", eventCode.ToString().ToUpperInvariant());
-        activity?.SetTag("DeviceAddress", $"{deviceAddress:X12}");
-        return activity;
-    }
-
-    [LoggerMessage(Level = LogLevel.Trace, Message = "Enqueueing packet {@Packet}")]
-    public static partial void LogEnqueuePacket(this ILogger logger, IHciPacket packet);
-
-    [LoggerMessage(Level = LogLevel.Trace, Message = "Starting query of {@Command}")]
-    public static partial void LogStartQuery(this ILogger logger, IHciPacket command);
-
-    [LoggerMessage(Level = LogLevel.Trace, Message = "H4Transport: {Direction} disconnected")]
+    [LoggerMessage(
+        EventId = 2000,
+        EventName = "H4TransportDisconnected",
+        Level = LogLevel.Trace,
+        Message = "H4Transport: {Direction} disconnected"
+    )]
     public static partial void LogH4TransportDisconnected(this ILogger logger, string direction);
 
     [LoggerMessage(
+        EventId = 2001,
+        EventName = "H4TransportWithError",
         Level = LogLevel.Critical,
         Message = "H4Transport: {Direction} died due to exception {Message}. This error is not recoverable!"
     )]
@@ -95,38 +67,35 @@ internal static partial class Logging
     );
 
     [LoggerMessage(
+        EventId = 2002,
+        EventName = "PacketSendingErrorEncoding",
         Level = LogLevel.Warning,
         Message = "H4Transport: Could not send packet {@Packet} due to error while encoding"
     )]
     public static partial void LogPacketSendingErrorEncoding(this ILogger logger, IHciPacket packet);
 
-    [LoggerMessage(Level = LogLevel.Trace, Message = "H4Transport: Sending packet {@Packet} with bytes 0x{@Bytes}")]
-    public static partial void LogPacketSending(this ILogger logger, IHciPacket packet, byte[] bytes);
-
     [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "H4Transport: Could not decode bytes 0x{PacketBytes:X2}{Bytes} to match packet {PacketType}"
-    )]
-    public static partial void LogPacketReceivingDecodingFailed(
-        this ILogger logger,
-        byte packetBytes,
-        byte[] bytes,
-        string packetType
-    );
-
-    [LoggerMessage(Level = LogLevel.Trace, Message = "Read bytes 0x{Bytes}")]
-    public static partial void LogPacketReceiving(this ILogger logger, byte[] bytes);
-
-    [LoggerMessage(
+        EventId = 2003,
+        EventName = "PacketReceivingUnknownPacket",
         Level = LogLevel.Critical,
         Message = "H4Transport: Received unknown hci packet of type 0x{Type:X2}. Remaining buffer: {Remaining}. This Error is not recoverable!"
     )]
     public static partial void LogPacketReceivingUnknownPacket(this ILogger logger, byte type, string remaining);
 
-    [LoggerMessage(Level = LogLevel.Trace, Message = "H4Transport: Disposed")]
+    [LoggerMessage(
+        EventId = 2004,
+        EventName = "H4TransportDisposed",
+        Level = LogLevel.Trace,
+        Message = "H4Transport: Disposed"
+    )]
     public static partial void LogH4TransportDisposed(this ILogger logger);
 
-    [LoggerMessage(Level = LogLevel.Trace, Message = "{Source} to {Destination}: {PacketName}")]
+    [LoggerMessage(
+        EventId = 2005,
+        EventName = "PacketTransmission",
+        Level = LogLevel.Trace,
+        Message = "{Source} to {Destination}: {PacketName}"
+    )]
     public static partial void LogPacketTransmission(
         this ILogger logger,
         string source,
@@ -134,7 +103,12 @@ internal static partial class Logging
         string packetName
     );
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "{Source} to {Destination}: {PacketName} {Message}")]
+    [LoggerMessage(
+        EventId = 2006,
+        EventName = "PacketTransmissionWarning",
+        Level = LogLevel.Warning,
+        Message = "{Source} to {Destination}: {PacketName} {Message}"
+    )]
     public static partial void LogPacketTransmissionWarning(
         this ILogger logger,
         string source,
@@ -144,6 +118,8 @@ internal static partial class Logging
     );
 
     [LoggerMessage(
+        EventId = 2007,
+        EventName = "AttPacketTransmission",
         Level = LogLevel.Trace,
         Message = "{Source} to {Destination}: [0x{ConnectionHandle:X3}]: {PacketName}"
     )]
@@ -156,6 +132,8 @@ internal static partial class Logging
     );
 
     [LoggerMessage(
+        EventId = 2008,
+        EventName = "ReceivedUnknownAttPacket",
         Level = LogLevel.Warning,
         Message = "{Source} to {Destination}: [0x{ConnectionHandle:X3}]: {OpCode}"
     )]
@@ -168,6 +146,8 @@ internal static partial class Logging
     );
 
     [LoggerMessage(
+        EventId = 2009,
+        EventName = "AttPacketTransmissionWarning",
         Level = LogLevel.Warning,
         Message = "{Source} to {Destination}: [0x{ConnectionHandle:X3}]: {PacketName} {Message}"
     )]
