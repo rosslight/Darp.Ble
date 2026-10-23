@@ -99,6 +99,17 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
     internal Task<T> RunAsync<T>(Func<GattRequest, Task<T>> send, CancellationToken cancellationToken) =>
         _requests.RunAsync(send, cancellationToken);
 
+    /// <summary> Runs a request without a result of this connection once the earlier ones ended </summary>
+    internal Task RunAsync(Func<GattRequest, Task> send, CancellationToken cancellationToken) =>
+        _requests.RunAsync(
+            async request =>
+            {
+                await send(request).ConfigureAwait(false);
+                return true;
+            },
+            cancellationToken
+        );
+
     /// <summary> Why the connection ends, once it started ending </summary>
     internal DisconnectInfo? Ending
     {
