@@ -84,6 +84,9 @@ public sealed class BleAdapter : IAsyncDisposable
     /// <exception cref="NotSupportedException"> Centrals cannot connect to the adapter; see <see cref="Capabilities"/> </exception>
     public BlePeripheral Peripheral => _peripheral ?? throw MissingRole(nameof(Peripheral));
 
+    /// <summary> The central connected through this connection, while it is connected </summary>
+    internal ConnectedCentral? FindCentral(ICentralConnectionDriver central) => _peripheral?.Find(central);
+
     /// <summary> The adapter's own random address </summary>
     public BleAddress RandomAddress => _driver.RandomAddress;
 

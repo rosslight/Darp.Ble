@@ -1,19 +1,26 @@
 using Darp.Ble.Backends;
+using Darp.Ble.Connections;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
+using Darp.Ble.Mock.Connections;
 
 namespace Darp.Ble.Mock.Gap;
 
-/// <summary> Sends an advertising event every minimum interval on a timer of the manager's clock </summary>
+/// <summary> Sends an advertising event every minimum interval on a timer of the manager's clock; a connection stops it </summary>
 [System.Diagnostics.CodeAnalysis.SuppressMessage(
     "Usage",
     "CA2213:Disposable fields should be disposed",
     Justification = "The set only names its adapter as the sender; the adapter is not owned by it"
 )]
-internal sealed class MockAdvertisingSetDriver(MockAir air, MockAdapterDriver adapter, MockAdvertisingState state)
-    : IAdvertisingSetDriver
+internal sealed class MockAdvertisingSetDriver(
+    MockAir air,
+    MockAdapterDriver adapter,
+    MockAdvertisingState state,
+    IAdvertisingSetSink sink
+) : IAdvertisingSetDriver
 {
     private readonly MockAir _air = air;
+    private readonly IAdvertisingSetSink _sink = sink;
     private readonly MockAdapterDriver _adapter = adapter;
     private readonly Lock _lock = new();
     private MockAdvertisingState _state = state;
@@ -65,6 +72,29 @@ internal sealed class MockAdvertisingSetDriver(MockAir air, MockAdapterDriver ad
         _air.StopAdvertising(this);
         // Waits for a transmission that is still running
         await timer.DisposeAsync().ConfigureAwait(false);
+    }
+
+    /// <summary> A central connects through the set, which stops, as a controller's set does </summary>
+    /// <returns> The link, or null when the set stopped meanwhile </returns>
+    /// <exception cref="BleConnectException"> The peripheral closes </exception>
+    public async Task<MockLink?> ConnectAsync(BleAddress centralAddress, IConnectionSink centralSink)
+    {
+        ITimer timer;
+        MockLink link;
+        lock (_lock)
+        {
+            if (_timer is null)
+                return null;
+            timer = _timer;
+            link = _adapter.PeripheralDriver.Accept(centralAddress, centralSink);
+            _timer = null;
+            // Under the lock, so the stop is reported before a later start or stop of the set completes
+            _sink.OnStoppedByConnection(link.Peripheral);
+        }
+        _air.StopAdvertising(this);
+        // Waits for a transmission that is still running
+        await timer.DisposeAsync().ConfigureAwait(false);
+        return link;
     }
 
     public Task SetParametersAsync(AdvertisingParameters parameters, CancellationToken cancellationToken) =>

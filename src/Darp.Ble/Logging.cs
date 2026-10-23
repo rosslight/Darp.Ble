@@ -91,6 +91,18 @@ internal static partial class Logging
     public static partial void LogAdvertisingStopped(this ILogger logger, BleAddress address);
 
     [LoggerMessage(
+        EventId = 1202,
+        EventName = "AdvertisingRestartFailed",
+        Level = LogLevel.Warning,
+        Message = "Advertising set {Address} could not start again after its central disconnected"
+    )]
+    public static partial void LogAdvertisingRestartFailed(
+        this ILogger logger,
+        BleAddress address,
+        Exception exception
+    );
+
+    [LoggerMessage(
         EventId = 1300,
         EventName = "Connecting",
         Level = LogLevel.Debug,
