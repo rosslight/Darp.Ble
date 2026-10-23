@@ -1,4 +1,8 @@
+using Darp.Ble.Connections;
 using Darp.Ble.Data;
+using Darp.Ble.Hci.Package;
+using Darp.Ble.Hci.Payload;
+using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.HciHost.Verify;
 using Microsoft.Extensions.Time.Testing;
 
@@ -8,6 +12,7 @@ namespace Darp.Ble.HciHost.Tests;
 internal static class HciAdapter
 {
     public static readonly BleAddress Address = BleAddress.CreateRandomAddress((UInt48)0xE0C5AA968B6E);
+    public static readonly BleAddress Peer = BleAddress.CreateRandomAddress((UInt48)0x112233445566);
 
     public static BleManager Manager(FakeController controller, TimeProvider? time = null) =>
         new(
@@ -30,5 +35,40 @@ internal static class HciAdapter
         BleAdapter adapter = await adapters[0].OpenAsync(TestContext.Current.CancellationToken);
         controller.StartRecording();
         return adapter;
+    }
+
+    /// <summary> The controller reports the link as up </summary>
+    public static HciMessage ConnectionComplete(
+        ushort handle,
+        HciCommandStatus status = HciCommandStatus.Success,
+        HciLeConnectionRole role = HciLeConnectionRole.Central,
+        BleAddress? peer = null
+    ) =>
+        HciMessages.HciLeEnhancedConnectionCompleteEvent(
+            handle,
+            role,
+            (byte)(peer ?? Peer).Type,
+            (peer ?? Peer).Value,
+            connectionInterval: 0x0050,
+            peripheralLatency: 0x0000,
+            supervisionTimeout: 0x0048,
+            status: status
+        );
+
+    /// <summary> Connects to <see cref="Peer"/>; the peripheral agrees on the given MTU </summary>
+    public static async Task<ConnectedPeripheral> ConnectAsync(
+        BleAdapter adapter,
+        FakeController controller,
+        ushort handle = 0x0001,
+        ushort serverMtu = 65
+    )
+    {
+        CancellationToken token = TestContext.Current.CancellationToken;
+        Task<ConnectedPeripheral> connecting = adapter.Central.ConnectAsync(Peer, cancellationToken: token);
+        await controller.WaitForCommandAsync(HciOpCode.HCI_LE_Extended_Create_Connection_V1);
+        await controller.PushAsync(ConnectionComplete(handle));
+        await controller.ReadAclAsync(token);
+        await controller.PushAsync(HciMessages.AttExchangeMtuResponse(handle, serverMtu));
+        return await connecting;
     }
 }

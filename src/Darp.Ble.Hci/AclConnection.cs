@@ -86,7 +86,7 @@ public sealed class AclConnection : IDisposable
     public AclConnectionParameters Parameters { get; }
 
     /// <summary>Gets the currently effective ATT MTU for the connection.</summary>
-    public ushort AttMtu { get; internal set; } = Constants.DefaultAttMtu;
+    public ushort AttMtu { get; set; } = Constants.DefaultAttMtu;
     internal ILogger<AclConnection>? Logger { get; }
 
     /// <summary>Gets the GATT client bound to this connection.</summary>
