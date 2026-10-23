@@ -30,6 +30,38 @@ internal sealed class AttClient(AclConnection connection)
         where TRequest : IAttPdu, IBinaryWritable
         where TResponse : struct, IAttPdu, IBinaryReadable<TResponse>
     {
+        AttResponse<TResponse> response = await SendAsync<TRequest, TResponse>(request, gattRequest)
+            .ConfigureAwait(false);
+        return response.IsError ? throw Failed(request.OpCode, response.Error) : response.Value;
+    }
+
+    /// <summary> Like <see cref="QueryAsync{TRequest,TResponse}"/>, but null when the peer has no attribute in the range, which ends a discovery </summary>
+    public async Task<TResponse?> QueryUnlessNotFoundAsync<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TRequest,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TResponse
+    >(TRequest request, GattRequest gattRequest)
+        where TRequest : IAttPdu, IBinaryWritable
+        where TResponse : struct, IAttPdu, IBinaryReadable<TResponse>
+    {
+        AttResponse<TResponse> response = await SendAsync<TRequest, TResponse>(request, gattRequest)
+            .ConfigureAwait(false);
+        if (!response.IsError)
+            return response.Value;
+        return response.Error.ErrorCode is AttErrorCode.AttributeNotFoundError
+            ? null
+            : throw Failed(request.OpCode, response.Error);
+    }
+
+    private static GattException Failed(AttOpCode requestOpCode, AttErrorRsp error) =>
+        new((GattProtocolStatus)error.ErrorCode, $"The peer answered {requestOpCode} with {error.ErrorCode}");
+
+    private async Task<AttResponse<TResponse>> SendAsync<
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TRequest,
+        [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TResponse
+    >(TRequest request, GattRequest gattRequest)
+        where TRequest : IAttPdu, IBinaryWritable
+        where TResponse : struct, IAttPdu, IBinaryReadable<TResponse>
+    {
         gattRequest.HandOffToken.ThrowIfCancellationRequested();
         var pending = new PendingResponse<TResponse>(request.OpCode, gattRequest);
         lock (_lock)
@@ -42,10 +74,9 @@ internal sealed class AttClient(AclConnection connection)
         using IDisposable subscription = _connection.Assembler.Subscribe(pending);
         gattRequest.OnTransactionSent();
         _connection.EnqueueGattPacket(request, activity: null);
-        AttResponse<TResponse> response;
         try
         {
-            response = await pending.Task.ConfigureAwait(false);
+            return await pending.Task.ConfigureAwait(false);
         }
         finally
         {
@@ -55,14 +86,6 @@ internal sealed class AttClient(AclConnection connection)
                     _pending = null;
             }
         }
-        if (response.IsError)
-        {
-            throw new GattException(
-                (GattProtocolStatus)response.Error.ErrorCode,
-                $"The peer answered {request.OpCode} with {response.Error.ErrorCode}"
-            );
-        }
-        return response.Value;
     }
 
     /// <summary> The link ended: the waiting request fails and no new one starts </summary>

@@ -1,6 +1,7 @@
 using Darp.Ble.Backends;
 using Darp.Ble.Connections;
 using Darp.Ble.Data;
+using Darp.Ble.Gatt;
 using Darp.Ble.Hci;
 using Darp.Ble.Hci.Host;
 using Darp.Ble.Hci.Payload;
@@ -19,7 +20,13 @@ internal sealed partial class HciHostConnectionDriver : IConnectionDriver
     private readonly HciDevice _device;
     private readonly AclConnection _connection;
     private readonly IConnectionSink _sink;
-    private readonly AttClient _client;
+    private readonly Lock _lock = new();
+
+    // One object per attribute, so every discovery returns the same ones. Only discovery, one request at a time,
+    // touches services and descriptors; the read loop also looks up characteristics, so those need the lock
+    private readonly Dictionary<ushort, HciHostRemoteService> _services = [];
+    private readonly Dictionary<ushort, HciHostRemoteCharacteristic> _characteristics = [];
+    private readonly Dictionary<ushort, HciHostRemoteDescriptor> _descriptors = [];
     private readonly IDisposable _hostSubscription;
     private readonly IDisposable _assemblerSubscription;
     private const int MinimumMtu = 23;
@@ -34,15 +41,18 @@ internal sealed partial class HciHostConnectionDriver : IConnectionDriver
         _device = device;
         _connection = connection;
         _sink = sink;
-        _client = new AttClient(connection);
+        Client = new AttClient(connection);
         _hostSubscription = device.Host.Subscribe(this);
         _assemblerSubscription = connection.Assembler.Subscribe(this);
         device.Host.TransportFailed += OnTransportFailed;
     }
 
+    /// <summary> The ATT client of the link </summary>
+    public AttClient Client { get; }
+
     public async Task<int> ExchangeMtuAsync(int clientMtu, GattRequest request)
     {
-        AttExchangeMtuRsp response = await _client
+        AttExchangeMtuRsp response = await Client
             .QueryAsync<AttExchangeMtuReq, AttExchangeMtuRsp>(
                 new AttExchangeMtuReq { ClientRxMtu = (ushort)clientMtu },
                 request
@@ -53,8 +63,125 @@ internal sealed partial class HciHostConnectionDriver : IConnectionDriver
         return mtu;
     }
 
-    public Task<IReadOnlyList<IRemoteServiceDriver>> DiscoverServicesAsync(GattRequest request) =>
-        throw new NotSupportedException("Service discovery joins in a later commit");
+    /// <summary> Reads the primary service declarations page by page </summary>
+    public async Task<IReadOnlyList<IRemoteServiceDriver>> DiscoverServicesAsync(GattRequest request)
+    {
+        List<IRemoteServiceDriver> services = [];
+        ushort start = 0x0001;
+        while (!request.IsAbandoned)
+        {
+            AttReadByGroupTypeRsp? page = await Client
+                .QueryUnlessNotFoundAsync<AttReadByGroupTypeReq<ushort>, AttReadByGroupTypeRsp>(
+                    new AttReadByGroupTypeReq<ushort>
+                    {
+                        StartingHandle = start,
+                        EndingHandle = 0xFFFF,
+                        AttributeGroupType = 0x2800,
+                    },
+                    request
+                )
+                .ConfigureAwait(false);
+            if (page is not { AttributeDataList.Length: > 0 } response)
+                break;
+            foreach ((ushort handle, ushort endGroup, ReadOnlyMemory<byte> uuid) in response.AttributeDataList)
+                services.Add(GetService(handle, endGroup, BleUuid.Read(uuid.Span)));
+            ushort end = response.AttributeDataList[^1].EndGroup;
+            if (end is 0xFFFF)
+                break;
+            start = (ushort)(end + 1);
+        }
+        return services;
+    }
+
+    public Task<byte[]> ReadAsync(ushort handle, GattRequest request) => ReadCoreAsync(handle, request);
+
+    public Task WriteAsync(ushort handle, ReadOnlyMemory<byte> value, GattRequest request)
+    {
+        CheckLength(value);
+        return Client.QueryAsync<AttWriteReq, AttWriteRsp>(
+            new AttWriteReq { AttributeHandle = handle, AttributeValue = value },
+            request
+        );
+    }
+
+    /// <summary> Sends a write command, which the peer does not answer </summary>
+    public ValueTask WriteCommandAsync(
+        ushort handle,
+        ReadOnlyMemory<byte> value,
+        CancellationToken cancellationToken,
+        CancellationToken connectionClosed
+    )
+    {
+        CheckLength(value);
+        cancellationToken.ThrowIfCancellationRequested();
+        _connection.EnqueueGattPacket(new AttWriteCmd { Handle = handle, Value = value }, activity: null);
+        return ValueTask.CompletedTask;
+    }
+
+    private async Task<byte[]> ReadCoreAsync(ushort handle, GattRequest request)
+    {
+        AttReadRsp response = await Client
+            .QueryAsync<AttReadReq, AttReadRsp>(new AttReadReq { AttributeHandle = handle }, request)
+            .ConfigureAwait(false);
+        return response.AttributeValue.ToArray();
+    }
+
+    /// <summary> Long writes would need prepared writes, which v2 leaves out (D8) </summary>
+    private void CheckLength(ReadOnlyMemory<byte> value)
+    {
+        int max = _connection.AttMtu - 3;
+        if (value.Length > max)
+            throw new ArgumentOutOfRangeException(nameof(value), value.Length, $"The MTU allows at most {max} bytes");
+    }
+
+    private HciHostRemoteService GetService(ushort start, ushort end, BleUuid uuid)
+    {
+        if (!_services.TryGetValue(start, out HciHostRemoteService? service))
+        {
+            service = new HciHostRemoteService(this, uuid, start, end);
+            _services.Add(start, service);
+        }
+        return service;
+    }
+
+    public HciHostRemoteCharacteristic GetCharacteristic(
+        ushort valueHandle,
+        ushort endHandle,
+        BleUuid uuid,
+        GattProperty properties
+    )
+    {
+        lock (_lock)
+        {
+            if (!_characteristics.TryGetValue(valueHandle, out HciHostRemoteCharacteristic? characteristic))
+            {
+                characteristic = new HciHostRemoteCharacteristic(this, valueHandle, endHandle, uuid, properties);
+                _characteristics.Add(valueHandle, characteristic);
+            }
+            return characteristic;
+        }
+    }
+
+    public HciHostRemoteDescriptor GetDescriptor(ushort handle, BleUuid uuid)
+    {
+        if (!_descriptors.TryGetValue(handle, out HciHostRemoteDescriptor? descriptor))
+        {
+            descriptor = new HciHostRemoteDescriptor(this, handle, uuid);
+            _descriptors.Add(handle, descriptor);
+        }
+        return descriptor;
+    }
+
+    [MessageSink]
+    private void OnNotification(AttHandleValueNtf notification)
+    {
+        HciHostRemoteCharacteristic? characteristic;
+        lock (_lock)
+            _characteristics.TryGetValue(notification.Handle, out characteristic);
+        // Notifications of characteristics nobody discovered have no reader
+        if (characteristic is not null)
+            _sink.OnNotification(characteristic, notification.Value.Span);
+    }
 
     [MessageSink]
     private void OnDisconnectionComplete(HciDisconnectionCompleteEvent hciEvent)
@@ -76,7 +203,7 @@ internal sealed partial class HciHostConnectionDriver : IConnectionDriver
         if (!_down.TrySetResult(info))
             return;
         _sink.OnDisconnected(info);
-        _client.End(reason);
+        Client.End(reason);
     }
 
     // Requests of the peripheral to this adapter's GATT server. There are no services to serve on this side yet
@@ -117,6 +244,8 @@ internal sealed partial class HciHostConnectionDriver : IConnectionDriver
         }
         finally
         {
+            // Also when disconnecting failed: nothing answers on a released link
+            Client.End(new BleException("The connection was released"));
             _device.Host.TransportFailed -= OnTransportFailed;
             _assemblerSubscription.Dispose();
             _hostSubscription.Dispose();
