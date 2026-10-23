@@ -12,6 +12,12 @@ internal sealed class PeripheralEvents(BlePeripheral peripheral) : IGattServerSi
     public void OnCentralDisconnected(ICentralConnectionDriver central, DisconnectInfo info) =>
         _peripheral.OnCentralDisconnected(central, info);
 
+    public void OnSubscriptionChanged(
+        ICentralConnectionDriver central,
+        GattCharacteristicDefinition characteristic,
+        bool enabled
+    ) => _peripheral.Find(central)?.SetSubscribed(characteristic, enabled);
+
     public Task<byte[]> OnReadRequest(ICentralConnectionDriver central, GattAttributeDefinition attribute) =>
         _peripheral.OnReadRequestAsync(central, attribute);
 

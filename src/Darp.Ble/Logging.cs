@@ -189,4 +189,12 @@ internal static partial class Logging
         Message = "A handler for central {Address} failed; answering with UnlikelyError"
     )]
     public static partial void LogHandlerFailed(this ILogger logger, BleAddress address, Exception exception);
+
+    [LoggerMessage(
+        EventId = 1403,
+        EventName = "NotifyAllCentralFailed",
+        Level = LogLevel.Warning,
+        Message = "A notification to central {Address} failed; the other centrals still get theirs"
+    )]
+    public static partial void LogNotifyAllCentralFailed(this ILogger logger, BleAddress address, Exception exception);
 }

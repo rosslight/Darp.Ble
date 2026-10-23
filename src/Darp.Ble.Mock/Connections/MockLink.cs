@@ -115,6 +115,8 @@ internal sealed class MockLink
             else
                 _subscribed.Remove(characteristic);
         }
+        // As a peripheral's stack does when a CCCD is written
+        _peripheralSink.OnSubscriptionChanged(Peripheral, characteristic, enabled);
     }
 
     /// <summary> The peripheral notifies; the central gets it while it subscribed, as a peripheral's stack decides </summary>

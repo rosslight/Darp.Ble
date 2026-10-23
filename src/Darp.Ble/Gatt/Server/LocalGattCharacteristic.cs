@@ -71,7 +71,8 @@ public sealed class LocalGattCharacteristic : IHostedAttribute
 
     /// <summary> Sends a notification to a central </summary>
     /// <param name="central"> A central connected to the adapter that hosts the characteristic </param>
-    /// <param name="value"> The value; the caller may reuse the buffer once the task completed </param>
+    /// <param name="value"> The value; the caller may reuse the buffer once the task completed. A notification carries
+    /// at most the central's MTU less 3 bytes; a longer value is cut to that, as ATT does </param>
     /// <param name="cancellationToken"> Cancels waiting to send; once the backend accepted the notification, only the wait ends </param>
     /// <returns> A task that completes once the backend accepted the notification; not when the central got it </returns>
     /// <exception cref="InvalidOperationException"> The characteristic does not notify, its service was not added, or the central belongs to another adapter </exception>
@@ -83,14 +84,28 @@ public sealed class LocalGattCharacteristic : IHostedAttribute
     )
     {
         ArgumentNullException.ThrowIfNull(central);
-        if (!Properties.HasFlag(GattProperty.Notify))
-            throw new InvalidOperationException($"The characteristic {Uuid} does not notify");
-        BlePeripheral? host = _host;
-        if (host is null)
-            throw new InvalidOperationException($"The characteristic {Uuid} is not live; add its service first");
+        BlePeripheral host = EnsureCanNotify();
         if (!ReferenceEquals(central.Peripheral, host))
             throw new InvalidOperationException("The central is connected to another adapter");
         return central.NotifyAsync(Definition, value, cancellationToken);
+    }
+
+    /// <summary> Notifies every central that turned notifications on, each independently </summary>
+    /// <param name="value"> The value; the caller may reuse the buffer once the task completed. Each central gets at
+    /// most its MTU less 3 bytes; a longer value is cut to that, as ATT does </param>
+    /// <param name="cancellationToken"> Cancels waiting to send; once the backend accepted a notification, only the wait ends </param>
+    /// <returns> A task that completes once the backend accepted the notification for every central; a central whose
+    /// notification failed, e.g. because it disconnected, is logged and skipped </returns>
+    /// <exception cref="InvalidOperationException"> The characteristic does not notify or its service was not added </exception>
+    public ValueTask NotifyAllAsync(ReadOnlyMemory<byte> value, CancellationToken cancellationToken = default) =>
+        EnsureCanNotify().NotifyAllAsync(Definition, value, cancellationToken);
+
+    private BlePeripheral EnsureCanNotify()
+    {
+        if (!Properties.HasFlag(GattProperty.Notify))
+            throw new InvalidOperationException($"The characteristic {Uuid} does not notify");
+        return _host
+            ?? throw new InvalidOperationException($"The characteristic {Uuid} is not live; add its service first");
     }
 
     /// <summary> The service is live on this peripheral </summary>
@@ -107,9 +122,8 @@ public sealed class LocalGattCharacteristic : IHostedAttribute
     ) => WriteAsync(central, value, cancellationToken);
 
     private ValueTask<byte[]> ReadAsync(ConnectedCentral central, CancellationToken cancellationToken) =>
-        _onRead is null
-            ? throw new GattException(GattProtocolStatus.ReadNotPermitted, "The characteristic has no read handler")
-            : _onRead(central, cancellationToken);
+        _onRead?.Invoke(central, cancellationToken)
+        ?? throw new GattException(GattProtocolStatus.ReadNotPermitted, "The characteristic has no read handler");
 
     /// <summary> Handles a write of a central, through its handler </summary>
     private ValueTask<GattProtocolStatus> WriteAsync(
@@ -117,7 +131,6 @@ public sealed class LocalGattCharacteristic : IHostedAttribute
         ReadOnlyMemory<byte> value,
         CancellationToken cancellationToken
     ) =>
-        _onWrite is null
-            ? throw new GattException(GattProtocolStatus.WriteNotPermitted, "The characteristic has no write handler")
-            : _onWrite(central, value, cancellationToken);
+        _onWrite?.Invoke(central, value, cancellationToken)
+        ?? throw new GattException(GattProtocolStatus.WriteNotPermitted, "The characteristic has no write handler");
 }
