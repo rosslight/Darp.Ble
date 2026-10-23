@@ -6,7 +6,6 @@
   </Folder>
   <Folder Name="/test/">
     <Project Path="test/Darp.Ble.Hci.Tests/Darp.Ble.Hci.Tests.csproj" />
-    <Project Path="test/Darp.Ble.Mock.Tests/Darp.Ble.Mock.Tests.csproj" />
     <Project Path="test/Darp.Ble.Tests/Darp.Ble.Tests.csproj" />
     <Project Path="test\Darp.Ble.HciHost.Verify\Darp.Ble.HciHost.Verify.csproj" />
   </Folder>

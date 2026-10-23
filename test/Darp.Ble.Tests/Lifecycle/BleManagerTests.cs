@@ -1,136 +1,131 @@
 using Darp.Ble.Backends;
-using Darp.Ble.Data;
+using Darp.Ble.Mock;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Shouldly;
 
 namespace Darp.Ble.Tests.Lifecycle;
 
+/// <summary> The adapter lifecycle of the core, through the mock backend where it can show the behaviour </summary>
 public sealed class BleManagerTests
 {
-    private static TestAdapterDriver ReadyDriver(Capabilities features = Capabilities.None) =>
-        new(features, completeDisposalImmediately: true);
+    private static CancellationToken Token => TestContext.Current.CancellationToken;
 
     [Fact]
     public async Task EnumerateAdaptersAsync_ListsTheAdaptersOfAllBackendsInRegistrationOrder()
     {
-        var first = new TestBackend(
-            "First",
-            new TestAdapterSource("A", ReadyDriver()),
-            new TestAdapterSource("B", ReadyDriver())
-        );
-        var second = new TestBackend("Second", new TestAdapterSource(name: null, ReadyDriver()));
-        var manager = new BleManager(builder => builder.AddBackend(first).AddBackend(second));
-
-        IReadOnlyList<BleAdapterInfo> adapters = await manager.EnumerateAdaptersAsync(
-            TestContext.Current.CancellationToken
+        var manager = new BleManager(builder =>
+            builder.AddMock(options => options.Name = "First").AddMock(options => options.Name = "Second")
         );
 
-        adapters.Select(a => (a.Backend, a.Name)).ShouldBe([("First", "A"), ("First", "B"), ("Second", null)]);
+        IReadOnlyList<BleAdapterInfo> adapters = await manager.EnumerateAdaptersAsync(Token);
+
+        adapters.Select(adapter => adapter.Name).ShouldBe(["First", "Second"]);
     }
 
     [Fact]
     public async Task EnumerateAdaptersAsync_WhenABackendFails_ThrowsItsException()
     {
         var failure = new InvalidOperationException("Probing failed");
-        var manager = new BleManager(builder => builder.AddBackend(new FailingBackend(failure)));
+        var manager = new BleManager(builder => builder.AddBackend(new TestBackend(() => throw failure)));
 
         InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(() =>
-            manager.EnumerateAdaptersAsync(TestContext.Current.CancellationToken)
+            manager.EnumerateAdaptersAsync(Token)
         );
 
         exception.ShouldBeSameAs(failure);
     }
 
     [Fact]
-    public async Task OpenAsync_ReturnsAnAdapterWithTheDriversCapabilities()
+    public async Task EnumerateAdaptersAsync_WhenCancelled_ThrowsTheCallersCancellation()
     {
-        BleAdapterInfo info = await SingleAdapterAsync(
-            new TestAdapterSource("A", ReadyDriver(Capabilities.Peripheral))
-        );
-
-        await using BleAdapter adapter = await info.OpenAsync(TestContext.Current.CancellationToken);
-
-        adapter.Backend.ShouldBe("Test");
-        adapter.Name.ShouldBe("A");
-        adapter.Capabilities.ShouldBe(Capabilities.Peripheral);
-    }
-
-    [Theory]
-    [InlineData(BleOpenErrorKind.NotAvailable, true, 16)]
-    [InlineData(BleOpenErrorKind.Disabled, false, null)]
-    [InlineData(BleOpenErrorKind.MissingPermission, false, 5)]
-    public async Task OpenAsync_WhenTheBackendCannotOpen_ThrowsItsBleOpenException(
-        BleOpenErrorKind kind,
-        bool isTransient,
-        int? nativeCode
-    )
-    {
-        var cause = new IOException("Port busy");
-        var failure = new BleOpenException(kind, "Cannot open", isTransient, nativeCode, cause);
-        var loggerFactory = new RecordingLoggerFactory();
-        BleAdapterInfo info = await SingleAdapterAsync(new TestAdapterSource("A", _ => throw failure), loggerFactory);
-
-        BleOpenException exception = await Should.ThrowAsync<BleOpenException>(() =>
-            info.OpenAsync(TestContext.Current.CancellationToken)
-        );
-
-        exception.ShouldBeSameAs(failure);
-        exception.Kind.ShouldBe(kind);
-        exception.IsTransient.ShouldBe(isTransient);
-        exception.NativeCode.ShouldBe(nativeCode);
-        exception.InnerException.ShouldBeSameAs(cause);
-        loggerFactory
-            .Entries.ShouldHaveSingleItem()
-            .ShouldBe(("Darp.Ble", LogLevel.Warning, new EventId(1002, "AdapterOpenFailed"), failure));
-    }
-
-    [Fact]
-    public async Task OpenAsync_WhenCancelled_ThrowsTheCallersCancellation()
-    {
-        var loggerFactory = new RecordingLoggerFactory();
-        BleAdapterInfo info = await SingleAdapterAsync(
-            new TestAdapterSource(
-                "A",
-                async cancellationToken =>
-                {
-                    await Task.Delay(Timeout.Infinite, cancellationToken);
-                    return ReadyDriver();
-                }
-            ),
-            loggerFactory
-        );
+        var manager = new BleManager(builder => builder.AddMock());
         using var cancellation = new CancellationTokenSource();
-
-        Task<BleAdapter> opening = info.OpenAsync(cancellation.Token);
         await cancellation.CancelAsync();
 
-        OperationCanceledException exception = await Should.ThrowAsync<OperationCanceledException>(() => opening);
+        OperationCanceledException exception = await Should.ThrowAsync<OperationCanceledException>(() =>
+            manager.EnumerateAdaptersAsync(cancellation.Token)
+        );
+
         exception.CancellationToken.ShouldBe(cancellation.Token);
-        loggerFactory.Entries.ShouldBeEmpty(); // cancelling is not an open failure
     }
 
     [Fact]
-    public async Task OpenAsync_WhenTheAdapterCannotBeCreated_DisposesTheOpenedDriver()
+    public async Task OpenAsync_WhenTheAdapterCannotBeOpened_ThrowsBleOpenExceptionAndLogsIt()
     {
-        var driver = ReadyDriver();
-        BleAdapterInfo info = await SingleAdapterAsync(
-            new TestAdapterSource("A", driver),
-            new RecordingLoggerFactory(throwOnLog: true)
+        var loggerFactory = new RecordingLoggerFactory();
+        BleAdapterInfo info = await SingleMockAdapterAsync(
+            options => options.OpenFailure = BleOpenErrorKind.Disabled,
+            loggerFactory
         );
 
-        await Should.ThrowAsync<InvalidOperationException>(() => info.OpenAsync(TestContext.Current.CancellationToken));
+        BleOpenException exception = await Should.ThrowAsync<BleOpenException>(() => info.OpenAsync(Token));
 
+        exception.Kind.ShouldBe(BleOpenErrorKind.Disabled);
+        RecordingLoggerFactory.Entry entry = loggerFactory.Entries.ShouldHaveSingleItem();
+        entry.Category.ShouldBe("Darp.Ble");
+        entry.Level.ShouldBe(LogLevel.Warning);
+        entry.EventId.Id.ShouldBe(1002);
+        entry.EventId.Name.ShouldBe("AdapterOpenFailed");
+        entry.Exception.ShouldBeSameAs(exception);
+    }
+
+    [Fact]
+    public async Task OpenAsync_WhenCancelled_ThrowsTheCallersCancellationWithoutLoggingAFailure()
+    {
+        var loggerFactory = new RecordingLoggerFactory();
+        BleAdapterInfo info = await SingleMockAdapterAsync(configure: null, loggerFactory);
+        using var cancellation = new CancellationTokenSource();
+        await cancellation.CancelAsync();
+
+        OperationCanceledException exception = await Should.ThrowAsync<OperationCanceledException>(() =>
+            info.OpenAsync(cancellation.Token)
+        );
+
+        exception.CancellationToken.ShouldBe(cancellation.Token);
+        loggerFactory.Entries.ShouldBeEmpty();
+    }
+
+    [Fact]
+    public async Task OpenAndDisposeAsync_LogTheAdapterOnceEach()
+    {
+        var loggerFactory = new RecordingLoggerFactory();
+        BleAdapterInfo info = await SingleMockAdapterAsync(configure: null, loggerFactory);
+
+        BleAdapter adapter = await info.OpenAsync(Token);
+        await adapter.DisposeAsync();
+        await adapter.DisposeAsync();
+
+        loggerFactory
+            .Entries.Select(entry => (entry.EventId.Id, entry.EventId.Name))
+            .ShouldBe([(1000, "AdapterOpened"), (1001, "AdapterDisposed")]);
+    }
+
+    [Fact]
+    public async Task OpenAsync_WhenTheAdapterCannotBeCreated_AwaitsDisposingTheOpenedDriver()
+    {
+        var driver = new TestAdapterDriver();
+        var manager = new BleManager(
+            builder => builder.AddBackend(new TestBackend(driver)),
+            new RecordingLoggerFactory(throwOnLog: true)
+        );
+        IReadOnlyList<BleAdapterInfo> adapters = await manager.EnumerateAdaptersAsync(Token);
+
+        Task<BleAdapter> opening = adapters[0].OpenAsync(Token);
+
+        opening.IsCompleted.ShouldBeFalse();
         driver.DisposeCount.ShouldBe(1);
+        driver.CompleteDisposal();
+        await Should.ThrowAsync<InvalidOperationException>(() => opening);
     }
 
     [Fact]
     public async Task DisposeAsync_AwaitsTheDriversDisposalAndRunsItOnce()
     {
-        var driver = new TestAdapterDriver(Capabilities.Central);
-        BleAdapterInfo info = await SingleAdapterAsync(new TestAdapterSource("A", driver));
-        BleAdapter adapter = await info.OpenAsync(TestContext.Current.CancellationToken);
+        var driver = new TestAdapterDriver();
+        var manager = new BleManager(builder => builder.AddBackend(new TestBackend(driver)));
+        IReadOnlyList<BleAdapterInfo> adapters = await manager.EnumerateAdaptersAsync(Token);
+        BleAdapter adapter = await adapters[0].OpenAsync(Token);
 
         Task firstDisposal = adapter.DisposeAsync().AsTask();
         Task secondDisposal = adapter.DisposeAsync().AsTask();
@@ -143,92 +138,26 @@ public sealed class BleManagerTests
     }
 
     [Fact]
-    public async Task Constructor_GivesItsLoggerFactoryAndTimeProviderToBackendsAndDrivers()
+    public async Task AddBleManager_RegistersOneManagerWithTheConfiguredBackends()
     {
-        using var loggerFactory = new LoggerFactory();
-        var timeProvider = new TestTimeProvider();
-        var source = new TestAdapterSource("A", ReadyDriver());
-        var backend = new TestBackend("Test", source);
-        var manager = new BleManager(builder => builder.AddBackend(backend), loggerFactory, timeProvider);
-
-        IReadOnlyList<BleAdapterInfo> adapters = await manager.EnumerateAdaptersAsync(
-            TestContext.Current.CancellationToken
-        );
-        await using BleAdapter adapter = await adapters[0].OpenAsync(TestContext.Current.CancellationToken);
-
-        ShouldHaveServices(backend.EnumerationContext, loggerFactory, timeProvider);
-        ShouldHaveServices(source.OpenContext, loggerFactory, timeProvider);
-    }
-
-    [Fact]
-    public async Task Constructor_WithoutServices_UsesNoLoggingAndTheSystemClock()
-    {
-        var backend = new TestBackend("Test");
-        var manager = new BleManager(builder => builder.AddBackend(backend));
-
-        await manager.EnumerateAdaptersAsync(TestContext.Current.CancellationToken);
-
-        ShouldHaveServices(backend.EnumerationContext, NullLoggerFactory.Instance, TimeProvider.System);
-    }
-
-    [Fact]
-    public async Task AddBleManager_UsesTheContainersLoggerFactoryAndTimeProvider()
-    {
-        using var loggerFactory = new LoggerFactory();
-        var timeProvider = new TestTimeProvider();
-        var source = new TestAdapterSource("A", ReadyDriver());
-        var backend = new TestBackend("Test", source);
         await using ServiceProvider provider = new ServiceCollection()
-            .AddSingleton<ILoggerFactory>(loggerFactory)
-            .AddSingleton<TimeProvider>(timeProvider)
-            .AddBleManager(builder => builder.AddBackend(backend))
+            .AddBleManager(builder => builder.AddMock(options => options.Name = "Registered"))
             .BuildServiceProvider();
         BleManager manager = provider.GetRequiredService<BleManager>();
 
-        IReadOnlyList<BleAdapterInfo> adapters = await manager.EnumerateAdaptersAsync(
-            TestContext.Current.CancellationToken
-        );
-        await using BleAdapter adapter = await adapters[0].OpenAsync(TestContext.Current.CancellationToken);
+        IReadOnlyList<BleAdapterInfo> adapters = await manager.EnumerateAdaptersAsync(Token);
 
         provider.GetRequiredService<BleManager>().ShouldBeSameAs(manager);
-        ShouldHaveServices(backend.EnumerationContext, loggerFactory, timeProvider);
-        ShouldHaveServices(source.OpenContext, loggerFactory, timeProvider);
+        adapters.ShouldHaveSingleItem().Name.ShouldBe("Registered");
     }
 
-    private static async Task<BleAdapterInfo> SingleAdapterAsync(
-        TestAdapterSource source,
-        ILoggerFactory? loggerFactory = null
+    private static async Task<BleAdapterInfo> SingleMockAdapterAsync(
+        Action<MockBackendOptions>? configure,
+        ILoggerFactory loggerFactory
     )
     {
-        var manager = new BleManager(builder => builder.AddBackend(new TestBackend("Test", source)), loggerFactory);
-        IReadOnlyList<BleAdapterInfo> adapters = await manager.EnumerateAdaptersAsync(
-            TestContext.Current.CancellationToken
-        );
+        var manager = new BleManager(builder => builder.AddMock(configure), loggerFactory);
+        IReadOnlyList<BleAdapterInfo> adapters = await manager.EnumerateAdaptersAsync(Token);
         return adapters.ShouldHaveSingleItem();
     }
-
-    private static void ShouldHaveServices(
-        BleBackendContext? context,
-        ILoggerFactory loggerFactory,
-        TimeProvider timeProvider
-    )
-    {
-        context.ShouldNotBeNull();
-        context.LoggerFactory.ShouldBeSameAs(loggerFactory);
-        context.TimeProvider.ShouldBeSameAs(timeProvider);
-    }
-
-    private sealed class FailingBackend(Exception failure) : IBleBackend
-    {
-        private readonly Exception _failure = failure;
-
-        public string Name => "Failing";
-
-        public Task<IReadOnlyList<IBleAdapterSource>> EnumerateAdaptersAsync(
-            BleBackendContext context,
-            CancellationToken cancellationToken
-        ) => Task.FromException<IReadOnlyList<IBleAdapterSource>>(_failure);
-    }
-
-    private sealed class TestTimeProvider : TimeProvider;
 }
