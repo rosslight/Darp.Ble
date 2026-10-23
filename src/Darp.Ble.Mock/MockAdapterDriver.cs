@@ -1,20 +1,74 @@
 using Darp.Ble.Backends;
 using Darp.Ble.Data;
+using Darp.Ble.Mock.Gap;
+using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Mock;
 
+/// <summary> A mock adapter or simulated peripheral: scans and advertises in its air </summary>
 internal sealed class MockAdapterDriver : IBleAdapterDriver
 {
-    public Capabilities Features => Capabilities.None;
+    private readonly List<BleAdapter> _peripherals = [];
+    private readonly CancellationTokenSource _closing = new();
+    private BleAddress _randomAddress = BleAddress.NewRandomStaticAddress();
 
-    public IObserverDriver? Observer => null;
+    public MockAdapterDriver(MockAir air, ILoggerFactory loggerFactory)
+    {
+        Background = new MockBackgroundWork(
+            air.TimeProvider,
+            loggerFactory.CreateLogger<MockBackgroundWork>(),
+            _closing.Token
+        );
+        Observer = new MockObserverDriver(air, this);
+        Broadcaster = new MockBroadcasterDriver(air, this);
+    }
 
-    public IBroadcasterDriver? Broadcaster => null;
+    public Capabilities Features => Capabilities.SetRandomAddress;
 
-    public BleAddress RandomAddress => BleAddress.NotAvailable;
+    public IObserverDriver? Observer { get; }
 
-    public Task SetRandomAddressAsync(BleAddress address, CancellationToken cancellationToken) =>
-        throw new NotSupportedException("The mock adapter cannot set its address yet");
+    public IBroadcasterDriver? Broadcaster { get; }
 
-    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+    public BleAddress RandomAddress => _randomAddress;
+
+    public Task SetRandomAddressAsync(BleAddress address, CancellationToken cancellationToken)
+    {
+        _randomAddress = address;
+        return Task.CompletedTask;
+    }
+
+    /// <summary> The work the simulated peripherals keep running while this adapter is open </summary>
+    public MockBackgroundWork Background { get; }
+
+    public void AddPeripheral(BleAdapter peripheral) => _peripherals.Add(peripheral);
+
+    /// <summary> Stops the background work, then disposes the simulated peripherals; tries all of them even if one fails </summary>
+    public async ValueTask DisposeAsync()
+    {
+        List<Exception> failures = [];
+        // The work may still use the peripherals, so it ends first, also when one of its cancellation callbacks throws
+        try
+        {
+            await _closing.CancelAsync().ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            failures.AddRange(e is AggregateException callbacks ? callbacks.InnerExceptions : [e]);
+        }
+        failures.AddRange(await Background.WhenStoppedAsync().ConfigureAwait(false));
+        _closing.Dispose();
+        foreach (BleAdapter peripheral in _peripherals)
+        {
+            try
+            {
+                await peripheral.DisposeAsync().ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                failures.Add(e);
+            }
+        }
+        if (failures.Count > 0)
+            throw new AggregateException("Not every mock peripheral ended cleanly", failures);
+    }
 }

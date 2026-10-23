@@ -2,9 +2,9 @@ using Darp.Ble.Backends;
 
 namespace Darp.Ble.Mock;
 
-internal sealed class MockBackend(string adapterName, BleOpenErrorKind? openFailure) : IBleBackend
+internal sealed class MockBackend(MockSettings settings) : IBleBackend
 {
-    private readonly IBleAdapterSource[] _adapters = [new MockAdapterSource(adapterName, openFailure)];
+    private readonly IBleAdapterSource[] _adapters = [new MockAdapterSource(settings)];
 
     public string Name => BleBackends.Mock;
 
