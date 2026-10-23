@@ -7,6 +7,8 @@ namespace Darp.Ble.Gatt;
 public sealed class LocalGattServiceBuilder
 {
     private readonly BleUuid _uuid;
+
+    internal BleUuid Uuid => _uuid;
     private readonly bool _isPrimary;
     private readonly Lock _lock = new();
     private readonly List<LocalGattCharacteristic> _characteristics = [];

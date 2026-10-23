@@ -114,6 +114,19 @@ public sealed class NotifyAllTests
         driver.Accepted.ShouldHaveSingleItem().Central.ShouldBe(new BleAddress(BleAddressType.Public, (UInt48)2));
     }
 
+    [Fact]
+    public async Task OpeningTheAdapter_AttachesThePeripheralBeforeItSetsTheIdentity()
+    {
+        var driver = new TestPeripheralDriver();
+
+        await using BleAdapter adapter = await OpenTestAsync(
+            driver,
+            Capabilities.Peripheral | Capabilities.SetGapIdentity
+        );
+
+        driver.Calls.ShouldBe(["attach", "identity Test adapter"]);
+    }
+
     private static async Task WaitUntilAsync(Func<bool> condition)
     {
         while (!condition())
@@ -141,7 +154,10 @@ public sealed class NotifyAllTests
         return await service.DiscoverCharacteristicAsync(Level, Token);
     }
 
-    private static async Task<BleAdapter> OpenTestAsync(TestPeripheralDriver driver)
+    private static async Task<BleAdapter> OpenTestAsync(
+        TestPeripheralDriver driver,
+        Capabilities capabilities = Capabilities.Peripheral
+    )
     {
         var manager = new BleManager(builder =>
             builder.AddBackend(
@@ -149,7 +165,7 @@ public sealed class NotifyAllTests
                     new TestAdapterDriver
                     {
                         // A peripheral can always advertise too
-                        Capabilities = Capabilities.Peripheral,
+                        Capabilities = capabilities,
                         Broadcaster = new TestBroadcasterDriver(),
                         Peripheral = driver,
                     }

@@ -1,6 +1,7 @@
 using Darp.Ble.Backends;
 using Darp.Ble.Connections;
 using Darp.Ble.Data;
+using Darp.Ble.Data.AssignedNumbers;
 
 namespace Darp.Ble.Mock.Connections;
 
@@ -11,6 +12,17 @@ internal sealed class MockPeripheralDriver : IPeripheralDriver
     private readonly List<MockLink> _links = [];
     private GattServiceDefinition[] _services = [];
     private bool _closed;
+    private (string DeviceName, AppearanceValues Appearance) _identity = ("Darp.Ble", AppearanceValues.Unknown);
+
+    /// <summary> What centrals read from the GAP service </summary>
+    public (string DeviceName, AppearanceValues Appearance) Identity
+    {
+        get
+        {
+            lock (_lock)
+                return _identity;
+        }
+    }
     private IGattServerSink? _sink;
 
     /// <summary> The published services, in the order they were added </summary>
@@ -79,6 +91,12 @@ internal sealed class MockPeripheralDriver : IPeripheralDriver
         cancellationToken.ThrowIfCancellationRequested();
         connection.Link.Notify(characteristic, value.Span);
         return ValueTask.CompletedTask;
+    }
+
+    public void SetGapIdentity(string deviceName, AppearanceValues appearance)
+    {
+        lock (_lock)
+            _identity = (deviceName, appearance);
     }
 
     public Task DisconnectAsync(ICentralConnectionDriver central, CancellationToken cancellationToken)

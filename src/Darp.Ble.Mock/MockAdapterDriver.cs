@@ -23,7 +23,8 @@ internal sealed class MockAdapterDriver : IBleAdapterDriver
         | Capabilities.Broadcaster
         | Capabilities.Central
         | Capabilities.Peripheral
-        | Capabilities.SetRandomAddress;
+        | Capabilities.SetRandomAddress
+        | Capabilities.SetGapIdentity;
 
     public IObserverDriver? Observer { get; }
 

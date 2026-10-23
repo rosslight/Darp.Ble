@@ -13,8 +13,10 @@ internal sealed class MockConnectionDriver(MockLink link) : IConnectionDriver
     public Task<int> ExchangeMtuAsync(int clientMtu, GattRequest request) =>
         Task.FromResult(Math.Min(clientMtu, PeripheralMtu));
 
+    /// <summary> The GAP service first, as on a real peripheral, then the published primary services </summary>
     public Task<IReadOnlyList<IRemoteServiceDriver>> DiscoverServicesAsync(GattRequest request) =>
         Task.FromResult<IReadOnlyList<IRemoteServiceDriver>>([
+            _link.GapService,
             .. _link.PeripheralDriver.Services.Where(service => service.IsPrimary).Select(_link.GetService),
         ]);
 

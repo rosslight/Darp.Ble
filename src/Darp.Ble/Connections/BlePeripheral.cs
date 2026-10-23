@@ -1,6 +1,7 @@
 using Darp.Ble.Backends;
 using Darp.Ble.Connections;
 using Darp.Ble.Data;
+using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gatt;
 using Microsoft.Extensions.Logging;
 
@@ -14,6 +15,11 @@ public sealed class BlePeripheral
     private readonly Lock _lock = new();
     private readonly Dictionary<ICentralConnectionDriver, ConnectedCentral> _centrals = [];
     private readonly Dictionary<GattAttributeDefinition, IHostedAttribute> _hosted = [];
+
+    // The GAP identity; changes are serialized and committed once the driver took them
+    private readonly Lock _identityLock = new();
+    private string _deviceName;
+    private AppearanceValues _appearance = AppearanceValues.Unknown;
     private bool _closed;
 
     // Set once disposal disconnected every central; a central reported later goes with the driver
@@ -28,11 +34,47 @@ public sealed class BlePeripheral
         _driver = driver;
         _logger = logger;
         Gatt = new GattServer(this, driver, _operations);
+        _deviceName = adapter.Name ?? DefaultDeviceName;
+        // Attach comes first, as the driver contract promises; the identity follows before the adapter is handed out
         driver.Attach(new PeripheralEvents(this));
+        if (adapter.Capabilities.HasFlag(Capabilities.SetGapIdentity))
+            driver.SetGapIdentity(_deviceName, _appearance);
     }
 
     /// <summary> The adapter this peripheral belongs to </summary>
     public BleAdapter Adapter { get; }
+
+    private const string DefaultDeviceName = "Darp.Ble";
+
+    /// <summary> The device name centrals read from the GAP service; the adapter's name by default </summary>
+    /// <exception cref="NotSupportedException"> The backend owns the GAP service; see <see cref="Capabilities.SetGapIdentity"/> </exception>
+    public string DeviceName
+    {
+        get
+        {
+            EnsureGapIdentity();
+            lock (_identityLock)
+                return _deviceName;
+        }
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            SetIdentity(value, appearance: null);
+        }
+    }
+
+    /// <summary> The appearance centrals read from the GAP service; <see cref="AppearanceValues.Unknown"/> by default </summary>
+    /// <exception cref="NotSupportedException"> The backend owns the GAP service; see <see cref="Capabilities.SetGapIdentity"/> </exception>
+    public AppearanceValues Appearance
+    {
+        get
+        {
+            EnsureGapIdentity();
+            lock (_identityLock)
+                return _appearance;
+        }
+        set { SetIdentity(deviceName: null, value); }
+    }
 
     /// <summary> The services the adapter hosts </summary>
     public GattServer Gatt { get; }
@@ -233,6 +275,34 @@ public sealed class BlePeripheral
             // Every central starts ending before any is awaited, so a slow handler delays nobody else's end
             await Task.WhenAll(centrals.Select(central => central.DisconnectAsync(CancellationToken.None)))
                 .ConfigureAwait(false);
+        }
+    }
+
+    private void EnsureGapIdentity()
+    {
+        if (!Adapter.Capabilities.HasFlag(Capabilities.SetGapIdentity))
+            throw new NotSupportedException($"The {Adapter.Backend} backend owns the GAP service");
+    }
+
+    /// <summary> Changes the identity; admitted like every operation, so adapter disposal waits for it and rejects it afterwards </summary>
+    private void SetIdentity(string? deviceName, AppearanceValues? appearance)
+    {
+        EnsureGapIdentity();
+        _operations.Enter(typeof(BlePeripheral));
+        try
+        {
+            lock (_identityLock)
+            {
+                string newName = deviceName ?? _deviceName;
+                AppearanceValues newAppearance = appearance ?? _appearance;
+                _driver.SetGapIdentity(newName, newAppearance);
+                _deviceName = newName;
+                _appearance = newAppearance;
+            }
+        }
+        finally
+        {
+            _operations.Exit();
         }
     }
 }

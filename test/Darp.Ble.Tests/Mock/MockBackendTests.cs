@@ -25,6 +25,7 @@ public sealed class MockBackendTests
                 | Capabilities.Central
                 | Capabilities.Peripheral
                 | Capabilities.SetRandomAddress
+                | Capabilities.SetGapIdentity
         );
     }
 
