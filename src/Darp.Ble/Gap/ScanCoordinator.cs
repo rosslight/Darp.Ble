@@ -9,7 +9,8 @@ namespace Darp.Ble.Gap;
 /// <summary> Shares one radio scan between all scans of an observer (D6) </summary>
 /// <remarks>
 /// <see cref="_lock"/> guards the listeners, the current radio run and admission; it is held only for those fields.
-/// <see cref="_commands"/> serializes the asynchronous driver commands: start, stop and restart
+/// <see cref="_commands"/> serializes the asynchronous driver commands (start, stop, restart) and owns
+/// <see cref="_radioMayScan"/>: once a start was attempted, the radio counts as scanning until a stop succeeded
 /// </remarks>
 [SuppressMessage(
     "Design",
@@ -25,6 +26,7 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
     private ScanListener[] _listeners = [];
     private RadioRun? _run;
     private bool _closed;
+    private bool _radioMayScan;
 
     public BleScanParameters Parameters { get; private set; } = new();
 
@@ -63,21 +65,16 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
         await _commands.WaitAsync(CancellationToken.None).ConfigureAwait(false);
         try
         {
-            RadioRun? runToStop = null;
+            bool stop;
             lock (_lock)
             {
                 _listeners = Without(_listeners, listener);
-                if (_listeners.Length == 0)
-                {
-                    runToStop = _run;
+                stop = _listeners.Length == 0 && _run is not null;
+                if (stop)
                     _run = null;
-                }
             }
-            if (runToStop is not null)
-            {
-                await _driver.StopScanAsync(CancellationToken.None).ConfigureAwait(false);
-                _logger.LogScanStopped();
-            }
+            if (stop)
+                await StopRadioAsync().ConfigureAwait(false);
         }
         finally
         {
@@ -98,8 +95,6 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
             {
                 ObjectDisposedException.ThrowIf(_closed, typeof(BleObserver));
                 oldRun = _run;
-                // Reports and failures of the old run are ignored from here on
-                _run = null;
             }
             Parameters = parameters;
             if (oldRun is null)
@@ -109,14 +104,25 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
             var newRun = new RadioRun(this);
             try
             {
-                await _driver.StopScanAsync(CancellationToken.None).ConfigureAwait(false);
+                await StopRadioAsync().ConfigureAwait(false);
+                bool restart;
                 lock (_lock)
-                    _run = newRun;
+                {
+                    // If the old run failed meanwhile, its scans already ended and nobody needs the radio
+                    restart = ReferenceEquals(_run, oldRun);
+                    // Reports and failures of the old run are ignored from here on
+                    if (restart)
+                        _run = newRun;
+                }
+                if (!restart)
+                    return;
+                _radioMayScan = true;
                 await _driver.StartScanAsync(parameters, newRun, CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception e)
             {
-                // The scans cannot continue without the radio
+                // The scans cannot continue without the radio. Whichever run is current fails
+                Fail(oldRun, e);
                 Fail(newRun, e);
                 throw;
             }
@@ -127,29 +133,30 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
         }
     }
 
+    /// <summary> Closes admission so no scan can start any more </summary>
+    public void CloseAdmission()
+    {
+        lock (_lock)
+            _closed = true;
+    }
+
     /// <summary> Closes admission, ends every scan normally and stops the radio </summary>
     public async Task DisposeAsync()
     {
+        CloseAdmission();
         await _commands.WaitAsync(CancellationToken.None).ConfigureAwait(false);
         try
         {
             ScanListener[] listeners;
-            RadioRun? runToStop;
             lock (_lock)
             {
-                _closed = true;
                 listeners = _listeners;
                 _listeners = [];
-                runToStop = _run;
                 _run = null;
             }
             foreach (ScanListener listener in listeners)
                 listener.Complete();
-            if (runToStop is not null)
-            {
-                await _driver.StopScanAsync(CancellationToken.None).ConfigureAwait(false);
-                _logger.LogScanStopped();
-            }
+            await StopRadioAsync().ConfigureAwait(false);
         }
         finally
         {
@@ -161,6 +168,9 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
     {
         try
         {
+            // A stop that failed earlier is retried first, so the driver never starts twice
+            await StopRadioAsync().ConfigureAwait(false);
+            _radioMayScan = true;
             await _driver.StartScanAsync(Parameters, run, cancellationToken).ConfigureAwait(false);
             _logger.LogScanStarted(Parameters.ScanType);
         }
@@ -174,6 +184,16 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
             }
             throw;
         }
+    }
+
+    /// <summary> Stops the radio if it may still scan; only called under <see cref="_commands"/> </summary>
+    private async Task StopRadioAsync()
+    {
+        if (!_radioMayScan)
+            return;
+        await _driver.StopScanAsync(CancellationToken.None).ConfigureAwait(false);
+        _radioMayScan = false;
+        _logger.LogScanStopped();
     }
 
     private void Deliver(RadioRun run, IGapAdvertisement advertisement)

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Darp.Ble.Backends;
 using Darp.Ble.Data;
@@ -43,6 +44,11 @@ public sealed class BleObserver
     /// <param name="cancellationToken"> Ends the scan </param>
     /// <returns> The advertisements, in the order they were received </returns>
     /// <exception cref="BleException"> The radio stopped scanning; thrown after the queued advertisements </exception>
+    [SuppressMessage(
+        "ApiDesign",
+        "RS0027:API with optional parameter(s) should have the most parameters amongst its public overloads",
+        Justification = "The common call passes only a token; the overload with a queue takes it as a required parameter"
+    )]
     public IAsyncEnumerable<IGapAdvertisement> ScanAsync(CancellationToken cancellationToken = default) =>
         ScanAsync(_defaultQueue, cancellationToken);
 
@@ -64,7 +70,11 @@ public sealed class BleObserver
             while (await WaitForAdvertisementsAsync(listener, cancellationToken).ConfigureAwait(false))
             {
                 while (listener.Reader.TryRead(out IGapAdvertisement? advertisement))
+                {
+                    // A queue that never runs empty must not delay cancellation
+                    cancellationToken.ThrowIfCancellationRequested();
                     yield return advertisement;
+                }
             }
         }
         finally
@@ -72,6 +82,8 @@ public sealed class BleObserver
             await _coordinator.RemoveListenerAsync(listener).ConfigureAwait(false);
         }
     }
+
+    internal void CloseAdmission() => _coordinator.CloseAdmission();
 
     internal Task DisposeAsync() => _coordinator.DisposeAsync();
 

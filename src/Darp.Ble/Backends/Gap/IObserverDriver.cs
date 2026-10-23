@@ -13,7 +13,7 @@ public interface IObserverDriver
     /// <returns> A task that completes once the radio scans </returns>
     Task StartScanAsync(BleScanParameters parameters, IScanSink sink, CancellationToken cancellationToken);
 
-    /// <summary> Stops the running scan </summary>
+    /// <summary> Stops the running scan. Must also succeed when the radio already stopped, e.g. after <see cref="IScanSink.OnFailed"/> </summary>
     /// <param name="cancellationToken"> Cancels stopping </param>
     /// <returns> A task that completes once the radio stopped scanning </returns>
     Task StopScanAsync(CancellationToken cancellationToken);

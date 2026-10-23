@@ -15,6 +15,9 @@ public sealed class BleAdapter : IAsyncDisposable
     private readonly BleObserver? _observer;
     private readonly BleBroadcaster? _broadcaster;
 
+    // Adapter-level operations, e.g. changing the address; disposal waits for them before releasing the driver
+    private readonly OperationTracker _operations = new();
+
     internal BleAdapter(string backend, string? name, IBleAdapterDriver driver, BleCoreOptions options, ILogger logger)
     {
         Backend = backend;
@@ -56,11 +59,19 @@ public sealed class BleAdapter : IAsyncDisposable
     /// <param name="cancellationToken"> Cancels the change </param>
     /// <returns> A task that completes once the address applies </returns>
     /// <exception cref="NotSupportedException"> The adapter cannot set random addresses; see <see cref="Capabilities"/> </exception>
-    public Task SetRandomAddressAsync(BleAddress address, CancellationToken cancellationToken = default)
+    public async Task SetRandomAddressAsync(BleAddress address, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(address);
         EnsureCanSetRandomAddress();
-        return _driver.SetRandomAddressAsync(address, cancellationToken);
+        _operations.Enter(typeof(BleAdapter));
+        try
+        {
+            await _driver.SetRandomAddressAsync(address, cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            _operations.Exit();
+        }
     }
 
     /// <summary> Closes the adapter: ends its scans and advertising, then releases its driver. Calling it again waits for the same disposal </summary>
@@ -69,6 +80,10 @@ public sealed class BleAdapter : IAsyncDisposable
 
     private async Task DisposeCoreAsync()
     {
+        // Nothing new may start while the adapter shuts down
+        _operations.Close();
+        _observer?.CloseAdmission();
+        _broadcaster?.CloseAdmission();
         // Every step runs even if an earlier one fails
         try
         {
@@ -84,6 +99,7 @@ public sealed class BleAdapter : IAsyncDisposable
             }
             finally
             {
+                await _operations.CloseAndWaitAsync().ConfigureAwait(false);
                 await _driver.DisposeAsync().ConfigureAwait(false);
                 _logger.LogAdapterDisposed(Backend, Name);
             }

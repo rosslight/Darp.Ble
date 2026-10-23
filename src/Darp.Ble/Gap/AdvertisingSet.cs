@@ -194,8 +194,15 @@ public sealed class AdvertisingSet : IAsyncDisposable
         finally
         {
             _operations.Release();
-            _broadcaster.Remove(this);
-            await _driver.DisposeAsync().ConfigureAwait(false);
+            try
+            {
+                await _driver.DisposeAsync().ConfigureAwait(false);
+            }
+            finally
+            {
+                // Only now, so adapter disposal waits for this set's driver
+                _broadcaster.Remove(this);
+            }
         }
     }
 

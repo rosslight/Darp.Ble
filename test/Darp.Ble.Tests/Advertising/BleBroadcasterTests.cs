@@ -188,6 +188,31 @@ public sealed class BleBroadcasterTests
     }
 
     [Fact]
+    public async Task DisposingTheAdapter_WaitsForAnAddressChangeInFlight()
+    {
+        var adapterDriver = new TestAdapterDriver
+        {
+            Capabilities = Capabilities.SetRandomAddress,
+            HoldAddressChange = new TaskCompletionSource(),
+        };
+        var manager = new BleManager(builder => builder.AddBackend(new TestBackend(adapterDriver)));
+        IReadOnlyList<BleAdapterInfo> adapters = await manager.EnumerateAdaptersAsync(Token);
+        BleAdapter adapter = await adapters[0].OpenAsync(Token);
+        Task changing = adapter.SetRandomAddressAsync(
+            new BleAddress(BleAddressType.Random, (UInt48)0xC1_2233_4455),
+            Token
+        );
+
+        Task disposing = adapter.DisposeAsync().AsTask();
+
+        disposing.IsCompleted.ShouldBeFalse();
+        adapterDriver.DisposeCount.ShouldBe(0);
+        adapterDriver.HoldAddressChange?.SetResult();
+        await Task.WhenAll(changing, disposing);
+        adapterDriver.DisposeCount.ShouldBe(1);
+    }
+
+    [Fact]
     public async Task Broadcaster_WhenTheAdapterCannotAdvertise_ThrowsNotSupportedException()
     {
         var manager = new BleManager(builder => builder.AddBackend(new TestBackend(new TestAdapterDriver())));
@@ -197,11 +222,86 @@ public sealed class BleBroadcasterTests
         Should.Throw<NotSupportedException>(() => adapter.Broadcaster);
     }
 
-    private async Task<BleAdapter> OpenAsync(Capabilities capabilities = Capabilities.Broadcaster)
+    [Fact]
+    public async Task DisposingTheAdapter_WaitsForASetThatIsBeingCreated_AndDisposesIt()
     {
-        var adapterDriver = new TestAdapterDriver { Capabilities = capabilities, Broadcaster = _driver };
+        (BleAdapter adapter, TestAdapterDriver adapterDriver) = await OpenWithDriverAsync();
+        _driver.HoldCreation = new TaskCompletionSource();
+        Task<AdvertisingSet> creating = adapter.Broadcaster.CreateAdvertisingSetAsync(Slow, cancellationToken: Token);
+
+        Task disposing = adapter.DisposeAsync().AsTask();
+
+        disposing.IsCompleted.ShouldBeFalse();
+        _driver.HoldCreation.SetResult();
+        await Should.ThrowAsync<ObjectDisposedException>(() => creating);
+        await disposing;
+        _driver.Sets.ShouldHaveSingleItem().Calls.ShouldBe(["dispose"]);
+        adapterDriver.DisposeCount.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task DisposingTheAdapter_WaitsForASetThatIsBeingDisposed()
+    {
+        (BleAdapter adapter, TestAdapterDriver adapterDriver) = await OpenWithDriverAsync();
+        AdvertisingSet set = await adapter.Broadcaster.CreateAdvertisingSetAsync(Slow, cancellationToken: Token);
+        TestAdvertisingSetDriver setDriver = _driver.Sets[0];
+        setDriver.HoldDisposal = new TaskCompletionSource();
+        Task disposingSet = set.DisposeAsync().AsTask();
+
+        Task disposingAdapter = adapter.DisposeAsync().AsTask();
+
+        disposingAdapter.IsCompleted.ShouldBeFalse();
+        adapterDriver.DisposeCount.ShouldBe(0);
+        setDriver.HoldDisposal.SetResult();
+        await Task.WhenAll(disposingSet, disposingAdapter);
+        adapterDriver.DisposeCount.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task WhileTheAdapterShutsDown_NothingNewStarts()
+    {
+        var observer = new Scanning.TestObserverDriver { HoldStop = new TaskCompletionSource() };
+        BleAdapter adapter = await OpenAsync(
+            Capabilities.Observer | Capabilities.Broadcaster | Capabilities.SetRandomAddress,
+            observer
+        );
+        await using IAsyncEnumerator<Darp.Ble.Gap.IGapAdvertisement> scan = adapter
+            .Observer.ScanAsync(Token)
+            .GetAsyncEnumerator(Token);
+        ValueTask<bool> scanning = scan.MoveNextAsync();
+
+        Task disposing = adapter.DisposeAsync().AsTask();
+
+        disposing.IsCompleted.ShouldBeFalse();
+        await Should.ThrowAsync<ObjectDisposedException>(() =>
+            adapter.Broadcaster.CreateAdvertisingSetAsync(Slow, cancellationToken: Token)
+        );
+        await Should.ThrowAsync<ObjectDisposedException>(() =>
+            adapter.SetRandomAddressAsync(new BleAddress(BleAddressType.Random, (UInt48)0xC1_2233_4455), Token)
+        );
+        observer.HoldStop.SetResult();
+        await disposing;
+        (await scanning).ShouldBeFalse();
+    }
+
+    private async Task<BleAdapter> OpenAsync(
+        Capabilities capabilities = Capabilities.Broadcaster,
+        Scanning.TestObserverDriver? observer = null
+    ) => (await OpenWithDriverAsync(capabilities, observer)).Adapter;
+
+    private async Task<(BleAdapter Adapter, TestAdapterDriver Driver)> OpenWithDriverAsync(
+        Capabilities capabilities = Capabilities.Broadcaster,
+        Scanning.TestObserverDriver? observer = null
+    )
+    {
+        var adapterDriver = new TestAdapterDriver
+        {
+            Capabilities = capabilities,
+            Broadcaster = _driver,
+            Observer = observer,
+        };
         var manager = new BleManager(builder => builder.AddBackend(new TestBackend(adapterDriver)));
         IReadOnlyList<BleAdapterInfo> adapters = await manager.EnumerateAdaptersAsync(Token);
-        return await adapters[0].OpenAsync(Token);
+        return (await adapters[0].OpenAsync(Token), adapterDriver);
     }
 }

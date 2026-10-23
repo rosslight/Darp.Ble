@@ -12,15 +12,20 @@ internal sealed class TestBroadcasterDriver : IBroadcasterDriver
     /// <summary> Operations ("start", "stop", "parameters", "data", ...) that fail from now on </summary>
     public HashSet<string> Failing { get; } = [];
 
-    public Task<IAdvertisingSetDriver> CreateAdvertisingSetAsync(
+    /// <summary> When set, creating a set waits until the test completes it </summary>
+    public TaskCompletionSource? HoldCreation { get; set; }
+
+    public async Task<IAdvertisingSetDriver> CreateAdvertisingSetAsync(
         AdvertisingParameters parameters,
         AdvertisingData data,
         AdvertisingData? scanResponseData,
         CancellationToken cancellationToken
     )
     {
+        if (HoldCreation is not null)
+            await HoldCreation.Task.ConfigureAwait(false);
         var set = new TestAdvertisingSetDriver(this);
         Sets.Add(set);
-        return Task.FromResult<IAdvertisingSetDriver>(set);
+        return set;
     }
 }

@@ -97,6 +97,73 @@ public sealed class BleObserverTests
         _driver.StopCount.ShouldBe(0); // the radio stopped by itself
         await using ScanSession next = await StartScanAsync(adapter.Observer.ScanAsync(Token));
         _driver.Starts.Count.ShouldBe(2);
+        _driver.StopCount.ShouldBe(1); // stopping is safe after a failure, so it comes first
+    }
+
+    [Fact]
+    public async Task ConfigureAsync_WhenStoppingTheOldRunFails_EndsTheScans_AndDisposalStopsAgain()
+    {
+        BleAdapter adapter = await OpenAsync();
+        ScanSession scan = await StartScanAsync(adapter.Observer.ScanAsync(Token));
+        var failure = new BleException("Stop rejected");
+        _driver.StopFailure = failure;
+
+        (
+            await Should.ThrowAsync<BleException>(() => adapter.Observer.ConfigureAsync(new BleScanParameters(), Token))
+        ).ShouldBeSameAs(failure);
+
+        (await Should.ThrowAsync<BleException>(scan.MoveNextAsync)).ShouldBeSameAs(failure);
+        await scan.DisposeAsync();
+        _driver.StopFailure = null;
+        await adapter.DisposeAsync();
+        _driver.StopCount.ShouldBe(2);
+        _driver.IsScanning.ShouldBeFalse();
+    }
+
+    [Fact]
+    public async Task ConfigureAsync_WhenTheOldRunFailsDuringTheStop_DoesNotRestartTheRadio()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        ScanSession scan = await StartScanAsync(adapter.Observer.ScanAsync(Token));
+        _driver.HoldStop = new TaskCompletionSource();
+        var failure = new BleException("Controller reset");
+        Task configuring = adapter.Observer.ConfigureAsync(new BleScanParameters(), Token);
+
+        _driver.Fail(failure);
+        _driver.HoldStop.SetResult();
+        await configuring;
+
+        (await Should.ThrowAsync<BleException>(scan.MoveNextAsync)).ShouldBeSameAs(failure);
+        await scan.DisposeAsync();
+        _driver.Starts.Count.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task ConfigureAsync_WhenTheRestartFails_EndsTheScans()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        ScanSession scan = await StartScanAsync(adapter.Observer.ScanAsync(Token));
+        var failure = new BleException("Start rejected");
+        _driver.StartFailure = failure;
+
+        await Should.ThrowAsync<BleException>(() => adapter.Observer.ConfigureAsync(new BleScanParameters(), Token));
+
+        (await Should.ThrowAsync<BleException>(scan.MoveNextAsync)).ShouldBeSameAs(failure);
+        await scan.DisposeAsync();
+    }
+
+    [Fact]
+    public async Task ScanAsync_WhenCancelledWithReportsQueued_StopsBeforeTheNextReport()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        using var cancellation = new CancellationTokenSource();
+        await using ScanSession scan = await StartScanAsync(adapter.Observer.ScanAsync(cancellation.Token));
+        _driver.Report(Adv(1), Adv(2), Adv(3));
+        await scan.TakeAsync(1);
+
+        await cancellation.CancelAsync();
+
+        await Should.ThrowAsync<OperationCanceledException>(scan.MoveNextAsync);
     }
 
     [Fact]
