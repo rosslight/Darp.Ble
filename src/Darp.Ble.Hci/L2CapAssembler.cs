@@ -24,9 +24,16 @@ public interface IL2CapAssembler : IMessageSource
 /// </summary>
 /// <param name="connectionHandle">The connection handle to filter for.</param>
 /// <param name="logger">An optional logger.</param>
-[MessageSource]
 public sealed partial class L2CapAssembler(ushort connectionHandle, ILogger<L2CapAssembler>? logger) : IL2CapAssembler
 {
+    private readonly MessageSinks _sinks = new();
+
+    /// <inheritdoc />
+    public IDisposable Subscribe(IMessageSink sink) => _sinks.Subscribe(sink);
+
+    private void PublishMessage<T>(in T message)
+        where T : allows ref struct => _sinks.Publish(message);
+
     private readonly ushort _connectionHandle = connectionHandle;
     private readonly ILogger<L2CapAssembler>? _logger = logger;
     private readonly List<byte> _dataBytes = [];
