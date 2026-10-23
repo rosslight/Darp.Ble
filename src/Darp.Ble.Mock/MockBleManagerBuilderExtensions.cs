@@ -15,6 +15,6 @@ public static class MockBleManagerBuilderExtensions
         ArgumentNullException.ThrowIfNull(builder);
         var options = new MockBackendOptions();
         configure?.Invoke(options);
-        return builder.AddBackend(new MockBackend(options.Name));
+        return builder.AddBackend(new MockBackend(options.Name, options.OpenFailure));
     }
 }
