@@ -12,13 +12,22 @@ internal sealed class MockLink
     private readonly Lock _lock = new();
     private bool _down;
 
-    public MockLink(BleAddress centralAddress, IConnectionSink centralSink, IGattServerSink peripheralSink)
+    public MockLink(
+        BleAddress centralAddress,
+        IConnectionSink centralSink,
+        MockPeripheralDriver peripheral,
+        IGattServerSink peripheralSink
+    )
     {
+        PeripheralDriver = peripheral;
         _centralSink = centralSink;
         _peripheralSink = peripheralSink;
         Central = new MockConnectionDriver(this);
         Peripheral = new MockCentralConnection(this, centralAddress);
     }
+
+    /// <summary> The peripheral role the central connected to </summary>
+    public MockPeripheralDriver PeripheralDriver { get; }
 
     /// <summary> The central's side </summary>
     public MockConnectionDriver Central { get; }

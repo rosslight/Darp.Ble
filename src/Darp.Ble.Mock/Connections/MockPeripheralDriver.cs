@@ -6,7 +6,19 @@ namespace Darp.Ble.Mock.Connections;
 /// <summary> Accepts connections from mock centrals in the same air </summary>
 internal sealed class MockPeripheralDriver : IPeripheralDriver
 {
+    private readonly Lock _lock = new();
+    private GattServiceDefinition[] _services = [];
     private IGattServerSink? _sink;
+
+    /// <summary> The added services, in order </summary>
+    public IReadOnlyList<GattServiceDefinition> Services
+    {
+        get
+        {
+            lock (_lock)
+                return _services;
+        }
+    }
 
     public void Attach(IGattServerSink sink) => _sink = sink;
 
@@ -14,9 +26,16 @@ internal sealed class MockPeripheralDriver : IPeripheralDriver
     public MockLink Accept(BleAddress centralAddress, IConnectionSink centralSink)
     {
         IGattServerSink sink = _sink ?? throw new InvalidOperationException("The core did not attach the peripheral");
-        var link = new MockLink(centralAddress, centralSink, sink);
+        var link = new MockLink(centralAddress, centralSink, this, sink);
         sink.OnCentralConnected(link.Peripheral);
         return link;
+    }
+
+    public Task AddServiceAsync(GattServiceDefinition service, CancellationToken cancellationToken)
+    {
+        lock (_lock)
+            _services = [.. _services, service];
+        return Task.CompletedTask;
     }
 
     public Task DisconnectAsync(ICentralConnectionDriver central, CancellationToken cancellationToken)

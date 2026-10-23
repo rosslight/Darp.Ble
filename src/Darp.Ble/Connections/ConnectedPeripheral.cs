@@ -1,6 +1,7 @@
 using Darp.Ble.Backends;
 using Darp.Ble.Connections;
 using Darp.Ble.Data;
+using Darp.Ble.Gatt;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Connections;
@@ -43,6 +44,38 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
     /// <summary> The address of the peripheral </summary>
     public BleAddress Address { get; }
 
+    /// <summary> Discovers the primary services of the peripheral </summary>
+    /// <param name="cancellationToken"> Cancels discovery </param>
+    /// <returns> The services, in the peripheral's order </returns>
+    /// <exception cref="GattException"> The peripheral answered with an ATT error </exception>
+    /// <exception cref="BleDisconnectedException"> The connection ended </exception>
+    public async Task<IReadOnlyList<RemoteGattService>> DiscoverServicesAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        IReadOnlyList<IRemoteServiceDriver> services = await RunAsync(_driver.DiscoverServicesAsync, cancellationToken)
+            .ConfigureAwait(false);
+        return [.. services.Select(service => new RemoteGattService(this, service))];
+    }
+
+    /// <summary> Discovers a primary service of the peripheral </summary>
+    /// <param name="uuid"> The UUID of the service </param>
+    /// <param name="cancellationToken"> Cancels discovery </param>
+    /// <returns> The first service with the UUID </returns>
+    /// <exception cref="GattException"> The peripheral has no such service (<see cref="GattErrorKind.NotFound"/>) or answered with an ATT error </exception>
+    /// <exception cref="BleDisconnectedException"> The connection ended </exception>
+    public async Task<RemoteGattService> DiscoverServiceAsync(
+        BleUuid uuid,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(uuid);
+        IReadOnlyList<RemoteGattService> services = await DiscoverServicesAsync(cancellationToken)
+            .ConfigureAwait(false);
+        return services.FirstOrDefault(service => service.Uuid == uuid)
+            ?? throw new GattException(GattErrorKind.NotFound, $"The peripheral has no service {uuid}");
+    }
+
     /// <summary> The longest value a write can carry, from the MTU agreed when connecting </summary>
     public int MaxWritePayloadLength => _maxWritePayloadLength;
 
@@ -61,6 +94,10 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
     /// <summary> Ends the connection; the same as <see cref="DisconnectAsync"/> </summary>
     /// <returns> A task that completes once the connection ended </returns>
     public ValueTask DisposeAsync() => new(DisconnectAsync(CancellationToken.None));
+
+    /// <summary> Runs a request of this connection once the earlier ones ended </summary>
+    internal Task<T> RunAsync<T>(Func<GattRequest, Task<T>> send, CancellationToken cancellationToken) =>
+        _requests.RunAsync(send, cancellationToken);
 
     /// <summary> Why the connection ends, once it started ending </summary>
     internal DisconnectInfo? Ending

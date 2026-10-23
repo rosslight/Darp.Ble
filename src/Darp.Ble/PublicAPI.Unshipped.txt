@@ -3,11 +3,18 @@ Darp.Ble.Backends.BleBackendContext
 Darp.Ble.Backends.BleBackendContext.BleBackendContext(Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, System.TimeProvider! timeProvider) -> void
 Darp.Ble.Backends.BleBackendContext.LoggerFactory.get -> Microsoft.Extensions.Logging.ILoggerFactory!
 Darp.Ble.Backends.BleBackendContext.TimeProvider.get -> System.TimeProvider!
+Darp.Ble.Backends.GattCharacteristicDefinition
+Darp.Ble.Backends.GattCharacteristicDefinition.Properties.get -> Darp.Ble.Gatt.GattProperty
+Darp.Ble.Backends.GattCharacteristicDefinition.Uuid.get -> Darp.Ble.Data.BleUuid!
 Darp.Ble.Backends.GattRequest
 Darp.Ble.Backends.GattRequest.HandOffToken.get -> System.Threading.CancellationToken
 Darp.Ble.Backends.GattRequest.IsAbandoned.get -> bool
 Darp.Ble.Backends.GattRequest.OnTransactionAnswered() -> void
 Darp.Ble.Backends.GattRequest.OnTransactionSent() -> void
+Darp.Ble.Backends.GattServiceDefinition
+Darp.Ble.Backends.GattServiceDefinition.Characteristics.get -> System.Collections.Generic.IReadOnlyList<Darp.Ble.Backends.GattCharacteristicDefinition!>!
+Darp.Ble.Backends.GattServiceDefinition.IsPrimary.get -> bool
+Darp.Ble.Backends.GattServiceDefinition.Uuid.get -> Darp.Ble.Data.BleUuid!
 Darp.Ble.Backends.IAdvertisingSetDriver
 Darp.Ble.Backends.IAdvertisingSetDriver.RandomAddress.get -> Darp.Ble.Data.BleAddress!
 Darp.Ble.Backends.IAdvertisingSetDriver.SetDataAsync(Darp.Ble.Gap.AdvertisingData! data, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
@@ -37,6 +44,7 @@ Darp.Ble.Backends.ICentralConnectionDriver.Address.get -> Darp.Ble.Data.BleAddre
 Darp.Ble.Backends.ICentralDriver
 Darp.Ble.Backends.ICentralDriver.ConnectAsync(Darp.Ble.Data.BleAddress! address, Darp.Ble.Connections.BleConnectionParameters! parameters, Darp.Ble.Backends.IConnectionSink! sink, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Darp.Ble.Backends.IConnectionDriver!>!
 Darp.Ble.Backends.IConnectionDriver
+Darp.Ble.Backends.IConnectionDriver.DiscoverServicesAsync(Darp.Ble.Backends.GattRequest! request) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Darp.Ble.Backends.IRemoteServiceDriver!>!>!
 Darp.Ble.Backends.IConnectionDriver.ExchangeMtuAsync(int clientMtu, Darp.Ble.Backends.GattRequest! request) -> System.Threading.Tasks.Task<int>!
 Darp.Ble.Backends.IConnectionSink
 Darp.Ble.Backends.IConnectionSink.OnDisconnected(Darp.Ble.Connections.DisconnectInfo! info) -> void
@@ -47,8 +55,15 @@ Darp.Ble.Backends.IObserverDriver
 Darp.Ble.Backends.IObserverDriver.StartScanAsync(Darp.Ble.Gap.BleScanParameters! parameters, Darp.Ble.Backends.IScanSink! sink, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Darp.Ble.Backends.IObserverDriver.StopScanAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Darp.Ble.Backends.IPeripheralDriver
+Darp.Ble.Backends.IPeripheralDriver.AddServiceAsync(Darp.Ble.Backends.GattServiceDefinition! service, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Darp.Ble.Backends.IPeripheralDriver.Attach(Darp.Ble.Backends.IGattServerSink! sink) -> void
 Darp.Ble.Backends.IPeripheralDriver.DisconnectAsync(Darp.Ble.Backends.ICentralConnectionDriver! central, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Darp.Ble.Backends.IRemoteCharacteristicDriver
+Darp.Ble.Backends.IRemoteCharacteristicDriver.Properties.get -> Darp.Ble.Gatt.GattProperty
+Darp.Ble.Backends.IRemoteCharacteristicDriver.Uuid.get -> Darp.Ble.Data.BleUuid!
+Darp.Ble.Backends.IRemoteServiceDriver
+Darp.Ble.Backends.IRemoteServiceDriver.DiscoverCharacteristicsAsync(Darp.Ble.Backends.GattRequest! request) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Darp.Ble.Backends.IRemoteCharacteristicDriver!>!>!
+Darp.Ble.Backends.IRemoteServiceDriver.Uuid.get -> Darp.Ble.Data.BleUuid!
 Darp.Ble.Backends.IScanSink
 Darp.Ble.Backends.IScanSink.OnFailed(Darp.Ble.BleException! error) -> void
 Darp.Ble.Backends.IScanSink.OnReport(Darp.Ble.Gap.IGapAdvertisement! advertisement) -> void
@@ -125,6 +140,7 @@ Darp.Ble.Connections.BleDisconnectedException.BleDisconnectedException(Darp.Ble.
 Darp.Ble.Connections.BleDisconnectedException.Info.get -> Darp.Ble.Connections.DisconnectInfo!
 Darp.Ble.Connections.BlePeripheral
 Darp.Ble.Connections.BlePeripheral.Adapter.get -> Darp.Ble.BleAdapter!
+Darp.Ble.Connections.BlePeripheral.AddServiceAsync(Darp.Ble.Gatt.LocalGattServiceBuilder! service, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gatt.LocalGattService!>!
 Darp.Ble.Connections.BlePeripheral.ConnectedCentrals.get -> System.Collections.Generic.IReadOnlyList<Darp.Ble.Connections.ConnectedCentral!>!
 Darp.Ble.Connections.ConnectedCentral
 Darp.Ble.Connections.ConnectedCentral.Address.get -> Darp.Ble.Data.BleAddress!
@@ -134,6 +150,8 @@ Darp.Ble.Connections.ConnectedPeripheral
 Darp.Ble.Connections.ConnectedPeripheral.Address.get -> Darp.Ble.Data.BleAddress!
 Darp.Ble.Connections.ConnectedPeripheral.DisconnectAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Darp.Ble.Connections.ConnectedPeripheral.Disconnected.get -> System.Threading.Tasks.Task<Darp.Ble.Connections.DisconnectInfo!>!
+Darp.Ble.Connections.ConnectedPeripheral.DiscoverServiceAsync(Darp.Ble.Data.BleUuid! uuid, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gatt.RemoteGattService!>!
+Darp.Ble.Connections.ConnectedPeripheral.DiscoverServicesAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Darp.Ble.Gatt.RemoteGattService!>!>!
 Darp.Ble.Connections.ConnectedPeripheral.DisposeAsync() -> System.Threading.Tasks.ValueTask
 Darp.Ble.Connections.ConnectedPeripheral.MaxWritePayloadLength.get -> int
 Darp.Ble.Connections.DisconnectInfo
@@ -4074,9 +4092,18 @@ Darp.Ble.Gatt.CharacteristicDeclaration<TProp1, TProp2>.CharacteristicDeclaratio
 Darp.Ble.Gatt.CharacteristicDeclaration<TProp1>
 Darp.Ble.Gatt.CharacteristicDeclaration<TProp1>.CharacteristicDeclaration(Darp.Ble.Data.BleUuid! uuid) -> void
 Darp.Ble.Gatt.CharacteristicDeclaration<TProp1>.Uuid.get -> Darp.Ble.Data.BleUuid!
+Darp.Ble.Gatt.ConnectedPeripheralExtensions
 Darp.Ble.Gatt.DescriptorDeclaration
 Darp.Ble.Gatt.DescriptorDeclaration.DescriptorDeclaration(Darp.Ble.Data.BleUuid! uuid) -> void
 Darp.Ble.Gatt.DescriptorDeclaration.Uuid.get -> Darp.Ble.Data.BleUuid!
+Darp.Ble.Gatt.GattErrorKind
+Darp.Ble.Gatt.GattErrorKind.AttError = 0 -> Darp.Ble.Gatt.GattErrorKind
+Darp.Ble.Gatt.GattErrorKind.NotFound = 1 -> Darp.Ble.Gatt.GattErrorKind
+Darp.Ble.Gatt.GattException
+Darp.Ble.Gatt.GattException.AttStatus.get -> Darp.Ble.Gatt.GattProtocolStatus?
+Darp.Ble.Gatt.GattException.GattException(Darp.Ble.Gatt.GattErrorKind kind, string! message) -> void
+Darp.Ble.Gatt.GattException.GattException(Darp.Ble.Gatt.GattProtocolStatus attStatus, string! message, System.Exception? innerException = null) -> void
+Darp.Ble.Gatt.GattException.Kind.get -> Darp.Ble.Gatt.GattErrorKind
 Darp.Ble.Gatt.GattProperty
 Darp.Ble.Gatt.GattProperty.AuthenticatedSignedWrites = 64 -> Darp.Ble.Gatt.GattProperty
 Darp.Ble.Gatt.GattProperty.Broadcast = 1 -> Darp.Ble.Gatt.GattProperty
@@ -4087,10 +4114,29 @@ Darp.Ble.Gatt.GattProperty.Read = 2 -> Darp.Ble.Gatt.GattProperty
 Darp.Ble.Gatt.GattProperty.Write = 8 -> Darp.Ble.Gatt.GattProperty
 Darp.Ble.Gatt.GattProperty.WriteWithoutResponse = 4 -> Darp.Ble.Gatt.GattProperty
 Darp.Ble.Gatt.GattProtocolStatus
+Darp.Ble.Gatt.GattProtocolStatus.AttributeNotFound = 10 -> Darp.Ble.Gatt.GattProtocolStatus
+Darp.Ble.Gatt.GattProtocolStatus.AttributeNotLong = 11 -> Darp.Ble.Gatt.GattProtocolStatus
 Darp.Ble.Gatt.GattProtocolStatus.ClientCharacteristicConfigurationDescriptorImproperlyConfigured = 253 -> Darp.Ble.Gatt.GattProtocolStatus
+Darp.Ble.Gatt.GattProtocolStatus.DatabaseOutOfSync = 18 -> Darp.Ble.Gatt.GattProtocolStatus
+Darp.Ble.Gatt.GattProtocolStatus.EncryptionKeySizeTooShort = 12 -> Darp.Ble.Gatt.GattProtocolStatus
+Darp.Ble.Gatt.GattProtocolStatus.InsufficientAuthentication = 5 -> Darp.Ble.Gatt.GattProtocolStatus
+Darp.Ble.Gatt.GattProtocolStatus.InsufficientAuthorization = 8 -> Darp.Ble.Gatt.GattProtocolStatus
+Darp.Ble.Gatt.GattProtocolStatus.InsufficientEncryption = 15 -> Darp.Ble.Gatt.GattProtocolStatus
+Darp.Ble.Gatt.GattProtocolStatus.InsufficientResources = 17 -> Darp.Ble.Gatt.GattProtocolStatus
+Darp.Ble.Gatt.GattProtocolStatus.InvalidAttributeValueLength = 13 -> Darp.Ble.Gatt.GattProtocolStatus
+Darp.Ble.Gatt.GattProtocolStatus.InvalidHandle = 1 -> Darp.Ble.Gatt.GattProtocolStatus
+Darp.Ble.Gatt.GattProtocolStatus.InvalidOffset = 7 -> Darp.Ble.Gatt.GattProtocolStatus
+Darp.Ble.Gatt.GattProtocolStatus.InvalidPdu = 4 -> Darp.Ble.Gatt.GattProtocolStatus
 Darp.Ble.Gatt.GattProtocolStatus.OutOfRange = 255 -> Darp.Ble.Gatt.GattProtocolStatus
+Darp.Ble.Gatt.GattProtocolStatus.PrepareQueueFull = 9 -> Darp.Ble.Gatt.GattProtocolStatus
 Darp.Ble.Gatt.GattProtocolStatus.ProcedureAlreadyInProgress = 254 -> Darp.Ble.Gatt.GattProtocolStatus
+Darp.Ble.Gatt.GattProtocolStatus.ReadNotPermitted = 2 -> Darp.Ble.Gatt.GattProtocolStatus
+Darp.Ble.Gatt.GattProtocolStatus.RequestNotSupported = 6 -> Darp.Ble.Gatt.GattProtocolStatus
 Darp.Ble.Gatt.GattProtocolStatus.Success = 0 -> Darp.Ble.Gatt.GattProtocolStatus
+Darp.Ble.Gatt.GattProtocolStatus.UnlikelyError = 14 -> Darp.Ble.Gatt.GattProtocolStatus
+Darp.Ble.Gatt.GattProtocolStatus.UnsupportedGroupType = 16 -> Darp.Ble.Gatt.GattProtocolStatus
+Darp.Ble.Gatt.GattProtocolStatus.ValueNotAllowed = 19 -> Darp.Ble.Gatt.GattProtocolStatus
+Darp.Ble.Gatt.GattProtocolStatus.WriteNotPermitted = 3 -> Darp.Ble.Gatt.GattProtocolStatus
 Darp.Ble.Gatt.GattProtocolStatus.WriteRequestRejected = 252 -> Darp.Ble.Gatt.GattProtocolStatus
 Darp.Ble.Gatt.GattServiceType
 Darp.Ble.Gatt.GattServiceType.Primary = 1 -> Darp.Ble.Gatt.GattServiceType
@@ -4111,6 +4157,15 @@ Darp.Ble.Gatt.IGattTypedCharacteristic<T>.EncodeFunc
 Darp.Ble.Gatt.IServiceDeclaration
 Darp.Ble.Gatt.IServiceDeclaration.Type.get -> Darp.Ble.Gatt.GattServiceType
 Darp.Ble.Gatt.ITypedCharacteristicDeclaration<T, TProp1>
+Darp.Ble.Gatt.LocalGattCharacteristic
+Darp.Ble.Gatt.LocalGattCharacteristic.Properties.get -> Darp.Ble.Gatt.GattProperty
+Darp.Ble.Gatt.LocalGattCharacteristic.Uuid.get -> Darp.Ble.Data.BleUuid!
+Darp.Ble.Gatt.LocalGattService
+Darp.Ble.Gatt.LocalGattService.Uuid.get -> Darp.Ble.Data.BleUuid!
+Darp.Ble.Gatt.LocalGattServiceBuilder
+Darp.Ble.Gatt.LocalGattServiceBuilder.AddCharacteristic(Darp.Ble.Data.BleUuid! uuid, Darp.Ble.Gatt.GattProperty properties) -> Darp.Ble.Gatt.LocalGattCharacteristic!
+Darp.Ble.Gatt.LocalGattServiceBuilder.LocalGattServiceBuilder(Darp.Ble.Data.BleUuid! uuid, bool isPrimary = true) -> void
+Darp.Ble.Gatt.LocalGattServiceBuilder.LocalGattServiceBuilder(Darp.Ble.Gatt.ServiceDeclaration! declaration) -> void
 Darp.Ble.Gatt.Properties
 Darp.Ble.Gatt.Properties.Indicate
 Darp.Ble.Gatt.Properties.Indicate.Indicate() -> void
@@ -4122,6 +4177,12 @@ Darp.Ble.Gatt.Properties.Write
 Darp.Ble.Gatt.Properties.Write.Write() -> void
 Darp.Ble.Gatt.Properties.WriteWithoutResponse
 Darp.Ble.Gatt.Properties.WriteWithoutResponse.WriteWithoutResponse() -> void
+Darp.Ble.Gatt.RemoteGattCharacteristic
+Darp.Ble.Gatt.RemoteGattCharacteristic.Properties.get -> Darp.Ble.Gatt.GattProperty
+Darp.Ble.Gatt.RemoteGattCharacteristic.Uuid.get -> Darp.Ble.Data.BleUuid!
+Darp.Ble.Gatt.RemoteGattService
+Darp.Ble.Gatt.RemoteGattService.DiscoverCharacteristicsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Darp.Ble.Gatt.RemoteGattCharacteristic!>!>!
+Darp.Ble.Gatt.RemoteGattService.Uuid.get -> Darp.Ble.Data.BleUuid!
 Darp.Ble.Gatt.ServiceDeclaration
 Darp.Ble.Gatt.ServiceDeclaration.ServiceDeclaration(Darp.Ble.Data.BleUuid! uuid, Darp.Ble.Gatt.GattServiceType type = Darp.Ble.Gatt.GattServiceType.Primary) -> void
 Darp.Ble.Gatt.ServiceDeclaration.Type.get -> Darp.Ble.Gatt.GattServiceType
@@ -4265,6 +4326,7 @@ static Darp.Ble.Gatt.CharacteristicDeclaration.Create<T, TProp1>(Darp.Ble.Data.B
 static Darp.Ble.Gatt.CharacteristicDeclaration.Create<TProp1, TProp2>(Darp.Ble.Data.BleUuid! uuid, System.Text.Encoding! encoding) -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<string!, TProp1, TProp2>!
 static Darp.Ble.Gatt.CharacteristicDeclaration.Create<TProp1>(Darp.Ble.Data.BleUuid! uuid, System.Text.Encoding! encoding) -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<string!, TProp1>!
 static Darp.Ble.Gatt.CharacteristicDeclaration<TProp1, TProp2>.implicit operator Darp.Ble.Gatt.CharacteristicDeclaration<TProp2, TProp1>!(Darp.Ble.Gatt.CharacteristicDeclaration<TProp1, TProp2>! characteristicDeclaration) -> Darp.Ble.Gatt.CharacteristicDeclaration<TProp2, TProp1>!
+static Darp.Ble.Gatt.ConnectedPeripheralExtensions.DiscoverServiceAsync(this Darp.Ble.Connections.ConnectedPeripheral! connection, Darp.Ble.Gatt.ServiceDeclaration! declaration, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gatt.RemoteGattService!>!
 static Darp.Ble.Gatt.DescriptorDeclaration.CharacteristicAggregateFormat.get -> Darp.Ble.Gatt.DescriptorDeclaration!
 static Darp.Ble.Gatt.DescriptorDeclaration.CharacteristicExtendedProperties.get -> Darp.Ble.Gatt.DescriptorDeclaration!
 static Darp.Ble.Gatt.DescriptorDeclaration.CharacteristicPresentationFormat.get -> Darp.Ble.Gatt.DescriptorDeclaration!
