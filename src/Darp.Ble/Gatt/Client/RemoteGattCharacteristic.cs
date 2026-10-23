@@ -49,6 +49,48 @@ public sealed class RemoteGattCharacteristic
         return _connection.RunAsync(request => _driver.WriteAsync(copy, request), cancellationToken);
     }
 
+    /// <summary> Turns notifications on for this connection; does nothing when they are on, whoever enabled them </summary>
+    /// <param name="cancellationToken"> Cancels the change; after it was sent, only the wait ends and the device's answer still counts </param>
+    /// <returns> A task that completes once notifications are on </returns>
+    /// <exception cref="GattException"> The characteristic does not notify, or the peripheral answered with an ATT error </exception>
+    /// <exception cref="BleDisconnectedException"> The connection ended </exception>
+    public Task EnableNotificationsAsync(CancellationToken cancellationToken = default)
+    {
+        EnsureSupports(GattProperty.Notify);
+        return _connection.GetNotifications(_driver).EnableAsync(_connection, cancellationToken);
+    }
+
+    /// <summary> Turns notifications off; every open stream of the characteristic ends with an <see cref="InvalidOperationException"/> after its queued items </summary>
+    /// <param name="cancellationToken"> Cancels the change; after it was sent, only the wait ends and the device's answer still counts </param>
+    /// <returns> A task that completes once notifications are off </returns>
+    /// <exception cref="GattException"> The characteristic does not notify, or the peripheral answered with an ATT error </exception>
+    /// <exception cref="BleDisconnectedException"> The connection ended </exception>
+    public Task DisableNotificationsAsync(CancellationToken cancellationToken = default)
+    {
+        EnsureSupports(GattProperty.Notify);
+        return _connection.GetNotifications(_driver).DisableAsync(_connection, cancellationToken);
+    }
+
+    /// <summary> Starts a stream of the notifications from now on, with the default queue. Does no I/O </summary>
+    /// <returns> The stream; enumerate it once notifications are enabled </returns>
+    /// <exception cref="GattException"> The characteristic does not notify </exception>
+    public NotificationStream<byte[]> Subscribe() => Subscribe(DefaultNotificationQueue);
+
+    internal QueueOptions DefaultNotificationQueue => _connection.NotificationQueue;
+
+    /// <summary> Starts a stream of the notifications from now on. Does no I/O </summary>
+    /// <param name="queue"> The queue of this stream </param>
+    /// <returns> The stream; enumerate it once notifications are enabled </returns>
+    /// <exception cref="GattException"> The characteristic does not notify </exception>
+    public NotificationStream<byte[]> Subscribe(QueueOptions queue) => Subscribe(queue, value => value);
+
+    internal NotificationStream<T> Subscribe<T>(QueueOptions queue, Func<byte[], T> decode)
+    {
+        ArgumentNullException.ThrowIfNull(queue);
+        EnsureSupports(GattProperty.Notify);
+        return _connection.GetNotifications(_driver).Subscribe(queue, decode);
+    }
+
     private void EnsureSupports(GattProperty property)
     {
         if (!Properties.HasFlag(property))

@@ -79,7 +79,10 @@ public sealed class BlePeripheral
         lock (_lock)
         {
             foreach (LocalGattCharacteristic characteristic in characteristics)
+            {
                 _hosted.Add(characteristic.Definition, characteristic);
+                characteristic.Bind(this);
+            }
         }
     }
 
@@ -88,7 +91,10 @@ public sealed class BlePeripheral
         lock (_lock)
         {
             foreach (LocalGattCharacteristic characteristic in characteristics)
+            {
                 _hosted.Remove(characteristic.Definition);
+                characteristic.Unbind();
+            }
         }
     }
 

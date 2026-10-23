@@ -43,6 +43,8 @@ public sealed class GattServer
                 _peripheral.Unhost(characteristics);
                 throw;
             }
+            foreach (LocalGattCharacteristic characteristic in characteristics)
+                characteristic.MarkLive();
             return new LocalGattService(definition.Uuid);
         }
         finally
