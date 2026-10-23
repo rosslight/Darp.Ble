@@ -32,6 +32,6 @@ public sealed class RemoteGattService
         IReadOnlyList<IRemoteCharacteristicDriver> characteristics = await _connection
             .RunAsync(_driver.DiscoverCharacteristicsAsync, cancellationToken)
             .ConfigureAwait(false);
-        return [.. characteristics.Select(characteristic => new RemoteGattCharacteristic(characteristic))];
+        return [.. characteristics.Select(characteristic => new RemoteGattCharacteristic(_connection, characteristic))];
     }
 }

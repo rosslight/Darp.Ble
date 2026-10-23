@@ -6,11 +6,13 @@ namespace Darp.Ble.Gatt;
 /// <summary> The services the adapter hosts for centrals </summary>
 public sealed class GattServer
 {
+    private readonly BlePeripheral _peripheral;
     private readonly IPeripheralDriver _driver;
     private readonly OperationTracker _operations;
 
-    internal GattServer(IPeripheralDriver driver, OperationTracker operations)
+    internal GattServer(BlePeripheral peripheral, IPeripheralDriver driver, OperationTracker operations)
     {
+        _peripheral = peripheral;
         _driver = driver;
         _operations = operations;
     }
@@ -29,8 +31,18 @@ public sealed class GattServer
         _operations.Enter(typeof(BlePeripheral));
         try
         {
-            GattServiceDefinition definition = service.Publish();
-            await _driver.AddServiceAsync(definition, cancellationToken).ConfigureAwait(false);
+            (GattServiceDefinition definition, LocalGattCharacteristic[] characteristics) = service.Publish();
+            // Known before the driver publishes, so a central can use the service as soon as it is live
+            _peripheral.Host(characteristics);
+            try
+            {
+                await _driver.AddServiceAsync(definition, cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                _peripheral.Unhost(characteristics);
+                throw;
+            }
             return new LocalGattService(definition.Uuid);
         }
         finally

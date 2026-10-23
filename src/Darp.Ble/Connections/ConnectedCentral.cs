@@ -1,5 +1,6 @@
 using Darp.Ble.Backends;
 using Darp.Ble.Data;
+using Darp.Ble.Gatt;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Connections;
@@ -44,6 +45,24 @@ public sealed class ConnectedCentral
     {
         End(new DisconnectInfo(DisconnectReason.LocalRequest), takeLinkDown: true);
         await _disconnected.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary> Runs a hosted handler for this central. An unexpected failure answers with <see cref="GattProtocolStatus.UnlikelyError"/> </summary>
+    internal async Task<T> RunHandlerAsync<T>(Func<CancellationToken, ValueTask<T>> handler)
+    {
+        try
+        {
+            return await handler(CancellationToken.None).ConfigureAwait(false);
+        }
+        catch (GattException e) when (e.AttStatus is not null)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            _logger.LogHandlerFailed(Address, e);
+            throw new GattException(GattProtocolStatus.UnlikelyError, "The handler failed", e);
+        }
     }
 
     /// <summary> Ends the connection exactly once; the first reason wins </summary>
