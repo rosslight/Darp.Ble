@@ -12,7 +12,7 @@ internal sealed class TestRemoteCharacteristic(TestConnectionDriver connection) 
 
     public BleUuid Uuid { get; } = BleUuid.FromUInt16(0x2A19);
 
-    public GattProperty Properties => GattProperty.Read | GattProperty.WriteWithoutResponse;
+    public GattProperty Properties => GattProperty.Read | GattProperty.WriteWithoutResponse | GattProperty.Notify;
 
     public async Task<byte[]> ReadAsync(GattRequest request) =>
         (byte[]?)await _connection.HandOver("read", request).Done.ConfigureAwait(false) ?? [];
@@ -24,7 +24,7 @@ internal sealed class TestRemoteCharacteristic(TestConnectionDriver connection) 
         Task.FromResult<IReadOnlyList<IRemoteDescriptorDriver>>([_description]);
 
     public Task SetNotificationsAsync(bool enabled, GattRequest request) =>
-        throw new NotSupportedException("Not used by the tests");
+        _connection.HandOver(enabled ? "enable" : "disable", request).Done;
 
     /// <summary> Waits for buffer space until the test accepts it, honouring the hand-off token meanwhile </summary>
     public ValueTask WriteWithoutResponseAsync(ReadOnlyMemory<byte> value, GattRequest request)

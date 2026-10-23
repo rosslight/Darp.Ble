@@ -297,6 +297,47 @@ public sealed class RequestQueueTests
         }
     }
 
+    [Fact]
+    public async Task AnEnableTheCallerGaveUpOn_StillTurnsNotificationsOn_WhenThePeerAccepts()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        (RemoteGattCharacteristic characteristic, TestConnectionDriver driver) = await DiscoverAsync(adapter);
+        using NotificationStream<byte[]> stream = characteristic.Subscribe();
+        using var cancellation = new CancellationTokenSource();
+        Task enable = characteristic.EnableNotificationsAsync(cancellation.Token);
+        PendingRequest cccd = await driver.NextRequestAsync(Token);
+        cccd.Send();
+
+        await cancellation.CancelAsync();
+        await Should.ThrowAsync<OperationCanceledException>(() => enable);
+        cccd.Answer();
+        // The next request only goes out once the CCCD write ended
+        Task<byte[]> read = characteristic.ReadAsync(Token);
+        (await driver.NextRequestAsync(Token)).Answer(new byte[] { 0 });
+        await read;
+
+        driver.Sink.OnNotification(driver.Characteristic, [9]);
+        (await stream.FirstAsync(Token)).ShouldBe([9]);
+    }
+
+    [Fact]
+    public async Task ANotificationWhileEnabling_ReachesTheStreams()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        (RemoteGattCharacteristic characteristic, TestConnectionDriver driver) = await DiscoverAsync(adapter);
+        using NotificationStream<byte[]> stream = characteristic.Subscribe();
+        Task enable = characteristic.EnableNotificationsAsync(Token);
+        PendingRequest cccd = await driver.NextRequestAsync(Token);
+        cccd.Send();
+
+        // Some devices send a value right after the CCCD write, before its answer
+        driver.Sink.OnNotification(driver.Characteristic, [7]);
+        cccd.Answer();
+        await enable;
+
+        (await stream.FirstAsync(Token)).ShouldBe([7]);
+    }
+
     private async Task<(RemoteGattCharacteristic Characteristic, TestConnectionDriver Driver)> DiscoverAsync(
         BleAdapter adapter
     )
