@@ -2,38 +2,6 @@ using Darp.Ble.Data;
 
 namespace Darp.Ble.Gap;
 
-/// <summary>
-/// Defines how scan and connection requests are filtered while advertising.
-/// </summary>
-public enum AdvertisingFilterPolicy
-{
-    /// <summary> Process scan and connection requests from all devices (i.e., the Filter Accept List is not in use) </summary>
-    AcceptAllConnectionsAndScanRequests = 0x00,
-
-    /// <summary> Process connection requests from all devices and scan requests only from devices that are in the Filter Accept List. </summary>
-    AcceptAllConnectionsAndKnownScanRequests = 0x01,
-
-    /// <summary> Process scan requests from all devices and connection requests only from devices that are in the Filter Accept List. </summary>
-    AcceptKnownConnectionsAndAllScanRequests = 0x02,
-
-    /// <summary> Process scan and connection requests only from devices in the Filter Accept List. </summary>
-    AcceptKnownConnectionsAndScanRequests = 0x03,
-}
-
-/// <summary>Advertising channels used on the primary advertising PHY.</summary>
-[Flags]
-public enum AdvertisingChannelMap : byte
-{
-    /// <summary> The advertising channel 37 </summary>
-    Channel37 = 1 << 0,
-
-    /// <summary> The advertising channel 38 </summary>
-    Channel38 = 1 << 1,
-
-    /// <summary> The advertising channel 39 </summary>
-    Channel39 = 1 << 2,
-}
-
 /// <summary>Represents configuration parameters for BLE advertising.</summary>
 public sealed record AdvertisingParameters
 {
@@ -43,11 +11,11 @@ public sealed record AdvertisingParameters
     /// <summary>Gets the advertising event type to use.</summary>
     public BleEventType Type { get; init; } = BleEventType.AdvNonConnInd;
 
-    /// <summary>Gets the minimum interval between primary advertising events.</summary>
-    public ScanTiming MinPrimaryAdvertisingInterval { get; init; } = ScanTiming.Ms1000;
+    /// <summary>Gets the minimum interval between primary advertising events. The backend rounds it to the controller's units.</summary>
+    public TimeSpan MinPrimaryAdvertisingInterval { get; init; } = TimeSpan.FromSeconds(1);
 
-    /// <summary>Gets the maximum interval between primary advertising events.</summary>
-    public ScanTiming MaxPrimaryAdvertisingInterval { get; init; } = ScanTiming.Ms1000;
+    /// <summary>Gets the maximum interval between primary advertising events; at least <see cref="MinPrimaryAdvertisingInterval"/>.</summary>
+    public TimeSpan MaxPrimaryAdvertisingInterval { get; init; } = TimeSpan.FromSeconds(1);
 
     /// <summary>Gets the advertising channel map for the primary PHY.</summary>
     public AdvertisingChannelMap PrimaryAdvertisingChannelMap { get; init; } =
@@ -72,4 +40,15 @@ public sealed record AdvertisingParameters
 
     /// <summary>Gets the advertising SID used for extended advertising.</summary>
     public AdvertisingSId AdvertisingSId { get; init; }
+
+    internal void Validate(string parameterName)
+    {
+        if (MinPrimaryAdvertisingInterval <= TimeSpan.Zero)
+            throw new ArgumentException("The advertising interval must be positive", parameterName);
+        if (MaxPrimaryAdvertisingInterval < MinPrimaryAdvertisingInterval)
+            throw new ArgumentException(
+                "The maximum advertising interval must not be shorter than the minimum",
+                parameterName
+            );
+    }
 }
