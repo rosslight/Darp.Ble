@@ -22,13 +22,14 @@ internal sealed class HciHostAdapterDriver : IBleAdapterDriver
     {
         _device = device;
         _observer = new HciHostObserverDriver(device);
-        _central = new HciHostCentralDriver(device);
         _peripheral = new HciHostPeripheralDriver(device);
+        _central = new HciHostCentralDriver(device);
         _broadcaster = new HciHostBroadcasterDriver(
             device,
             maxAdvertisingDataLength,
             numberOfAdvertisingSets,
-            () => RandomAddress
+            () => RandomAddress,
+            _peripheral.Find
         );
     }
 
@@ -81,6 +82,7 @@ internal sealed class HciHostAdapterDriver : IBleAdapterDriver
     public ValueTask DisposeAsync()
     {
         _observer.Dispose();
+        _broadcaster.Dispose();
         _peripheral.Dispose();
         return _device.DisposeAsync();
     }

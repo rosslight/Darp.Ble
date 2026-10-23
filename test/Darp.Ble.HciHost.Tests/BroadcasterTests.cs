@@ -124,37 +124,52 @@ public sealed class BroadcasterTests
     }
 
     [Fact]
-    public async Task ChangingASetToConnectable_NeedsThePeripheralRole()
+    public async Task ACentralConnectingThroughASet_StopsIt_AndAnAutoRestartingSetStartsAgainOnceItLeft()
     {
         await using var controller = new FakeController();
         await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
-        await using AdvertisingSet set = await adapter.Broadcaster.CreateAdvertisingSetAsync(
-            Parameters(),
+        await using AdvertisingSet set = await adapter.Broadcaster.StartAdvertisingAsync(
             Data,
+            TimeSpan.FromMilliseconds(100),
+            BleEventType.AdvInd,
+            autoRestart: true,
             cancellationToken: Token
         );
+        var central = new FakeCentral(controller, 0x0001);
+        controller.StartRecording();
 
-        await Should.ThrowAsync<NotSupportedException>(() =>
-            set.SetAdvertisingParametersAsync(Parameters() with { Type = BleEventType.AdvInd }, Token)
-        );
+        await central.ConnectAsync(advertisingHandle: 0);
+        await central.DisconnectAsync();
+
+        HciMessage restart = await controller.WaitForCommandAsync(HciOpCode.HCI_LE_SET_EXTENDED_ADVERTISING_ENABLE);
+        restart.PduBytes[3].ShouldBe((byte)0x01);
     }
 
     [Fact]
-    public async Task ConnectableAdvertising_NeedsThePeripheralRole()
+    public async Task ASetACentralConnectedThrough_IsNotStoppedAgain()
     {
         await using var controller = new FakeController();
         await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
-
-        await Should.ThrowAsync<NotSupportedException>(() =>
-            adapter.Broadcaster.CreateAdvertisingSetAsync(
-                Parameters() with
-                {
-                    Type = BleEventType.AdvInd,
-                },
-                Data,
-                cancellationToken: Token
-            )
+        AdvertisingSet set = await adapter.Broadcaster.StartAdvertisingAsync(
+            Data,
+            TimeSpan.FromMilliseconds(100),
+            BleEventType.AdvInd,
+            cancellationToken: Token
         );
+        var central = new FakeCentral(controller, 0x0001);
+        await central.ConnectAsync(advertisingHandle: 0);
+        await WaitUntilAsync(() => adapter.Peripheral.ConnectedCentrals.Count == 1);
+        controller.StartRecording();
+
+        await set.DisposeAsync();
+
+        controller.Commands.ShouldBe([HciOpCode.HCI_LE_Remove_Advertising_Set]);
+    }
+
+    private static async Task WaitUntilAsync(Func<bool> condition)
+    {
+        while (!condition())
+            await Task.Delay(5, Token);
     }
 
     private static AdvertisingParameters Parameters() =>
