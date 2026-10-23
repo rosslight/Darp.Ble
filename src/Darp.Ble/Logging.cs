@@ -197,4 +197,12 @@ internal static partial class Logging
         Message = "A notification to central {Address} failed; the other centrals still get theirs"
     )]
     public static partial void LogNotifyAllCentralFailed(this ILogger logger, BleAddress address, Exception exception);
+
+    [LoggerMessage(
+        EventId = 1404,
+        EventName = "StateDisposeFailed",
+        Level = LogLevel.Warning,
+        Message = "Disposing a state of central {Address} failed"
+    )]
+    public static partial void LogStateDisposeFailed(this ILogger logger, BleAddress address, Exception exception);
 }
