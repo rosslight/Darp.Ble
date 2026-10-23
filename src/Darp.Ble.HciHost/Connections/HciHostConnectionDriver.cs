@@ -193,7 +193,7 @@ internal sealed partial class HciHostConnectionDriver : IConnectionDriver
         if (hciEvent.ConnectionHandle != _connection.ConnectionHandle)
             return;
         LinkDown(
-            ToInfo(hciEvent.Reason),
+            HciDisconnects.ToInfo(hciEvent.Reason),
             new BleException($"The link went down: {hciEvent.Reason}", false, (int)hciEvent.Reason, null)
         );
     }
@@ -258,33 +258,9 @@ internal sealed partial class HciHostConnectionDriver : IConnectionDriver
 
     private async Task DisconnectAsync()
     {
-        HciCommandStatus status = await _device
-            .Host.QueryCommandStatusAsync(
-                new HciDisconnectCommand
-                {
-                    ConnectionHandle = _connection.ConnectionHandle,
-                    Reason = HciCommandStatus.RemoteUserTerminatedConnection,
-                },
-                CancellationToken.None
-            )
-            .ConfigureAwait(false);
-        // Unknown Connection Identifier: the link went down meanwhile, and its event is on the way
-        if (status is not (HciCommandStatus.Success or HciCommandStatus.UnknownConnectionIdentifier))
-            throw HciCommands.Failed(status, "disconnect");
+        await HciDisconnects.RequestAsync(_device, _connection.ConnectionHandle).ConfigureAwait(false);
         await _down
             .Task.WaitAsync(_device.Settings.CommandTimeout, _device.TimeProvider, CancellationToken.None)
             .ConfigureAwait(false);
     }
-
-    private static DisconnectInfo ToInfo(HciCommandStatus reason) =>
-        new(
-            (byte)reason switch
-            {
-                (byte)HciCommandStatus.ConnectionTerminatedByLocalHost => DisconnectReason.LocalRequest,
-                // Supervision timeout, LL response timeout, failed to be established
-                0x08 or 0x22 or 0x3E => DisconnectReason.ConnectionTimeout,
-                _ => DisconnectReason.RemoteRequest,
-            },
-            (int)reason
-        );
 }
