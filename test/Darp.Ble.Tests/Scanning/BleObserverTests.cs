@@ -275,6 +275,18 @@ public sealed class BleObserverTests
         Should.Throw<NotSupportedException>(() => adapter.Observer);
     }
 
+    [Fact]
+    public async Task OpenAsync_WhenACentralHasNoObserver_ThrowsAndDisposesTheDriver()
+    {
+        var driver = new TestAdapterDriver { Central = new Connections.TestCentralDriver() };
+        var manager = new BleManager(builder => builder.AddBackend(new TestBackend(driver)));
+        IReadOnlyList<BleAdapterInfo> adapters = await manager.EnumerateAdaptersAsync(Token);
+
+        await Should.ThrowAsync<InvalidOperationException>(() => adapters[0].OpenAsync(Token));
+
+        driver.DisposeCount.ShouldBe(1);
+    }
+
     private async Task<BleAdapter> OpenAsync(ILoggerFactory? loggerFactory = null)
     {
         var manager = new BleManager(
