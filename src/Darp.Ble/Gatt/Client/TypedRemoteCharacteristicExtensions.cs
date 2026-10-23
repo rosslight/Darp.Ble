@@ -13,6 +13,7 @@ public static class TypedRemoteCharacteristicExtensions
     /// <param name="cancellationToken"> Cancels the read; after it was sent, only the wait ends </param>
     /// <typeparam name="T"> The type of the value </typeparam>
     /// <returns> The decoded value </returns>
+    /// <exception cref="GattException"> The device answered with an ATT error, or sent a value the declaration cannot decode (<see cref="GattErrorKind.InvalidValue"/>) </exception>
     public static Task<T> ReadAsync<T>(
         this ITypedRemoteCharacteristic<T, Properties.Read> characteristic,
         CancellationToken cancellationToken = default
@@ -215,6 +216,60 @@ public static class TypedRemoteCharacteristicExtensions
             queue ?? throw new ArgumentNullException(nameof(queue))
         );
 
+    /// <summary> Encodes and writes the value with a write command, which the peripheral does not answer </summary>
+    /// <param name="characteristic"> The characteristic </param>
+    /// <param name="value"> The value </param>
+    /// <param name="cancellationToken"> Cancels the write until the backend accepted it </param>
+    /// <typeparam name="T"> The type of the value </typeparam>
+    /// <returns> A task that completes once the backend accepted the write </returns>
+    public static ValueTask WriteWithoutResponseAsync<T>(
+        this ITypedRemoteCharacteristic<T, Properties.WriteWithoutResponse> characteristic,
+        T value,
+        CancellationToken cancellationToken = default
+    ) => WriteWithoutResponseCoreAsync(characteristic, characteristic?.Declaration, value, cancellationToken);
+
+    /// <summary> Encodes and writes the value with a write command, which the peripheral does not answer </summary>
+    /// <param name="characteristic"> The characteristic </param>
+    /// <param name="value"> The value </param>
+    /// <param name="cancellationToken"> Cancels the write until the backend accepted it </param>
+    /// <typeparam name="T"> The type of the value </typeparam>
+    /// <typeparam name="TOther"> The other property marker </typeparam>
+    /// <returns> A task that completes once the backend accepted the write </returns>
+    public static ValueTask WriteWithoutResponseAsync<T, TOther>(
+        this ITypedRemoteCharacteristic<T, Properties.WriteWithoutResponse, TOther> characteristic,
+        T value,
+        CancellationToken cancellationToken = default
+    )
+        where TOther : IBleProperty =>
+        WriteWithoutResponseCoreAsync(characteristic, characteristic?.Declaration, value, cancellationToken);
+
+    /// <summary> Encodes and writes the value with a write command, which the peripheral does not answer </summary>
+    /// <param name="characteristic"> The characteristic </param>
+    /// <param name="value"> The value </param>
+    /// <param name="cancellationToken"> Cancels the write until the backend accepted it </param>
+    /// <typeparam name="T"> The type of the value </typeparam>
+    /// <typeparam name="TOther"> The other property marker </typeparam>
+    /// <returns> A task that completes once the backend accepted the write </returns>
+    public static ValueTask WriteWithoutResponseAsync<T, TOther>(
+        this ITypedRemoteCharacteristic<T, TOther, Properties.WriteWithoutResponse> characteristic,
+        T value,
+        CancellationToken cancellationToken = default
+    )
+        where TOther : IBleProperty =>
+        WriteWithoutResponseCoreAsync(characteristic, characteristic?.Declaration, value, cancellationToken);
+
+    private static ValueTask WriteWithoutResponseCoreAsync<T>(
+        IRemoteCharacteristic? characteristic,
+        IGattTypedCharacteristic<T>? declaration,
+        T value,
+        CancellationToken cancellationToken
+    )
+    {
+        ArgumentNullException.ThrowIfNull(characteristic);
+        ArgumentNullException.ThrowIfNull(declaration);
+        return characteristic.Characteristic.WriteWithoutResponseAsync(declaration.Encode(value), cancellationToken);
+    }
+
     private static RemoteGattCharacteristic Untyped(IRemoteCharacteristic? characteristic)
     {
         ArgumentNullException.ThrowIfNull(characteristic);
@@ -230,7 +285,10 @@ public static class TypedRemoteCharacteristicExtensions
         ArgumentNullException.ThrowIfNull(characteristic);
         ArgumentNullException.ThrowIfNull(declaration);
         RemoteGattCharacteristic untyped = characteristic.Characteristic;
-        return untyped.Subscribe(queue ?? untyped.DefaultNotificationQueue, value => declaration.Decode(value));
+        return untyped.Subscribe(
+            queue ?? untyped.DefaultNotificationQueue,
+            value => Decode(untyped, declaration, value)
+        );
     }
 
     private static async Task<T> ReadCoreAsync<T>(
@@ -242,7 +300,29 @@ public static class TypedRemoteCharacteristicExtensions
         ArgumentNullException.ThrowIfNull(characteristic);
         ArgumentNullException.ThrowIfNull(declaration);
         byte[] value = await characteristic.Characteristic.ReadAsync(cancellationToken).ConfigureAwait(false);
-        return declaration.Decode(value);
+        return Decode(characteristic.Characteristic, declaration, value);
+    }
+
+    /// <summary> Decodes a value the device sent; a value the declaration cannot decode is no ATT error of the device </summary>
+    /// <exception cref="GattException"> The declaration cannot decode the value (<see cref="GattErrorKind.InvalidValue"/>) </exception>
+    private static T Decode<T>(
+        RemoteGattCharacteristic characteristic,
+        IGattTypedCharacteristic<T> declaration,
+        byte[] value
+    )
+    {
+        try
+        {
+            return declaration.Decode(value);
+        }
+        catch (Exception e)
+        {
+            throw new GattException(
+                GattErrorKind.InvalidValue,
+                $"The {value.Length} bytes of {characteristic.Uuid} cannot be decoded as {typeof(T).Name}",
+                e
+            );
+        }
     }
 
     private static Task WriteCoreAsync<T>(

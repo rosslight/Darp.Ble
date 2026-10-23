@@ -74,4 +74,18 @@ public static class RemoteCharacteristicExtensions
         ArgumentNullException.ThrowIfNull(characteristic);
         return characteristic.Characteristic.Subscribe(queue);
     }
+
+    /// <inheritdoc cref="RemoteGattCharacteristic.WriteWithoutResponseAsync" />
+    /// <param name="characteristic"> The characteristic </param>
+    /// <param name="value"> The value; the caller may reuse the buffer once the task completed </param>
+    /// <param name="cancellationToken"> Cancels the write until the backend accepted it </param>
+    public static ValueTask WriteWithoutResponseAsync(
+        this IRemoteCharacteristic<Properties.WriteWithoutResponse> characteristic,
+        ReadOnlyMemory<byte> value,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(characteristic);
+        return characteristic.Characteristic.WriteWithoutResponseAsync(value, cancellationToken);
+    }
 }

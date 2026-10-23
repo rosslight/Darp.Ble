@@ -63,6 +63,30 @@ public sealed class CharacteristicTests
     }
 
     [Fact]
+    public async Task WriteWithoutResponseAsync_ReachesTheWriteHandler_WithoutWaitingForIt()
+    {
+        var written = new TaskCompletionSource<byte[]>();
+        var release = new TaskCompletionSource<GattProtocolStatus>();
+        await using BleAdapter adapter = await OpenAsync(service =>
+            service.AddCharacteristic(
+                LevelUuid,
+                GattProperty.WriteWithoutResponse,
+                onWrite: async (_, value, _) =>
+                {
+                    written.SetResult(value.ToArray());
+                    return await release.Task;
+                }
+            )
+        );
+        RemoteGattCharacteristic level = await DiscoverAsync(adapter, LevelUuid);
+
+        await level.WriteWithoutResponseAsync(new byte[] { 4 }, Token);
+
+        (await written.Task).ShouldBe([4]);
+        release.SetResult(GattProtocolStatus.WriteRequestRejected);
+    }
+
+    [Fact]
     public async Task AWriteHandlerAnsweringWithAnError_FailsTheWriteWithThatStatus()
     {
         await using BleAdapter adapter = await OpenAsync(service =>

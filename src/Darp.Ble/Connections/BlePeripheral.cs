@@ -147,6 +147,22 @@ public sealed class BlePeripheral
             throw new GattException(status, $"The write handler answered {status}");
     }
 
+    internal void OnWriteCommand(
+        ICentralConnectionDriver connection,
+        GattCharacteristicDefinition definition,
+        byte[] value
+    )
+    {
+        // Nobody waits for the answer; failures are logged by the handler run
+        _ = OnWriteRequestAsync(connection, definition, value)
+            .ContinueWith(
+                task => _ = task.Exception,
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted,
+                TaskScheduler.Default
+            );
+    }
+
     private (ConnectedCentral Central, LocalGattCharacteristic Characteristic) Resolve(
         ICentralConnectionDriver connection,
         GattCharacteristicDefinition definition

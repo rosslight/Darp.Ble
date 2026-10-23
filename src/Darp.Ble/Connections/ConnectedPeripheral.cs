@@ -102,6 +102,13 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
     internal Task<T> RunAsync<T>(Func<GattRequest, Task<T>> send, CancellationToken cancellationToken) =>
         _requests.RunAsync(send, cancellationToken);
 
+    /// <summary> Runs a write without response in this connection's send order </summary>
+    internal ValueTask RunCommandAsync(
+        IRemoteCharacteristicDriver characteristic,
+        ReadOnlyMemory<byte> value,
+        CancellationToken cancellationToken
+    ) => _requests.RunCommandAsync(characteristic, value, cancellationToken);
+
     /// <summary> Runs a request without a result of this connection once the earlier ones ended </summary>
     internal Task RunAsync(Func<GattRequest, Task> send, CancellationToken cancellationToken) =>
         _requests.RunAsync(
