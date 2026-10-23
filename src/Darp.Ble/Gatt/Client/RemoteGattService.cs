@@ -17,6 +17,8 @@ public sealed class RemoteGattService
         Uuid = driver.Uuid;
     }
 
+    internal ConnectedPeripheral Connection => _connection;
+
     /// <summary> The UUID of the service </summary>
     public BleUuid Uuid { get; }
 
