@@ -35,6 +35,8 @@ public sealed class ConnectionTests
         );
 
         connection.Address.ShouldBe(set.RandomAddress);
+        // The mock link agrees on an ATT MTU of 247; a write carries 3 bytes less
+        connection.MaxWritePayloadLength.ShouldBe(244);
         adapter.Central.Connections.ShouldBe([connection]);
         await connection.DisposeAsync();
         (await connection.Disconnected).Reason.ShouldBe(DisconnectReason.LocalRequest);

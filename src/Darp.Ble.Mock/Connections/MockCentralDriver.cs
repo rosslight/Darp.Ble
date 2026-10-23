@@ -1,6 +1,7 @@
 using Darp.Ble.Backends;
 using Darp.Ble.Connections;
 using Darp.Ble.Data;
+using Darp.Ble.Mock.Gap;
 
 namespace Darp.Ble.Mock.Connections;
 
@@ -18,13 +19,13 @@ internal sealed class MockCentralDriver(MockAir air, MockAdapterDriver adapter) 
     )
     {
         cancellationToken.ThrowIfCancellationRequested();
-        if (_air.FindConnectable(_adapter, address) is null)
-        {
-            throw new BleConnectException(
+        MockAdvertisingSetDriver set =
+            _air.FindConnectable(_adapter, address)
+            ?? throw new BleConnectException(
                 BleConnectErrorKind.Unreachable,
                 $"No mock peripheral advertises connectable as {address}"
             );
-        }
-        return Task.FromResult<IConnectionDriver>(new MockConnectionDriver());
+        MockLink link = set.Adapter.PeripheralDriver.Accept(_adapter.RandomAddress, sink);
+        return Task.FromResult<IConnectionDriver>(link.Central);
     }
 }
