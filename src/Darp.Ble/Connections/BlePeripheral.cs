@@ -72,6 +72,12 @@ public sealed class BlePeripheral
         central?.End(info, takeLinkDown: false);
     }
 
+    internal ConnectedCentral? Find(ICentralConnectionDriver connection)
+    {
+        lock (_lock)
+            return _centrals.GetValueOrDefault(connection);
+    }
+
     internal void Remove(ICentralConnectionDriver connection)
     {
         lock (_lock)

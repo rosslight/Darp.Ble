@@ -32,11 +32,19 @@ public sealed class BleBroadcaster
     /// <param name="cancellationToken"> Cancels creating </param>
     /// <returns> The set. Disposing it stops and removes it; disposing the adapter disposes it too </returns>
     /// <exception cref="ArgumentException"> The intervals are not positive, or the maximum is shorter than the minimum </exception>
-    public async Task<AdvertisingSet> CreateAdvertisingSetAsync(
+    public Task<AdvertisingSet> CreateAdvertisingSetAsync(
         AdvertisingParameters parameters,
         AdvertisingData? data = null,
         AdvertisingData? scanResponseData = null,
         CancellationToken cancellationToken = default
+    ) => CreateCoreAsync(parameters, data, scanResponseData, autoRestart: false, cancellationToken);
+
+    private async Task<AdvertisingSet> CreateCoreAsync(
+        AdvertisingParameters parameters,
+        AdvertisingData? data,
+        AdvertisingData? scanResponseData,
+        bool autoRestart,
+        CancellationToken cancellationToken
     )
     {
         ArgumentNullException.ThrowIfNull(parameters);
@@ -45,10 +53,12 @@ public sealed class BleBroadcaster
         _creations.Enter(typeof(BleBroadcaster));
         try
         {
+            var events = new AdvertisingSetEvents();
             IAdvertisingSetDriver setDriver = await _driver
-                .CreateAdvertisingSetAsync(parameters, data, scanResponseData, cancellationToken)
+                .CreateAdvertisingSetAsync(parameters, data, scanResponseData, events, cancellationToken)
                 .ConfigureAwait(false);
-            var set = new AdvertisingSet(this, setDriver, parameters, data, scanResponseData, _logger);
+            var set = new AdvertisingSet(this, setDriver, parameters, data, scanResponseData, autoRestart, _logger);
+            events.Attach(set);
             bool closed;
             lock (_lock)
             {
@@ -75,6 +85,8 @@ public sealed class BleBroadcaster
     /// <param name="interval"> How often the set advertises </param>
     /// <param name="type"> The type of the advertising events </param>
     /// <param name="scanResponseData"> The scan response data, if the set has one </param>
+    /// <param name="autoRestart"> Whether the set starts again once a central that connected through it disconnected.
+    /// A connection always stops the set it came through </param>
     /// <param name="cancellationToken"> Cancels creating and starting </param>
     /// <returns> The advertising set. Disposing it stops advertising </returns>
     public async Task<AdvertisingSet> StartAdvertisingAsync(
@@ -82,6 +94,7 @@ public sealed class BleBroadcaster
         TimeSpan interval,
         BleEventType type = BleEventType.AdvInd,
         AdvertisingData? scanResponseData = null,
+        bool autoRestart = false,
         CancellationToken cancellationToken = default
     )
     {
@@ -91,7 +104,7 @@ public sealed class BleBroadcaster
             MinPrimaryAdvertisingInterval = interval,
             MaxPrimaryAdvertisingInterval = interval,
         };
-        AdvertisingSet set = await CreateAdvertisingSetAsync(parameters, data, scanResponseData, cancellationToken)
+        AdvertisingSet set = await CreateCoreAsync(parameters, data, scanResponseData, autoRestart, cancellationToken)
             .ConfigureAwait(false);
         try
         {
@@ -112,7 +125,15 @@ public sealed class BleBroadcaster
     }
 
     /// <summary> Closes admission so no set can be created any more </summary>
-    internal void CloseAdmission() => _creations.Close();
+    internal void CloseAdmission()
+    {
+        _creations.Close();
+        AdvertisingSet[] sets;
+        lock (_lock)
+            sets = [.. _sets];
+        foreach (AdvertisingSet set in sets)
+            set.CloseAdmission();
+    }
 
     /// <summary> Closes admission, waits for creations in flight, then disposes every set; tries all of them even if one fails </summary>
     internal async Task DisposeAsync()

@@ -19,6 +19,7 @@ internal sealed class TestBroadcasterDriver : IBroadcasterDriver
         AdvertisingParameters parameters,
         AdvertisingData data,
         AdvertisingData? scanResponseData,
+        IAdvertisingSetSink sink,
         CancellationToken cancellationToken
     )
     {

@@ -23,6 +23,8 @@ Darp.Ble.Backends.IAdvertisingSetDriver.SetRandomAddressAsync(Darp.Ble.Data.BleA
 Darp.Ble.Backends.IAdvertisingSetDriver.SetScanResponseDataAsync(Darp.Ble.Gap.AdvertisingData! data, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Darp.Ble.Backends.IAdvertisingSetDriver.StartAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Darp.Ble.Backends.IAdvertisingSetDriver.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Darp.Ble.Backends.IAdvertisingSetSink
+Darp.Ble.Backends.IAdvertisingSetSink.OnStoppedByConnection(Darp.Ble.Backends.ICentralConnectionDriver! central) -> void
 Darp.Ble.Backends.IBleAdapterDriver
 Darp.Ble.Backends.IBleAdapterDriver.Broadcaster.get -> Darp.Ble.Backends.IBroadcasterDriver?
 Darp.Ble.Backends.IBleAdapterDriver.Capabilities.get -> Darp.Ble.Capabilities
@@ -38,7 +40,7 @@ Darp.Ble.Backends.IBleBackend
 Darp.Ble.Backends.IBleBackend.EnumerateAdaptersAsync(Darp.Ble.Backends.BleBackendContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Darp.Ble.Backends.IBleAdapterSource!>!>!
 Darp.Ble.Backends.IBleBackend.Name.get -> string!
 Darp.Ble.Backends.IBroadcasterDriver
-Darp.Ble.Backends.IBroadcasterDriver.CreateAdvertisingSetAsync(Darp.Ble.Gap.AdvertisingParameters! parameters, Darp.Ble.Gap.AdvertisingData! data, Darp.Ble.Gap.AdvertisingData? scanResponseData, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Darp.Ble.Backends.IAdvertisingSetDriver!>!
+Darp.Ble.Backends.IBroadcasterDriver.CreateAdvertisingSetAsync(Darp.Ble.Gap.AdvertisingParameters! parameters, Darp.Ble.Gap.AdvertisingData! data, Darp.Ble.Gap.AdvertisingData? scanResponseData, Darp.Ble.Backends.IAdvertisingSetSink! sink, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Darp.Ble.Backends.IAdvertisingSetDriver!>!
 Darp.Ble.Backends.ICentralConnectionDriver
 Darp.Ble.Backends.ICentralConnectionDriver.Address.get -> Darp.Ble.Data.BleAddress!
 Darp.Ble.Backends.ICentralDriver
@@ -3999,7 +4001,7 @@ Darp.Ble.Gap.AdvertisingSet.StopAsync(System.Threading.CancellationToken cancell
 Darp.Ble.Gap.BleBroadcaster
 Darp.Ble.Gap.BleBroadcaster.Adapter.get -> Darp.Ble.BleAdapter!
 Darp.Ble.Gap.BleBroadcaster.CreateAdvertisingSetAsync(Darp.Ble.Gap.AdvertisingParameters! parameters, Darp.Ble.Gap.AdvertisingData? data = null, Darp.Ble.Gap.AdvertisingData? scanResponseData = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gap.AdvertisingSet!>!
-Darp.Ble.Gap.BleBroadcaster.StartAdvertisingAsync(Darp.Ble.Gap.AdvertisingData! data, System.TimeSpan interval, Darp.Ble.Gap.BleEventType type = Darp.Ble.Gap.BleEventType.AdvInd, Darp.Ble.Gap.AdvertisingData? scanResponseData = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gap.AdvertisingSet!>!
+Darp.Ble.Gap.BleBroadcaster.StartAdvertisingAsync(Darp.Ble.Gap.AdvertisingData! data, System.TimeSpan interval, Darp.Ble.Gap.BleEventType type = Darp.Ble.Gap.BleEventType.AdvInd, Darp.Ble.Gap.AdvertisingData? scanResponseData = null, bool autoRestart = false, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gap.AdvertisingSet!>!
 Darp.Ble.Gap.BleEventType
 Darp.Ble.Gap.BleEventType.AdvDirectInd = Darp.Ble.Gap.BleEventType.Connectable | Darp.Ble.Gap.BleEventType.Directed | Darp.Ble.Gap.BleEventType.AdvNonConnInd -> Darp.Ble.Gap.BleEventType
 Darp.Ble.Gap.BleEventType.AdvInd = Darp.Ble.Gap.BleEventType.Connectable | Darp.Ble.Gap.BleEventType.AdvScanInd -> Darp.Ble.Gap.BleEventType

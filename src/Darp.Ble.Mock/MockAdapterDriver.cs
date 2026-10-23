@@ -49,6 +49,7 @@ internal sealed class MockAdapterDriver : IBleAdapterDriver
     /// <summary> Disposes the simulated peripherals; tries all of them even if one fails </summary>
     public async ValueTask DisposeAsync()
     {
+        PeripheralDriver.Close();
         List<Exception>? failures = null;
         foreach (BleAdapter peripheral in _peripherals)
         {

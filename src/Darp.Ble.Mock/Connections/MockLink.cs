@@ -54,7 +54,8 @@ internal sealed class MockLink
             if (_down)
                 return false;
             _down = true;
-            return true;
         }
+        PeripheralDriver.Forget(this);
+        return true;
     }
 }

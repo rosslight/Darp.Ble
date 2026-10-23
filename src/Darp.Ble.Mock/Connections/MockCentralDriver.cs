@@ -11,7 +11,7 @@ internal sealed class MockCentralDriver(MockAir air, MockAdapterDriver adapter) 
     private readonly MockAir _air = air;
     private readonly MockAdapterDriver _adapter = adapter;
 
-    public Task<IConnectionDriver> ConnectAsync(
+    public async Task<IConnectionDriver> ConnectAsync(
         BleAddress address,
         BleConnectionParameters parameters,
         IConnectionSink sink,
@@ -19,13 +19,14 @@ internal sealed class MockCentralDriver(MockAir air, MockAdapterDriver adapter) 
     )
     {
         cancellationToken.ThrowIfCancellationRequested();
-        MockAdvertisingSetDriver set =
-            _air.FindConnectable(_adapter, address)
+        MockAdvertisingSetDriver? set = _air.FindConnectable(_adapter, address);
+        MockLink? link = set is null
+            ? null
+            : await set.ConnectAsync(_adapter.RandomAddress, sink).ConfigureAwait(false);
+        return link?.Central
             ?? throw new BleConnectException(
                 BleConnectErrorKind.Unreachable,
                 $"No mock peripheral advertises connectable as {address}"
             );
-        MockLink link = set.Adapter.PeripheralDriver.Accept(_adapter.RandomAddress, sink);
-        return Task.FromResult<IConnectionDriver>(link.Central);
     }
 }
