@@ -3,12 +3,13 @@ using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Darp.Ble.Gatt;
 using Darp.Ble.Mock;
+using Darp.Ble.Testing;
 using Microsoft.Extensions.Time.Testing;
 using Shouldly;
 
 namespace Darp.Ble.Tests.Diagnostics;
 
-/// <summary> The core's metrics, through the Mock (seam 2 of PR 5, D14) </summary>
+/// <summary> The core's metrics, through the Mock </summary>
 [Collection(TelemetryCollection.Name)]
 public sealed class MetricTests
 {
@@ -20,22 +21,62 @@ public sealed class MetricTests
     private readonly FakeTimeProvider _time = new();
     private readonly TaskCompletionSource<(BleAdapter Host, AdvertisingSet Set, LocalGattCharacteristic Level)> _host =
         new();
+    private OnReadHandler _onRead = (_, _) => ValueTask.FromResult<byte[]>([50]);
+    private OnWriteHandler _onWrite = (_, _, _) => ValueTask.FromResult(GattProtocolStatus.Success);
 
     [Fact]
-    public async Task ARequest_RecordsItsDuration_WithItsOperationAndOutcome()
+    public async Task ARequest_RecordsItsSecondsFromEnqueueToItsEnd_WithItsOperationAndOutcome()
     {
+        var readRunning = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var readAnswer = new TaskCompletionSource<byte[]>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var writeRunning = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var writeAnswer = new TaskCompletionSource<GattProtocolStatus>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
+        _onRead = (_, _) =>
+        {
+            readRunning.SetResult();
+            return new ValueTask<byte[]>(readAnswer.Task);
+        };
+        _onWrite = (_, _, _) =>
+        {
+            writeRunning.SetResult();
+            return new ValueTask<GattProtocolStatus>(writeAnswer.Task);
+        };
         using var measurements = new RecordedMeasurements();
         await using BleAdapter adapter = await OpenAsync();
         RemoteGattCharacteristic level = await ConnectAsync(adapter);
 
-        await level.ReadAsync(Token);
-        await Should.ThrowAsync<OperationCanceledException>(() => level.ReadAsync(new CancellationToken(true)));
+        Task<byte[]> read = level.ReadAsync(Token);
+        await readRunning.Task.WithWatchdog();
+        _time.Advance(TimeSpan.FromSeconds(2));
+        // Both wait behind the read: the write runs after it, the second read is given up while it waits
+        Task write = level.WriteAsync(new byte[] { 1 }, Token);
+        using var giveUp = new CancellationTokenSource();
+        Task<byte[]> givenUp = level.ReadAsync(giveUp.Token);
+        _time.Advance(TimeSpan.FromSeconds(1));
+        await giveUp.CancelAsync();
+        await Should.ThrowAsync<OperationCanceledException>(givenUp.WithWatchdog());
+        _time.Advance(TimeSpan.FromSeconds(2));
+        readAnswer.SetResult([50]);
+        await read.WithWatchdog();
+        await writeRunning.Task.WithWatchdog();
+        _time.Advance(TimeSpan.FromSeconds(4));
+        writeAnswer.SetResult(GattProtocolStatus.WriteRequestRejected);
+        await Should.ThrowAsync<GattException>(write.WithWatchdog());
 
         const string duration = "darp.ble.gatt.client.request.duration";
-        measurements.Of(duration, ("darp.ble.operation", "read"), ("darp.ble.outcome", "success")).Count.ShouldBe(1);
-        measurements.Of(duration, ("darp.ble.operation", "read"), ("darp.ble.outcome", "cancelled")).Count.ShouldBe(1);
+        measurements
+            .Of(
+                duration,
+                ("darp.ble.backend", BleBackends.Mock),
+                ("darp.ble.operation", "read"),
+                ("darp.ble.outcome", "success")
+            )
+            .ShouldBe([5]);
+        measurements.Of(duration, ("darp.ble.operation", "read"), ("darp.ble.outcome", "cancelled")).ShouldBe([1]);
+        measurements.Of(duration, ("darp.ble.operation", "write"), ("darp.ble.outcome", "att_error")).ShouldBe([7]);
         measurements.Of(duration, ("darp.ble.operation", "exchange_mtu")).Count.ShouldBe(1);
-        measurements.Of(duration, ("darp.ble.backend", BleBackends.Mock)).ShouldAllBe(seconds => seconds >= 0);
     }
 
     [Fact]
@@ -107,8 +148,9 @@ public sealed class MetricTests
                             var service = new LocalGattServiceBuilder(ServiceUuid);
                             LocalGattCharacteristic level = service.AddCharacteristic(
                                 0x2A19,
-                                GattProperty.Read | GattProperty.Notify,
-                                onRead: (_, _) => ValueTask.FromResult<byte[]>([50])
+                                GattProperty.Read | GattProperty.Write | GattProperty.Notify,
+                                onRead: (central, ct) => _onRead(central, ct),
+                                onWrite: (central, value, ct) => _onWrite(central, value, ct)
                             );
                             await peripheral.Peripheral.AddServiceAsync(service);
                             AdvertisingSet set = await peripheral.Broadcaster.StartAdvertisingAsync(
