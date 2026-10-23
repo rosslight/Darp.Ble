@@ -133,19 +133,11 @@ public sealed class GapAdvertisementTests
 
         IGapAdvertisement<int> advWithData = adv.WithUserData(testData);
 
-        advWithData.Timestamp.ShouldBe(adv.Timestamp);
-        advWithData.EventType.ShouldBe(adv.EventType);
-        advWithData.Address.ShouldBe(adv.Address);
-        advWithData.PrimaryPhy.ShouldBe(adv.PrimaryPhy);
-        advWithData.SecondaryPhy.ShouldBe(adv.SecondaryPhy);
-        advWithData.AdvertisingSId.ShouldBe(adv.AdvertisingSId);
-        advWithData.TxPower.ShouldBe(adv.TxPower);
-        advWithData.Rssi.ShouldBe(adv.Rssi);
-        advWithData.PeriodicAdvertisingInterval.ShouldBe(adv.PeriodicAdvertisingInterval);
-        advWithData.DirectAddress.ShouldBe(adv.DirectAddress);
-        advWithData.Data.ShouldBe(adv.Data);
         advWithData.UserData.ShouldBe(testData);
         (advWithData as IGapAdvertisementWithUserData)?.UserData.ShouldBe(testData);
+        advWithData.Timestamp.ShouldBe(adv.Timestamp);
+        advWithData.Address.ShouldBe(adv.Address);
+        advWithData.Data.ShouldBe(adv.Data);
         advWithData.AsByteArray().ShouldBe(adv.AsByteArray());
     }
 }

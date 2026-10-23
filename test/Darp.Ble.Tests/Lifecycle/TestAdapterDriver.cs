@@ -4,18 +4,11 @@ using Darp.Ble.Data;
 namespace Darp.Ble.Tests.Lifecycle;
 
 /// <summary> A driver whose disposal finishes when the test says so </summary>
-internal sealed class TestAdapterDriver(Capabilities capabilities) : IBleAdapterDriver
+internal sealed class TestAdapterDriver : IBleAdapterDriver
 {
     private readonly TaskCompletionSource _allowDisposal = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    public TestAdapterDriver(Capabilities capabilities, bool completeDisposalImmediately)
-        : this(capabilities)
-    {
-        if (completeDisposalImmediately)
-            _allowDisposal.SetResult();
-    }
-
-    public Capabilities Capabilities { get; } = capabilities;
+    public Capabilities Capabilities => Capabilities.Central;
 
     public int DisposeCount { get; private set; }
 
