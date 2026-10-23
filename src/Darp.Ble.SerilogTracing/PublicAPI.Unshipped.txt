@@ -1,0 +1,6 @@
+#nullable enable
+Darp.Ble.SerilogTracing.DarpBleActivityInstrumentor
+Darp.Ble.SerilogTracing.DarpBleActivityInstrumentor.DarpBleActivityInstrumentor() -> void
+override Darp.Ble.SerilogTracing.DarpBleActivityInstrumentor.InstrumentOnActivityStarted(System.Diagnostics.Activity! activity) -> void
+override Darp.Ble.SerilogTracing.DarpBleActivityInstrumentor.InstrumentOnActivityStopped(System.Diagnostics.Activity! activity) -> void
+override Darp.Ble.SerilogTracing.DarpBleActivityInstrumentor.ShouldSubscribeTo(string! activitySourceName) -> bool

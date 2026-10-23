@@ -13,6 +13,8 @@
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="SerilogTracing" />
     <PackageReference Include="Shouldly" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="Xunit.DependencyInjection.Logging" />
@@ -23,5 +25,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Darp.Ble.Mock\Darp.Ble.Mock.csproj" />
     <ProjectReference Include="..\..\src\Darp.Ble\Darp.Ble.csproj" />
+    <ProjectReference Include="..\..\src\Darp.Ble.SerilogTracing\Darp.Ble.SerilogTracing.csproj" />
   </ItemGroup>
 </Project>
