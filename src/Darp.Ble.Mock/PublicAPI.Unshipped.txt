@@ -1,10 +1,13 @@
 #nullable enable
 Darp.Ble.Mock.MockBackendOptions
+Darp.Ble.Mock.MockBackendOptions.AddPeripheral(System.Func<Darp.Ble.BleAdapter!, System.Threading.Tasks.Task!>! configure, string! name = "Mock peripheral") -> Darp.Ble.Mock.MockBackendOptions!
 Darp.Ble.Mock.MockBackendOptions.MockBackendOptions() -> void
 Darp.Ble.Mock.MockBackendOptions.Name.get -> string!
 Darp.Ble.Mock.MockBackendOptions.Name.set -> void
 Darp.Ble.Mock.MockBackendOptions.OpenFailure.get -> Darp.Ble.BleOpenErrorKind?
 Darp.Ble.Mock.MockBackendOptions.OpenFailure.set -> void
+Darp.Ble.Mock.MockBackendOptions.TxPowerToRssi.get -> System.Func<Darp.Ble.Data.TxPowerLevel, Darp.Ble.Data.Rssi>!
+Darp.Ble.Mock.MockBackendOptions.TxPowerToRssi.set -> void
 Darp.Ble.Mock.MockBle
 Darp.Ble.Mock.MockBleManagerBuilderExtensions
 static Darp.Ble.Mock.MockBle.OpenAdapterAsync(string! name = "Mock", System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.BleAdapter!>!
