@@ -32,8 +32,13 @@ internal sealed partial class HciPacketInFlightHandler<
         CancellationToken cancellationToken
     )
     {
-        DateTimeOffset startTime = DateTimeOffset.UtcNow;
         Activity? activity = Logging.StartCommandResponseActivity(command, _host.Device.Address);
+        // One deadline on the device's clock for waiting for the command slot and for the answer
+        using var timeoutSource = new CancellationTokenSource(timeout, _host.Device.TimeProvider);
+        using var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(
+            cancellationToken,
+            timeoutSource.Token
+        );
         try
         {
             // Only log the time that is needed to enqueue the command if it actually has to wait.
@@ -42,16 +47,14 @@ internal sealed partial class HciPacketInFlightHandler<
                 : null;
             try
             {
-                bool enteredSlim = await _packetInFlightSemaphore
-                    .WaitAsync(timeout, cancellationToken)
-                    .ConfigureAwait(false);
-                if (!enteredSlim)
-                {
-                    throw new TimeoutException("Timeout while waiting for next command to be sent");
-                }
-                _subscription = _host.Subscribe(this);
-                var packet = new HciCommandPacket<TCommand>(command);
-                _host.EnqueuePacket(packet);
+                await _packetInFlightSemaphore.WaitAsync(linkedSource.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException e) when (IsTimeout(timeoutSource, cancellationToken))
+            {
+                var timeoutException = new TimeoutException("Timeout while waiting for next command to be sent", e);
+                enqueueActivity?.AddException(timeoutException);
+                enqueueActivity?.SetStatus(ActivityStatusCode.Error, timeoutException.Message);
+                throw timeoutException;
             }
             catch (Exception e)
             {
@@ -63,21 +66,22 @@ internal sealed partial class HciPacketInFlightHandler<
             {
                 enqueueActivity?.Dispose();
             }
+            // The command slot is taken: whatever happens from here, the next command must get it
             try
             {
-                TimeSpan waitTime = DateTimeOffset.UtcNow - startTime;
-                TimeSpan timeoutAfterWait = timeout > waitTime ? timeout - waitTime : TimeSpan.Zero;
-                TResponse result = await _completionSource
-                    .Task.WaitAsync(timeoutAfterWait, cancellationToken)
-                    .ConfigureAwait(false);
+                _subscription = _host.Subscribe(this);
+                _host.EnqueuePacket(new HciCommandPacket<TCommand>(command));
+                TResponse result = await _completionSource.Task.WaitAsync(linkedSource.Token).ConfigureAwait(false);
                 activity?.SetTag("Response.OpCode", $"{TResponse.EventCode.ToString().ToUpperInvariant()}_EVENT");
                 activity?.SetDeconstructedTags("Response", result, orderEntries: true);
                 return (result, activity);
             }
+            catch (OperationCanceledException e) when (IsTimeout(timeoutSource, cancellationToken))
+            {
+                throw new TimeoutException($"The controller did not answer {TCommand.OpCode} within {timeout}", e);
+            }
             finally
             {
-                // Release the InFlight semaphore at the end of the query to ensure the next command can continue
-                // TODO: What do we do if a response is received after a timeout was hit? Will this trigger the next query?
                 _packetInFlightSemaphore.Release();
             }
         }
@@ -89,6 +93,9 @@ internal sealed partial class HciPacketInFlightHandler<
             throw;
         }
     }
+
+    private static bool IsTimeout(CancellationTokenSource timeoutSource, CancellationToken cancellationToken) =>
+        timeoutSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested;
 
     [MessageSink]
     private void Publish<T>(in T message)

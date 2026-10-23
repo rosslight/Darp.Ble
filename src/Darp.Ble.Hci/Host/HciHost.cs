@@ -130,7 +130,7 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
         where TEvent : IHciEvent<TEvent>
     {
         ObjectDisposedException.ThrowIf(Device.IsDisposed, this);
-        timeout ??= TimeSpan.FromSeconds(5);
+        timeout ??= Device.Settings.CommandTimeout;
         using var handler = new HciPacketInFlightHandler<TCommand, TEvent>(this, _packetInFlightSemaphore);
         (TEvent response, Activity? activity) = await handler
             .QueryAsync(command, timeout.Value, cancellationToken)
@@ -154,7 +154,7 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
         where TResponse : ICommandStatusResult, IBinaryReadable<TResponse>
     {
         ObjectDisposedException.ThrowIf(Device.IsDisposed, this);
-        timeout ??= TimeSpan.FromMilliseconds(Device.Settings.DefaultHciCommandTimeoutMs);
+        timeout ??= Device.Settings.CommandTimeout;
         using var handler = new HciPacketInFlightHandler<TCommand, HciCommandCompleteEvent>(
             this,
             _packetInFlightSemaphore

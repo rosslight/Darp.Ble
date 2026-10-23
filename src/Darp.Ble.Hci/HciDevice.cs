@@ -105,20 +105,28 @@ public sealed class HciDevice : IAsyncDisposable
     /// <summary>Gets the settings used for controller and protocol timeouts.</summary>
     public HciSettings Settings { get; }
 
+    /// <summary>The clock of every timeout</summary>
+    public TimeProvider TimeProvider { get; }
+
     /// <summary>
     /// Initializes a new HCI device wrapper.
     /// </summary>
     /// <param name="transportLayer">The transport used to exchange packets with the controller.</param>
     /// <param name="randomAddress">The initial random device address.</param>
     /// <param name="settings">The settings used for controller and protocol timeouts.</param>
+    /// <param name="timeProvider">The clock of every timeout</param>
     /// <param name="loggerFactory">An optional logger factory.</param>
     public HciDevice(
         ITransportLayer transportLayer,
         ulong randomAddress,
         HciSettings settings,
+        TimeProvider timeProvider,
         ILoggerFactory? loggerFactory
     )
     {
+        ArgumentNullException.ThrowIfNull(settings);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+        TimeProvider = timeProvider;
         _transportLayer = transportLayer;
         _loggerFactory = loggerFactory;
         Address = randomAddress;

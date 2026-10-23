@@ -12,6 +12,7 @@ internal sealed class HciMessageConverter : WriteOnlyJsonConverter<HciMessage>
     {
         writer.WriteStartObject();
 
+        writer.WriteMember(message, message.Direction, nameof(HciMessage.Direction));
         writer.WriteMember(message, message.Type, nameof(HciMessage.Type));
         switch (message.Type)
         {
