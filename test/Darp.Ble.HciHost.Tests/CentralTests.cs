@@ -1,9 +1,11 @@
 using Darp.Ble.Connections;
 using Darp.Ble.Data;
+using Darp.Ble.Gatt;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Att;
 using Darp.Ble.HciHost.Verify;
+using Microsoft.Extensions.Time.Testing;
 using Shouldly;
 
 namespace Darp.Ble.HciHost.Tests;
@@ -145,6 +147,34 @@ public sealed class CentralTests
     }
 
     [Fact]
+    public async Task TwoAttemptsAtOnce_EachGetTheirOwnLink()
+    {
+        await using var controller = new FakeController();
+        BleAddress other = BleAddress.CreateRandomAddress((UInt48)0x223344556677);
+        var first = new FakePeripheral(controller, 0x0001) { Mtu = 65 };
+        var second = new FakePeripheral(controller, 0x0002) { Mtu = 100 };
+        _ = FakePeripheral.ServeAsync(controller, first);
+        _ = FakePeripheral.ServeAsync(controller, second);
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+
+        Task<ConnectedPeripheral> connectingFirst = adapter.Central.ConnectAsync(
+            HciAdapter.Peer,
+            cancellationToken: Token
+        );
+        Task<ConnectedPeripheral> connectingSecond = adapter.Central.ConnectAsync(other, cancellationToken: Token);
+        await controller.WaitForCommandAsync(HciOpCode.HCI_LE_Extended_Create_Connection_V1);
+        await controller.PushAsync(HciAdapter.ConnectionComplete(0x0001));
+        await using ConnectedPeripheral firstConnection = await connectingFirst;
+        // The second attempt starts once the first link is up
+        await controller.WaitForCommandAsync(HciOpCode.HCI_LE_Extended_Create_Connection_V1, occurrence: 2);
+        await controller.PushAsync(HciAdapter.ConnectionComplete(0x0002, peer: other));
+        await using ConnectedPeripheral secondConnection = await connectingSecond;
+
+        firstConnection.MaxWritePayloadLength.ShouldBe(62);
+        secondConnection.MaxWritePayloadLength.ShouldBe(97);
+    }
+
+    [Fact]
     public async Task ALostTransport_FailsAPendingAttempt()
     {
         await using var controller = new FakeController();
@@ -155,6 +185,36 @@ public sealed class CentralTests
         controller.Fail(new IOException("The serial port is gone"));
 
         await Should.ThrowAsync<BleConnectException>(connecting);
+    }
+
+    [Fact]
+    public async Task ADisconnectTheControllerDoesNotAnswer_StillEndsTheConnectionAndItsRequests()
+    {
+        await using var controller = new FakeController();
+        var time = new FakeTimeProvider();
+        var peripheral = new FakePeripheral(controller, Handle).AddService(
+            0x180F,
+            service => service.AddCharacteristic(0x2A19, GattProperty.Read, [80])
+        );
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller, time);
+        ConnectedPeripheral connection = await HciAdapter.ConnectAsync(adapter, controller, peripheral);
+        RemoteGattCharacteristic level = (
+            await (await connection.Gatt.DiscoverServiceAsync(0x180F, Token)).DiscoverCharacteristicsAsync(Token)
+        )[0];
+        peripheral.HoldAnswers = true;
+        controller.Hold(HciOpCode.HCI_Disconnect);
+        Task<byte[]> read = level.ReadAsync(Token);
+        await peripheral.WaitForReceivedAsync(received =>
+            received.Count(pdu => pdu[0] == (byte)AttOpCode.ATT_READ_REQ) == 1
+        );
+
+        Task disposing = connection.DisposeAsync().AsTask();
+        await controller.WaitForCommandAsync(HciOpCode.HCI_Disconnect);
+        time.Advance(TimeSpan.FromSeconds(5));
+
+        await Should.ThrowAsync<BleDisconnectedException>(read);
+        await disposing;
+        (await connection.Disconnected).Reason.ShouldBe(DisconnectReason.LocalRequest);
     }
 
     [Fact]

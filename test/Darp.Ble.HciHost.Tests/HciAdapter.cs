@@ -71,4 +71,21 @@ internal static class HciAdapter
         await controller.PushAsync(HciMessages.AttExchangeMtuResponse(handle, serverMtu));
         return await connecting;
     }
+
+    /// <summary> Connects to <see cref="Peer"/> and lets the peripheral answer from then on </summary>
+    public static async Task<ConnectedPeripheral> ConnectAsync(
+        BleAdapter adapter,
+        FakeController controller,
+        FakePeripheral peripheral
+    )
+    {
+        _ = FakePeripheral.ServeAsync(controller, peripheral);
+        Task<ConnectedPeripheral> connecting = adapter.Central.ConnectAsync(
+            Peer,
+            cancellationToken: TestContext.Current.CancellationToken
+        );
+        await controller.WaitForCommandAsync(HciOpCode.HCI_LE_Extended_Create_Connection_V1);
+        await controller.PushAsync(ConnectionComplete(peripheral.Handle));
+        return await connecting;
+    }
 }
