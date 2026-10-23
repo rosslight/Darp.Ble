@@ -79,6 +79,9 @@ public sealed class AdvertisingData : IReadOnlyList<AdvertisingTypeWithData>
         return FromUnsafe(advertisingData.ToArray());
     }
 
+    /// <summary> Decode data sections without copying; the caller guarantees nobody changes the memory afterwards </summary>
+    internal static AdvertisingData FromOwned(ReadOnlyMemory<byte> advertisingData) => FromUnsafe(advertisingData);
+
     private static AdvertisingData FromUnsafe(ReadOnlyMemory<byte> advertisingData)
     {
         if (advertisingData.Length is 0)
