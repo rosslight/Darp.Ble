@@ -63,4 +63,8 @@ internal sealed class MockRemoteCharacteristic(MockLink link, GattCharacteristic
         _link.WriteWithoutResponse(_definition, value);
         return ValueTask.CompletedTask;
     }
+
+    /// <summary> Mock peripherals host no descriptors yet </summary>
+    public Task<IReadOnlyList<IRemoteDescriptorDriver>> DiscoverDescriptorsAsync(GattRequest request) =>
+        Task.FromResult<IReadOnlyList<IRemoteDescriptorDriver>>([]);
 }

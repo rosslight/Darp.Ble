@@ -32,6 +32,11 @@ public interface IRemoteCharacteristicDriver
     /// It completes synchronously when there is buffer space </returns>
     ValueTask WriteWithoutResponseAsync(ReadOnlyMemory<byte> value, GattRequest request);
 
+    /// <summary> Discovers the descriptors of the characteristic </summary>
+    /// <param name="request"> Reports each transaction, e.g. each page; check <see cref="GattRequest.IsAbandoned"/> before the next one </param>
+    /// <returns> The descriptors, in handle order; the same objects on every discovery </returns>
+    Task<IReadOnlyList<IRemoteDescriptorDriver>> DiscoverDescriptorsAsync(GattRequest request);
+
     /// <summary> Writes the client characteristic configuration descriptor to turn notifications on or off </summary>
     /// <param name="enabled"> Whether notifications are on afterwards </param>
     /// <param name="request"> Reports the transaction </param>
