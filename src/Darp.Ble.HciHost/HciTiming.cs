@@ -7,6 +7,10 @@ internal static class HciTiming
     public static ushort ToScanUnits(TimeSpan value, string name) =>
         (ushort)ToUnits(value, TimeSpan.FromMilliseconds(0.625), 0x0004, 0xFFFF, name);
 
+    /// <summary> Primary advertising interval: 0.625 ms units, 20 ms to 10485.759 s </summary>
+    public static uint ToAdvertisingUnits(TimeSpan value, string name) =>
+        (uint)ToUnits(value, TimeSpan.FromMilliseconds(0.625), 0x000020, 0xFFFFFF, name);
+
     private static long ToUnits(TimeSpan value, TimeSpan unit, long min, long max, string name)
     {
         long units = (long)Math.Round(value / unit, MidpointRounding.AwayFromZero);

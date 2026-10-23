@@ -66,6 +66,15 @@ public sealed class FakeController : ITransportLayer
         (HciOpCode.HCI_LE_Set_Random_Address, "01052000"),
         (HciOpCode.HCI_LE_Set_Extended_Scan_Parameters, "01412000"),
         (HciOpCode.HCI_LE_Set_Extended_Scan_Enable, "01422000"),
+        // 251 bytes of advertising data, 4 advertising sets
+        (HciOpCode.HCI_LE_READ_MAXIMUM_ADVERTISING_DATA_LENGTH, "013A2000FB00"),
+        (HciOpCode.HCI_LE_Read_Number_Of_Supported_Advertising_Sets, "013B200004"),
+        (HciOpCode.HCI_LE_SET_EXTENDED_ADVERTISING_PARAMETERS_V1, "0136200000"),
+        (HciOpCode.HCI_LE_SET_ADVERTISING_SET_RANDOM_ADDRESS, "01352000"),
+        (HciOpCode.HCI_LE_SET_EXTENDED_ADVERTISING_DATA, "01372000"),
+        (HciOpCode.HCI_LE_Set_Extended_Scan_Response_Data, "01382000"),
+        (HciOpCode.HCI_LE_SET_EXTENDED_ADVERTISING_ENABLE, "01392000"),
+        (HciOpCode.HCI_LE_Remove_Advertising_Set, "013C2000"),
     ];
 
     /// <summary> Whether every ACL packet from the host is reported back as completed at once; turn off to hold the controller's buffers </summary>
