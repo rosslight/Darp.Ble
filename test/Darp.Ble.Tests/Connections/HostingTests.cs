@@ -8,7 +8,7 @@ using Shouldly;
 
 namespace Darp.Ble.Tests.Connections;
 
-/// <summary> Typed and marker hosted characteristics and hosted descriptors through the Mock (seam 1 of PR 4b) </summary>
+/// <summary> Typed and marker hosted characteristics and hosted descriptors through the Mock </summary>
 public sealed class HostingTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -118,6 +118,76 @@ public sealed class HostingTests
 
         (await written.Task).ShouldBe([9]);
         (await levels.FirstAsync(Token)).ShouldBe((byte)77);
+    }
+
+    [Fact]
+    public async Task HostedDescriptors_AnswerThroughTheirOwnHandlers_AndAUserDescriptionIsReadOnly()
+    {
+        byte[] stored = [0];
+        await using BleAdapter adapter = await OpenAsync(service =>
+        {
+            LocalGattCharacteristic level = service.AddCharacteristic(
+                0xFFF4,
+                GattProperty.Read,
+                onRead: (_, _) => ValueTask.FromResult<byte[]>([50])
+            );
+            level.AddUserDescription("main");
+            level.AddDescriptor(
+                0xFFFA,
+                onRead: (_, _) => ValueTask.FromResult(stored),
+                onWrite: (_, value, _) =>
+                {
+                    stored = value.ToArray();
+                    return ValueTask.FromResult(GattProtocolStatus.Success);
+                }
+            );
+        });
+        RemoteGattService service = await ConnectAsync(adapter);
+        RemoteGattCharacteristic level = (await service.DiscoverCharacteristicsAsync(Token)).Single();
+
+        IReadOnlyList<RemoteDescriptor> descriptors = await level.DiscoverDescriptorsAsync(Token);
+        RemoteDescriptor description = descriptors.Single(d => d.Uuid == BleUuid.FromUInt16(0x2901));
+        RemoteDescriptor custom = descriptors.Single(d => d.Uuid == BleUuid.FromUInt16(0xFFFA));
+        await custom.WriteAsync(new byte[] { 7 }, Token);
+
+        byte[] firstRead = await description.ReadAsync(Token);
+        // Changing what a read returned changes nothing on the peripheral
+        firstRead[0] = (byte)'X';
+        (await description.ReadAsync(Token)).ShouldBe("main"u8.ToArray());
+        (await custom.ReadAsync(Token)).ShouldBe([7]);
+        (
+            await Should.ThrowAsync<GattException>(() => description.WriteAsync(new byte[] { 1 }, Token))
+        ).AttStatus.ShouldBe(GattProtocolStatus.WriteNotPermitted);
+    }
+
+    [Fact]
+    public async Task TwoCharacteristicsWithTheSameUuid_EachAnswerThroughTheirOwnHandler()
+    {
+        await using BleAdapter adapter = await OpenAsync(service =>
+        {
+            service.AddCharacteristic(0xFFF5, GattProperty.Read, onRead: (_, _) => ValueTask.FromResult<byte[]>([1]));
+            service.AddCharacteristic(0xFFF5, GattProperty.Read, onRead: (_, _) => ValueTask.FromResult<byte[]>([2]));
+        });
+        RemoteGattService service = await ConnectAsync(adapter);
+
+        IReadOnlyList<RemoteGattCharacteristic> characteristics = await service.DiscoverCharacteristicsAsync(Token);
+
+        (await characteristics[0].ReadAsync(Token)).ShouldBe([1]);
+        (await characteristics[1].ReadAsync(Token)).ShouldBe([2]);
+    }
+
+    [Fact]
+    public async Task ABuilder_CannotChangeOrBeAddedAgain_OnceAdded()
+    {
+        var builder = new LocalGattServiceBuilder(Service);
+        LocalGattCharacteristic characteristic = builder.AddCharacteristic(0xFFF6, GattProperty.Read);
+        await using BleAdapter adapter = await OpenAsync(_ => { });
+
+        await adapter.Peripheral.AddServiceAsync(builder, Token);
+
+        Should.Throw<InvalidOperationException>(() => builder.AddCharacteristic(0xFFF7, GattProperty.Read));
+        Should.Throw<InvalidOperationException>(() => characteristic.AddUserDescription("late"));
+        await Should.ThrowAsync<InvalidOperationException>(() => adapter.Peripheral.AddServiceAsync(builder, Token));
     }
 
     private async Task<RemoteGattService> ConnectAsync(BleAdapter adapter)

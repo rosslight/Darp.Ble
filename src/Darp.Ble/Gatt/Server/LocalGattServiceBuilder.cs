@@ -45,6 +45,7 @@ public sealed class LocalGattServiceBuilder
     {
         ArgumentNullException.ThrowIfNull(uuid);
         var characteristic = new LocalGattCharacteristic(
+            this,
             new GattCharacteristicDefinition(uuid, properties),
             onRead,
             onWrite
@@ -55,17 +56,30 @@ public sealed class LocalGattServiceBuilder
     }
 
     /// <summary> Freezes the service and builds its definition; the builder cannot change or be added again afterwards </summary>
-    internal (GattServiceDefinition Definition, LocalGattCharacteristic[] Characteristics) Build()
+    internal (GattServiceDefinition Definition, IHostedAttribute[] Attributes) Build()
     {
         EnsureNotAdded();
         _added = true;
-        LocalGattCharacteristic[] characteristics = [.. _characteristics];
+        List<IHostedAttribute> attributes = [];
+        foreach (LocalGattCharacteristic characteristic in _characteristics)
+        {
+            attributes.Add(characteristic);
+            attributes.AddRange(characteristic.Freeze());
+        }
         var definition = new GattServiceDefinition(
             _uuid,
             _isPrimary,
-            [.. characteristics.Select(characteristic => characteristic.Definition)]
+            [.. _characteristics.Select(characteristic => characteristic.Definition)]
         );
-        return (definition, characteristics);
+        return (definition, [.. attributes]);
+    }
+
+    /// <summary> Changes the service while it is not added </summary>
+    /// <exception cref="InvalidOperationException"> The service was already added </exception>
+    internal void Change(Action change)
+    {
+        EnsureNotAdded();
+        change();
     }
 
     private void EnsureNotAdded()

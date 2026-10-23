@@ -13,6 +13,7 @@ internal sealed class MockLink
     private readonly Lock _lock = new();
     private readonly Dictionary<GattServiceDefinition, MockRemoteService> _services = [];
     private readonly Dictionary<GattCharacteristicDefinition, MockRemoteCharacteristic> _characteristics = [];
+    private readonly Dictionary<GattDescriptorDefinition, MockRemoteDescriptor> _descriptors = [];
     private readonly HashSet<GattCharacteristicDefinition> _subscribed = [];
 
     // Fails the central's request that waits for the peripheral's answer; one at a time, as the core holds the ATT slot
@@ -68,12 +69,26 @@ internal sealed class MockLink
         }
     }
 
+    /// <summary> The central's object for a descriptor; the same one on every discovery, which the core runs one at a time </summary>
+    public MockRemoteDescriptor GetDescriptor(GattDescriptorDefinition definition)
+    {
+        if (!_descriptors.TryGetValue(definition, out MockRemoteDescriptor? descriptor))
+        {
+            descriptor = new MockRemoteDescriptor(this, definition);
+            _descriptors.Add(definition, descriptor);
+        }
+        return descriptor;
+    }
+
     /// <summary> The central reads; the peripheral's handler answers </summary>
-    public Task<byte[]> ReadAsync(GattCharacteristicDefinition characteristic) =>
-        CarryAsync(async () => await _peripheralSink.OnReadRequest(Peripheral, characteristic).ConfigureAwait(false));
+    public Task<byte[]> ReadAsync(GattAttributeDefinition characteristic) =>
+        CarryAsync(async () =>
+            // A transport copies what it sends; the central never shares the peripheral's buffer
+            (await _peripheralSink.OnReadRequest(Peripheral, characteristic).ConfigureAwait(false)).ToArray()
+        );
 
     /// <summary> The central writes with a write request; the peripheral's handler answers </summary>
-    public Task WriteAsync(GattCharacteristicDefinition characteristic, ReadOnlyMemory<byte> value) =>
+    public Task WriteAsync(GattAttributeDefinition characteristic, ReadOnlyMemory<byte> value) =>
         CarryAsync<object?>(async () =>
         {
             await _peripheralSink.OnWriteRequest(Peripheral, characteristic, value).ConfigureAwait(false);
