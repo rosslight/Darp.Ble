@@ -23,6 +23,9 @@ public sealed class ConnectedCentral
     );
     private DisconnectInfo? _ending;
 
+    // The characteristics this central turned notifications on for; empty for good once the connection ends
+    private readonly HashSet<GattCharacteristicDefinition> _subscriptions = [];
+
     // Hosted handlers of this central: one at a time, cancelled and awaited when the connection ends (D9)
     private readonly SemaphoreSlim _handlerTurn = new(1, 1);
     private readonly CancellationTokenSource _lifetime = new();
@@ -106,6 +109,26 @@ public sealed class ConnectedCentral
         }
     }
 
+    /// <summary> The central changed its CCCD; ignored once the connection ends, so a late callback cannot bring it back </summary>
+    internal void SetSubscribed(GattCharacteristicDefinition characteristic, bool enabled)
+    {
+        lock (_lock)
+        {
+            if (_ending is not null)
+                return;
+            if (enabled)
+                _subscriptions.Add(characteristic);
+            else
+                _subscriptions.Remove(characteristic);
+        }
+    }
+
+    internal bool IsSubscribed(GattCharacteristicDefinition characteristic)
+    {
+        lock (_lock)
+            return _subscriptions.Contains(characteristic);
+    }
+
     /// <summary> Runs a hosted handler for this central. An unexpected failure answers with <see cref="GattProtocolStatus.UnlikelyError"/> </summary>
     /// <remarks> Handlers of one central run one at a time; their token is cancelled when the connection ends </remarks>
     internal async Task<T> RunHandlerAsync<T>(Func<CancellationToken, ValueTask<T>> handler)
@@ -164,6 +187,7 @@ public sealed class ConnectedCentral
             if (_ending is not null)
                 return;
             _ending = info;
+            _subscriptions.Clear();
         }
         // No handler or notification starts from now on
         _handlers.Close();

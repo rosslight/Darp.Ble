@@ -152,6 +152,48 @@ public sealed class BlePeripheral
         }
     }
 
+    /// <summary> Notifies every central that turned notifications on; each independently, failures are logged and skipped </summary>
+    internal async ValueTask NotifyAllAsync(
+        GattCharacteristicDefinition characteristic,
+        ReadOnlyMemory<byte> value,
+        CancellationToken cancellationToken
+    )
+    {
+        ConnectedCentral[] recipients;
+        lock (_lock)
+            recipients = [.. _centrals.Values];
+        // Every central starts before any is awaited, so a slow one delays nobody
+        Task[] sends =
+        [
+            .. recipients
+                .Where(central => central.IsSubscribed(characteristic))
+                .Select(central => NotifyOneAsync(central, characteristic, value, cancellationToken)),
+        ];
+        await Task.WhenAll(sends).ConfigureAwait(false);
+    }
+
+    private async Task NotifyOneAsync(
+        ConnectedCentral central,
+        GattCharacteristicDefinition characteristic,
+        ReadOnlyMemory<byte> value,
+        CancellationToken cancellationToken
+    )
+    {
+        try
+        {
+            await central.NotifyAsync(characteristic, value, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            // One central's failure is not the caller's; the others still get theirs
+            _logger.LogNotifyAllCentralFailed(central.Address, e);
+        }
+    }
+
     internal ConnectedCentral? Find(ICentralConnectionDriver connection)
     {
         lock (_lock)

@@ -59,6 +59,7 @@ Darp.Ble.Backends.IGattServerSink
 Darp.Ble.Backends.IGattServerSink.OnCentralConnected(Darp.Ble.Backends.ICentralConnectionDriver! central) -> void
 Darp.Ble.Backends.IGattServerSink.OnCentralDisconnected(Darp.Ble.Backends.ICentralConnectionDriver! central, Darp.Ble.Connections.DisconnectInfo! info) -> void
 Darp.Ble.Backends.IGattServerSink.OnReadRequest(Darp.Ble.Backends.ICentralConnectionDriver! central, Darp.Ble.Backends.GattAttributeDefinition! attribute) -> System.Threading.Tasks.Task<byte[]!>!
+Darp.Ble.Backends.IGattServerSink.OnSubscriptionChanged(Darp.Ble.Backends.ICentralConnectionDriver! central, Darp.Ble.Backends.GattCharacteristicDefinition! characteristic, bool enabled) -> void
 Darp.Ble.Backends.IGattServerSink.OnWriteCommand(Darp.Ble.Backends.ICentralConnectionDriver! central, Darp.Ble.Backends.GattAttributeDefinition! attribute, System.ReadOnlyMemory<byte> value) -> void
 Darp.Ble.Backends.IGattServerSink.OnWriteRequest(Darp.Ble.Backends.ICentralConnectionDriver! central, Darp.Ble.Backends.GattAttributeDefinition! attribute, System.ReadOnlyMemory<byte> value) -> System.Threading.Tasks.Task!
 Darp.Ble.Backends.IObserverDriver
@@ -4207,6 +4208,7 @@ Darp.Ble.Gatt.LocalCharacteristic<TProp1>.Uuid.get -> Darp.Ble.Data.BleUuid!
 Darp.Ble.Gatt.LocalCharacteristicExtensions
 Darp.Ble.Gatt.LocalGattCharacteristic
 Darp.Ble.Gatt.LocalGattCharacteristic.AddDescriptor(Darp.Ble.Data.BleUuid! uuid, Darp.Ble.Gatt.OnReadHandler? onRead = null, Darp.Ble.Gatt.OnWriteHandler? onWrite = null) -> Darp.Ble.Gatt.LocalGattDescriptor!
+Darp.Ble.Gatt.LocalGattCharacteristic.NotifyAllAsync(System.ReadOnlyMemory<byte> value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
 Darp.Ble.Gatt.LocalGattCharacteristic.NotifyAsync(Darp.Ble.Connections.ConnectedCentral! central, System.ReadOnlyMemory<byte> value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
 Darp.Ble.Gatt.LocalGattCharacteristic.Properties.get -> Darp.Ble.Gatt.GattProperty
 Darp.Ble.Gatt.LocalGattCharacteristic.Uuid.get -> Darp.Ble.Data.BleUuid!
@@ -4434,6 +4436,10 @@ static Darp.Ble.Gatt.DescriptorDeclaration.CharacteristicUserDescription.get -> 
 static Darp.Ble.Gatt.DescriptorDeclaration.ClientCharacteristicConfiguration.get -> Darp.Ble.Gatt.DescriptorDeclaration!
 static Darp.Ble.Gatt.DescriptorDeclaration.ServerCharacteristicConfiguration.get -> Darp.Ble.Gatt.DescriptorDeclaration!
 static Darp.Ble.Gatt.GattClientExtensions.DiscoverServiceAsync(this Darp.Ble.Gatt.GattClient! gatt, Darp.Ble.Gatt.ServiceDeclaration! declaration, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gatt.RemoteGattService!>!
+static Darp.Ble.Gatt.LocalCharacteristicExtensions.NotifyAllAsync(this Darp.Ble.Gatt.ILocalCharacteristic<Darp.Ble.Gatt.Properties.Notify!>! characteristic, System.ReadOnlyMemory<byte> value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+static Darp.Ble.Gatt.LocalCharacteristicExtensions.NotifyAllAsync<T, TOther>(this Darp.Ble.Gatt.ITypedLocalCharacteristic<T, Darp.Ble.Gatt.Properties.Notify!, TOther>! characteristic, T value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+static Darp.Ble.Gatt.LocalCharacteristicExtensions.NotifyAllAsync<T, TOther>(this Darp.Ble.Gatt.ITypedLocalCharacteristic<T, TOther, Darp.Ble.Gatt.Properties.Notify!>! characteristic, T value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+static Darp.Ble.Gatt.LocalCharacteristicExtensions.NotifyAllAsync<T>(this Darp.Ble.Gatt.ITypedLocalCharacteristic<T, Darp.Ble.Gatt.Properties.Notify!>! characteristic, T value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
 static Darp.Ble.Gatt.LocalCharacteristicExtensions.NotifyAsync(this Darp.Ble.Gatt.ILocalCharacteristic<Darp.Ble.Gatt.Properties.Notify!>! characteristic, Darp.Ble.Connections.ConnectedCentral! central, System.ReadOnlyMemory<byte> value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
 static Darp.Ble.Gatt.LocalCharacteristicExtensions.NotifyAsync<T, TOther>(this Darp.Ble.Gatt.ITypedLocalCharacteristic<T, Darp.Ble.Gatt.Properties.Notify!, TOther>! characteristic, Darp.Ble.Connections.ConnectedCentral! central, T value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
 static Darp.Ble.Gatt.LocalCharacteristicExtensions.NotifyAsync<T, TOther>(this Darp.Ble.Gatt.ITypedLocalCharacteristic<T, TOther, Darp.Ble.Gatt.Properties.Notify!>! characteristic, Darp.Ble.Connections.ConnectedCentral! central, T value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask

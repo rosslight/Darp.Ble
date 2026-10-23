@@ -15,6 +15,16 @@ public interface IGattServerSink
     /// <param name="info"> Why it ended </param>
     void OnCentralDisconnected(ICentralConnectionDriver central, DisconnectInfo info);
 
+    /// <summary> A central turned notifications of a characteristic on or off, through its CCCD; per connection, reset when it reconnects </summary>
+    /// <param name="central"> The connection of the central </param>
+    /// <param name="characteristic"> The characteristic, as published </param>
+    /// <param name="enabled"> Whether notifications are on now </param>
+    void OnSubscriptionChanged(
+        ICentralConnectionDriver central,
+        GattCharacteristicDefinition characteristic,
+        bool enabled
+    );
+
     /// <summary> A central reads a hosted characteristic or descriptor. The core runs the app's handler off the driver's thread </summary>
     /// <param name="central"> The connection of the central </param>
     /// <param name="attribute"> The characteristic or descriptor, as published </param>

@@ -76,6 +76,74 @@ public static class LocalCharacteristicExtensions
         where TOther : IBleProperty =>
         NotifyCoreAsync(characteristic, characteristic?.Declaration, central, value, cancellationToken);
 
+    /// <inheritdoc cref="LocalGattCharacteristic.NotifyAllAsync" />
+    /// <param name="characteristic"> The characteristic </param>
+    /// <param name="value"> The value; the caller may reuse the buffer once the task completed </param>
+    /// <param name="cancellationToken"> Cancels waiting to send; once the backend accepted a notification, only the wait ends </param>
+    public static ValueTask NotifyAllAsync(
+        this ILocalCharacteristic<Properties.Notify> characteristic,
+        ReadOnlyMemory<byte> value,
+        CancellationToken cancellationToken = default
+    )
+    {
+        ArgumentNullException.ThrowIfNull(characteristic);
+        return characteristic.Characteristic.NotifyAllAsync(value, cancellationToken);
+    }
+
+    /// <summary> Encodes the value and notifies every central that turned notifications on, each independently </summary>
+    /// <param name="characteristic"> The characteristic </param>
+    /// <param name="value"> The value </param>
+    /// <param name="cancellationToken"> Cancels waiting to send; once the backend accepted a notification, only the wait ends </param>
+    /// <typeparam name="T"> The type of the value </typeparam>
+    /// <returns> A task that completes once every central's notification was accepted or skipped </returns>
+    public static ValueTask NotifyAllAsync<T>(
+        this ITypedLocalCharacteristic<T, Properties.Notify> characteristic,
+        T value,
+        CancellationToken cancellationToken = default
+    ) => NotifyAllCoreAsync(characteristic, characteristic?.Declaration, value, cancellationToken);
+
+    /// <summary> Encodes the value and notifies every central that turned notifications on, each independently </summary>
+    /// <param name="characteristic"> The characteristic </param>
+    /// <param name="value"> The value </param>
+    /// <param name="cancellationToken"> Cancels waiting to send; once the backend accepted a notification, only the wait ends </param>
+    /// <typeparam name="T"> The type of the value </typeparam>
+    /// <typeparam name="TOther"> The other property marker </typeparam>
+    /// <returns> A task that completes once every central's notification was accepted or skipped </returns>
+    public static ValueTask NotifyAllAsync<T, TOther>(
+        this ITypedLocalCharacteristic<T, Properties.Notify, TOther> characteristic,
+        T value,
+        CancellationToken cancellationToken = default
+    )
+        where TOther : IBleProperty =>
+        NotifyAllCoreAsync(characteristic, characteristic?.Declaration, value, cancellationToken);
+
+    /// <summary> Encodes the value and notifies every central that turned notifications on, each independently </summary>
+    /// <param name="characteristic"> The characteristic </param>
+    /// <param name="value"> The value </param>
+    /// <param name="cancellationToken"> Cancels waiting to send; once the backend accepted a notification, only the wait ends </param>
+    /// <typeparam name="T"> The type of the value </typeparam>
+    /// <typeparam name="TOther"> The other property marker </typeparam>
+    /// <returns> A task that completes once every central's notification was accepted or skipped </returns>
+    public static ValueTask NotifyAllAsync<T, TOther>(
+        this ITypedLocalCharacteristic<T, TOther, Properties.Notify> characteristic,
+        T value,
+        CancellationToken cancellationToken = default
+    )
+        where TOther : IBleProperty =>
+        NotifyAllCoreAsync(characteristic, characteristic?.Declaration, value, cancellationToken);
+
+    private static ValueTask NotifyAllCoreAsync<T>(
+        ILocalCharacteristic? characteristic,
+        IGattTypedCharacteristic<T>? declaration,
+        T value,
+        CancellationToken cancellationToken
+    )
+    {
+        ArgumentNullException.ThrowIfNull(characteristic);
+        ArgumentNullException.ThrowIfNull(declaration);
+        return characteristic.Characteristic.NotifyAllAsync(declaration.Encode(value), cancellationToken);
+    }
+
     private static ValueTask NotifyCoreAsync<T>(
         ILocalCharacteristic? characteristic,
         IGattTypedCharacteristic<T>? declaration,

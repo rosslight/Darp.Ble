@@ -85,16 +85,29 @@ public sealed class LocalGattCharacteristic : IHostedAttribute
     )
     {
         ArgumentNullException.ThrowIfNull(central);
+        BlePeripheral host = EnsureCanNotify();
+        if (!ReferenceEquals(central.Peripheral, host))
+            throw new InvalidOperationException("The central is connected to another adapter");
+        return central.NotifyAsync(Definition, value, cancellationToken);
+    }
+
+    /// <summary> Notifies every central that turned notifications on, each independently </summary>
+    /// <param name="value"> The value; the caller may reuse the buffer once the task completed </param>
+    /// <param name="cancellationToken"> Cancels waiting to send; once the backend accepted a notification, only the wait ends </param>
+    /// <returns> A task that completes once the backend accepted the notification for every central; a central whose
+    /// notification failed, e.g. because it disconnected, is logged and skipped </returns>
+    /// <exception cref="InvalidOperationException"> The characteristic does not notify or is not published </exception>
+    public ValueTask NotifyAllAsync(ReadOnlyMemory<byte> value, CancellationToken cancellationToken = default) =>
+        EnsureCanNotify().NotifyAllAsync(Definition, value, cancellationToken);
+
+    private BlePeripheral EnsureCanNotify()
+    {
         if (!Properties.HasFlag(GattProperty.Notify))
             throw new InvalidOperationException($"The characteristic {Uuid} does not notify");
         BlePeripheral? host;
         lock (_lock)
             host = _isLive ? _host : null;
-        if (host is null)
-            throw new InvalidOperationException($"The characteristic {Uuid} is not published");
-        if (!ReferenceEquals(central.Peripheral, host))
-            throw new InvalidOperationException("The central is connected to another adapter");
-        return central.NotifyAsync(Definition, value, cancellationToken);
+        return host ?? throw new InvalidOperationException($"The characteristic {Uuid} is not published");
     }
 
     /// <summary> A publication with the characteristic starts on this peripheral </summary>
