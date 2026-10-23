@@ -28,10 +28,11 @@ public sealed class HciTransportFailedEventArgs(Exception exception) : EventArgs
 /// <param name="hciDevice">The owning HCI device.</param>
 /// <param name="transportLayer">The transport used to exchange packets with the controller.</param>
 /// <param name="logger">An optional logger.</param>
-[MessageSource]
 public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transportLayer, ILogger<HciHost>? logger)
-    : IDisposable
+    : IMessageSource,
+        IDisposable
 {
+    private readonly MessageSinks _sinks = new();
     private readonly ITransportLayer _transportLayer = transportLayer;
     private readonly ILogger<HciHost>? _logger = logger;
     private readonly SemaphoreSlim _packetInFlightSemaphore = new(1);
@@ -393,6 +394,12 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
     }
 
     /// <inheritdoc />
+    /// <inheritdoc />
+    public IDisposable Subscribe(IMessageSink sink) => _sinks.Subscribe(sink);
+
+    private void PublishMessage<T>(in T message)
+        where T : allows ref struct => _sinks.Publish(message);
+
     public void Dispose()
     {
         _packetInFlightSemaphore.Dispose();
