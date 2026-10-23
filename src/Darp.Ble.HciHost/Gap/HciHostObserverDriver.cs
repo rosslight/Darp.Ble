@@ -3,7 +3,6 @@ using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Darp.Ble.Hci;
 using Darp.Ble.Hci.Host;
-using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.Hci.Payload.Result;
@@ -43,20 +42,20 @@ internal sealed partial class HciHostObserverDriver : IObserverDriver, IDisposab
             _sink = sink;
         try
         {
-            HciSetExtendedScanParametersResult parametersResult = await _device
-                .Host.QueryCommandCompletionAsync<
-                    HciLeSetExtendedScanParametersCommand,
-                    HciSetExtendedScanParametersResult
-                >(scanParameters, cancellationToken)
-                .ConfigureAwait(false);
-            ThrowIfFailed(parametersResult.Status, "set the scan parameters");
-            HciSetExtendedScanEnableResult enableResult = await _device
-                .Host.QueryCommandCompletionAsync<HciLeSetExtendedScanEnableCommand, HciSetExtendedScanEnableResult>(
-                    Enable(enabled: true),
+            await _device
+                .RunAsync<HciLeSetExtendedScanParametersCommand, HciSetExtendedScanParametersResult>(
+                    scanParameters,
+                    "set the scan parameters",
                     cancellationToken
                 )
                 .ConfigureAwait(false);
-            ThrowIfFailed(enableResult.Status, "start scanning");
+            await _device
+                .RunAsync<HciLeSetExtendedScanEnableCommand, HciSetExtendedScanEnableResult>(
+                    Enable(enabled: true),
+                    "start scanning",
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
         }
         catch
         {
@@ -138,12 +137,6 @@ internal sealed partial class HciHostObserverDriver : IObserverDriver, IDisposab
             Duration = 0x0000,
             Period = 0x0000,
         };
-
-    private static void ThrowIfFailed(HciCommandStatus status, string action)
-    {
-        if (status is not HciCommandStatus.Success)
-            throw new BleException($"The controller could not {action}: {status}", false, (int)status, null);
-    }
 
     public void Dispose()
     {

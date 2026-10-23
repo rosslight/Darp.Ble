@@ -141,5 +141,31 @@
     EventCode: HCI_Command_Complete,
     CommandOpCode: HCI_LE_Set_Random_Address,
     PduBytes: 040E0401052000
+  },
+  {
+    Direction: HostToController,
+    Type: HciCommand,
+    OpCode: HCI_LE_READ_MAXIMUM_ADVERTISING_DATA_LENGTH,
+    PduBytes: 013A2000
+  },
+  {
+    Direction: ControllerToHost,
+    Type: HciEvent,
+    EventCode: HCI_Command_Complete,
+    CommandOpCode: HCI_LE_READ_MAXIMUM_ADVERTISING_DATA_LENGTH,
+    PduBytes: 040E06013A2000FB00
+  },
+  {
+    Direction: HostToController,
+    Type: HciCommand,
+    OpCode: HCI_LE_Read_Number_Of_Supported_Advertising_Sets,
+    PduBytes: 013B2000
+  },
+  {
+    Direction: ControllerToHost,
+    Type: HciEvent,
+    EventCode: HCI_Command_Complete,
+    CommandOpCode: HCI_LE_Read_Number_Of_Supported_Advertising_Sets,
+    PduBytes: 040E05013B200004
   }
 ]
