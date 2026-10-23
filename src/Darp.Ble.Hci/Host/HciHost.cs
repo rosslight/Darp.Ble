@@ -33,6 +33,8 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
         IDisposable
 {
     private readonly MessageSinks _sinks = new();
+    private readonly CancellationTokenSource _transportGone = new();
+    private Exception? _transportFailure;
     private readonly ITransportLayer _transportLayer = transportLayer;
     private readonly ILogger<HciHost>? _logger = logger;
     private readonly SemaphoreSlim _packetInFlightSemaphore = new(1);
@@ -249,11 +251,19 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
         }
     }
 
+    /// <summary> Cancelled when the transport failed; nothing the controller would answer arrives any more </summary>
+    internal CancellationToken TransportGone => _transportGone.Token;
+
+    /// <summary> Why the transport failed, once it did </summary>
+    internal Exception? TransportFailure => Volatile.Read(ref _transportFailure);
+
     private void OnTransportFailed(Exception exception)
     {
+        Volatile.Write(ref _transportFailure, exception);
         // The owners of the links learn about it before anything waiting on the transport fails
         TransportFailed?.Invoke(this, new HciTransportFailedEventArgs(exception));
         _leAclPacketQueue?.Close(exception);
+        _transportGone.Cancel();
     }
 
     private void OnReceivedHciEventPacket(HciPacketEvent packet)
@@ -404,6 +414,7 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
 
     public void Dispose()
     {
+        _transportGone.Dispose();
         _packetInFlightSemaphore.Dispose();
     }
 }

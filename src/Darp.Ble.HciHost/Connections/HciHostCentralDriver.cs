@@ -5,9 +5,7 @@ using Darp.Ble.Hci;
 using Darp.Ble.Hci.Host;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Command;
-using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.Hci.Payload.Result;
-using Darp.Utils.Messaging;
 
 namespace Darp.Ble.HciHost.Connections;
 
@@ -50,26 +48,7 @@ internal sealed class HciHostCentralDriver(HciDevice device) : ICentralDriver
         try
         {
             using var attempt = new ConnectAttempt(_device, sink, address);
-            HciCommandStatus status = await _device
-                .Host.QueryCommandStatusAsync(
-                    new HciLeExtendedCreateConnectionV1Command
-                    {
-                        InitiatorFilterPolicy = 0x00,
-                        OwnAddressType = 0x01,
-                        PeerAddressType = (byte)address.Type,
-                        PeerAddress = address.Value.ToUInt64(),
-                        InitiatingPhys = 0b1,
-                        ScanInterval = 96,
-                        ScanWindow = 96,
-                        ConnectionIntervalMin = interval,
-                        ConnectionIntervalMax = interval,
-                        MaxLatency = 0,
-                        SupervisionTimeout = supervisionTimeout,
-                        MinCeLength = 0,
-                        MaxCeLength = 0,
-                    },
-                    cancellationToken
-                )
+            HciCommandStatus status = await StartAsync(address, interval, supervisionTimeout, cancellationToken)
                 .ConfigureAwait(false);
             if (status is not HciCommandStatus.Success)
             {
@@ -94,6 +73,56 @@ internal sealed class HciHostCentralDriver(HciDevice device) : ICentralDriver
         finally
         {
             _attempts.Release();
+        }
+    }
+
+    /// <summary> Asks the controller to connect; a broken or silent controller is a connect error </summary>
+    private async Task<HciCommandStatus> StartAsync(
+        BleAddress address,
+        ushort interval,
+        ushort supervisionTimeout,
+        CancellationToken cancellationToken
+    )
+    {
+        try
+        {
+            return await _device
+                .Host.QueryCommandStatusAsync(
+                    new HciLeExtendedCreateConnectionV1Command
+                    {
+                        InitiatorFilterPolicy = 0x00,
+                        OwnAddressType = 0x01,
+                        PeerAddressType = (byte)address.Type,
+                        PeerAddress = address.Value.ToUInt64(),
+                        InitiatingPhys = 0b1,
+                        ScanInterval = 96,
+                        ScanWindow = 96,
+                        ConnectionIntervalMin = interval,
+                        ConnectionIntervalMax = interval,
+                        MaxLatency = 0,
+                        SupervisionTimeout = supervisionTimeout,
+                        MinCeLength = 0,
+                        MaxCeLength = 0,
+                    },
+                    cancellationToken
+                )
+                .ConfigureAwait(false);
+        }
+        catch (TimeoutException e)
+        {
+            throw new BleConnectException(
+                BleConnectErrorKind.TimedOut,
+                "The controller did not answer the connect command",
+                innerException: e
+            );
+        }
+        catch (Hci.Exceptions.HciException e)
+        {
+            throw new BleConnectException(
+                BleConnectErrorKind.Unreachable,
+                "The controller could not start connecting",
+                innerException: e
+            );
         }
     }
 
