@@ -72,10 +72,12 @@ internal sealed class AttClient(AclConnection connection)
         }
         // The answer is awaited before the request leaves, so an early answer cannot be missed
         using IDisposable subscription = _connection.Assembler.Subscribe(pending);
-        gattRequest.OnTransactionSent();
-        _connection.EnqueueGattPacket(request, activity: null);
         try
         {
+            // The transaction counts as sent once the controller has a buffer for it; until then the caller may cancel
+            await _connection
+                .SendGattPacketAsync(request, gattRequest.OnTransactionSent, gattRequest.HandOffToken)
+                .ConfigureAwait(false);
             return await pending.Task.ConfigureAwait(false);
         }
         finally

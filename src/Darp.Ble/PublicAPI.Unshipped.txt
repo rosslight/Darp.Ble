@@ -11,6 +11,7 @@ Darp.Ble.Backends.GattCharacteristicDefinition.Properties.get -> Darp.Ble.Gatt.G
 Darp.Ble.Backends.GattDescriptorDefinition
 Darp.Ble.Backends.GattDescriptorDefinition.StaticValue.get -> System.ReadOnlyMemory<byte>?
 Darp.Ble.Backends.GattRequest
+Darp.Ble.Backends.GattRequest.ConnectionClosedToken.get -> System.Threading.CancellationToken
 Darp.Ble.Backends.GattRequest.HandOffToken.get -> System.Threading.CancellationToken
 Darp.Ble.Backends.GattRequest.IsAbandoned.get -> bool
 Darp.Ble.Backends.GattRequest.OnTransactionAnswered() -> void

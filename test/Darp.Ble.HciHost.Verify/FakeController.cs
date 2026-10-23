@@ -155,6 +155,22 @@ public sealed class FakeController : ITransportLayer
         return delivered.Task;
     }
 
+    /// <summary> Reports ACL packets of a link as sent, which frees the controller's buffers </summary>
+    public Task CompletePacketsAsync(ushort connectionHandle, ushort count = 1) =>
+        PushAsync(HciMessages.HciNumberOfCompletedPacketsEvent(connectionHandle, count));
+
+    /// <summary> The ACL packets the host sent since the last <see cref="StartRecording"/>, by link, in order </summary>
+    public IReadOnlyList<(ushort Handle, byte[] Packet)> AclPackets =>
+        [
+            .. Messages
+                .Where(message =>
+                    message is { Direction: HciDirection.HostToController, Type: HciPacketType.HciAclData }
+                )
+                .Select(message =>
+                    ((ushort)(BinaryPrimitives.ReadUInt16LittleEndian(message.PduBytes) & 0x0FFF), message.PduBytes)
+                ),
+        ];
+
     /// <summary> The next ACL packet the host sent </summary>
     public ValueTask<HciMessage> ReadAclAsync(CancellationToken cancellationToken) =>
         _aclToController.Reader.ReadAsync(cancellationToken);

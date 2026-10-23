@@ -1,7 +1,6 @@
 #nullable enable
 Darp.Ble.Hci.AclConnection
 Darp.Ble.Hci.AclConnection.AclConnection(Darp.Ble.Hci.HciDevice! device, ushort connectionHandle, Darp.Ble.Hci.Payload.Command.UInt48 address, Darp.Ble.Hci.Payload.Command.UInt48 peerAddress, Darp.Ble.Hci.Payload.Event.HciLeConnectionRole role, Darp.Ble.Hci.AclConnectionParameters parameters, Microsoft.Extensions.Logging.ILoggerFactory? loggerFactory) -> void
-Darp.Ble.Hci.AclConnection.AclPacketQueue.get -> Darp.Ble.Hci.IAclPacketQueue!
 Darp.Ble.Hci.AclConnection.Address.get -> Darp.Ble.Hci.Payload.Command.UInt48
 Darp.Ble.Hci.AclConnection.Assembler.get -> Darp.Ble.Hci.L2CapAssembler!
 Darp.Ble.Hci.AclConnection.AttMtu.get -> ushort
@@ -11,7 +10,6 @@ Darp.Ble.Hci.AclConnection.Device.get -> Darp.Ble.Hci.HciDevice!
 Darp.Ble.Hci.AclConnection.DisconnectAsync(Darp.Ble.Hci.Payload.HciCommandStatus reason = Darp.Ble.Hci.Payload.HciCommandStatus.RemoteUserTerminatedConnection, System.Threading.CancellationToken token = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Darp.Ble.Hci.AclConnection.DisconnectToken.get -> System.Threading.CancellationToken
 Darp.Ble.Hci.AclConnection.Dispose() -> void
-Darp.Ble.Hci.AclConnection.GattClient.get -> Darp.Ble.Hci.Host.GattClient!
 Darp.Ble.Hci.AclConnection.GattServer.get -> Darp.Ble.Hci.Host.GattServer!
 Darp.Ble.Hci.AclConnection.LastDisconnectionReason.get -> Darp.Ble.Hci.Payload.HciCommandStatus?
 Darp.Ble.Hci.AclConnection.Parameters.get -> Darp.Ble.Hci.AclConnectionParameters
@@ -109,12 +107,9 @@ Darp.Ble.Hci.HciSettings.CommandTimeout.get -> System.TimeSpan
 Darp.Ble.Hci.HciSettings.CommandTimeout.init -> void
 Darp.Ble.Hci.HciSettings.Equals(Darp.Ble.Hci.HciSettings? other) -> bool
 Darp.Ble.Hci.HciSettings.HciSettings() -> void
-Darp.Ble.Hci.Host.GattClient
-Darp.Ble.Hci.Host.GattClient.GattClient(Darp.Ble.Hci.AclConnection! connection) -> void
 Darp.Ble.Hci.Host.GattServer
 Darp.Ble.Hci.Host.GattServer.GattServer(Darp.Ble.Hci.HciDevice! device, Microsoft.Extensions.Logging.ILogger<Darp.Ble.Hci.Host.GattServer!>? logger) -> void
 Darp.Ble.Hci.Host.HciHost
-Darp.Ble.Hci.Host.HciHost.AclPacketQueue.get -> Darp.Ble.Hci.IAclPacketQueue!
 Darp.Ble.Hci.Host.HciHost.Device.get -> Darp.Ble.Hci.HciDevice!
 Darp.Ble.Hci.Host.HciHost.Dispose() -> void
 Darp.Ble.Hci.Host.HciHost.HciHost(Darp.Ble.Hci.HciDevice! hciDevice, Darp.Ble.Hci.Transport.ITransportLayer! transportLayer, Microsoft.Extensions.Logging.ILogger<Darp.Ble.Hci.Host.HciHost!>? logger) -> void
@@ -128,18 +123,6 @@ Darp.Ble.Hci.Host.HciHostExtensions
 Darp.Ble.Hci.Host.HciTransportFailedEventArgs
 Darp.Ble.Hci.Host.HciTransportFailedEventArgs.Exception.get -> System.Exception!
 Darp.Ble.Hci.Host.HciTransportFailedEventArgs.HciTransportFailedEventArgs(System.Exception! exception) -> void
-Darp.Ble.Hci.IAclConnection
-Darp.Ble.Hci.IAclConnection.AclPacketQueue.get -> Darp.Ble.Hci.IAclPacketQueue!
-Darp.Ble.Hci.IAclConnection.AttMtu.get -> ushort
-Darp.Ble.Hci.IAclConnection.ClientAddress.get -> ulong
-Darp.Ble.Hci.IAclConnection.ConnectionHandle.get -> ushort
-Darp.Ble.Hci.IAclConnection.DisconnectToken.get -> System.Threading.CancellationToken
-Darp.Ble.Hci.IAclConnection.Host.get -> Darp.Ble.Hci.Host.HciHost!
-Darp.Ble.Hci.IAclConnection.L2CapAssembler.get -> Darp.Ble.Hci.IL2CapAssembler!
-Darp.Ble.Hci.IAclConnection.ServerAddress.get -> ulong
-Darp.Ble.Hci.IAclPacketQueue
-Darp.Ble.Hci.IAclPacketQueue.Enqueue(Darp.Ble.Hci.Package.HciAclPacket aclPacket) -> void
-Darp.Ble.Hci.IAclPacketQueue.MaxPacketSize.get -> ushort
 Darp.Ble.Hci.IL2CapAssembler
 Darp.Ble.Hci.IL2CapAssembler.OnAclPacket(Darp.Ble.Hci.Package.HciAclPacket packet) -> void
 Darp.Ble.Hci.L2CapAssembler
@@ -1734,7 +1717,7 @@ override Darp.Ble.Hci.Payload.Result.HciSetExtendedScanParametersResult.GetHashC
 static Darp.Ble.Hci.AclConnectionExtensions.EnqueueGattErrorResponse(this Darp.Ble.Hci.AclConnection! connection, Darp.Ble.Hci.Payload.Att.AttOpCode requestOpCode, ushort handle, Darp.Ble.Hci.Payload.Att.AttErrorCode errorCode, System.Diagnostics.Activity? activity) -> void
 static Darp.Ble.Hci.AclConnectionExtensions.EnqueueGattErrorResponse(this Darp.Ble.Hci.AclConnection! connection, System.Exception? exception, Darp.Ble.Hci.Payload.Att.AttOpCode requestOpCode, ushort handle, Darp.Ble.Hci.Payload.Att.AttErrorCode errorCode, System.Diagnostics.Activity? activity) -> void
 static Darp.Ble.Hci.AclConnectionExtensions.EnqueueGattPacket<TAttPdu>(this Darp.Ble.Hci.AclConnection! connection, TAttPdu attPdu, System.Diagnostics.Activity? activity) -> void
-static Darp.Ble.Hci.AclConnectionExtensions.QueryAttPduAsync<TAttRequest, TResponse>(this Darp.Ble.Hci.AclConnection! connection, TAttRequest request, System.TimeSpan? timeout = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Hci.AttResponse<TResponse>>!
+static Darp.Ble.Hci.AclConnectionExtensions.SendGattPacketAsync<TAttPdu>(this Darp.Ble.Hci.AclConnection! connection, TAttPdu attPdu, System.Action? onHandOff, System.Threading.CancellationToken cancellationToken, System.Threading.CancellationToken released = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
 static Darp.Ble.Hci.AclConnectionParameters.operator !=(Darp.Ble.Hci.AclConnectionParameters left, Darp.Ble.Hci.AclConnectionParameters right) -> bool
 static Darp.Ble.Hci.AclConnectionParameters.operator ==(Darp.Ble.Hci.AclConnectionParameters left, Darp.Ble.Hci.AclConnectionParameters right) -> bool
 static Darp.Ble.Hci.AttResponse<T>.ExpectedOpCode.get -> Darp.Ble.Hci.Payload.Att.AttOpCode

@@ -20,9 +20,16 @@ public sealed class GattRequest
     private bool _abandoned;
     private bool _completed;
 
-    private GattRequest(RequestQueue queue, object? turn, long startedAt, CancellationTokenSource? handOff)
+    private GattRequest(
+        RequestQueue queue,
+        object? turn,
+        long startedAt,
+        CancellationTokenSource? handOff,
+        CancellationToken connectionClosed
+    )
     {
         _queue = queue;
+        ConnectionClosedToken = connectionClosed;
         Turn = turn;
         StartedAt = startedAt;
         _handOff = handOff;
@@ -31,6 +38,10 @@ public sealed class GattRequest
     /// <summary> The caller's cancellation until the backend accepted the operation's first packet </summary>
     /// <remarks> Pass it to waits before sending, e.g. for buffer space. Never pass it to a transaction the backend accepted </remarks>
     public CancellationToken HandOffToken => _handOff?.Token ?? _callerToken;
+
+    /// <summary> Cancelled when the connection ends </summary>
+    /// <remarks> A request's <see cref="HandOffToken"/> includes it. A write without response waits for buffer space on both tokens, so the end of its connection does not wait for buffers that never free up </remarks>
+    public CancellationToken ConnectionClosedToken { get; }
 
     /// <summary> Whether the caller gave up after the request's first transaction was sent </summary>
     /// <remarks> The caller already saw the cancellation. A request with several transactions checks it before each further one </remarks>
@@ -71,10 +82,18 @@ public sealed class GattRequest
         object turn,
         long startedAt,
         CancellationToken connectionClosed
-    ) => new(queue, turn, startedAt, CancellationTokenSource.CreateLinkedTokenSource(connectionClosed));
+    ) =>
+        new(
+            queue,
+            turn,
+            startedAt,
+            CancellationTokenSource.CreateLinkedTokenSource(connectionClosed),
+            connectionClosed
+        );
 
     /// <summary> The one object a connection reuses for its writes without response, which reach the driver one at a time </summary>
-    internal static GattRequest ForCommands(RequestQueue queue) => new(queue, turn: null, startedAt: 0, handOff: null);
+    internal static GattRequest ForCommands(RequestQueue queue, CancellationToken connectionClosed) =>
+        new(queue, turn: null, startedAt: 0, handOff: null, connectionClosed);
 
     /// <summary> A write without response with this caller's token reaches the driver </summary>
     internal void PrepareCommand(CancellationToken callerToken) => _callerToken = callerToken;

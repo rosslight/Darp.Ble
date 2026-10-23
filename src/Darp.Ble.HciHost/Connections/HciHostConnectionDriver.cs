@@ -107,9 +107,13 @@ internal sealed partial class HciHostConnectionDriver : IConnectionDriver
     public ValueTask WriteCommandAsync(ushort handle, ReadOnlyMemory<byte> value, GattRequest request)
     {
         CheckLength(value);
-        request.HandOffToken.ThrowIfCancellationRequested();
-        _connection.EnqueueGattPacket(new AttWriteCmd { Handle = handle, Value = value }, activity: null);
-        return ValueTask.CompletedTask;
+        // Completes once the controller has a buffer for the command, which paces a loop of writes (D8)
+        return _connection.SendGattPacketAsync(
+            new AttWriteCmd { Handle = handle, Value = value },
+            onHandOff: null,
+            request.HandOffToken,
+            request.ConnectionClosedToken
+        );
     }
 
     private async Task<byte[]> ReadCoreAsync(ushort handle, GattRequest request)

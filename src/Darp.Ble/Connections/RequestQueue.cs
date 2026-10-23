@@ -76,7 +76,7 @@ internal sealed class RequestQueue
         _timeProvider = timeProvider;
         _end = end;
         _logger = logger;
-        _commandRequest = GattRequest.ForCommands(this);
+        _commandRequest = GattRequest.ForCommands(this, _closed.Token);
         _timer = timeProvider.CreateTimer(
             _ => OnTimer(),
             state: null,

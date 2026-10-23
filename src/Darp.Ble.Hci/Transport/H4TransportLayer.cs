@@ -27,7 +27,11 @@ public sealed class H4TransportLayer(string portName, ILogger<H4TransportLayer>?
 {
     private readonly ILogger<H4TransportLayer>? _logger = logger;
     private readonly SerialPort _serialPort = new(portName);
-    private readonly Channel<IHciPacket> _txQueue = Channel.CreateUnbounded<IHciPacket>();
+
+    // Each packet is serialized into a pooled array when it is queued, so the caller may reuse its buffers at once
+    private readonly Channel<(byte[] Bytes, int Length)> _txQueue = Channel.CreateUnbounded<(byte[], int)>(
+        new UnboundedChannelOptions { SingleReader = true }
+    );
     private readonly CancellationTokenSource _cancelSource = new();
     private Action<Exception>? _onError;
     private bool _isDisposing;
@@ -86,19 +90,10 @@ public sealed class H4TransportLayer(string portName, ILogger<H4TransportLayer>?
         {
             while (!StopToken.IsCancellationRequested)
             {
-                IHciPacket packet = await _txQueue.Reader.ReadAsync(StopToken).ConfigureAwait(false);
-                int packetLength = 1 + packet.GetByteCount();
-                byte[] bytes = ArrayPool<byte>.Shared.Rent(packetLength);
-                Memory<byte> writeMemory = bytes.AsMemory(0, packetLength);
+                (byte[] bytes, int length) = await _txQueue.Reader.ReadAsync(StopToken).ConfigureAwait(false);
                 try
                 {
-                    writeMemory.Span[0] = (byte)packet.PacketType;
-                    if (!packet.TryWriteLittleEndian(writeMemory.Span[1..]))
-                    {
-                        _logger?.LogPacketSendingErrorEncoding(packet);
-                        continue;
-                    }
-                    await _serialPort.BaseStream.WriteAsync(writeMemory, StopToken).ConfigureAwait(false);
+                    await _serialPort.BaseStream.WriteAsync(bytes.AsMemory(0, length), StopToken).ConfigureAwait(false);
                 }
                 finally
                 {
@@ -128,11 +123,6 @@ public sealed class H4TransportLayer(string portName, ILogger<H4TransportLayer>?
         {
             while (!StopToken.IsCancellationRequested)
             {
-                if (!_serialPort.IsOpen)
-                {
-                    await Task.Delay(50, StopToken).ConfigureAwait(false);
-                    continue;
-                }
                 // Read Type
                 await _serialPort.BaseStream.ReadExactlyAsync(typeBuffer, StopToken).ConfigureAwait(false);
                 var type = (HciPacketType)typeBuffer.Span[0];
@@ -199,9 +189,20 @@ public sealed class H4TransportLayer(string portName, ILogger<H4TransportLayer>?
     /// <inheritdoc />
     public void Enqueue(IHciPacket packet)
     {
+        ArgumentNullException.ThrowIfNull(packet);
         ObjectDisposedException.ThrowIf(_isDisposing, this);
+        int length = 1 + packet.GetByteCount();
+        byte[] bytes = ArrayPool<byte>.Shared.Rent(length);
+        bytes[0] = (byte)packet.PacketType;
+        if (!packet.TryWriteLittleEndian(bytes.AsSpan(1, length - 1)))
+        {
+            ArrayPool<byte>.Shared.Return(bytes);
+            _logger?.LogPacketSendingErrorEncoding(packet);
+            return;
+        }
         // Writing to an unbounded channel should work, always
-        _ = _txQueue.Writer.TryWrite(packet);
+        if (!_txQueue.Writer.TryWrite((bytes, length)))
+            ArrayPool<byte>.Shared.Return(bytes);
     }
 
     /// <inheritdoc />
@@ -231,6 +232,9 @@ public sealed class H4TransportLayer(string portName, ILogger<H4TransportLayer>?
         // Dispose of the serial port and complete the writer
         _serialPort.Dispose();
         _txQueue.Writer.TryComplete();
+        // Packets that were never written still hold pooled arrays
+        while (_txQueue.Reader.TryRead(out (byte[] Bytes, int Length) unsent))
+            ArrayPool<byte>.Shared.Return(unsent.Bytes);
         _logger?.LogH4TransportDisposed();
     }
 }
