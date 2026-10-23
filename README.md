@@ -109,7 +109,9 @@ await foreach (byte[] value in stream)
 ### Host a service
 
 `adapter.Peripheral.AddServiceAsync(builder)` adds a complete service. `ConnectedCentrals` lists the centrals that are connected.
-Read and write handlers get the `ConnectedCentral` that asked and a token that is cancelled when its connection ends; the handlers of one central run one at a time. `NotifyAsync(central, value)` notifies one central.
+Read and write handlers get the `ConnectedCentral` that asked and a token that is cancelled when its connection ends; the handlers of one central run one at a time.
+Declarations work on this side too: a typed declaration decodes what centrals write and encodes what handlers return. `NotifyAsync(central, value)` notifies one central, `NotifyAllAsync(value)` every central that turned notifications on.
+`central.GetOrAddState(() => new Session())` keeps state for one connection and disposes it once the connection ended and its handlers returned.
 A connection stops the advertising set it came through; `StartAdvertisingAsync(..., autoRestart: true)` starts it again once that central disconnected.
 
 ```csharp
@@ -123,6 +125,10 @@ await using AdvertisingSet advertising = await adapter.Broadcaster.StartAdvertis
     interval: TimeSpan.FromMilliseconds(100),
     autoRestart: true);
 ```
+
+`adapter.Peripheral.DeviceName` and `Appearance` set what centrals read from the GAP service, which the backend serves itself.
+The mock also serves the GATT service: Service Changed tells centrals that turned it on when a service was added, and Database Hash changes with the services. `IncludeGattService = false` in its options leaves it out, e.g. to simulate a device without it.
+The library brings contracts for the battery, heart rate, device information and echo services, e.g. `AddBatteryServiceAsync()` on the peripheral side and `DiscoverBatteryServiceAsync()` on the central side; `RemoteEchoService.QueryOneAsync(request)` writes a request and returns the reply.
 
 ### Further Documentation
 
