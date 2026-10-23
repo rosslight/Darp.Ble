@@ -13,7 +13,7 @@ public sealed class BlePeripheral
     private readonly ILogger _logger;
     private readonly Lock _lock = new();
     private readonly Dictionary<ICentralConnectionDriver, ConnectedCentral> _centrals = [];
-    private readonly Dictionary<GattCharacteristicDefinition, LocalGattCharacteristic> _hosted = [];
+    private readonly Dictionary<GattAttributeDefinition, IHostedAttribute> _hosted = [];
     private bool _closed;
 
     // Set once disposal disconnected every central; a central reported later goes with the driver
@@ -74,58 +74,54 @@ public sealed class BlePeripheral
         central?.End(info, takeLinkDown: false);
     }
 
-    internal void Host(LocalGattCharacteristic[] characteristics)
+    internal void Host(IHostedAttribute[] attributes)
     {
         lock (_lock)
         {
-            foreach (LocalGattCharacteristic characteristic in characteristics)
+            foreach (IHostedAttribute attribute in attributes)
             {
-                _hosted.Add(characteristic.Definition, characteristic);
-                characteristic.Bind(this);
+                _hosted.Add(attribute.Definition, attribute);
+                (attribute as LocalGattCharacteristic)?.Bind(this);
             }
         }
     }
 
-    internal void Unhost(LocalGattCharacteristic[] characteristics)
+    internal void Unhost(IHostedAttribute[] attributes)
     {
         lock (_lock)
         {
-            foreach (LocalGattCharacteristic characteristic in characteristics)
+            foreach (IHostedAttribute attribute in attributes)
             {
-                _hosted.Remove(characteristic.Definition);
-                characteristic.Unbind();
+                _hosted.Remove(attribute.Definition);
+                (attribute as LocalGattCharacteristic)?.Unbind();
             }
         }
     }
 
     internal async Task<byte[]> OnReadRequestAsync(
         ICentralConnectionDriver connection,
-        GattCharacteristicDefinition definition
+        GattAttributeDefinition definition
     )
     {
-        (ConnectedCentral central, LocalGattCharacteristic characteristic) = Resolve(connection, definition);
-        return await central.RunHandlerAsync(ct => characteristic.ReadAsync(central, ct)).ConfigureAwait(false);
+        (ConnectedCentral central, IHostedAttribute attribute) = Resolve(connection, definition);
+        return await central.RunHandlerAsync(ct => attribute.ReadAsync(central, ct)).ConfigureAwait(false);
     }
 
     internal async Task OnWriteRequestAsync(
         ICentralConnectionDriver connection,
-        GattCharacteristicDefinition definition,
+        GattAttributeDefinition definition,
         byte[] value
     )
     {
-        (ConnectedCentral central, LocalGattCharacteristic characteristic) = Resolve(connection, definition);
+        (ConnectedCentral central, IHostedAttribute attribute) = Resolve(connection, definition);
         GattProtocolStatus status = await central
-            .RunHandlerAsync(ct => characteristic.WriteAsync(central, value, ct))
+            .RunHandlerAsync(ct => attribute.WriteAsync(central, value, ct))
             .ConfigureAwait(false);
         if (status is not GattProtocolStatus.Success)
             throw new GattException(status, $"The write handler answered {status}");
     }
 
-    internal void OnWriteCommand(
-        ICentralConnectionDriver connection,
-        GattCharacteristicDefinition definition,
-        byte[] value
-    )
+    internal void OnWriteCommand(ICentralConnectionDriver connection, GattAttributeDefinition definition, byte[] value)
     {
         // Nobody waits for the answer; failures are logged by the handler run
         _ = OnWriteRequestAsync(connection, definition, value)
@@ -137,9 +133,9 @@ public sealed class BlePeripheral
             );
     }
 
-    private (ConnectedCentral Central, LocalGattCharacteristic Characteristic) Resolve(
+    private (ConnectedCentral Central, IHostedAttribute Attribute) Resolve(
         ICentralConnectionDriver connection,
-        GattCharacteristicDefinition definition
+        GattAttributeDefinition definition
     )
     {
         lock (_lock)
@@ -147,12 +143,12 @@ public sealed class BlePeripheral
             // The driver only reports centrals and characteristics it got from the core
             if (
                 !_centrals.TryGetValue(connection, out ConnectedCentral? central)
-                || !_hosted.TryGetValue(definition, out LocalGattCharacteristic? characteristic)
+                || !_hosted.TryGetValue(definition, out IHostedAttribute? attribute)
             )
             {
-                throw new GattException(GattProtocolStatus.UnlikelyError, "Unknown central or characteristic");
+                throw new GattException(GattProtocolStatus.UnlikelyError, "Unknown central or attribute");
             }
-            return (central, characteristic);
+            return (central, attribute);
         }
     }
 

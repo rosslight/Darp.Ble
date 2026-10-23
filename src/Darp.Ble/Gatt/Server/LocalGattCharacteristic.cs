@@ -5,22 +5,26 @@ using Darp.Ble.Data;
 namespace Darp.Ble.Gatt;
 
 /// <summary> A characteristic the adapter hosts, as added to a <see cref="LocalGattServiceBuilder"/> </summary>
-public sealed class LocalGattCharacteristic
+public sealed class LocalGattCharacteristic : IHostedAttribute
 {
+    private readonly LocalGattServiceBuilder _builder;
     private readonly OnReadHandler? _onRead;
     private readonly OnWriteHandler? _onWrite;
     private readonly Lock _lock = new();
+    private readonly List<LocalGattDescriptor> _descriptors = [];
 
     // The peripheral that hosts the characteristic; set while a publication runs or succeeded
     private BlePeripheral? _host;
     private bool _isLive;
 
     internal LocalGattCharacteristic(
+        LocalGattServiceBuilder builder,
         GattCharacteristicDefinition definition,
         OnReadHandler? onRead,
         OnWriteHandler? onWrite
     )
     {
+        _builder = builder;
         Definition = definition;
         _onRead = onRead;
         _onWrite = onWrite;
@@ -33,6 +37,39 @@ public sealed class LocalGattCharacteristic
     public GattProperty Properties => Definition.Properties;
 
     internal GattCharacteristicDefinition Definition { get; }
+
+    GattAttributeDefinition IHostedAttribute.Definition => Definition;
+
+    /// <summary> Adds a descriptor, while the service is being built </summary>
+    /// <param name="uuid"> The UUID of the descriptor </param>
+    /// <param name="onRead"> Answers reads of centrals; without it a read is answered with <see cref="GattProtocolStatus.ReadNotPermitted"/> </param>
+    /// <param name="onWrite"> Handles writes of centrals; without it a write is answered with <see cref="GattProtocolStatus.WriteNotPermitted"/> </param>
+    /// <returns> The descriptor </returns>
+    /// <exception cref="InvalidOperationException"> The service was already published </exception>
+    public LocalGattDescriptor AddDescriptor(BleUuid uuid, OnReadHandler? onRead = null, OnWriteHandler? onWrite = null)
+    {
+        ArgumentNullException.ThrowIfNull(uuid);
+        return AddDescriptor(new GattDescriptorDefinition(uuid, staticValue: null), onRead, onWrite);
+    }
+
+    internal LocalGattDescriptor AddDescriptor(
+        GattDescriptorDefinition definition,
+        OnReadHandler? onRead,
+        OnWriteHandler? onWrite
+    )
+    {
+        var descriptor = new LocalGattDescriptor(definition, onRead, onWrite);
+        _builder.Change(() => _descriptors.Add(descriptor));
+        return descriptor;
+    }
+
+    /// <summary> Freezes the descriptors with the service; called by the builder under its lock </summary>
+    internal LocalGattDescriptor[] Freeze()
+    {
+        LocalGattDescriptor[] descriptors = [.. _descriptors];
+        Definition.Descriptors = [.. descriptors.Select(descriptor => descriptor.Definition)];
+        return descriptors;
+    }
 
     /// <summary> Sends a notification to a central </summary>
     /// <param name="central"> A central connected to the adapter that hosts the characteristic </param>
@@ -82,13 +119,22 @@ public sealed class LocalGattCharacteristic
     }
 
     /// <summary> Answers a read of a central, through its handler </summary>
-    internal ValueTask<byte[]> ReadAsync(ConnectedCentral central, CancellationToken cancellationToken) =>
+    ValueTask<byte[]> IHostedAttribute.ReadAsync(ConnectedCentral central, CancellationToken cancellationToken) =>
+        ReadAsync(central, cancellationToken);
+
+    ValueTask<GattProtocolStatus> IHostedAttribute.WriteAsync(
+        ConnectedCentral central,
+        ReadOnlyMemory<byte> value,
+        CancellationToken cancellationToken
+    ) => WriteAsync(central, value, cancellationToken);
+
+    private ValueTask<byte[]> ReadAsync(ConnectedCentral central, CancellationToken cancellationToken) =>
         _onRead is null
             ? throw new GattException(GattProtocolStatus.ReadNotPermitted, "The characteristic has no read handler")
             : _onRead(central, cancellationToken);
 
     /// <summary> Handles a write of a central, through its handler </summary>
-    internal ValueTask<GattProtocolStatus> WriteAsync(
+    private ValueTask<GattProtocolStatus> WriteAsync(
         ConnectedCentral central,
         ReadOnlyMemory<byte> value,
         CancellationToken cancellationToken

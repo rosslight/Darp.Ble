@@ -46,6 +46,7 @@ public sealed class LocalGattServiceBuilder
     {
         ArgumentNullException.ThrowIfNull(uuid);
         var characteristic = new LocalGattCharacteristic(
+            this,
             new GattCharacteristicDefinition(uuid, properties),
             onRead,
             onWrite
@@ -59,19 +60,36 @@ public sealed class LocalGattServiceBuilder
     }
 
     /// <summary> Freezes the service for publishing; the builder cannot change or publish again afterwards </summary>
-    internal (GattServiceDefinition Definition, LocalGattCharacteristic[] Characteristics) Publish()
+    internal (GattServiceDefinition Definition, IHostedAttribute[] Attributes) Publish()
     {
         lock (_lock)
         {
             EnsureNotPublished();
             _published = true;
             LocalGattCharacteristic[] characteristics = [.. _characteristics];
+            List<IHostedAttribute> attributes = [];
+            foreach (LocalGattCharacteristic characteristic in characteristics)
+            {
+                attributes.Add(characteristic);
+                attributes.AddRange(characteristic.Freeze());
+            }
             var definition = new GattServiceDefinition(
                 _uuid,
                 _isPrimary,
                 [.. characteristics.Select(characteristic => characteristic.Definition)]
             );
-            return (definition, characteristics);
+            return (definition, [.. attributes]);
+        }
+    }
+
+    /// <summary> Changes the service while it is not published </summary>
+    /// <exception cref="InvalidOperationException"> The service was already published </exception>
+    internal void Change(Action change)
+    {
+        lock (_lock)
+        {
+            EnsureNotPublished();
+            change();
         }
     }
 

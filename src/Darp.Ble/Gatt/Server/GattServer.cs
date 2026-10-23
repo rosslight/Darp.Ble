@@ -31,19 +31,19 @@ public sealed class GattServer
         _operations.Enter(typeof(BlePeripheral));
         try
         {
-            (GattServiceDefinition definition, LocalGattCharacteristic[] characteristics) = service.Publish();
+            (GattServiceDefinition definition, IHostedAttribute[] attributes) = service.Publish();
             // Known before the driver publishes, so a central can use the service as soon as it is live
-            _peripheral.Host(characteristics);
+            _peripheral.Host(attributes);
             try
             {
                 await _driver.AddServiceAsync(definition, cancellationToken).ConfigureAwait(false);
             }
             catch
             {
-                _peripheral.Unhost(characteristics);
+                _peripheral.Unhost(attributes);
                 throw;
             }
-            foreach (LocalGattCharacteristic characteristic in characteristics)
+            foreach (LocalGattCharacteristic characteristic in attributes.OfType<LocalGattCharacteristic>())
                 characteristic.MarkLive();
             return new LocalGattService(definition.Uuid);
         }
