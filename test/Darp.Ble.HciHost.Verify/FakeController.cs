@@ -26,6 +26,7 @@ public sealed class FakeController : ITransportLayer
     private Action<Exception>? _onError;
     private Task? _loop;
     private int _recordFrom;
+    private TaskCompletionSource _sent = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
     /// <summary> Creates a controller that answers the host's setup and the commands without a connection </summary>
     public FakeController()
@@ -63,6 +64,8 @@ public sealed class FakeController : ITransportLayer
         (HciOpCode.HCI_LE_Read_Suggested_Default_Data_Length, "012320001B004801"),
         (HciOpCode.HCI_LE_Write_Suggested_Default_Data_Length, "01242000"),
         (HciOpCode.HCI_LE_Set_Random_Address, "01052000"),
+        (HciOpCode.HCI_LE_Set_Extended_Scan_Parameters, "01412000"),
+        (HciOpCode.HCI_LE_Set_Extended_Scan_Enable, "01422000"),
     ];
 
     /// <summary> Whether every ACL packet from the host is reported back as completed at once; turn off to hold the controller's buffers </summary>
@@ -85,7 +88,7 @@ public sealed class FakeController : ITransportLayer
                 .Where(message =>
                     message is { Direction: HciDirection.HostToController, Type: HciPacketType.HciCommand }
                 )
-                .Select(message => (HciOpCode)BinaryPrimitives.ReadUInt16LittleEndian(message.PduBytes)),
+                .Select(OpCodeOf),
         ];
 
     /// <summary> Forgets the traffic so far, e.g. the setup </summary>
@@ -107,6 +110,28 @@ public sealed class FakeController : ITransportLayer
     {
         HciMessage answer = HciMessage.CommandCompleteEventToHost(parameters);
         Answer(opCode, _ => [answer]);
+    }
+
+    /// <summary> Waits until the host sent the command for the given time since the last <see cref="StartRecording"/> </summary>
+    /// <returns> The command; its answer reaches the host before anything pushed afterwards </returns>
+    public async Task<HciMessage> WaitForCommandAsync(HciOpCode opCode, int occurrence = 1)
+    {
+        while (true)
+        {
+            Task sent;
+            lock (_lock)
+            {
+                HciMessage? command = _messages
+                    .Skip(_recordFrom)
+                    .Where(message => message.Type is HciPacketType.HciCommand && OpCodeOf(message) == opCode)
+                    .Skip(occurrence - 1)
+                    .FirstOrDefault();
+                if (command is not null)
+                    return command;
+                sent = _sent.Task;
+            }
+            await sent.ConfigureAwait(false);
+        }
     }
 
     /// <summary> Leaves a command unanswered </summary>
@@ -139,6 +164,9 @@ public sealed class FakeController : ITransportLayer
             }
         );
 
+    private static HciOpCode OpCodeOf(HciMessage command) =>
+        (HciOpCode)BinaryPrimitives.ReadUInt16LittleEndian(command.PduBytes);
+
     private static HciMessage DisconnectionComplete(HciMessage disconnect)
     {
         // Opcode (2), length (1), handle (2), reason (1)
@@ -151,22 +179,33 @@ public sealed class FakeController : ITransportLayer
         // The host may reuse the packet's buffers once Enqueue returned, so the bytes are copied here
         var message = new HciMessage(HciDirection.HostToController, packet.PacketType, packet.ToArrayLittleEndian());
         Func<HciMessage, IEnumerable<HciMessage>>? answer = null;
+        TaskCompletionSource sent;
         lock (_lock)
         {
             _messages.Add(message);
-            if (message.Type is HciPacketType.HciCommand)
+            sent = _sent;
+            _sent = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            if (message.Type is HciPacketType.HciCommand && !_answers.TryGetValue(OpCodeOf(message), out answer))
             {
-                var opCode = (HciOpCode)BinaryPrimitives.ReadUInt16LittleEndian(message.PduBytes);
-                if (!_answers.TryGetValue(opCode, out answer))
-                    throw new InvalidOperationException($"The fake controller has no answer to {opCode}");
+                sent.TrySetResult();
+                throw new InvalidOperationException($"The fake controller has no answer to {OpCodeOf(message)}");
             }
         }
         if (answer is not null)
         {
-            foreach (HciMessage response in answer(message))
-                _ = PushAsync(response);
+            try
+            {
+                foreach (HciMessage response in answer(message))
+                    _ = PushAsync(response);
+            }
+            finally
+            {
+                // Waiters see the command only once its answer is queued for the host
+                sent.TrySetResult();
+            }
             return;
         }
+        sent.TrySetResult();
         if (message.Type is not HciPacketType.HciAclData)
             return;
         _aclToController.Writer.TryWrite(message);
