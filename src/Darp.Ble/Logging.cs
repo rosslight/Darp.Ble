@@ -129,4 +129,44 @@ internal static partial class Logging
         Message = "Releasing the connection to {Address} failed"
     )]
     public static partial void LogConnectionCleanupFailed(this ILogger logger, BleAddress address, Exception exception);
+
+    [LoggerMessage(
+        EventId = 1304,
+        EventName = "RequestAbandoned",
+        Level = LogLevel.Debug,
+        Message = "A request to {Address} was abandoned after sending; the next request waits for its answer"
+    )]
+    public static partial void LogRequestAbandoned(this ILogger logger, BleAddress address);
+
+    [LoggerMessage(
+        EventId = 1305,
+        EventName = "AbandonedRequestCompleted",
+        Level = LogLevel.Debug,
+        Message = "An abandoned request to {Address} ended after {Duration}"
+    )]
+    public static partial void LogAbandonedRequestCompleted(this ILogger logger, BleAddress address, TimeSpan duration);
+
+    [LoggerMessage(
+        EventId = 1306,
+        EventName = "AttTimeout",
+        Level = LogLevel.Warning,
+        Message = "{Address} did not answer within the ATT timeout; ending the connection"
+    )]
+    public static partial void LogAttTimeout(this ILogger logger, BleAddress address);
+
+    [LoggerMessage(
+        EventId = 1400,
+        EventName = "CentralConnected",
+        Level = LogLevel.Debug,
+        Message = "Central {Address} connected"
+    )]
+    public static partial void LogCentralConnected(this ILogger logger, BleAddress address);
+
+    [LoggerMessage(
+        EventId = 1401,
+        EventName = "CentralDisconnected",
+        Level = LogLevel.Debug,
+        Message = "Connection of central {Address} ended: {Reason}"
+    )]
+    public static partial void LogCentralDisconnected(this ILogger logger, BleAddress address, DisconnectReason reason);
 }

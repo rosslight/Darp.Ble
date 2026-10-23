@@ -7,7 +7,7 @@ using Shouldly;
 
 namespace Darp.Ble.Tests.Connections;
 
-/// <summary> Connecting to mock peripherals through the public API (seam 1) </summary>
+/// <summary> Connecting to mock peripherals through the public API </summary>
 public sealed class ConnectionTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -36,6 +36,8 @@ public sealed class ConnectionTests
         );
 
         connection.Address.ShouldBe(set.RandomAddress);
+        // The mock link agrees on an ATT MTU of 247; a write carries 3 bytes less
+        connection.MaxWritePayloadLength.ShouldBe(244);
         adapter.Central.Connections.ShouldBe([connection]);
         await connection.DisposeAsync();
         (await connection.Disconnected).Reason.ShouldBe(DisconnectReason.LocalRequest);

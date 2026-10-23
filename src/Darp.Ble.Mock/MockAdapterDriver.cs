@@ -33,6 +33,11 @@ internal sealed class MockAdapterDriver : IBleAdapterDriver
 
     public ICentralDriver? Central { get; }
 
+    public IPeripheralDriver? Peripheral => PeripheralDriver;
+
+    /// <summary> The peripheral role, for centrals in the air that connect to this adapter </summary>
+    public MockPeripheralDriver PeripheralDriver { get; } = new();
+
     public BleAddress RandomAddress => _randomAddress;
 
     public Task SetRandomAddressAsync(BleAddress address, CancellationToken cancellationToken)

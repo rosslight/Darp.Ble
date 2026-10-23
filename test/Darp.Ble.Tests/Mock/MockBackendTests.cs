@@ -20,7 +20,11 @@ public sealed class MockBackendTests
         info.Backend.ShouldBe(BleBackends.Mock);
         info.Name.ShouldBe("Sensor");
         adapter.Capabilities.ShouldBe(
-            Capabilities.Observer | Capabilities.Broadcaster | Capabilities.Central | Capabilities.SetRandomAddress
+            Capabilities.Observer
+                | Capabilities.Broadcaster
+                | Capabilities.Central
+                | Capabilities.Peripheral
+                | Capabilities.SetRandomAddress
         );
     }
 
