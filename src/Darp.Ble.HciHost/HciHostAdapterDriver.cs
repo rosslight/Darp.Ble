@@ -1,6 +1,7 @@
 using Darp.Ble.Backends;
 using Darp.Ble.Data;
 using Darp.Ble.Hci;
+using Darp.Ble.HciHost.Gap;
 
 namespace Darp.Ble.HciHost;
 
@@ -9,9 +10,12 @@ internal sealed class HciHostAdapterDriver : IBleAdapterDriver
 {
     private readonly HciDevice _device;
 
+    private readonly HciHostObserverDriver _observer;
+
     private HciHostAdapterDriver(HciDevice device)
     {
         _device = device;
+        _observer = new HciHostObserverDriver(device);
     }
 
     /// <summary> Resets the controller, reads what it can do and sets the random address </summary>
@@ -24,7 +28,7 @@ internal sealed class HciHostAdapterDriver : IBleAdapterDriver
 
     public Capabilities Features => Capabilities.SetRandomAddress;
 
-    public IObserverDriver? Observer => null;
+    public IObserverDriver? Observer => _observer;
 
     public IBroadcasterDriver? Broadcaster => null;
 
@@ -37,5 +41,9 @@ internal sealed class HciHostAdapterDriver : IBleAdapterDriver
     public Task SetRandomAddressAsync(BleAddress address, CancellationToken cancellationToken) =>
         _device.SetRandomAddressAsync(address.Value, cancellationToken);
 
-    public ValueTask DisposeAsync() => _device.DisposeAsync();
+    public ValueTask DisposeAsync()
+    {
+        _observer.Dispose();
+        return _device.DisposeAsync();
+    }
 }
