@@ -209,6 +209,21 @@ public sealed class CentralTests
     }
 
     [Fact]
+    public async Task ALostTransportBeforeTheControllerAcceptedTheAttempt_FailsItAtOnce()
+    {
+        await using var controller = new FakeController();
+        controller.Hold(HciOpCode.HCI_LE_Extended_Create_Connection_V1);
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+        Task<ConnectedPeripheral> connecting = adapter.Central.ConnectAsync(HciAdapter.Peer, cancellationToken: Token);
+        await controller.WaitForCommandAsync(HciOpCode.HCI_LE_Extended_Create_Connection_V1);
+
+        controller.Fail(new IOException("The serial port is gone"));
+
+        BleConnectException exception = await Should.ThrowAsync<BleConnectException>(connecting);
+        exception.Kind.ShouldBe(BleConnectErrorKind.Unreachable);
+    }
+
+    [Fact]
     public async Task ALostTransport_FailsAPendingAttempt()
     {
         await using var controller = new FakeController();

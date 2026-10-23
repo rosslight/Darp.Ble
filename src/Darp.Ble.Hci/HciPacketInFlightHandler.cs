@@ -35,10 +35,9 @@ internal sealed partial class HciPacketInFlightHandler<
         Activity? activity = Logging.StartCommandResponseActivity(command, _host.Device.Address);
         // One deadline on the device's clock for waiting for the command slot and for the answer
         using var timeoutSource = new CancellationTokenSource(timeout, _host.Device.TimeProvider);
-        using var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(
-            cancellationToken,
-            timeoutSource.Token
-        );
+        // The deadline ends early when the transport fails: no answer can come then
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(timeoutSource.Token, _host.TransportGone);
+        using var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, deadline.Token);
         try
         {
             // Only log the time that is needed to enqueue the command if it actually has to wait.
@@ -48,6 +47,11 @@ internal sealed partial class HciPacketInFlightHandler<
             try
             {
                 await _packetInFlightSemaphore.WaitAsync(linkedSource.Token).ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+                when (_host.TransportFailure is { } failure && !cancellationToken.IsCancellationRequested)
+            {
+                throw TransportFailed(failure);
             }
             catch (OperationCanceledException e) when (IsTimeout(timeoutSource, cancellationToken))
             {
@@ -73,10 +77,14 @@ internal sealed partial class HciPacketInFlightHandler<
                 _host.EnqueuePacket(new HciCommandPacket<TCommand>(command));
                 // Once sent, the controller acts on the command; the answer is awaited whatever the caller does,
                 // so the caller learns what the controller did, e.g. that it started to connect
-                TResponse result = await _completionSource.Task.WaitAsync(timeoutSource.Token).ConfigureAwait(false);
+                TResponse result = await _completionSource.Task.WaitAsync(deadline.Token).ConfigureAwait(false);
                 activity?.SetTag("Response.OpCode", $"{TResponse.EventCode.ToString().ToUpperInvariant()}_EVENT");
                 activity?.SetDeconstructedTags("Response", result, orderEntries: true);
                 return (result, activity);
+            }
+            catch (OperationCanceledException) when (_host.TransportFailure is { } failure)
+            {
+                throw TransportFailed(failure);
             }
             catch (OperationCanceledException e) when (timeoutSource.IsCancellationRequested)
             {
@@ -95,6 +103,9 @@ internal sealed partial class HciPacketInFlightHandler<
             throw;
         }
     }
+
+    private static HciException TransportFailed(Exception failure) =>
+        new($"The HCI transport failed while waiting for {TCommand.OpCode}", failure);
 
     private static bool IsTimeout(CancellationTokenSource timeoutSource, CancellationToken cancellationToken) =>
         timeoutSource.IsCancellationRequested && !cancellationToken.IsCancellationRequested;
