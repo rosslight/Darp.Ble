@@ -13,6 +13,7 @@ Darp.Ble.Backends.IAdvertisingSetDriver.StartAsync(System.Threading.Cancellation
 Darp.Ble.Backends.IAdvertisingSetDriver.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Darp.Ble.Backends.IBleAdapterDriver
 Darp.Ble.Backends.IBleAdapterDriver.Broadcaster.get -> Darp.Ble.Backends.IBroadcasterDriver?
+Darp.Ble.Backends.IBleAdapterDriver.Central.get -> Darp.Ble.Backends.ICentralDriver?
 Darp.Ble.Backends.IBleAdapterDriver.Features.get -> Darp.Ble.Capabilities
 Darp.Ble.Backends.IBleAdapterDriver.Observer.get -> Darp.Ble.Backends.IObserverDriver?
 Darp.Ble.Backends.IBleAdapterDriver.RandomAddress.get -> Darp.Ble.Data.BleAddress!
@@ -25,6 +26,11 @@ Darp.Ble.Backends.IBleBackend.EnumerateAdaptersAsync(Darp.Ble.Backends.BleBacken
 Darp.Ble.Backends.IBleBackend.Name.get -> string!
 Darp.Ble.Backends.IBroadcasterDriver
 Darp.Ble.Backends.IBroadcasterDriver.CreateAdvertisingSetAsync(Darp.Ble.Gap.AdvertisingParameters! parameters, Darp.Ble.Gap.AdvertisingData! data, Darp.Ble.Gap.AdvertisingData? scanResponseData, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Darp.Ble.Backends.IAdvertisingSetDriver!>!
+Darp.Ble.Backends.ICentralDriver
+Darp.Ble.Backends.ICentralDriver.ConnectAsync(Darp.Ble.Data.BleAddress! address, Darp.Ble.Connections.BleConnectionParameters! parameters, Darp.Ble.Backends.IConnectionSink! sink, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Darp.Ble.Backends.IConnectionDriver!>!
+Darp.Ble.Backends.IConnectionDriver
+Darp.Ble.Backends.IConnectionSink
+Darp.Ble.Backends.IConnectionSink.OnDisconnected(Darp.Ble.Connections.DisconnectInfo! info) -> void
 Darp.Ble.Backends.IObserverDriver
 Darp.Ble.Backends.IObserverDriver.StartScanAsync(Darp.Ble.Gap.BleScanParameters! parameters, Darp.Ble.Backends.IScanSink! sink, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Darp.Ble.Backends.IObserverDriver.StopScanAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
@@ -35,6 +41,7 @@ Darp.Ble.BleAdapter
 Darp.Ble.BleAdapter.Backend.get -> string!
 Darp.Ble.BleAdapter.Broadcaster.get -> Darp.Ble.Gap.BleBroadcaster!
 Darp.Ble.BleAdapter.Capabilities.get -> Darp.Ble.Capabilities
+Darp.Ble.BleAdapter.Central.get -> Darp.Ble.Connections.BleCentral!
 Darp.Ble.BleAdapter.DisposeAsync() -> System.Threading.Tasks.ValueTask
 Darp.Ble.BleAdapter.Name.get -> string?
 Darp.Ble.BleAdapter.Observer.get -> Darp.Ble.Gap.BleObserver!
@@ -79,12 +86,44 @@ Darp.Ble.Capabilities.None = 0 -> Darp.Ble.Capabilities
 Darp.Ble.Capabilities.Observer = 2 -> Darp.Ble.Capabilities
 Darp.Ble.Capabilities.Peripheral = 5 -> Darp.Ble.Capabilities
 Darp.Ble.Capabilities.SetRandomAddress = 16 -> Darp.Ble.Capabilities
+Darp.Ble.Connections.BleCentral
+Darp.Ble.Connections.BleCentral.Adapter.get -> Darp.Ble.BleAdapter!
+Darp.Ble.Connections.BleCentral.ConnectAsync(Darp.Ble.Data.BleAddress! address, Darp.Ble.Connections.BleConnectionParameters? parameters = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Connections.ConnectedPeripheral!>!
+Darp.Ble.Connections.BleCentral.Connections.get -> System.Collections.Generic.IReadOnlyList<Darp.Ble.Connections.ConnectedPeripheral!>!
+Darp.Ble.Connections.BleConnectErrorKind
+Darp.Ble.Connections.BleConnectErrorKind.Busy = 3 -> Darp.Ble.Connections.BleConnectErrorKind
+Darp.Ble.Connections.BleConnectErrorKind.Rejected = 2 -> Darp.Ble.Connections.BleConnectErrorKind
+Darp.Ble.Connections.BleConnectErrorKind.TimedOut = 1 -> Darp.Ble.Connections.BleConnectErrorKind
+Darp.Ble.Connections.BleConnectErrorKind.Unreachable = 0 -> Darp.Ble.Connections.BleConnectErrorKind
+Darp.Ble.Connections.BleConnectException
+Darp.Ble.Connections.BleConnectException.BleConnectException(Darp.Ble.Connections.BleConnectErrorKind kind, string! message, int? nativeCode = null, System.Exception? innerException = null) -> void
+Darp.Ble.Connections.BleConnectException.Kind.get -> Darp.Ble.Connections.BleConnectErrorKind
 Darp.Ble.Connections.BleConnectionParameters
 Darp.Ble.Connections.BleConnectionParameters.<Clone>$() -> Darp.Ble.Connections.BleConnectionParameters!
 Darp.Ble.Connections.BleConnectionParameters.BleConnectionParameters() -> void
-Darp.Ble.Connections.BleConnectionParameters.ConnectionInterval.get -> Darp.Ble.Data.ConnectionTiming
+Darp.Ble.Connections.BleConnectionParameters.ConnectionInterval.get -> System.TimeSpan
 Darp.Ble.Connections.BleConnectionParameters.ConnectionInterval.init -> void
 Darp.Ble.Connections.BleConnectionParameters.Equals(Darp.Ble.Connections.BleConnectionParameters? other) -> bool
+Darp.Ble.Connections.ConnectedPeripheral
+Darp.Ble.Connections.ConnectedPeripheral.Address.get -> Darp.Ble.Data.BleAddress!
+Darp.Ble.Connections.ConnectedPeripheral.DisconnectAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Darp.Ble.Connections.ConnectedPeripheral.Disconnected.get -> System.Threading.Tasks.Task<Darp.Ble.Connections.DisconnectInfo!>!
+Darp.Ble.Connections.ConnectedPeripheral.DisposeAsync() -> System.Threading.Tasks.ValueTask
+Darp.Ble.Connections.DisconnectInfo
+Darp.Ble.Connections.DisconnectInfo.<Clone>$() -> Darp.Ble.Connections.DisconnectInfo!
+Darp.Ble.Connections.DisconnectInfo.Deconstruct(out Darp.Ble.Connections.DisconnectReason Reason, out int? NativeCode) -> void
+Darp.Ble.Connections.DisconnectInfo.DisconnectInfo(Darp.Ble.Connections.DisconnectReason Reason, int? NativeCode = null) -> void
+Darp.Ble.Connections.DisconnectInfo.Equals(Darp.Ble.Connections.DisconnectInfo? other) -> bool
+Darp.Ble.Connections.DisconnectInfo.NativeCode.get -> int?
+Darp.Ble.Connections.DisconnectInfo.NativeCode.init -> void
+Darp.Ble.Connections.DisconnectInfo.Reason.get -> Darp.Ble.Connections.DisconnectReason
+Darp.Ble.Connections.DisconnectInfo.Reason.init -> void
+Darp.Ble.Connections.DisconnectReason
+Darp.Ble.Connections.DisconnectReason.AttTimeout = 3 -> Darp.Ble.Connections.DisconnectReason
+Darp.Ble.Connections.DisconnectReason.ConnectionTimeout = 2 -> Darp.Ble.Connections.DisconnectReason
+Darp.Ble.Connections.DisconnectReason.LocalRequest = 0 -> Darp.Ble.Connections.DisconnectReason
+Darp.Ble.Connections.DisconnectReason.RemoteRequest = 1 -> Darp.Ble.Connections.DisconnectReason
+Darp.Ble.Connections.DisconnectReason.TransportLost = 4 -> Darp.Ble.Connections.DisconnectReason
 Darp.Ble.Data.AssignedNumbers.AdTypes
 Darp.Ble.Data.AssignedNumbers.AdTypes.AdvertisingInterval = 26 -> Darp.Ble.Data.AssignedNumbers.AdTypes
 Darp.Ble.Data.AssignedNumbers.AdTypes.AdvertisingIntervalLong = 47 -> Darp.Ble.Data.AssignedNumbers.AdTypes
@@ -3831,11 +3870,6 @@ Darp.Ble.Data.BleUuidType
 Darp.Ble.Data.BleUuidType.Uuid128 = 16 -> Darp.Ble.Data.BleUuidType
 Darp.Ble.Data.BleUuidType.Uuid16 = 2 -> Darp.Ble.Data.BleUuidType
 Darp.Ble.Data.BleUuidType.Uuid32 = 4 -> Darp.Ble.Data.BleUuidType
-Darp.Ble.Data.ConnectionTiming
-Darp.Ble.Data.ConnectionTiming.MaxValue = 3200 -> Darp.Ble.Data.ConnectionTiming
-Darp.Ble.Data.ConnectionTiming.MinValue = 6 -> Darp.Ble.Data.ConnectionTiming
-Darp.Ble.Data.ConnectionTiming.Ms100 = 80 -> Darp.Ble.Data.ConnectionTiming
-Darp.Ble.Data.ConnectionTiming.Ms1000 = 800 -> Darp.Ble.Data.ConnectionTiming
 Darp.Ble.Data.Physical
 Darp.Ble.Data.Physical.Le1M = 1 -> Darp.Ble.Data.Physical
 Darp.Ble.Data.Physical.Le2M = 2 -> Darp.Ble.Data.Physical
@@ -4084,6 +4118,9 @@ const Darp.Ble.BleBackends.Mock = "Darp.Ble.Mock" -> string!
 override Darp.Ble.Connections.BleConnectionParameters.Equals(object? obj) -> bool
 override Darp.Ble.Connections.BleConnectionParameters.GetHashCode() -> int
 override Darp.Ble.Connections.BleConnectionParameters.ToString() -> string!
+override Darp.Ble.Connections.DisconnectInfo.Equals(object? obj) -> bool
+override Darp.Ble.Connections.DisconnectInfo.GetHashCode() -> int
+override Darp.Ble.Connections.DisconnectInfo.ToString() -> string!
 override Darp.Ble.Data.BleAddress.Equals(object? obj) -> bool
 override Darp.Ble.Data.BleAddress.GetHashCode() -> int
 override Darp.Ble.Data.BleAddress.ToString() -> string!
@@ -4108,6 +4145,8 @@ override Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1, TProp2>.Propert
 static Darp.Ble.BleManagerServiceCollectionExtensions.AddBleManager(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Darp.Ble.BleManagerBuilder!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Darp.Ble.Connections.BleConnectionParameters.operator !=(Darp.Ble.Connections.BleConnectionParameters? left, Darp.Ble.Connections.BleConnectionParameters? right) -> bool
 static Darp.Ble.Connections.BleConnectionParameters.operator ==(Darp.Ble.Connections.BleConnectionParameters? left, Darp.Ble.Connections.BleConnectionParameters? right) -> bool
+static Darp.Ble.Connections.DisconnectInfo.operator !=(Darp.Ble.Connections.DisconnectInfo? left, Darp.Ble.Connections.DisconnectInfo? right) -> bool
+static Darp.Ble.Connections.DisconnectInfo.operator ==(Darp.Ble.Connections.DisconnectInfo? left, Darp.Ble.Connections.DisconnectInfo? right) -> bool
 static Darp.Ble.Data.BleAddress.CreateRandomAddress(Darp.Ble.Data.UInt48 value) -> Darp.Ble.Data.BleAddress!
 static Darp.Ble.Data.BleAddress.NewRandomStaticAddress() -> Darp.Ble.Data.BleAddress!
 static Darp.Ble.Data.BleAddress.NotAvailable.get -> Darp.Ble.Data.BleAddress!

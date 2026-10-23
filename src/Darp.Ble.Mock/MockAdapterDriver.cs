@@ -1,5 +1,6 @@
 using Darp.Ble.Backends;
 using Darp.Ble.Data;
+using Darp.Ble.Mock.Connections;
 using Darp.Ble.Mock.Gap;
 using Microsoft.Extensions.Logging;
 
@@ -21,6 +22,7 @@ internal sealed class MockAdapterDriver : IBleAdapterDriver
         );
         Observer = new MockObserverDriver(air, this);
         Broadcaster = new MockBroadcasterDriver(air, this);
+        Central = new MockCentralDriver(air, this);
     }
 
     public Capabilities Features => Capabilities.SetRandomAddress;
@@ -28,6 +30,8 @@ internal sealed class MockAdapterDriver : IBleAdapterDriver
     public IObserverDriver? Observer { get; }
 
     public IBroadcasterDriver? Broadcaster { get; }
+
+    public ICentralDriver? Central { get; }
 
     public BleAddress RandomAddress => _randomAddress;
 
