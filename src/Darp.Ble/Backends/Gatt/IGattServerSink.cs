@@ -28,7 +28,8 @@ public interface IGattServerSink
     /// <summary> A central reads a hosted characteristic or descriptor. The core runs the app's handler off the driver's thread </summary>
     /// <param name="central"> The connection of the central </param>
     /// <param name="attribute"> The characteristic or descriptor, as published </param>
-    /// <returns> The value to answer with. A <see cref="GattException"/> carries the ATT error to answer with instead </returns>
+    /// <returns> The value to answer with. A <see cref="GattException"/> carries the ATT error to answer with instead;
+    /// a cancelled task means the central's connection ends, so nothing is answered </returns>
     Task<byte[]> OnReadRequest(ICentralConnectionDriver central, GattAttributeDefinition attribute);
 
     /// <summary> A central writes a hosted characteristic or descriptor with a write command, which gets no answer. The core copies the value and runs the handler on its own </summary>
@@ -45,7 +46,8 @@ public interface IGattServerSink
     /// <param name="central"> The connection of the central </param>
     /// <param name="attribute"> The characteristic or descriptor, as published </param>
     /// <param name="value"> The complete value; the driver assembles prepared writes </param>
-    /// <returns> A task that completes once the app accepted the value. A <see cref="GattException"/> carries the ATT error to answer with instead </returns>
+    /// <returns> A task that completes once the app accepted the value. A <see cref="GattException"/> carries the ATT error to answer with instead;
+    /// a cancelled task means the central's connection ends, so nothing is answered </returns>
     Task OnWriteRequest(
         ICentralConnectionDriver central,
         GattAttributeDefinition attribute,

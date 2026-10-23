@@ -338,8 +338,8 @@ public sealed class ConnectedCentral
         }
     }
 
-    private static GattException Ended() =>
-        new(GattProtocolStatus.UnlikelyError, "The connection of the central ended");
+    /// <summary> The connection ends: the request gets no answer, as the link is going down (D9) </summary>
+    private OperationCanceledException Ended() => new("The connection of the central ended", _lifetime.Token);
 
     private bool IsEnding
     {
