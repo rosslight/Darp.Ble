@@ -40,6 +40,9 @@ internal sealed class FakePeripheral(FakeController controller, ushort handle)
         return this;
     }
 
+    /// <summary> Changes the value of an attribute </summary>
+    public void SetValue(ushort attributeHandle, byte[] value) => _attributes[attributeHandle - 1].Value = value;
+
     /// <summary> Waits until the received PDUs fulfil the condition </summary>
     public async Task WaitForReceivedAsync(Func<IReadOnlyList<byte[]>, bool> condition)
     {
