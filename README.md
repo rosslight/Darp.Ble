@@ -37,6 +37,7 @@ IReadOnlyList<BleAdapterInfo> adapters = await bleManager.EnumerateAdaptersAsync
 await using BleAdapter adapter = await adapters[0].OpenAsync();
 ```
 
+`builder.AddSerialHciHost()` adds an adapter for every HCI dongle on a USB serial port (the nRF52840 dongle by default, more through `DeviceNameMapping`), and `builder.AddSerialHciHost("COM3")` the one on that port.
 With dependency injection, `services.AddBleManager(builder => builder.AddMock())` registers the same manager and uses the container's `ILoggerFactory` and `TimeProvider`.
 For unit tests, `await MockBle.OpenAdapterAsync()` opens a mock adapter in one line.
 
