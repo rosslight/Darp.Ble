@@ -14,6 +14,10 @@ internal sealed class MockLink
     private readonly Dictionary<GattServiceDefinition, MockRemoteService> _services = [];
     private readonly Dictionary<GattCharacteristicDefinition, MockRemoteCharacteristic> _characteristics = [];
     private readonly HashSet<GattCharacteristicDefinition> _subscribed = [];
+
+    // Fails the central's request that waits for the peripheral's answer; one at a time, as the core holds the ATT slot
+    // until it ends. The link going down fails it at once
+    private Action? _failOutstanding;
     private bool _down;
 
     public MockLink(
@@ -65,18 +69,16 @@ internal sealed class MockLink
     }
 
     /// <summary> The central reads; the peripheral's handler answers </summary>
-    public Task<byte[]> ReadAsync(GattCharacteristicDefinition characteristic)
-    {
-        EnsureUp();
-        return _peripheralSink.OnReadRequest(Peripheral, characteristic);
-    }
+    public Task<byte[]> ReadAsync(GattCharacteristicDefinition characteristic) =>
+        CarryAsync(async () => await _peripheralSink.OnReadRequest(Peripheral, characteristic).ConfigureAwait(false));
 
     /// <summary> The central writes with a write request; the peripheral's handler answers </summary>
-    public Task WriteAsync(GattCharacteristicDefinition characteristic, ReadOnlyMemory<byte> value)
-    {
-        EnsureUp();
-        return _peripheralSink.OnWriteRequest(Peripheral, characteristic, value);
-    }
+    public Task WriteAsync(GattCharacteristicDefinition characteristic, ReadOnlyMemory<byte> value) =>
+        CarryAsync<object?>(async () =>
+        {
+            await _peripheralSink.OnWriteRequest(Peripheral, characteristic, value).ConfigureAwait(false);
+            return null;
+        });
 
     /// <summary> The central writes with a write command; the peripheral's handler runs on its own, its answer is dropped </summary>
     public void WriteWithoutResponse(GattCharacteristicDefinition characteristic, ReadOnlyMemory<byte> value)
@@ -115,14 +117,47 @@ internal sealed class MockLink
 
     public void DisconnectFromCentral()
     {
-        if (TakeDown())
-            _peripheralSink.OnCentralDisconnected(Peripheral, new DisconnectInfo(DisconnectReason.RemoteRequest));
+        if (!TakeDown(out Action? failOutstanding))
+            return;
+        _peripheralSink.OnCentralDisconnected(Peripheral, new DisconnectInfo(DisconnectReason.RemoteRequest));
+        failOutstanding?.Invoke();
     }
 
     public void DisconnectFromPeripheral()
     {
-        if (TakeDown())
-            _centralSink.OnDisconnected(new DisconnectInfo(DisconnectReason.RemoteRequest));
+        if (!TakeDown(out Action? failOutstanding))
+            return;
+        // A driver reports the disconnect before it fails what still runs
+        _centralSink.OnDisconnected(new DisconnectInfo(DisconnectReason.RemoteRequest));
+        failOutstanding?.Invoke();
+    }
+
+    /// <summary> Carries a request to the peripheral; its answer, or the link going down, ends it </summary>
+    private Task<T> CarryAsync<T>(Func<Task<T>> answer)
+    {
+        var outstanding = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Action fail = () => outstanding.TrySetException(new IOException("The mock link is down"));
+        lock (_lock)
+        {
+            if (_down)
+                throw new IOException("The mock link is down");
+            _failOutstanding = fail;
+        }
+        // The peripheral's handler may take longer than the link lives; its result is observed either way
+        _ = answer()
+            .ContinueWith(
+                task =>
+                {
+                    lock (_lock)
+                    {
+                        if (_failOutstanding == fail)
+                            _failOutstanding = null;
+                    }
+                    outstanding.TrySetFromTask(task);
+                },
+                TaskScheduler.Default
+            );
+        return outstanding.Task;
     }
 
     private void EnsureUp()
@@ -134,13 +169,18 @@ internal sealed class MockLink
         }
     }
 
-    private bool TakeDown()
+    private bool TakeDown(out Action? failOutstanding)
     {
         lock (_lock)
         {
             if (_down)
+            {
+                failOutstanding = null;
                 return false;
+            }
             _down = true;
+            failOutstanding = _failOutstanding;
+            _failOutstanding = null;
         }
         PeripheralDriver.Forget(this);
         return true;

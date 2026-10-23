@@ -218,8 +218,9 @@ public sealed class BlePeripheral
                     return;
                 }
             }
-            foreach (ConnectedCentral central in centrals)
-                await central.DisconnectAsync(CancellationToken.None).ConfigureAwait(false);
+            // Every central starts ending before any is awaited, so a slow handler delays nobody else's end
+            await Task.WhenAll(centrals.Select(central => central.DisconnectAsync(CancellationToken.None)))
+                .ConfigureAwait(false);
         }
     }
 }
