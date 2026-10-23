@@ -87,6 +87,62 @@ public sealed class CharacteristicTests
     }
 
     [Fact]
+    public async Task AWriteHandlerThatBlocksBeforeItsFirstAwait_DoesNotHoldUpTheWriteWithoutResponse()
+    {
+        using var release = new ManualResetEventSlim();
+        var handled = new TaskCompletionSource();
+        await using BleAdapter adapter = await OpenAsync(service =>
+            service.AddCharacteristic(
+                LevelUuid,
+                GattProperty.WriteWithoutResponse,
+                onWrite: (_, _, _) =>
+                {
+                    // Blocks the thread it runs on, as a careless handler might
+                    release.Wait(TimeSpan.FromSeconds(10));
+                    handled.SetResult();
+                    return ValueTask.FromResult(GattProtocolStatus.Success);
+                }
+            )
+        );
+        RemoteGattCharacteristic level = await DiscoverAsync(adapter, LevelUuid);
+
+        await level
+            .WriteWithoutResponseAsync(new byte[] { 4 }, Token)
+            .AsTask()
+            .WaitAsync(TimeSpan.FromSeconds(5), Token);
+
+        handled.Task.IsCompleted.ShouldBeFalse();
+        release.Set();
+        await handled.Task;
+    }
+
+    [Fact]
+    public async Task EndingTheConnection_FailsAReadWhoseHandlerIgnoresItsToken()
+    {
+        var release = new TaskCompletionSource<byte[]>();
+        var started = new TaskCompletionSource();
+        await using BleAdapter adapter = await OpenAsync(service =>
+            service.AddCharacteristic(
+                LevelUuid,
+                GattProperty.Read,
+                onRead: (_, _) =>
+                {
+                    started.SetResult();
+                    return new ValueTask<byte[]>(release.Task);
+                }
+            )
+        );
+        RemoteGattCharacteristic level = await DiscoverAsync(adapter, LevelUuid);
+        Task<byte[]> read = level.ReadAsync(Token);
+        await started.Task;
+
+        await adapter.Central.Connections.Single().DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5), Token);
+
+        await Should.ThrowAsync<BleDisconnectedException>(() => read);
+        release.SetResult([1]);
+    }
+
+    [Fact]
     public async Task AWriteHandlerAnsweringWithAnError_FailsTheWriteWithThatStatus()
     {
         await using BleAdapter adapter = await OpenAsync(service =>
