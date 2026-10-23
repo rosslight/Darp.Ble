@@ -71,12 +71,14 @@ internal sealed partial class HciPacketInFlightHandler<
             {
                 _subscription = _host.Subscribe(this);
                 _host.EnqueuePacket(new HciCommandPacket<TCommand>(command));
-                TResponse result = await _completionSource.Task.WaitAsync(linkedSource.Token).ConfigureAwait(false);
+                // Once sent, the controller acts on the command; the answer is awaited whatever the caller does,
+                // so the caller learns what the controller did, e.g. that it started to connect
+                TResponse result = await _completionSource.Task.WaitAsync(timeoutSource.Token).ConfigureAwait(false);
                 activity?.SetTag("Response.OpCode", $"{TResponse.EventCode.ToString().ToUpperInvariant()}_EVENT");
                 activity?.SetDeconstructedTags("Response", result, orderEntries: true);
                 return (result, activity);
             }
-            catch (OperationCanceledException e) when (IsTimeout(timeoutSource, cancellationToken))
+            catch (OperationCanceledException e) when (timeoutSource.IsCancellationRequested)
             {
                 throw new TimeoutException($"The controller did not answer {TCommand.OpCode} within {timeout}", e);
             }

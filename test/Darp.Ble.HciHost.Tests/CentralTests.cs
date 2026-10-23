@@ -61,6 +61,40 @@ public sealed class CentralTests
     }
 
     [Fact]
+    public async Task CancellingRightAfterTheControllerGotTheAttempt_StillCancelsItThere()
+    {
+        await using var controller = new FakeController();
+        using var cancel = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        controller.Answer(
+            HciOpCode.HCI_LE_Extended_Create_Connection_V1,
+            _ =>
+            {
+                // The controller has the command; its status is not back yet
+                cancel.Cancel();
+                return [FakeController.CommandStatus(HciOpCode.HCI_LE_Extended_Create_Connection_V1)];
+            }
+        );
+        controller.Answer(
+            HciOpCode.HCI_LE_Create_Connection_Cancel,
+            _ =>
+                [
+                    HciMessage.CommandCompleteEventToHost("010E2000"),
+                    HciAdapter.ConnectionComplete(0, HciCommandStatus.UnknownConnectionIdentifier),
+                ]
+        );
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+
+        await Should.ThrowAsync<OperationCanceledException>(() =>
+            adapter.Central.ConnectAsync(HciAdapter.Peer, cancellationToken: cancel.Token)
+        );
+
+        controller.Commands.ShouldBe([
+            HciOpCode.HCI_LE_Extended_Create_Connection_V1,
+            HciOpCode.HCI_LE_Create_Connection_Cancel,
+        ]);
+    }
+
+    [Fact]
     public async Task ALinkThatCameUpWhileCancelling_IsTakenDown()
     {
         await using var controller = new FakeController();
