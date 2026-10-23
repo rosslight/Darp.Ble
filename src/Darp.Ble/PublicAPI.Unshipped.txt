@@ -5,17 +5,25 @@ Darp.Ble.Backends.BleBackendContext.LoggerFactory.get -> Microsoft.Extensions.Lo
 Darp.Ble.Backends.BleBackendContext.TimeProvider.get -> System.TimeProvider!
 Darp.Ble.Backends.IBleAdapterDriver
 Darp.Ble.Backends.IBleAdapterDriver.Capabilities.get -> Darp.Ble.Capabilities
+Darp.Ble.Backends.IBleAdapterDriver.Observer.get -> Darp.Ble.Backends.IObserverDriver?
 Darp.Ble.Backends.IBleAdapterSource
 Darp.Ble.Backends.IBleAdapterSource.Name.get -> string?
 Darp.Ble.Backends.IBleAdapterSource.OpenAsync(Darp.Ble.Backends.BleBackendContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<Darp.Ble.Backends.IBleAdapterDriver!>!
 Darp.Ble.Backends.IBleBackend
 Darp.Ble.Backends.IBleBackend.EnumerateAdaptersAsync(Darp.Ble.Backends.BleBackendContext! context, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Darp.Ble.Backends.IBleAdapterSource!>!>!
 Darp.Ble.Backends.IBleBackend.Name.get -> string!
+Darp.Ble.Backends.IObserverDriver
+Darp.Ble.Backends.IObserverDriver.StartScanAsync(Darp.Ble.Gap.BleScanParameters! parameters, Darp.Ble.Backends.IScanSink! sink, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Darp.Ble.Backends.IObserverDriver.StopScanAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
+Darp.Ble.Backends.IScanSink
+Darp.Ble.Backends.IScanSink.OnFailed(Darp.Ble.BleException! error) -> void
+Darp.Ble.Backends.IScanSink.OnReport(Darp.Ble.Gap.IGapAdvertisement! advertisement) -> void
 Darp.Ble.BleAdapter
 Darp.Ble.BleAdapter.Backend.get -> string!
 Darp.Ble.BleAdapter.Capabilities.get -> Darp.Ble.Capabilities
 Darp.Ble.BleAdapter.DisposeAsync() -> System.Threading.Tasks.ValueTask
 Darp.Ble.BleAdapter.Name.get -> string?
+Darp.Ble.BleAdapter.Observer.get -> Darp.Ble.Gap.BleObserver!
 Darp.Ble.BleAdapterInfo
 Darp.Ble.BleAdapterInfo.Backend.get -> string!
 Darp.Ble.BleAdapterInfo.Name.get -> string?
@@ -33,6 +41,7 @@ Darp.Ble.BleManager.BleManager(System.Action<Darp.Ble.BleManagerBuilder!>! confi
 Darp.Ble.BleManager.EnumerateAdaptersAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Darp.Ble.BleAdapterInfo!>!>!
 Darp.Ble.BleManagerBuilder
 Darp.Ble.BleManagerBuilder.AddBackend(Darp.Ble.Backends.IBleBackend! backend) -> Darp.Ble.BleManagerBuilder!
+Darp.Ble.BleManagerBuilder.ConfigureQueues(System.Action<Darp.Ble.BleQueueDefaults!>! configure) -> Darp.Ble.BleManagerBuilder!
 Darp.Ble.BleManagerServiceCollectionExtensions
 Darp.Ble.BleOpenErrorKind
 Darp.Ble.BleOpenErrorKind.Disabled = 1 -> Darp.Ble.BleOpenErrorKind
@@ -41,6 +50,11 @@ Darp.Ble.BleOpenErrorKind.NotAvailable = 0 -> Darp.Ble.BleOpenErrorKind
 Darp.Ble.BleOpenException
 Darp.Ble.BleOpenException.BleOpenException(Darp.Ble.BleOpenErrorKind kind, string! message, bool isTransient = false, int? nativeCode = null, System.Exception? innerException = null) -> void
 Darp.Ble.BleOpenException.Kind.get -> Darp.Ble.BleOpenErrorKind
+Darp.Ble.BleQueueDefaults
+Darp.Ble.BleQueueDefaults.Advertisements.get -> Darp.Ble.QueueOptions!
+Darp.Ble.BleQueueDefaults.Advertisements.set -> void
+Darp.Ble.BleQueueOverflowException
+Darp.Ble.BleQueueOverflowException.Capacity.get -> int
 Darp.Ble.Capabilities
 Darp.Ble.Capabilities.Broadcaster = 1 -> Darp.Ble.Capabilities
 Darp.Ble.Capabilities.Central = 10 -> Darp.Ble.Capabilities
@@ -3884,6 +3898,12 @@ Darp.Ble.Gap.BleEventType.Legacy = 16 -> Darp.Ble.Gap.BleEventType
 Darp.Ble.Gap.BleEventType.None = 0 -> Darp.Ble.Gap.BleEventType
 Darp.Ble.Gap.BleEventType.ScanResponse = 8 -> Darp.Ble.Gap.BleEventType
 Darp.Ble.Gap.BleEventType.Scannable = 2 -> Darp.Ble.Gap.BleEventType
+Darp.Ble.Gap.BleObserver
+Darp.Ble.Gap.BleObserver.Adapter.get -> Darp.Ble.BleAdapter!
+Darp.Ble.Gap.BleObserver.ConfigureAsync(Darp.Ble.Gap.BleScanParameters! parameters, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
+Darp.Ble.Gap.BleObserver.Parameters.get -> Darp.Ble.Gap.BleScanParameters!
+Darp.Ble.Gap.BleObserver.ScanAsync(Darp.Ble.QueueOptions! queue, System.Threading.CancellationToken cancellationToken) -> System.Collections.Generic.IAsyncEnumerable<Darp.Ble.Gap.IGapAdvertisement!>!
+Darp.Ble.Gap.BleObserver.ScanAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<Darp.Ble.Gap.IGapAdvertisement!>!
 Darp.Ble.Gap.BleScanParameters
 Darp.Ble.Gap.BleScanParameters.<Clone>$() -> Darp.Ble.Gap.BleScanParameters!
 Darp.Ble.Gap.BleScanParameters.BleScanParameters() -> void
@@ -4015,6 +4035,14 @@ Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>.ReadValue(System.ReadOnl
 Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>.TypedCharacteristicDeclaration(Darp.Ble.Data.BleUuid! uuid, Darp.Ble.Gatt.IGattTypedCharacteristic<T>.DecodeFunc! onRead, Darp.Ble.Gatt.IGattTypedCharacteristic<T>.EncodeFunc! onWrite) -> void
 Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>.Uuid.get -> Darp.Ble.Data.BleUuid!
 Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>.WriteValue(T value) -> byte[]!
+Darp.Ble.QueueFullMode
+Darp.Ble.QueueFullMode.DropNewest = 1 -> Darp.Ble.QueueFullMode
+Darp.Ble.QueueFullMode.DropOldest = 0 -> Darp.Ble.QueueFullMode
+Darp.Ble.QueueFullMode.Fail = 2 -> Darp.Ble.QueueFullMode
+Darp.Ble.QueueOptions
+Darp.Ble.QueueOptions.Capacity.get -> int?
+Darp.Ble.QueueOptions.FullMode.get -> Darp.Ble.QueueFullMode
+Darp.Ble.QueueOptions.QueueOptions(int capacity, Darp.Ble.QueueFullMode fullMode) -> void
 const Darp.Ble.BleBackends.Mock = "Darp.Ble.Mock" -> string!
 override Darp.Ble.Connections.BleConnectionParameters.Equals(object? obj) -> bool
 override Darp.Ble.Connections.BleConnectionParameters.GetHashCode() -> int
@@ -4130,6 +4158,7 @@ static Darp.Ble.Gatt.DescriptorDeclaration.CharacteristicUserDescription.get -> 
 static Darp.Ble.Gatt.DescriptorDeclaration.ClientCharacteristicConfiguration.get -> Darp.Ble.Gatt.DescriptorDeclaration!
 static Darp.Ble.Gatt.DescriptorDeclaration.ServerCharacteristicConfiguration.get -> Darp.Ble.Gatt.DescriptorDeclaration!
 static Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1, TProp2>.implicit operator Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp2, TProp1>!(Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1, TProp2>! characteristicDeclaration) -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp2, TProp1>!
+static Darp.Ble.QueueOptions.Unbounded.get -> Darp.Ble.QueueOptions!
 virtual Darp.Ble.Gatt.CharacteristicDeclaration<TProp1>.Properties.get -> Darp.Ble.Gatt.GattProperty
 virtual Darp.Ble.Gatt.IGattTypedCharacteristic<T>.DecodeFunc.Invoke(System.ReadOnlySpan<byte> source) -> T
 virtual Darp.Ble.Gatt.IGattTypedCharacteristic<T>.EncodeFunc.Invoke(T value) -> byte[]!

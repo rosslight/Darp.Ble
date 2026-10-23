@@ -1,0 +1,224 @@
+using System.Diagnostics.CodeAnalysis;
+using Darp.Ble.Backends;
+using Darp.Ble.Data;
+using Darp.Ble.Gap;
+using Microsoft.Extensions.Logging;
+
+namespace Darp.Ble.Gap;
+
+/// <summary> Shares one radio scan between all scans of an observer (D6) </summary>
+/// <remarks>
+/// <see cref="_lock"/> guards the listeners, the current radio run and admission; it is held only for those fields.
+/// <see cref="_commands"/> serializes the asynchronous driver commands: start, stop and restart
+/// </remarks>
+[SuppressMessage(
+    "Design",
+    "CA1001:Types that own disposable fields should be disposable",
+    Justification = "The semaphore outlives disposal: scans that end afterwards still wait on it. It holds no wait handle"
+)]
+internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
+{
+    private readonly IObserverDriver _driver = driver;
+    private readonly ILogger _logger = logger;
+    private readonly Lock _lock = new();
+    private readonly SemaphoreSlim _commands = new(1, 1);
+    private ScanListener[] _listeners = [];
+    private RadioRun? _run;
+    private bool _closed;
+
+    public BleScanParameters Parameters { get; private set; } = new();
+
+    public ScanDropCounter DropCounter { get; } = new();
+
+    public async Task<ScanListener> AddListenerAsync(QueueOptions queue, CancellationToken cancellationToken)
+    {
+        var listener = new ScanListener(queue, DropCounter);
+        await _commands.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            RadioRun? runToStart = null;
+            lock (_lock)
+            {
+                ObjectDisposedException.ThrowIf(_closed, typeof(BleObserver));
+                _listeners = [.. _listeners, listener];
+                if (_run is null)
+                {
+                    runToStart = new RadioRun(this);
+                    _run = runToStart;
+                }
+            }
+            if (runToStart is not null)
+                await StartRunAsync(runToStart, listener, cancellationToken).ConfigureAwait(false);
+            return listener;
+        }
+        finally
+        {
+            _commands.Release();
+        }
+    }
+
+    public async Task RemoveListenerAsync(ScanListener listener)
+    {
+        listener.Complete();
+        await _commands.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+        try
+        {
+            RadioRun? runToStop = null;
+            lock (_lock)
+            {
+                _listeners = Without(_listeners, listener);
+                if (_listeners.Length == 0)
+                {
+                    runToStop = _run;
+                    _run = null;
+                }
+            }
+            if (runToStop is not null)
+            {
+                await _driver.StopScanAsync(CancellationToken.None).ConfigureAwait(false);
+                _logger.LogScanStopped();
+            }
+        }
+        finally
+        {
+            _commands.Release();
+        }
+    }
+
+    public async Task ConfigureAsync(BleScanParameters parameters, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(parameters);
+        parameters.Validate(nameof(parameters));
+        await _commands.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            BleScanParameters previous = Parameters;
+            RadioRun? oldRun;
+            lock (_lock)
+            {
+                ObjectDisposedException.ThrowIf(_closed, typeof(BleObserver));
+                oldRun = _run;
+                // Reports and failures of the old run are ignored from here on
+                _run = null;
+            }
+            Parameters = parameters;
+            if (oldRun is null)
+                return;
+
+            _logger.LogScanReconfigured(previous, parameters);
+            var newRun = new RadioRun(this);
+            try
+            {
+                await _driver.StopScanAsync(CancellationToken.None).ConfigureAwait(false);
+                lock (_lock)
+                    _run = newRun;
+                await _driver.StartScanAsync(parameters, newRun, CancellationToken.None).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                // The scans cannot continue without the radio
+                Fail(newRun, e);
+                throw;
+            }
+        }
+        finally
+        {
+            _commands.Release();
+        }
+    }
+
+    /// <summary> Closes admission, ends every scan normally and stops the radio </summary>
+    public async Task DisposeAsync()
+    {
+        await _commands.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+        try
+        {
+            ScanListener[] listeners;
+            RadioRun? runToStop;
+            lock (_lock)
+            {
+                _closed = true;
+                listeners = _listeners;
+                _listeners = [];
+                runToStop = _run;
+                _run = null;
+            }
+            foreach (ScanListener listener in listeners)
+                listener.Complete();
+            if (runToStop is not null)
+            {
+                await _driver.StopScanAsync(CancellationToken.None).ConfigureAwait(false);
+                _logger.LogScanStopped();
+            }
+        }
+        finally
+        {
+            _commands.Release();
+        }
+    }
+
+    private async Task StartRunAsync(RadioRun run, ScanListener listener, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _driver.StartScanAsync(Parameters, run, cancellationToken).ConfigureAwait(false);
+            _logger.LogScanStarted(Parameters.ScanType);
+        }
+        catch
+        {
+            lock (_lock)
+            {
+                if (ReferenceEquals(_run, run))
+                    _run = null;
+                _listeners = Without(_listeners, listener);
+            }
+            throw;
+        }
+    }
+
+    private void Deliver(RadioRun run, IGapAdvertisement advertisement)
+    {
+        ScanListener[] listeners;
+        lock (_lock)
+        {
+            if (!ReferenceEquals(_run, run))
+                return;
+            listeners = _listeners;
+        }
+        foreach (ScanListener listener in listeners)
+        {
+            if (listener.TryWrite(advertisement))
+                continue;
+            lock (_lock)
+                _listeners = Without(_listeners, listener);
+        }
+    }
+
+    private void Fail(RadioRun run, Exception error)
+    {
+        ScanListener[] listeners;
+        lock (_lock)
+        {
+            if (!ReferenceEquals(_run, run))
+                return;
+            _run = null;
+            listeners = _listeners;
+            _listeners = [];
+        }
+        foreach (ScanListener listener in listeners)
+            listener.Complete(error);
+    }
+
+    private static ScanListener[] Without(ScanListener[] listeners, ScanListener listener) =>
+        Array.IndexOf(listeners, listener) < 0 ? listeners : [.. listeners.Where(l => !ReferenceEquals(l, listener))];
+
+    /// <summary> The sink of one radio run. Calls of a run that was stopped or replaced are ignored </summary>
+    private sealed class RadioRun(ScanCoordinator coordinator) : IScanSink
+    {
+        private readonly ScanCoordinator _coordinator = coordinator;
+
+        public void OnReport(IGapAdvertisement advertisement) => _coordinator.Deliver(this, advertisement);
+
+        public void OnFailed(BleException error) => _coordinator.Fail(this, error);
+    }
+}

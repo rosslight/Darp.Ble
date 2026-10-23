@@ -8,7 +8,9 @@ internal sealed class TestAdapterDriver : IBleAdapterDriver
 {
     private readonly TaskCompletionSource _allowDisposal = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    public Capabilities Capabilities => Capabilities.Central;
+    public Capabilities Capabilities => Capabilities.None;
+
+    public IObserverDriver? Observer => null;
 
     public int DisposeCount { get; private set; }
 
