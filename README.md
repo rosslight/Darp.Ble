@@ -21,7 +21,7 @@ This package is under heavy development. Huge changes to the API are to be expec
 | Darp.Ble.iOS     |          |         |             |            | planned                                                                                                                      |
 | Darp.Ble.Mac     |          |         |             |            | planned                                                                                                                      |
 | Darp.Ble.BlueZ   |          |         |             |            | planned                                                                                                                      |
-| Darp.Ble.Mock    | X        | X       |             |            | [![Darp.Ble.Mock](https://img.shields.io/nuget/v/Darp.Ble.Mock.svg)](https://www.nuget.org/packages/Darp.Ble.Mock/)          |
+| Darp.Ble.Mock    | X        | X       | X           | X          | [![Darp.Ble.Mock](https://img.shields.io/nuget/v/Darp.Ble.Mock.svg)](https://www.nuget.org/packages/Darp.Ble.Mock/)          |
 
 ## Features
 
@@ -68,29 +68,36 @@ await using AdvertisingSet advertising = await adapter.Broadcaster.StartAdvertis
 
 In tests, `AddMock(mock => mock.AddPeripheral(...))` adds simulated peripherals that advertise into the mock adapter's scans.
 
-### Central
+### Connect
 
-If the device supports central mode, use the `Central` property. `.ConnectToPeripheral()`, publishes a peer peripheral once connected.
-
-After that, service and characteristic discovery it is possible to read/write/subscribe.
-- Notify: `.OnNotify()` gives back a connectable observable. You can register subscribers before actually subscribing using `.Connect()`.
-- Write: `.WriteAsync()` allows you to write an array of bytes to the peerDevice
+`adapter.Central.ConnectAsync(address)` returns a `ConnectedPeripheral` once the link is up and the MTU is agreed, or throws a `BleConnectException` whose `Kind` says why (`Unreachable`, `TimedOut`, `Rejected`, `Busy`).
+You own the connection: disposing it disconnects. `Disconnected` completes once with the reason, also when the peripheral disconnects first.
+The adapter's scans pause while it connects and continue afterwards.
 
 ```csharp
-var central = bleDevice.Central;
+await using ConnectedPeripheral connection = await adapter.Central.ConnectAsync(advertisement.Address);
 
-var peerDevice = await central
-    .ConnectToPeripheral(new BleAddress(BleAddressType.Public, (UInt48)0xAABBCCDDEEFF))
-    .FirstAsync();
+RemoteGattService service = await connection.DiscoverServiceAsync(0x180D);
+foreach (RemoteGattCharacteristic characteristic in await service.DiscoverCharacteristicsAsync())
+    Console.WriteLine($"{characteristic.Uuid} {characteristic.Properties}");
+```
 
-var service = await peerDevice.DiscoverServiceAsync(0x1234);
-var writeChar = await service.DiscoverCharacteristicAsync<Properties.Write>(0x5678);
-var notifyChar = await service.DiscoverCharacteristicAsync<Properties.Notify>(0xABCD);
+Requests of a connection run one at a time, in call order. A request whose peer does not answer within 30 seconds ends the connection with `DisconnectReason.AttTimeout`, and requests of an ended connection throw a `BleDisconnectedException` with the same `DisconnectInfo`.
 
-await using var disposableObs = await notifyChar.OnNotifyAsync();
-var notifyTask = disposableObs.FirstAsync().ToTask();
-await writeChar.WriteAsync([0x00, 0x02, 0x03, 0x04]);
-var resultBytes = await notifyTask;
+### Host a service
+
+`adapter.Peripheral.AddServiceAsync(builder)` adds a complete service. `ConnectedCentrals` lists the centrals that are connected.
+A connection stops the advertising set it came through; `StartAdvertisingAsync(..., autoRestart: true)` starts it again once that central disconnected.
+
+```csharp
+var service = new LocalGattServiceBuilder(0x180D);
+service.AddCharacteristic(0x2A37, GattProperty.Notify);
+await adapter.Peripheral.AddServiceAsync(service);
+
+await using AdvertisingSet advertising = await adapter.Broadcaster.StartAdvertisingAsync(
+    AdvertisingData.Empty.WithCompleteLocalName("Sensor"),
+    interval: TimeSpan.FromMilliseconds(100),
+    autoRestart: true);
 ```
 
 ### Further Documentation
