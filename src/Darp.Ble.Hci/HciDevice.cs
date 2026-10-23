@@ -171,13 +171,15 @@ public sealed class HciDevice : IAsyncDisposable
 
     internal void RemoveConnection(ushort connectionHandle)
     {
-        bool isRemoved = _connections.TryRemove(connectionHandle, out AclConnection? removedConnection);
-        Debug.Assert(isRemoved);
-        removedConnection?.Dispose();
+        if (_connections.TryRemove(connectionHandle, out AclConnection? removedConnection))
+            removedConnection.Dispose();
     }
 
     internal void OnHciLeEnhancedConnectionCompleteV1EventPacket(HciLeEnhancedConnectionCompleteV1Event evt)
     {
+        // A failed or cancelled attempt has no connection
+        if (evt.Status is not HciCommandStatus.Success)
+            return;
         var connection = new AclConnection(
             this,
             evt.ConnectionHandle,

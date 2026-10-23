@@ -111,10 +111,15 @@ internal sealed partial class HciPacketInFlightHandler<
     [MessageSink]
     private void OnCommandStatus(in HciCommandStatusEvent message)
     {
-        if (_waitingForCommandStatus)
-            return;
         if (message.CommandOpCode != TCommand.OpCode)
             return;
+        // Command status events reach this sink only, so a query for the status itself completes here
+        if (_waitingForCommandStatus)
+        {
+            HciCommandStatusEvent status = message;
+            _completionSource.TrySetResult(Unsafe.As<HciCommandStatusEvent, TResponse>(ref status));
+            return;
+        }
         if (message.Status is HciCommandStatus.Success)
             return;
         _completionSource.TrySetException(new HciException($"Command failed with status {message.Status}"));

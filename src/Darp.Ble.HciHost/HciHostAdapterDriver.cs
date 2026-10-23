@@ -3,6 +3,7 @@ using Darp.Ble.Data;
 using Darp.Ble.Hci;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Result;
+using Darp.Ble.HciHost.Connections;
 using Darp.Ble.HciHost.Gap;
 
 namespace Darp.Ble.HciHost;
@@ -14,11 +15,13 @@ internal sealed class HciHostAdapterDriver : IBleAdapterDriver
 
     private readonly HciHostObserverDriver _observer;
     private readonly HciHostBroadcasterDriver _broadcaster;
+    private readonly HciHostCentralDriver _central;
 
     private HciHostAdapterDriver(HciDevice device, int maxAdvertisingDataLength, int numberOfAdvertisingSets)
     {
         _device = device;
         _observer = new HciHostObserverDriver(device);
+        _central = new HciHostCentralDriver(device);
         _broadcaster = new HciHostBroadcasterDriver(
             device,
             maxAdvertisingDataLength,
@@ -53,13 +56,13 @@ internal sealed class HciHostAdapterDriver : IBleAdapterDriver
     }
 
     public Capabilities Capabilities =>
-        Capabilities.Observer | Capabilities.Broadcaster | Capabilities.SetRandomAddress;
+        Capabilities.Observer | Capabilities.Broadcaster | Capabilities.Central | Capabilities.SetRandomAddress;
 
     public IObserverDriver? Observer => _observer;
 
     public IBroadcasterDriver? Broadcaster => _broadcaster;
 
-    public ICentralDriver? Central => null;
+    public ICentralDriver? Central => _central;
 
     public IPeripheralDriver? Peripheral => null;
 

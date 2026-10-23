@@ -5,6 +5,7 @@ Darp.Ble.Hci.AclConnection.AclPacketQueue.get -> Darp.Ble.Hci.IAclPacketQueue!
 Darp.Ble.Hci.AclConnection.Address.get -> Darp.Ble.Hci.Payload.Command.UInt48
 Darp.Ble.Hci.AclConnection.Assembler.get -> Darp.Ble.Hci.L2CapAssembler!
 Darp.Ble.Hci.AclConnection.AttMtu.get -> ushort
+Darp.Ble.Hci.AclConnection.AttMtu.set -> void
 Darp.Ble.Hci.AclConnection.ConnectionHandle.get -> ushort
 Darp.Ble.Hci.AclConnection.Device.get -> Darp.Ble.Hci.HciDevice!
 Darp.Ble.Hci.AclConnection.DisconnectAsync(Darp.Ble.Hci.Payload.HciCommandStatus reason = Darp.Ble.Hci.Payload.HciCommandStatus.RemoteUserTerminatedConnection, System.Threading.CancellationToken token = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
@@ -212,6 +213,7 @@ Darp.Ble.Hci.Package.HciEventPacket<TParameters>.Data.get -> TParameters
 Darp.Ble.Hci.Package.HciEventPacket<TParameters>.HciEventPacket(Darp.Ble.Hci.Payload.HciEventCode eventCode, byte parameterTotalLength, byte[]! dataBytes, TParameters data) -> void
 Darp.Ble.Hci.Package.HciOpCode
 Darp.Ble.Hci.Package.HciOpCode.HCI_Disconnect = 1030 -> Darp.Ble.Hci.Package.HciOpCode
+Darp.Ble.Hci.Package.HciOpCode.HCI_LE_Create_Connection_Cancel = 8206 -> Darp.Ble.Hci.Package.HciOpCode
 Darp.Ble.Hci.Package.HciOpCode.HCI_LE_Extended_Create_ConnectionV2 = 8325 -> Darp.Ble.Hci.Package.HciOpCode
 Darp.Ble.Hci.Package.HciOpCode.HCI_LE_Extended_Create_Connection_V1 = 8259 -> Darp.Ble.Hci.Package.HciOpCode
 Darp.Ble.Hci.Package.HciOpCode.HCI_LE_READ_MAXIMUM_ADVERTISING_DATA_LENGTH = 8250 -> Darp.Ble.Hci.Package.HciOpCode
@@ -620,6 +622,14 @@ Darp.Ble.Hci.Payload.Command.HciDisconnectCommand.TryWriteBigEndian(System.Span<
 Darp.Ble.Hci.Payload.Command.HciDisconnectCommand.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) -> bool
 Darp.Ble.Hci.Payload.Command.HciDisconnectCommand.TryWriteLittleEndian(System.Span<byte> destination) -> bool
 Darp.Ble.Hci.Payload.Command.HciDisconnectCommand.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) -> bool
+Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand
+Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand.Equals(Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand other) -> bool
+Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand.GetByteCount() -> int
+Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand.HciLeCreateConnectionCancelCommand() -> void
+Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand.TryWriteBigEndian(System.Span<byte> destination) -> bool
+Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) -> bool
+Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand.TryWriteLittleEndian(System.Span<byte> destination) -> bool
+Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) -> bool
 Darp.Ble.Hci.Payload.Command.HciLeExtendedCreateConnectionV1Command
 Darp.Ble.Hci.Payload.Command.HciLeExtendedCreateConnectionV1Command.ConnectionIntervalMax.get -> ushort
 Darp.Ble.Hci.Payload.Command.HciLeExtendedCreateConnectionV1Command.ConnectionIntervalMax.init -> void
@@ -1243,6 +1253,7 @@ Darp.Ble.Hci.Payload.HciCommandStatus.CommandDisallowed = 12 -> Darp.Ble.Hci.Pay
 Darp.Ble.Hci.Payload.HciCommandStatus.ConnectionAlreadyExists = 11 -> Darp.Ble.Hci.Payload.HciCommandStatus
 Darp.Ble.Hci.Payload.HciCommandStatus.ConnectionFailedToBeEstablishedOrSynchronizationTimeout = 62 -> Darp.Ble.Hci.Payload.HciCommandStatus
 Darp.Ble.Hci.Payload.HciCommandStatus.ConnectionTerminatedByLocalHost = 22 -> Darp.Ble.Hci.Payload.HciCommandStatus
+Darp.Ble.Hci.Payload.HciCommandStatus.ConnectionTimeout = 8 -> Darp.Ble.Hci.Payload.HciCommandStatus
 Darp.Ble.Hci.Payload.HciCommandStatus.InvalidHciCommandParameters = 18 -> Darp.Ble.Hci.Payload.HciCommandStatus
 Darp.Ble.Hci.Payload.HciCommandStatus.PageTimeout = 4 -> Darp.Ble.Hci.Payload.HciCommandStatus
 Darp.Ble.Hci.Payload.HciCommandStatus.PairingWithUnitKeyNotSupported = 41 -> Darp.Ble.Hci.Payload.HciCommandStatus
@@ -1268,6 +1279,16 @@ Darp.Ble.Hci.Payload.IHciCommand
 Darp.Ble.Hci.Payload.IHciCommand.OpCode.get -> Darp.Ble.Hci.Package.HciOpCode
 Darp.Ble.Hci.Payload.IHciEvent<TEvent>
 Darp.Ble.Hci.Payload.IHciEvent<TEvent>.EventCode.get -> Darp.Ble.Hci.Payload.HciEventCode
+Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult
+Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult.Equals(Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult other) -> bool
+Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult.GetByteCount() -> int
+Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult.HciLeCreateConnectionCancelResult() -> void
+Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult.Status.get -> Darp.Ble.Hci.Payload.HciCommandStatus
+Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult.Status.init -> void
+Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult.TryWriteBigEndian(System.Span<byte> destination) -> bool
+Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) -> bool
+Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult.TryWriteLittleEndian(System.Span<byte> destination) -> bool
+Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) -> bool
 Darp.Ble.Hci.Payload.Result.HciLeFeatures
 Darp.Ble.Hci.Payload.Result.HciLeFeatures.ChannelSelectionAlgorithm2 = 16384 -> Darp.Ble.Hci.Payload.Result.HciLeFeatures
 Darp.Ble.Hci.Payload.Result.HciLeFeatures.ConnectionCteRequest = 131072 -> Darp.Ble.Hci.Payload.Result.HciLeFeatures
@@ -1643,6 +1664,7 @@ override Darp.Ble.Hci.Payload.Att.AttWriteCmd.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Att.AttWriteReq.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Att.AttWriteRsp.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Command.HciDisconnectCommand.GetHashCode() -> int
+override Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Command.HciLeExtendedCreateConnectionV1Command.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Command.HciLeReadBufferSizeCommandV1.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Command.HciLeReadLocalSupportedFeaturesCommand.GetHashCode() -> int
@@ -1684,6 +1706,7 @@ override Darp.Ble.Hci.Payload.Event.HciLeMetaEvent.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Event.HciLePhyUpdateCompleteEvent.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Event.HciNumberOfCompletedPackets.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Event.HciNumberOfCompletedPacketsEvent.GetHashCode() -> int
+override Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Result.HciLeReadBufferSizeResultV1.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Result.HciLeReadLocalSupportedFeaturesResult.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Result.HciLeReadMaximumAdvertisingDataLengthResult.GetHashCode() -> int
@@ -1910,6 +1933,13 @@ static Darp.Ble.Hci.Payload.Command.HciDisconnectCommand.TryReadLittleEndian(Sys
 static Darp.Ble.Hci.Payload.Command.HciDisconnectCommand.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Command.HciDisconnectCommand value, out int bytesRead) -> bool
 static Darp.Ble.Hci.Payload.Command.HciDisconnectCommand.operator !=(Darp.Ble.Hci.Payload.Command.HciDisconnectCommand left, Darp.Ble.Hci.Payload.Command.HciDisconnectCommand right) -> bool
 static Darp.Ble.Hci.Payload.Command.HciDisconnectCommand.operator ==(Darp.Ble.Hci.Payload.Command.HciDisconnectCommand left, Darp.Ble.Hci.Payload.Command.HciDisconnectCommand right) -> bool
+static Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand.OpCode.get -> Darp.Ble.Hci.Package.HciOpCode
+static Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand value) -> bool
+static Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand value, out int bytesRead) -> bool
+static Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand value) -> bool
+static Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand value, out int bytesRead) -> bool
+static Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand.operator !=(Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand left, Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand right) -> bool
+static Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand.operator ==(Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand left, Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand right) -> bool
 static Darp.Ble.Hci.Payload.Command.HciLeExtendedCreateConnectionV1Command.OpCode.get -> Darp.Ble.Hci.Package.HciOpCode
 static Darp.Ble.Hci.Payload.Command.HciLeExtendedCreateConnectionV1Command.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Command.HciLeExtendedCreateConnectionV1Command value) -> bool
 static Darp.Ble.Hci.Payload.Command.HciLeExtendedCreateConnectionV1Command.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Command.HciLeExtendedCreateConnectionV1Command value, out int bytesRead) -> bool
@@ -2193,6 +2223,12 @@ static Darp.Ble.Hci.Payload.Event.HciNumberOfCompletedPacketsEvent.TryReadLittle
 static Darp.Ble.Hci.Payload.Event.HciNumberOfCompletedPacketsEvent.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Event.HciNumberOfCompletedPacketsEvent value, out int bytesRead) -> bool
 static Darp.Ble.Hci.Payload.Event.HciNumberOfCompletedPacketsEvent.operator !=(Darp.Ble.Hci.Payload.Event.HciNumberOfCompletedPacketsEvent left, Darp.Ble.Hci.Payload.Event.HciNumberOfCompletedPacketsEvent right) -> bool
 static Darp.Ble.Hci.Payload.Event.HciNumberOfCompletedPacketsEvent.operator ==(Darp.Ble.Hci.Payload.Event.HciNumberOfCompletedPacketsEvent left, Darp.Ble.Hci.Payload.Event.HciNumberOfCompletedPacketsEvent right) -> bool
+static Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult value) -> bool
+static Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult value, out int bytesRead) -> bool
+static Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult value) -> bool
+static Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult value, out int bytesRead) -> bool
+static Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult.operator !=(Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult left, Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult right) -> bool
+static Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult.operator ==(Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult left, Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult right) -> bool
 static Darp.Ble.Hci.Payload.Result.HciLeReadBufferSizeResultV1.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Result.HciLeReadBufferSizeResultV1 value) -> bool
 static Darp.Ble.Hci.Payload.Result.HciLeReadBufferSizeResultV1.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Result.HciLeReadBufferSizeResultV1 value, out int bytesRead) -> bool
 static Darp.Ble.Hci.Payload.Result.HciLeReadBufferSizeResultV1.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Result.HciLeReadBufferSizeResultV1 value) -> bool
@@ -2387,6 +2423,8 @@ virtual Darp.Ble.Hci.ReactiveExtensions.TrySelector<T, TResult>.Invoke(T value, 
 ~override Darp.Ble.Hci.Payload.Att.AttWriteRsp.ToString() -> string
 ~override Darp.Ble.Hci.Payload.Command.HciDisconnectCommand.Equals(object obj) -> bool
 ~override Darp.Ble.Hci.Payload.Command.HciDisconnectCommand.ToString() -> string
+~override Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand.Equals(object obj) -> bool
+~override Darp.Ble.Hci.Payload.Command.HciLeCreateConnectionCancelCommand.ToString() -> string
 ~override Darp.Ble.Hci.Payload.Command.HciLeExtendedCreateConnectionV1Command.Equals(object obj) -> bool
 ~override Darp.Ble.Hci.Payload.Command.HciLeExtendedCreateConnectionV1Command.ToString() -> string
 ~override Darp.Ble.Hci.Payload.Command.HciLeReadBufferSizeCommandV1.Equals(object obj) -> bool
@@ -2465,6 +2503,8 @@ virtual Darp.Ble.Hci.ReactiveExtensions.TrySelector<T, TResult>.Invoke(T value, 
 ~override Darp.Ble.Hci.Payload.Event.HciNumberOfCompletedPackets.ToString() -> string
 ~override Darp.Ble.Hci.Payload.Event.HciNumberOfCompletedPacketsEvent.Equals(object obj) -> bool
 ~override Darp.Ble.Hci.Payload.Event.HciNumberOfCompletedPacketsEvent.ToString() -> string
+~override Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult.Equals(object obj) -> bool
+~override Darp.Ble.Hci.Payload.Result.HciLeCreateConnectionCancelResult.ToString() -> string
 ~override Darp.Ble.Hci.Payload.Result.HciLeReadBufferSizeResultV1.Equals(object obj) -> bool
 ~override Darp.Ble.Hci.Payload.Result.HciLeReadBufferSizeResultV1.ToString() -> string
 ~override Darp.Ble.Hci.Payload.Result.HciLeReadLocalSupportedFeaturesResult.Equals(object obj) -> bool

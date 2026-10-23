@@ -20,9 +20,12 @@ public sealed class GattServer(HciDevice device, ILogger<GattServer>? logger)
     {
         using Activity? activity = Logging.StartHandleAttRequestActivity(request, connection);
 
-        ushort newMtu = Math.Min(request.ClientRxMtu, Constants.DefaultMaxAttMtu);
-        connection.AttMtu = newMtu;
-        connection.EnqueueGattPacket(new AttExchangeMtuRsp { ServerRxMtu = newMtu }, activity);
+        // The answer tells what this host receives; the link uses the smaller of both
+        connection.AttMtu = Math.Max(
+            Constants.DefaultAttMtu,
+            Math.Min(request.ClientRxMtu, Constants.DefaultMaxAttMtu)
+        );
+        connection.EnqueueGattPacket(new AttExchangeMtuRsp { ServerRxMtu = Constants.DefaultMaxAttMtu }, activity);
     }
 
     internal void OnHciLeDataLengthChangeEvent(HciLeDataLengthChangeEvent hciEvent)

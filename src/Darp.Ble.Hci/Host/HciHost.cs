@@ -285,9 +285,10 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
             case HciEventCode.HCI_Disconnection_Complete
                 when HciDisconnectionCompleteEvent.TryReadLittleEndian(packet.DataBytes.Span, out var evt):
                 LogEventPacketControllerToHost(evt, packet.DataBytes);
+                // The owners of the connection learn why it ended before anything waiting on it fails
+                PublishMessage(evt);
                 if (Device.TryGetConnection(evt.ConnectionHandle, out AclConnection? connection))
                     connection.OnDisconnectEvent(evt);
-                PublishMessage(evt);
                 Device.RemoveConnection(evt.ConnectionHandle);
                 break;
             case HciEventCode.HCI_Command_Status

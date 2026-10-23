@@ -217,12 +217,13 @@ public sealed class FakeController : ITransportLayer
         sent.TrySetResult();
         if (message.Type is not HciPacketType.HciAclData)
             return;
-        _aclToController.Writer.TryWrite(message);
+        // Completed before the test can read the packet, so an answer the test pushes comes after it
         if (CompletePacketsAutomatically)
         {
             ushort handle = (ushort)(BinaryPrimitives.ReadUInt16LittleEndian(message.PduBytes) & 0x0FFF);
             _ = PushAsync(HciMessages.HciNumberOfCompletedPacketsEvent(handle));
         }
+        _aclToController.Writer.TryWrite(message);
     }
 
     ValueTask ITransportLayer.InitializeAsync(
