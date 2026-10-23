@@ -169,6 +169,7 @@ Darp.Ble.Connections.ConnectedCentral
 Darp.Ble.Connections.ConnectedCentral.Address.get -> Darp.Ble.Data.BleAddress!
 Darp.Ble.Connections.ConnectedCentral.DisconnectAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Darp.Ble.Connections.ConnectedCentral.Disconnected.get -> System.Threading.Tasks.Task<Darp.Ble.Connections.DisconnectInfo!>!
+Darp.Ble.Connections.ConnectedCentral.GetOrAddState<T>(System.Func<T!>! create) -> T!
 Darp.Ble.Connections.ConnectedPeripheral
 Darp.Ble.Connections.ConnectedPeripheral.Address.get -> Darp.Ble.Data.BleAddress!
 Darp.Ble.Connections.ConnectedPeripheral.DisconnectAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
