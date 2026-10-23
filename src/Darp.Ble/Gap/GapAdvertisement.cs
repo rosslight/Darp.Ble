@@ -3,100 +3,88 @@ using Darp.Ble.Data;
 
 namespace Darp.Ble.Gap;
 
-/// <summary> The implementation of a ble advertisement </summary>
+/// <summary> An advertising report. Immutable: it owns one copy of the report's bytes, which every scan shares </summary>
 public sealed class GapAdvertisement : IGapAdvertisement
 {
-    private readonly byte[] _bytes;
+    private const int HeaderLength = 24;
 
-    private GapAdvertisement(byte[] bytes)
+    private readonly ReadOnlyMemory<byte> _bytes;
+
+    private GapAdvertisement(DateTimeOffset timestamp, ReadOnlyMemory<byte> bytes)
     {
+        ReadOnlySpan<byte> span = bytes.Span;
+        Timestamp = timestamp;
         _bytes = bytes;
+        EventType = (BleEventType)BinaryPrimitives.ReadUInt16LittleEndian(span);
+        Address = new BleAddress((BleAddressType)span[2], UInt48.ReadLittleEndian(span[3..]));
+        PrimaryPhy = (Physical)span[9];
+        SecondaryPhy = (Physical)span[10];
+        AdvertisingSId = (AdvertisingSId)span[11];
+        TxPower = (TxPowerLevel)span[12];
+        Rssi = (Rssi)span[13];
+        PeriodicAdvertisingInterval = (PeriodicAdvertisingInterval)BinaryPrimitives.ReadUInt16LittleEndian(span[14..]);
+        DirectAddress = new BleAddress((BleAddressType)span[16], UInt48.ReadLittleEndian(span[17..]));
+        byte dataLength = span[23];
+        Data = AdvertisingData.FromOwned(bytes[HeaderLength..(HeaderLength + dataLength)]);
     }
 
     /// <inheritdoc />
-    public required DateTimeOffset Timestamp { get; init; }
+    public DateTimeOffset Timestamp { get; }
 
     /// <inheritdoc />
-    public required BleEventType EventType { get; init; }
+    public BleEventType EventType { get; }
 
     /// <inheritdoc />
-    public required BleAddress Address { get; init; }
+    public BleAddress Address { get; }
 
     /// <inheritdoc />
-    public required Physical PrimaryPhy { get; init; }
+    public Physical PrimaryPhy { get; }
 
     /// <inheritdoc />
-    public required Physical SecondaryPhy { get; init; }
+    public Physical SecondaryPhy { get; }
 
     /// <inheritdoc />
-    public required AdvertisingSId AdvertisingSId { get; init; }
+    public AdvertisingSId AdvertisingSId { get; }
 
     /// <inheritdoc />
-    public required TxPowerLevel TxPower { get; init; }
+    public TxPowerLevel TxPower { get; }
 
     /// <inheritdoc />
-    public required Rssi Rssi { get; init; }
+    public Rssi Rssi { get; }
 
     /// <inheritdoc />
-    public required PeriodicAdvertisingInterval PeriodicAdvertisingInterval { get; init; }
+    public PeriodicAdvertisingInterval PeriodicAdvertisingInterval { get; }
 
     /// <inheritdoc />
-    public required BleAddress DirectAddress { get; init; }
+    public BleAddress DirectAddress { get; }
 
     /// <inheritdoc />
-    public required AdvertisingData Data { get; init; }
+    public AdvertisingData Data { get; }
 
-    /// <summary> Create an advertisement wrapper from bytes of an extended advertising report </summary>
+    /// <inheritdoc />
+    public ReadOnlyMemory<byte> AsReadOnlyMemory() => _bytes;
+
+    /// <summary> Create an advertisement from the bytes of an extended advertising report. The bytes are copied </summary>
     /// <remarks> BLUETOOTH CORE SPECIFICATION Version 5.4 | Vol 4, Part E, 7.7.65.13 LE Extended Advertising Report event </remarks>
-    /// <param name="timestamp"> The timestamp the record was recorded </param>
-    /// <param name="bytes"> The bytes of a single extended advertising report </param>
+    /// <param name="timestamp"> The time the report was received </param>
+    /// <param name="report"> The bytes of a single extended advertising report </param>
     /// <returns> The advertisement </returns>
-    public static GapAdvertisement FromExtendedAdvertisingReport(DateTimeOffset timestamp, byte[] bytes)
-    {
-        ReadOnlySpan<byte> byteBuffer = bytes;
-        ushort eventType = BinaryPrimitives.ReadUInt16LittleEndian(byteBuffer);
-        byte addressType = byteBuffer[2];
-        UInt48 address = UInt48.ReadLittleEndian(byteBuffer[3..]);
-        byte primaryPhy = byteBuffer[9];
-        byte secondaryPhy = byteBuffer[10];
-        byte advertisingSId = byteBuffer[11];
-        byte txPower = byteBuffer[12];
-        byte rssi = byteBuffer[13];
-        ushort periodicAdvertisingInterval = BinaryPrimitives.ReadUInt16LittleEndian(byteBuffer[14..]);
-        byte directAddressType = byteBuffer[16];
-        UInt48 directAddress = UInt48.ReadLittleEndian(byteBuffer[17..]);
-        byte dataLength = byteBuffer[23];
-        ReadOnlyMemory<byte> data = bytes.AsMemory()[24..(24 + dataLength)];
+    public static GapAdvertisement FromExtendedAdvertisingReport(DateTimeOffset timestamp, ReadOnlySpan<byte> report) =>
+        new(timestamp, report.ToArray());
 
-        return new GapAdvertisement(bytes)
-        {
-            Timestamp = timestamp,
-            EventType = (BleEventType)eventType,
-            Address = new BleAddress((BleAddressType)addressType, address),
-            PrimaryPhy = (Physical)primaryPhy,
-            SecondaryPhy = (Physical)secondaryPhy,
-            AdvertisingSId = (AdvertisingSId)advertisingSId,
-            TxPower = (TxPowerLevel)txPower,
-            Rssi = (Rssi)rssi,
-            PeriodicAdvertisingInterval = (PeriodicAdvertisingInterval)periodicAdvertisingInterval,
-            DirectAddress = new BleAddress((BleAddressType)directAddressType, directAddress),
-            Data = AdvertisingData.From(data),
-        };
-    }
-
-    /// <summary> Create from property values </summary>
-    /// <param name="timestamp"> The Timestamp when the report was received </param>
+    /// <summary> Create an advertisement from its values </summary>
+    /// <param name="timestamp"> The time the report was received </param>
     /// <param name="eventType"> The type of the advertising event </param>
-    /// <param name="address"> Settings of the primary physical the advertising device used </param>
-    /// <param name="primaryPhy"> Settings of the secondary physical the advertising device used </param>
-    /// <param name="secondaryPhy"> Value of the Advertising SID subfield in the ADI field of the PDU or, for scan responses, in the ADI field of the original scannable advertisement </param>
-    /// <param name="advertisingSId"> The Tx power of the advertising device </param>
+    /// <param name="address"> The address of the advertising device </param>
+    /// <param name="primaryPhy"> The primary physical the advertising device used </param>
+    /// <param name="secondaryPhy"> The secondary physical the advertising device used </param>
+    /// <param name="advertisingSId"> The Advertising SID subfield of the ADI field </param>
     /// <param name="txPower"> The Tx power of the advertising device </param>
     /// <param name="rssi"> The Rssi of the advertising device </param>
     /// <param name="periodicAdvertisingInterval"> The interval of periodic advertisements </param>
     /// <param name="directAddress"> The address of the device the advertisement is directed to </param>
     /// <param name="advertisingData"> The data sections </param>
-    /// <returns> The GapAdvertisement </returns>
+    /// <returns> The advertisement </returns>
     public static GapAdvertisement FromExtendedAdvertisingReport(
         DateTimeOffset timestamp,
         BleEventType eventType,
@@ -115,7 +103,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
         ArgumentNullException.ThrowIfNull(directAddress);
         ArgumentNullException.ThrowIfNull(advertisingData);
         ReadOnlySpan<byte> dataSpan = advertisingData.AsReadOnlyMemory().Span;
-        var bytes = new byte[24 + dataSpan.Length];
+        var bytes = new byte[HeaderLength + dataSpan.Length];
         Span<byte> buffer = bytes;
         BinaryPrimitives.WriteUInt16LittleEndian(buffer, (ushort)eventType);
         buffer[2] = (byte)address.Type;
@@ -129,38 +117,12 @@ public sealed class GapAdvertisement : IGapAdvertisement
         buffer[16] = (byte)directAddress.Type;
         UInt48.WriteLittleEndian(buffer[17..], directAddress.Value);
         buffer[23] = (byte)dataSpan.Length;
-        dataSpan.CopyTo(buffer[24..]);
-        return new GapAdvertisement(bytes)
-        {
-            Timestamp = timestamp,
-            EventType = eventType,
-            Address = address,
-            PrimaryPhy = primaryPhy,
-            SecondaryPhy = secondaryPhy,
-            AdvertisingSId = advertisingSId,
-            TxPower = txPower,
-            Rssi = rssi,
-            PeriodicAdvertisingInterval = periodicAdvertisingInterval,
-            DirectAddress = directAddress,
-            Data = advertisingData,
-        };
+        dataSpan.CopyTo(buffer[HeaderLength..]);
+        return new GapAdvertisement(timestamp, bytes);
     }
 
-    /// <inheritdoc />
-    public byte[] AsByteArray() => _bytes;
-
     private bool Equals(GapAdvertisement other) =>
-        Timestamp.Equals(other.Timestamp)
-        && EventType == other.EventType
-        && Address.Equals(other.Address)
-        && PrimaryPhy == other.PrimaryPhy
-        && SecondaryPhy == other.SecondaryPhy
-        && AdvertisingSId == other.AdvertisingSId
-        && TxPower == other.TxPower
-        && Rssi == other.Rssi
-        && PeriodicAdvertisingInterval == other.PeriodicAdvertisingInterval
-        && DirectAddress.Equals(other.DirectAddress)
-        && Data.Equals(other.Data);
+        Timestamp.Equals(other.Timestamp) && _bytes.Span.SequenceEqual(other._bytes.Span);
 
     /// <inheritdoc />
     public bool Equals(IGapAdvertisement? other) =>
@@ -173,8 +135,11 @@ public sealed class GapAdvertisement : IGapAdvertisement
     /// <inheritdoc />
     public override int GetHashCode()
     {
-        int tempHashCode = HashCode.Combine(Timestamp, EventType, Address, PrimaryPhy, SecondaryPhy, AdvertisingSId);
-        return HashCode.Combine(tempHashCode, TxPower, Rssi, PeriodicAdvertisingInterval, DirectAddress, Data);
+        // The same values as Equals: the timestamp and the bytes of the report
+        var hash = new HashCode();
+        hash.Add(Timestamp);
+        hash.AddBytes(_bytes.Span);
+        return hash.ToHashCode();
     }
 }
 
@@ -227,11 +192,11 @@ public sealed class GapAdvertisement<TUserData> : IGapAdvertisement<TUserData>
     public AdvertisingData Data => _advertisement.Data;
 
     /// <inheritdoc />
-    public TUserData UserData { get; }
-    object? IGapAdvertisementWithUserData.UserData => UserData;
+    public ReadOnlyMemory<byte> AsReadOnlyMemory() => _advertisement.AsReadOnlyMemory();
 
     /// <inheritdoc />
-    public byte[] AsByteArray() => _advertisement.AsByteArray();
+    public TUserData UserData { get; }
+    object? IGapAdvertisementWithUserData.UserData => UserData;
 
     private bool Equals(GapAdvertisement<TUserData> other) =>
         _advertisement.Equals(other._advertisement)
