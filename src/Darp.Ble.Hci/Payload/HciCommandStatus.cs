@@ -34,6 +34,11 @@ public enum HciCommandStatus : byte
     AuthenticationFailure = 0x05,
 
     /// <summary>
+    /// The Connection Timeout error code indicates that the link supervision timeout has expired for a given connection.
+    /// </summary>
+    ConnectionTimeout = 0x08,
+
+    /// <summary>
     /// The Connection Already Exists error code indicates that an attempt was made to create a new Connection
     /// to a device when there is already a connection to this device and multiple connections
     /// to the same device are not permitted.

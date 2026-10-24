@@ -1,0 +1,59 @@
+﻿[
+  {
+    Direction: HostToController,
+    Type: HciCommand,
+    OpCode: HCI_LE_Extended_Create_Connection_V1,
+    PduBytes: 0143201A0001016655443322110160006000500050000000480000000000
+  },
+  {
+    Direction: ControllerToHost,
+    Type: HciEvent,
+    EventCode: HCI_Command_Status,
+    CommandOpCode: HCI_LE_Extended_Create_Connection_V1,
+    PduBytes: 040F0400014320
+  },
+  {
+    Direction: ControllerToHost,
+    Type: HciEvent,
+    EventCode: HCI_LE_Meta,
+    SubEventCode: HCI_LE_Enhanced_Connection_Complete_V1,
+    PduBytes: 043E1F0A000100000166554433221100000000000000000000000050000000480000
+  },
+  {
+    Direction: HostToController,
+    Type: HciAclData,
+    AttOpCode: ATT_EXCHANGE_MTU_REQ,
+    PduBytes: 020100070003000400020502
+  },
+  {
+    Direction: ControllerToHost,
+    Type: HciEvent,
+    EventCode: HCI_Number_Of_Completed_Packets,
+    PduBytes: 0413050101000100
+  },
+  {
+    Direction: ControllerToHost,
+    Type: HciAclData,
+    AttOpCode: ATT_EXCHANGE_MTU_RSP,
+    PduBytes: 020120070003000400034100
+  },
+  {
+    Direction: HostToController,
+    Type: HciCommand,
+    OpCode: HCI_Disconnect,
+    PduBytes: 01060403010013
+  },
+  {
+    Direction: ControllerToHost,
+    Type: HciEvent,
+    EventCode: HCI_Command_Status,
+    CommandOpCode: HCI_Disconnect,
+    PduBytes: 040F0400010604
+  },
+  {
+    Direction: ControllerToHost,
+    Type: HciEvent,
+    EventCode: HCI_Disconnection_Complete,
+    PduBytes: 04050400010016
+  }
+]

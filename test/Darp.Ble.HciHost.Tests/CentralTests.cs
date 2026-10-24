@@ -1,244 +1,333 @@
-using System.Reactive.Linq;
-using System.Reactive.Threading.Tasks;
-using System.Reflection;
+using Darp.Ble.Connections;
 using Darp.Ble.Data;
-using Darp.Ble.Exceptions;
 using Darp.Ble.Gatt;
-using Darp.Ble.Gatt.Server;
-using Darp.Ble.Hci;
-using Darp.Ble.Hci.Exceptions;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Att;
-using Darp.Ble.Hci.Payload.Event;
-using Darp.Ble.HciHost.Gatt.Server;
 using Darp.Ble.HciHost.Verify;
+using Microsoft.Extensions.Time.Testing;
 using Shouldly;
 
 namespace Darp.Ble.HciHost.Tests;
 
+/// <summary> Connecting to peripherals from an HCI adapter (seam 1 of PR 6) </summary>
 public sealed class CentralTests
 {
+    private const ushort Handle = 0x0001;
+
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    [Fact(Timeout = 5000)]
-    public async Task ConnectToPeripheral_HappyPath()
+    [Fact]
+    public async Task Connecting_CreatesTheLinkAndAgreesOnTheMtu_AndDisposingTakesTheLinkDown()
     {
-        const ushort connectionHandle = 0x0001;
-        var peerAddress = BleAddress.CreateRandomAddress((UInt48)0x112233445566);
+        await using var controller = new FakeController();
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
 
-        ReplayTransportLayer replay = ReplayTransportLayer.ReplayAfterBleDeviceInitialization([
-            HciMessages.HciLeExtendedCreateConnectionCommandStatusEvent(),
-            HciMessages.HciLeReadPhyEvent(connectionHandle, txPhy: 0x01, rxPhy: 0x01),
-            HciMessages.AttExchangeMtuResponse(connectionHandle, serverRxMtu: 65),
-            HciMessages.HciDisconnectionCompleteEvent(connectionHandle),
+        ConnectedPeripheral connection = await HciAdapter.ConnectAsync(adapter, controller, Handle, serverMtu: 65);
+        await connection.DisposeAsync();
+
+        connection.MaxWritePayloadLength.ShouldBe(62);
+        (await connection.Disconnected).Reason.ShouldBe(DisconnectReason.LocalRequest);
+        await Verifier.Verify(controller.Messages);
+    }
+
+    [Fact]
+    public async Task CancellingAnAttempt_CancelsItAtTheController()
+    {
+        await using var controller = new FakeController();
+        controller.Answer(
+            HciOpCode.HCI_LE_Create_Connection_Cancel,
+            _ =>
+                [
+                    HciMessage.CommandCompleteEventToHost("010E2000"),
+                    HciAdapter.ConnectionComplete(0, HciCommandStatus.UnknownConnectionIdentifier),
+                ]
+        );
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+        using var cancel = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        Task<ConnectedPeripheral> connecting = adapter.Central.ConnectAsync(
+            HciAdapter.Peer,
+            cancellationToken: cancel.Token
+        );
+        await controller.WaitForCommandAsync(HciOpCode.HCI_LE_Extended_Create_Connection_V1);
+
+        await cancel.CancelAsync();
+
+        await Should.ThrowAsync<OperationCanceledException>(connecting);
+        controller.Commands.ShouldBe([
+            HciOpCode.HCI_LE_Extended_Create_Connection_V1,
+            HciOpCode.HCI_LE_Create_Connection_Cancel,
         ]);
-
-        await using IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(replay, token: Token);
-
-        IObservable<IGattServerPeer> connectionObservable = device.Central.ConnectToPeripheral(peerAddress);
-        Task<IGattServerPeer> connectionTask = connectionObservable.FirstAsync().ToTask(Token);
-
-        // Wait a short while until the HCI_LE_Extended_Create_Connection_V1 event was propagated
-        await Task.Delay(10, Token);
-
-        replay.Push(
-            HciMessages.HciLeEnhancedConnectionCompleteEvent(
-                connectionHandle: connectionHandle,
-                role: HciLeConnectionRole.Central,
-                peerAddressType: (byte)peerAddress.Type,
-                peerAddress: peerAddress.Value,
-                connectionInterval: 0x0028,
-                peripheralLatency: 0x0000,
-                supervisionTimeout: 0x01F4,
-                centralClockAccuracy: 0x01
-            )
-        );
-
-        var result = (await connectionTask).ShouldBeOfType<HciHostGattServerPeer>();
-
-        result.Address.ShouldBe(peerAddress);
-        result.ConnectionHandle.ShouldBe(connectionHandle);
-
-        await result.DisposeAsync();
-        await Verifier.Verify(new { replay.MessagesToController, replay.MessagesToHost });
     }
 
-    [Fact(Timeout = 5000)]
-    public async Task DisposeDevice_ShouldWork()
+    [Fact]
+    public async Task CancellingRightAfterTheControllerGotTheAttempt_StillCancelsItThere()
     {
-        const ushort connectionHandle = 0x001;
-
-        HciMessage[] messages = [HciMessages.HciDisconnectionCompleteEvent(connectionHandle)];
-        (HciHostGattServerPeer peer, ReplayTransportLayer replay) = await Helpers.CreateConnectedServerPeerAsync(
-            connectionHandle: connectionHandle,
-            additionalControllerMessages: messages,
-            token: Token
-        );
-
-        await peer.Central.Device.DisposeAsync();
-
-        await Verifier.Verify(new { replay.MessagesToController, replay.MessagesToHost });
-    }
-
-    [Fact(Timeout = 5000)]
-    public async Task ConnectToPeripheral_ZeroConnectionHandle_DisconnectBeforeMtuResponse_ShouldThrowConnectionInitializationFailedException()
-    {
-        const ushort connectionHandle = 0x0000;
-        var peerAddress = BleAddress.CreateRandomAddress((UInt48)0x5AB482714055);
-
-        var responses = new List<HciMessage>(ReplayTransportLayer.InitializeBleDeviceMessages)
-        {
-            HciMessages.HciLeExtendedCreateConnectionCommandStatusEvent(),
-            HciMessages.HciLeReadPhyEvent(connectionHandle, txPhy: 0x01, rxPhy: 0x01),
-        };
-
-        ReplayTransportLayer? replay = null;
-        replay = new ReplayTransportLayer(
-            (_, i) =>
+        await using var controller = new FakeController();
+        using var cancel = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        controller.Answer(
+            HciOpCode.HCI_LE_Extended_Create_Connection_V1,
+            _ =>
             {
-                if (i >= responses.Count)
-                    return (null, TimeSpan.Zero);
+                // The controller has the command; its status is not back yet
+                cancel.Cancel();
+                return [FakeController.CommandStatus(HciOpCode.HCI_LE_Extended_Create_Connection_V1)];
+            }
+        );
+        controller.Answer(
+            HciOpCode.HCI_LE_Create_Connection_Cancel,
+            _ =>
+                [
+                    HciMessage.CommandCompleteEventToHost("010E2000"),
+                    HciAdapter.ConnectionComplete(0, HciCommandStatus.UnknownConnectionIdentifier),
+                ]
+        );
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
 
-                (HciMessage? Message, TimeSpan) response = ReplayTransportLayer.IterateHciMessages(responses, i);
-                if (response.Message is { Type: HciPacketType.HciAclData })
-                    replay?.Push(HciMessages.HciNumberOfCompletedPacketsEvent(connectionHandle));
-                return response;
-            },
-            ReplayTransportLayer.InitializeBleDeviceMessages.Length,
-            logger: null
+        await Should.ThrowAsync<OperationCanceledException>(() =>
+            adapter.Central.ConnectAsync(HciAdapter.Peer, cancellationToken: cancel.Token)
         );
 
-        await using IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(replay, token: Token);
-
-        Task<IGattServerPeer> connectionTask = device.Central.ConnectToPeripheral(peerAddress).FirstAsync().ToTask();
-
-        await Task.Delay(10, Token);
-        replay.Push(
-            HciMessages.HciLeEnhancedConnectionCompleteEvent(
-                connectionHandle,
-                HciLeConnectionRole.Central,
-                (byte)peerAddress.Type,
-                peerAddress.Value,
-                connectionInterval: 0x0018,
-                peripheralLatency: 0x0000,
-                supervisionTimeout: 0x0048,
-                centralClockAccuracy: 0x00
-            )
-        );
-
-        await WaitForOutgoingMessagesAsync(replay, expectedCount: 3, Token);
-
-        replay.Push(
-            HciMessages.HciDisconnectionCompleteEvent(
-                connectionHandle,
-                reason: HciCommandStatus.ConnectionFailedToBeEstablishedOrSynchronizationTimeout
-            )
-        );
-
-        await WaitForOutgoingMessagesAsync(replay, expectedCount: 3, Token);
-        var exception = await Should.ThrowAsync<BleCentralConnectionInitializationFailedException>(async () =>
-            await connectionTask
-        );
-        exception.Address.ShouldBe(peerAddress);
-        exception.ConnectionHandle.ShouldBe(connectionHandle);
-
-        var innerException = exception.InnerException.ShouldBeOfType<HciConnectionDisconnectedException>();
-        innerException.ConnectionHandle.ShouldBe(connectionHandle);
-        innerException.Operation.ShouldBe("ATT query ATT_EXCHANGE_MTU_REQ");
-        innerException.DisconnectReason.ShouldBe(
-            HciCommandStatus.ConnectionFailedToBeEstablishedOrSynchronizationTimeout
-        );
-
-        HciMessage[] messagesToController = replay.MessagesToController.ToArray();
-        string expectedCreateConnectionPayload =
-            $"43201A0001{(byte)peerAddress.Type:X2}55407182B45A01600060000C0018000000480000000000";
-
-        messagesToController.Length.ShouldBeGreaterThanOrEqualTo(3);
-        Convert.ToHexString(messagesToController[0].PduBytes).ShouldBe(expectedCreateConnectionPayload);
-        Convert.ToHexString(messagesToController[1].PduBytes).ShouldBe("3020020000");
-
-        HciAclPacket
-            .TryReadLittleEndian(messagesToController[2].PduBytes, out HciAclPacket mtuRequestPacket)
-            .ShouldBeTrue();
-        mtuRequestPacket.ConnectionHandle.ShouldBe(connectionHandle);
-        mtuRequestPacket.DataBytes.Span[4].ShouldBe((byte)AttOpCode.ATT_EXCHANGE_MTU_REQ);
-
-        await Verifier.Verify(new { replay.MessagesToController, replay.MessagesToHost });
+        controller.Commands.ShouldBe([
+            HciOpCode.HCI_LE_Extended_Create_Connection_V1,
+            HciOpCode.HCI_LE_Create_Connection_Cancel,
+        ]);
     }
 
-    [Fact(Timeout = 5000)]
-    public async Task ConnectToPeripheral_DisconnectComplete_ShouldDisposeConnectionResources()
+    [Fact]
+    public async Task ALinkThatCameUpWhileCancelling_IsTakenDown()
     {
-        const ushort connectionHandle = 0x0001;
-        var peerAddress = BleAddress.CreateRandomAddress((UInt48)0x112233445566);
-
-        var responses = new List<HciMessage>(ReplayTransportLayer.InitializeBleDeviceMessages)
-        {
-            HciMessages.HciLeExtendedCreateConnectionCommandStatusEvent(),
-            HciMessages.HciLeReadPhyEvent(connectionHandle, txPhy: 0x01, rxPhy: 0x01),
-            HciMessages.AttExchangeMtuResponse(connectionHandle, serverRxMtu: 65),
-        };
-
-        ReplayTransportLayer replay = new(
-            (_, i) => ReplayTransportLayer.IterateHciMessages(responses, i),
-            ReplayTransportLayer.InitializeBleDeviceMessages.Length,
-            logger: null
+        await using var controller = new FakeController();
+        controller.Answer(
+            HciOpCode.HCI_LE_Create_Connection_Cancel,
+            _ => [HciAdapter.ConnectionComplete(Handle), HciMessage.CommandCompleteEventToHost("010E20000C")]
         );
-
-        await using IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(replay, token: Token);
-
-        Task<IGattServerPeer> peerTask = device.Central.ConnectToPeripheral(peerAddress).FirstAsync().ToTask(Token);
-
-        await Task.Delay(10, Token);
-        replay.Push(
-            HciMessages.HciLeEnhancedConnectionCompleteEvent(
-                connectionHandle,
-                HciLeConnectionRole.Central,
-                (byte)peerAddress.Type,
-                peerAddress.Value,
-                connectionInterval: 0x0028,
-                peripheralLatency: 0x0000,
-                supervisionTimeout: 0x01F4,
-                centralClockAccuracy: 0x01
-            )
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+        using var cancel = CancellationTokenSource.CreateLinkedTokenSource(Token);
+        Task<ConnectedPeripheral> connecting = adapter.Central.ConnectAsync(
+            HciAdapter.Peer,
+            cancellationToken: cancel.Token
         );
+        await controller.WaitForCommandAsync(HciOpCode.HCI_LE_Extended_Create_Connection_V1);
 
-        var peer = (HciHostGattServerPeer)await peerTask;
-        CancellationTokenSource disconnectSource = GetDisconnectSource(peer.Connection);
+        await cancel.CancelAsync();
 
-        Task<ConnectionStatus> disconnectedTask = peer
-            .WhenConnectionStatusChanged.Where(x => x is ConnectionStatus.Disconnected)
-            .FirstAsync()
-            .ToTask(Token);
-
-        replay.Push(HciMessages.HciDisconnectionCompleteEvent(connectionHandle));
-
-        (await disconnectedTask).ShouldBe(ConnectionStatus.Disconnected);
-        Should.Throw<ObjectDisposedException>(disconnectSource.Cancel);
+        await Should.ThrowAsync<OperationCanceledException>(connecting);
+        await controller.WaitForCommandAsync(HciOpCode.HCI_Disconnect);
+        controller.Commands.ShouldBe([
+            HciOpCode.HCI_LE_Extended_Create_Connection_V1,
+            HciOpCode.HCI_LE_Create_Connection_Cancel,
+            HciOpCode.HCI_Disconnect,
+        ]);
     }
 
-    private static async Task WaitForOutgoingMessagesAsync(
-        ReplayTransportLayer replay,
-        int expectedCount,
-        CancellationToken token
+    [Fact]
+    public async Task AControllerBusyConnecting_RefusesTheAttempt()
+    {
+        await using var controller = new FakeController();
+        controller.Answer(
+            HciOpCode.HCI_LE_Extended_Create_Connection_V1,
+            _ =>
+                [
+                    FakeController.CommandStatus(
+                        HciOpCode.HCI_LE_Extended_Create_Connection_V1,
+                        HciCommandStatus.CommandDisallowed
+                    ),
+                ]
+        );
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+
+        BleConnectException exception = await Should.ThrowAsync<BleConnectException>(() =>
+            adapter.Central.ConnectAsync(HciAdapter.Peer, cancellationToken: Token)
+        );
+        exception.Kind.ShouldBe(BleConnectErrorKind.Busy);
+        exception.NativeCode.ShouldBe(0x0C);
+    }
+
+    [Fact]
+    public async Task AnAttemptTheControllerGivesUp_IsUnreachable()
+    {
+        await using var controller = new FakeController();
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+        Task<ConnectedPeripheral> connecting = adapter.Central.ConnectAsync(HciAdapter.Peer, cancellationToken: Token);
+        await controller.WaitForCommandAsync(HciOpCode.HCI_LE_Extended_Create_Connection_V1);
+
+        await controller.PushAsync(
+            HciAdapter.ConnectionComplete(0, HciCommandStatus.ConnectionFailedToBeEstablishedOrSynchronizationTimeout)
+        );
+
+        BleConnectException exception = await Should.ThrowAsync<BleConnectException>(connecting);
+        exception.Kind.ShouldBe(BleConnectErrorKind.Unreachable);
+    }
+
+    [Theory]
+    [InlineData(HciCommandStatus.RemoteUserTerminatedConnection, DisconnectReason.RemoteRequest)]
+    [InlineData(HciCommandStatus.RemoteDeviceTerminatedConnectionDueToPowerOff, DisconnectReason.RemoteRequest)]
+    [InlineData(HciCommandStatus.ConnectionTimeout, DisconnectReason.ConnectionTimeout)]
+    public async Task ALinkThatGoesDown_EndsTheConnectionWithItsReason(
+        HciCommandStatus reason,
+        DisconnectReason expected
     )
     {
-        while (!token.IsCancellationRequested)
-        {
-            if (replay.MessagesToController.Count >= expectedCount)
-                return;
+        await using var controller = new FakeController();
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+        await using ConnectedPeripheral connection = await HciAdapter.ConnectAsync(adapter, controller, Handle);
 
-            await Task.Delay(10, token);
-        }
+        await controller.PushAsync(HciMessages.HciDisconnectionCompleteEvent(Handle, reason));
+
+        DisconnectInfo info = await connection.Disconnected;
+        info.Reason.ShouldBe(expected);
+        info.NativeCode.ShouldBe((int)reason);
     }
 
-    private static CancellationTokenSource GetDisconnectSource(AclConnection connection)
+    [Fact]
+    public async Task TwoAttemptsAtOnce_EachGetTheirOwnLink()
     {
-        FieldInfo field = typeof(AclConnection).GetField(
-            "_disconnectSource",
-            BindingFlags.Instance | BindingFlags.NonPublic
-        )!;
-        return (CancellationTokenSource)field.GetValue(connection)!;
+        await using var controller = new FakeController();
+        BleAddress other = BleAddress.CreateRandomAddress((UInt48)0x223344556677);
+        var first = new FakePeripheral(controller, 0x0001) { Mtu = 65 };
+        var second = new FakePeripheral(controller, 0x0002) { Mtu = 100 };
+        _ = FakePeripheral.ServeAsync(controller, first);
+        _ = FakePeripheral.ServeAsync(controller, second);
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+
+        Task<ConnectedPeripheral> connectingFirst = adapter.Central.ConnectAsync(
+            HciAdapter.Peer,
+            cancellationToken: Token
+        );
+        Task<ConnectedPeripheral> connectingSecond = adapter.Central.ConnectAsync(other, cancellationToken: Token);
+        await controller.WaitForCommandAsync(HciOpCode.HCI_LE_Extended_Create_Connection_V1);
+        await controller.PushAsync(HciAdapter.ConnectionComplete(0x0001));
+        await using ConnectedPeripheral firstConnection = await connectingFirst;
+        // The second attempt starts once the first link is up
+        await controller.WaitForCommandAsync(HciOpCode.HCI_LE_Extended_Create_Connection_V1, occurrence: 2);
+        await controller.PushAsync(HciAdapter.ConnectionComplete(0x0002, peer: other));
+        await using ConnectedPeripheral secondConnection = await connectingSecond;
+
+        firstConnection.MaxWritePayloadLength.ShouldBe(62);
+        secondConnection.MaxWritePayloadLength.ShouldBe(97);
+    }
+
+    [Fact]
+    public async Task ALostTransportBeforeTheControllerAcceptedTheAttempt_FailsItAtOnce()
+    {
+        await using var controller = new FakeController();
+        controller.Hold(HciOpCode.HCI_LE_Extended_Create_Connection_V1);
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+        Task<ConnectedPeripheral> connecting = adapter.Central.ConnectAsync(HciAdapter.Peer, cancellationToken: Token);
+        await controller.WaitForCommandAsync(HciOpCode.HCI_LE_Extended_Create_Connection_V1);
+
+        controller.Fail(new IOException("The serial port is gone"));
+
+        BleConnectException exception = await Should.ThrowAsync<BleConnectException>(connecting);
+        exception.Kind.ShouldBe(BleConnectErrorKind.Unreachable);
+    }
+
+    [Fact]
+    public async Task ALostTransport_FailsAPendingAttempt()
+    {
+        await using var controller = new FakeController();
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+        Task<ConnectedPeripheral> connecting = adapter.Central.ConnectAsync(HciAdapter.Peer, cancellationToken: Token);
+        await controller.WaitForCommandAsync(HciOpCode.HCI_LE_Extended_Create_Connection_V1);
+
+        controller.Fail(new IOException("The serial port is gone"));
+
+        await Should.ThrowAsync<BleConnectException>(connecting);
+    }
+
+    [Fact]
+    public async Task ADisconnectTheControllerDoesNotAnswer_StillEndsTheConnectionAndItsRequests()
+    {
+        await using var controller = new FakeController();
+        var time = new FakeTimeProvider();
+        var peripheral = new FakePeripheral(controller, Handle).AddService(
+            0x180F,
+            service => service.AddCharacteristic(0x2A19, GattProperty.Read, [80])
+        );
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller, time);
+        ConnectedPeripheral connection = await HciAdapter.ConnectAsync(adapter, controller, peripheral);
+        RemoteGattCharacteristic level = (
+            await (await connection.Gatt.DiscoverServiceAsync(0x180F, Token)).DiscoverCharacteristicsAsync(Token)
+        )[0];
+        peripheral.HoldAnswers = true;
+        controller.Hold(HciOpCode.HCI_Disconnect);
+        Task<byte[]> read = level.ReadAsync(Token);
+        await peripheral.WaitForReceivedAsync(received =>
+            received.Count(pdu => pdu[0] == (byte)AttOpCode.ATT_READ_REQ) == 1
+        );
+
+        Task disposing = connection.DisposeAsync().AsTask();
+        await controller.WaitForCommandAsync(HciOpCode.HCI_Disconnect);
+        time.Advance(TimeSpan.FromSeconds(5));
+
+        await Should.ThrowAsync<BleDisconnectedException>(read);
+        await disposing;
+        (await connection.Disconnected).Reason.ShouldBe(DisconnectReason.LocalRequest);
+    }
+
+    [Fact]
+    public async Task ALostTransport_EndsTheConnection()
+    {
+        await using var controller = new FakeController();
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+        await using ConnectedPeripheral connection = await HciAdapter.ConnectAsync(adapter, controller, Handle);
+
+        controller.Fail(new IOException("The serial port is gone"));
+
+        (await connection.Disconnected).Reason.ShouldBe(DisconnectReason.TransportLost);
+    }
+
+    [Fact]
+    public async Task ALinkThatGoesDownDuringTheMtuExchange_FailsConnecting()
+    {
+        await using var controller = new FakeController();
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+        Task<ConnectedPeripheral> connecting = adapter.Central.ConnectAsync(HciAdapter.Peer, cancellationToken: Token);
+        await controller.WaitForCommandAsync(HciOpCode.HCI_LE_Extended_Create_Connection_V1);
+        await controller.PushAsync(HciAdapter.ConnectionComplete(Handle));
+        await controller.ReadAclAsync(Token);
+
+        await controller.PushAsync(HciMessages.HciDisconnectionCompleteEvent(Handle));
+
+        await Should.ThrowAsync<BleDisconnectedException>(connecting);
+    }
+
+    [Fact]
+    public async Task APeripheralAskingForTheMtu_GetsAnAnswer()
+    {
+        await using var controller = new FakeController();
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+        await using ConnectedPeripheral connection = await HciAdapter.ConnectAsync(adapter, controller, Handle);
+
+        await controller.PushAsync(HciMessages.AttToHost(Handle, new AttExchangeMtuReq { ClientRxMtu = 100 }));
+
+        HciMessage answer = await controller.ReadAclAsync(Token);
+        // ACL header (4), L2CAP header (4), then the ATT PDU; the answer tells what this host receives
+        answer.PduBytes[8..].ShouldBe([(byte)AttOpCode.ATT_EXCHANGE_MTU_RSP, 0x05, 0x02]);
+    }
+
+    [Fact]
+    public async Task APeripheralDiscoveringOurServices_FindsNone()
+    {
+        await using var controller = new FakeController();
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+        await using ConnectedPeripheral connection = await HciAdapter.ConnectAsync(adapter, controller, Handle);
+
+        await controller.PushAsync(
+            HciMessages.AttToHost(
+                Handle,
+                new AttReadByGroupTypeReq<ushort>
+                {
+                    StartingHandle = 0x0001,
+                    EndingHandle = 0xFFFF,
+                    AttributeGroupType = 0x2800,
+                }
+            )
+        );
+
+        HciMessage answer = await controller.ReadAclAsync(Token);
+        answer.PduBytes[8].ShouldBe((byte)AttOpCode.ATT_ERROR_RSP);
+        answer.PduBytes[^1].ShouldBe((byte)AttErrorCode.AttributeNotFoundError);
     }
 }

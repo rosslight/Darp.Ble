@@ -191,6 +191,9 @@ internal sealed class MockLink
             .ContinueWith(
                 task =>
                 {
+                    // The peripheral's connection ends: no answer comes, the link going down ends the request
+                    if (task.IsCanceled)
+                        return;
                     lock (_lock)
                         _outstanding.Remove(outstanding);
                     if (task.IsCompletedSuccessfully)

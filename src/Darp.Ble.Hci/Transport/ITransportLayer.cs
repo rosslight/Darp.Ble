@@ -8,7 +8,8 @@ namespace Darp.Ble.Hci.Transport;
 public interface ITransportLayer : IAsyncDisposable
 {
     /// <summary>
-    /// Queues an HCI packet for transmission to the controller.
+    /// Queues an HCI packet for transmission to the controller. The packet's bytes are copied before this returns,
+    /// because the host reuses its buffers, e.g. the pooled frames of ACL packets.
     /// </summary>
     /// <param name="packet">The packet to transmit.</param>
     void Enqueue(IHciPacket packet);

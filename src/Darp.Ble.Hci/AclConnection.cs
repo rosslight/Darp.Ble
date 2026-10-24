@@ -64,7 +64,6 @@ public sealed class AclConnection : IDisposable
         Logger = loggerFactory?.CreateLogger<AclConnection>();
         Assembler = new L2CapAssembler(connectionHandle, loggerFactory?.CreateLogger<L2CapAssembler>());
         _subscription = Assembler.Subscribe(new AclConnectionSubscription(this));
-        GattClient = new GattClient(this);
     }
 
     /// <summary>Gets the device that owns this connection.</summary>
@@ -86,11 +85,8 @@ public sealed class AclConnection : IDisposable
     public AclConnectionParameters Parameters { get; }
 
     /// <summary>Gets the currently effective ATT MTU for the connection.</summary>
-    public ushort AttMtu { get; internal set; } = Constants.DefaultAttMtu;
+    public ushort AttMtu { get; set; } = Constants.DefaultAttMtu;
     internal ILogger<AclConnection>? Logger { get; }
-
-    /// <summary>Gets the GATT client bound to this connection.</summary>
-    public GattClient GattClient { get; }
 
     /// <summary>Gets the local GATT server exposed through the owning device.</summary>
     public GattServer GattServer => Device.GattServer;
@@ -99,7 +95,7 @@ public sealed class AclConnection : IDisposable
     public L2CapAssembler Assembler { get; }
 
     /// <summary>Gets the ACL packet queue used to send packets on this connection.</summary>
-    public IAclPacketQueue AclPacketQueue => Device.Host.AclPacketQueue;
+    internal AclPacketQueue AclPacketQueue => Device.Host.AclPacketQueue;
 
     /// <summary>Gets a token that is canceled when the connection is disconnected.</summary>
     public CancellationToken DisconnectToken => _disconnectSource.Token;

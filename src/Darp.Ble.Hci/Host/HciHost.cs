@@ -28,10 +28,13 @@ public sealed class HciTransportFailedEventArgs(Exception exception) : EventArgs
 /// <param name="hciDevice">The owning HCI device.</param>
 /// <param name="transportLayer">The transport used to exchange packets with the controller.</param>
 /// <param name="logger">An optional logger.</param>
-[MessageSource]
 public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transportLayer, ILogger<HciHost>? logger)
-    : IDisposable
+    : IMessageSource,
+        IDisposable
 {
+    private readonly MessageSinks _sinks = new();
+    private readonly CancellationTokenSource _transportGone = new();
+    private Exception? _transportFailure;
     private readonly ITransportLayer _transportLayer = transportLayer;
     private readonly ILogger<HciHost>? _logger = logger;
     private readonly SemaphoreSlim _packetInFlightSemaphore = new(1);
@@ -49,7 +52,7 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
     public bool IsReady => _leAclPacketQueue is not null;
 
     /// <summary>Gets the ACL packet queue created during initialization.</summary>
-    public IAclPacketQueue AclPacketQueue =>
+    internal AclPacketQueue AclPacketQueue =>
         _leAclPacketQueue ?? throw new InvalidOperationException("Not initialized yet");
 
     /// <summary>Resets the controller and applies the required host configuration.</summary>
@@ -130,7 +133,7 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
         where TEvent : IHciEvent<TEvent>
     {
         ObjectDisposedException.ThrowIf(Device.IsDisposed, this);
-        timeout ??= TimeSpan.FromSeconds(5);
+        timeout ??= Device.Settings.CommandTimeout;
         using var handler = new HciPacketInFlightHandler<TCommand, TEvent>(this, _packetInFlightSemaphore);
         (TEvent response, Activity? activity) = await handler
             .QueryAsync(command, timeout.Value, cancellationToken)
@@ -154,7 +157,7 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
         where TResponse : ICommandStatusResult, IBinaryReadable<TResponse>
     {
         ObjectDisposedException.ThrowIf(Device.IsDisposed, this);
-        timeout ??= TimeSpan.FromMilliseconds(Device.Settings.DefaultHciCommandTimeoutMs);
+        timeout ??= Device.Settings.CommandTimeout;
         using var handler = new HciPacketInFlightHandler<TCommand, HciCommandCompleteEvent>(
             this,
             _packetInFlightSemaphore
@@ -248,9 +251,19 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
         }
     }
 
+    /// <summary> Cancelled when the transport failed; nothing the controller would answer arrives any more </summary>
+    internal CancellationToken TransportGone => _transportGone.Token;
+
+    /// <summary> Why the transport failed, once it did </summary>
+    internal Exception? TransportFailure => Volatile.Read(ref _transportFailure);
+
     private void OnTransportFailed(Exception exception)
     {
+        Volatile.Write(ref _transportFailure, exception);
+        // The owners of the links learn about it before anything waiting on the transport fails
         TransportFailed?.Invoke(this, new HciTransportFailedEventArgs(exception));
+        _leAclPacketQueue?.Close(exception);
+        _transportGone.Cancel();
     }
 
     private void OnReceivedHciEventPacket(HciPacketEvent packet)
@@ -285,10 +298,11 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
             case HciEventCode.HCI_Disconnection_Complete
                 when HciDisconnectionCompleteEvent.TryReadLittleEndian(packet.DataBytes.Span, out var evt):
                 LogEventPacketControllerToHost(evt, packet.DataBytes);
+                // The owners of the connection learn why it ended before anything waiting on it fails
+                PublishMessage(evt);
                 if (Device.TryGetConnection(evt.ConnectionHandle, out AclConnection? connection))
                     connection.OnDisconnectEvent(evt);
-                PublishMessage(evt);
-                Device.RemoveConnection(evt.ConnectionHandle);
+                Device.RemoveConnection(evt.ConnectionHandle, evt.Reason);
                 break;
             case HciEventCode.HCI_Command_Status
                 when HciCommandStatusEvent.TryReadLittleEndian(packet.DataBytes.Span, out var evt):
@@ -392,8 +406,15 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
     }
 
     /// <inheritdoc />
+    /// <inheritdoc />
+    public IDisposable Subscribe(IMessageSink sink) => _sinks.Subscribe(sink);
+
+    private void PublishMessage<T>(in T message)
+        where T : allows ref struct => _sinks.Publish(message);
+
     public void Dispose()
     {
+        _transportGone.Dispose();
         _packetInFlightSemaphore.Dispose();
     }
 }

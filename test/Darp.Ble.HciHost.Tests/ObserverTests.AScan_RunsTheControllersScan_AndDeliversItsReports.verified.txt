@@ -1,0 +1,48 @@
+﻿[
+  {
+    Direction: HostToController,
+    Type: HciCommand,
+    OpCode: HCI_LE_Set_Extended_Scan_Parameters,
+    PduBytes: 0141200801000100A000A000
+  },
+  {
+    Direction: ControllerToHost,
+    Type: HciEvent,
+    EventCode: HCI_Command_Complete,
+    CommandOpCode: HCI_LE_Set_Extended_Scan_Parameters,
+    PduBytes: 040E0401412000
+  },
+  {
+    Direction: HostToController,
+    Type: HciCommand,
+    OpCode: HCI_LE_Set_Extended_Scan_Enable,
+    PduBytes: 01422006010000000000
+  },
+  {
+    Direction: ControllerToHost,
+    Type: HciEvent,
+    EventCode: HCI_Command_Complete,
+    CommandOpCode: HCI_LE_Set_Extended_Scan_Enable,
+    PduBytes: 040E0401422000
+  },
+  {
+    Direction: ControllerToHost,
+    Type: HciEvent,
+    EventCode: HCI_LE_Meta,
+    SubEventCode: HCI_LE_Extended_Advertising_Report,
+    PduBytes: 043E220D0110000115C4911966EE0100FF7FB40000FF0000000000000807FF4C0012020000
+  },
+  {
+    Direction: HostToController,
+    Type: HciCommand,
+    OpCode: HCI_LE_Set_Extended_Scan_Enable,
+    PduBytes: 01422006000000000000
+  },
+  {
+    Direction: ControllerToHost,
+    Type: HciEvent,
+    EventCode: HCI_Command_Complete,
+    CommandOpCode: HCI_LE_Set_Extended_Scan_Enable,
+    PduBytes: 040E0401422000
+  }
+]

@@ -8,7 +8,7 @@ namespace Darp.Ble.HciHost.Usb;
 /// <param name="Port"> The PortName of the device </param>
 /// <param name="Manufacturer"> The name of the manufacturer </param>
 /// <param name="Description"> An optional description </param>
-public readonly record struct UsbPortInfo(
+internal readonly record struct UsbPortInfo(
     ulong Id,
     string Type,
     ushort VendorId,

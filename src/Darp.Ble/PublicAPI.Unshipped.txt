@@ -11,6 +11,7 @@ Darp.Ble.Backends.GattCharacteristicDefinition.Properties.get -> Darp.Ble.Gatt.G
 Darp.Ble.Backends.GattDescriptorDefinition
 Darp.Ble.Backends.GattDescriptorDefinition.StaticValue.get -> System.ReadOnlyMemory<byte>?
 Darp.Ble.Backends.GattRequest
+Darp.Ble.Backends.GattRequest.ConnectionClosedToken.get -> System.Threading.CancellationToken
 Darp.Ble.Backends.GattRequest.HandOffToken.get -> System.Threading.CancellationToken
 Darp.Ble.Backends.GattRequest.IsAbandoned.get -> bool
 Darp.Ble.Backends.GattRequest.OnTransactionAnswered() -> void
@@ -4458,6 +4459,7 @@ Darp.Ble.QueueOptions
 Darp.Ble.QueueOptions.Capacity.get -> int?
 Darp.Ble.QueueOptions.FullMode.get -> Darp.Ble.QueueFullMode
 Darp.Ble.QueueOptions.QueueOptions(int capacity, Darp.Ble.QueueFullMode fullMode) -> void
+const Darp.Ble.BleBackends.HciHost = "Darp.Ble.HciHost" -> string!
 const Darp.Ble.BleBackends.Mock = "Darp.Ble.Mock" -> string!
 const Darp.Ble.Diagnostics.BleTelemetry.MeterName = "Darp.Ble" -> string!
 const Darp.Ble.Diagnostics.BleTelemetry.SourceName = "Darp.Ble" -> string!
