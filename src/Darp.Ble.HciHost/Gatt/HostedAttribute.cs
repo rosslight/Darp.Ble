@@ -47,6 +47,9 @@ internal sealed class HostedAttribute
     /// <summary> The characteristic this CCCD configures </summary>
     public GattCharacteristicDefinition? CccdOf { get; }
 
+    /// <summary> Whether this is the CCCD of the GATT service's Service Changed characteristic, which the backend serves </summary>
+    public bool IsServiceChangedCccd { get; init; }
+
     /// <summary> The value of a fixed or backend attribute; null when someone else answers </summary>
     public byte[]? StaticValue => _value?.Invoke();
 }

@@ -6,7 +6,7 @@ using Shouldly;
 
 namespace Darp.Ble.HciHost.Tests;
 
-/// <summary> Opening, configuring and closing an HCI adapter (seam 1 and 3 of PR 6) </summary>
+/// <summary> Opening, configuring and closing an HCI adapter </summary>
 public sealed class AdapterTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -23,6 +23,44 @@ public sealed class AdapterTests
         adapters[0].Backend.ShouldBe(BleBackends.HciHost);
         adapter.RandomAddress.ShouldBe(HciAdapter.Address);
         await Verifier.Verify(controller.Messages);
+    }
+
+    [Fact]
+    public async Task ASerialPortTheUserMayNotOpen_FailsAsMissingPermission_ThatWaitingDoesNotFix()
+    {
+        Assert.SkipWhen(Environment.IsPrivilegedProcess, "A privileged process may open any port");
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Skip("Windows does not deny a serial port by file permissions");
+            return;
+        }
+        string port = Path.GetTempFileName();
+        File.SetUnixFileMode(port, UnixFileMode.None);
+        try
+        {
+            var manager = new BleManager(builder => builder.AddSerialHciHost(port));
+            BleAdapterInfo adapter = (await manager.EnumerateAdaptersAsync(Token)).ShouldHaveSingleItem();
+
+            BleOpenException exception = await Should.ThrowAsync<BleOpenException>(() => adapter.OpenAsync(Token));
+
+            exception.Kind.ShouldBe(BleOpenErrorKind.MissingPermission);
+            exception.IsTransient.ShouldBeFalse();
+        }
+        finally
+        {
+            File.Delete(port);
+        }
+    }
+
+    [Fact]
+    public async Task ASerialPortThatIsNotThere_FailsAsNotAvailable()
+    {
+        var manager = new BleManager(builder => builder.AddSerialHciHost("/dev/ttyThatIsNotThere"));
+        BleAdapterInfo adapter = (await manager.EnumerateAdaptersAsync(Token)).ShouldHaveSingleItem();
+
+        BleOpenException exception = await Should.ThrowAsync<BleOpenException>(() => adapter.OpenAsync(Token));
+
+        exception.Kind.ShouldBe(BleOpenErrorKind.NotAvailable);
     }
 
     [Fact]

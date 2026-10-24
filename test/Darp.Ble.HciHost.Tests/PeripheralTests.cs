@@ -7,18 +7,19 @@ using Shouldly;
 
 namespace Darp.Ble.HciHost.Tests;
 
-/// <summary> Hosting services on an HCI adapter for centrals (seam 1 of PR 6) </summary>
+/// <summary> Hosting services on an HCI adapter for centrals </summary>
 public sealed class PeripheralTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    // GAP: service 1, device name 2-3, appearance 4-5; the battery service follows
-    private const byte Battery = 0x06;
-    private const byte Level = 0x08;
-    private const byte LevelCccd = 0x09;
+    // GAP: service 1, device name 2-3, appearance 4-5. GATT: service 6, Service Changed 7-8 with its CCCD 9,
+    // Database Hash 10-11. The battery service follows
+    private const byte Battery = 0x0C;
+    private const byte Level = 0x0E;
+    private const byte LevelCccd = 0x0F;
 
-    // A second characteristic for writes: declaration 10, value 11
-    private const byte Control = 0x0B;
+    // A second characteristic for writes: declaration 16, value 17
+    private const byte Control = 0x11;
 
     private static LocalGattCharacteristic? _level;
 
@@ -46,7 +47,7 @@ public sealed class PeripheralTests
     }
 
     [Fact]
-    public async Task ACentral_DiscoversTheGapServiceFirst_AndThenTheHostedServices()
+    public async Task ACentral_DiscoversTheGapAndGattServicesFirst_AndThenTheHostedServices()
     {
         await using var controller = new FakeController();
         await using BleAdapter adapter = await HostAsync(controller);
@@ -58,9 +59,9 @@ public sealed class PeripheralTests
         byte[] characteristics = await central.RequestAsync(0x08, Battery, 0x00, 0xFF, 0xFF, 0x03, 0x28);
         byte[] descriptors = await central.RequestAsync(0x04, LevelCccd, 0x00, LevelCccd, 0x00);
 
-        Convert.ToHexString(services).ShouldBe("1106" + "010005000018" + "06000B000F18");
-        Convert.ToHexString(characteristics).ShouldBe("0907" + "0700120800192A" + "0A000C0B0001FF");
-        Convert.ToHexString(descriptors).ShouldBe("0501" + "0900" + "0229");
+        Convert.ToHexString(services).ShouldBe("1106" + "010005000018" + "06000B000118" + "0C0011000F18");
+        Convert.ToHexString(characteristics).ShouldBe("0907" + "0D00120E00192A" + "10000C110001FF");
+        Convert.ToHexString(descriptors).ShouldBe("0501" + "0F00" + "0229");
     }
 
     [Fact]
@@ -163,12 +164,159 @@ public sealed class PeripheralTests
         var central = new FakeCentral(controller, 0x0001);
         await central.ConnectAsync();
 
-        // Read Blob
-        byte[] answer = await central.RequestAsync(0x0C, Level, 0x00, 0x00, 0x00);
+        // Prepare Write: long writes are not supported
+        byte[] answer = await central.RequestAsync(0x16, Control, 0x00, 0x00, 0x00, 0x01);
 
         answer[0].ShouldBe((byte)0x01);
-        answer[1].ShouldBe((byte)0x0C);
+        answer[1].ShouldBe((byte)0x16);
         answer[^1].ShouldBe((byte)0x06);
+    }
+
+    [Fact]
+    public async Task AValueLongerThanOneAnswer_IsReadInPartsWithReadBlob()
+    {
+        await using var controller = new FakeController();
+        byte[] value = [.. Enumerable.Range(0, 40).Select(i => (byte)i)];
+        var reads = 0;
+        await using BleAdapter adapter = await HostAsync(
+            controller,
+            onRead: (_, _) =>
+            {
+                reads++;
+                return ValueTask.FromResult(value);
+            }
+        );
+        var central = new FakeCentral(controller, 0x0001);
+        await central.ConnectAsync();
+
+        // At the default MTU an answer carries 22 bytes; the parts end with an empty one where the value ends
+        byte[] first = await central.RequestAsync(0x0A, Level, 0x00);
+        byte[] second = await central.RequestAsync(0x0C, Level, 0x00, 22, 0x00);
+        byte[] end = await central.RequestAsync(0x0C, Level, 0x00, 40, 0x00);
+        byte[] beyond = await central.RequestAsync(0x0C, Level, 0x00, 41, 0x00);
+
+        first.ShouldBe([0x0B, .. value[..22]]);
+        second.ShouldBe([0x0D, .. value[22..]]);
+        end.ShouldBe([0x0D]);
+        beyond.ShouldBe([0x01, 0x0C, Level, 0x00, 0x07]);
+        // The parts come from one answer of the app, so they belong to the same value
+        reads.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task ANewRead_AsksTheAppAgain_OnceTheLongReadBeforeItEnded()
+    {
+        await using var controller = new FakeController();
+        byte[] value = [.. Enumerable.Repeat((byte)1, 40)];
+        await using BleAdapter adapter = await HostAsync(controller, onRead: (_, _) => ValueTask.FromResult(value));
+        var central = new FakeCentral(controller, 0x0001);
+        await central.ConnectAsync();
+        await central.RequestAsync(0x0A, Level, 0x00);
+        await central.RequestAsync(0x0C, Level, 0x00, 22, 0x00);
+        value = [.. Enumerable.Repeat((byte)2, 40)];
+
+        // Read Blob at offset 0 starts a new read
+        byte[] answer = await central.RequestAsync(0x0C, Level, 0x00, 0, 0x00);
+
+        answer.ShouldBe([0x0D, .. value[..22]]);
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 0x0A, Level, 0x00 }, 22)]
+    [InlineData(new byte[] { 0x0C, Level, 0x00, 0, 0x00 }, 22)]
+    [InlineData(new byte[] { 0x08, Level, 0x00, Level, 0x00, 0x19, 0x2A }, 19)]
+    public async Task AValueThatExactlyFillsTheFirstPart_EndsWithTheSameValue(byte[] firstRequest, byte partLength)
+    {
+        await using var controller = new FakeController();
+        byte[] value = [.. Enumerable.Repeat((byte)1, partLength)];
+        var reads = 0;
+        await using BleAdapter adapter = await HostAsync(
+            controller,
+            onRead: (_, _) =>
+            {
+                reads++;
+                return ValueTask.FromResult(value);
+            }
+        );
+        var central = new FakeCentral(controller, 0x0001);
+        await central.ConnectAsync();
+        await central.RequestAsync(firstRequest);
+        value = [.. Enumerable.Repeat((byte)2, 44)];
+
+        // A full part may not be the last, so the central asks where it ended
+        byte[] end = await central.RequestAsync(0x0C, Level, 0x00, partLength, 0x00);
+
+        end.ShouldBe([0x0D]);
+        reads.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task ReadBlob_ContinuesTheValueThatReadByTypeStartedWith()
+    {
+        await using var controller = new FakeController();
+        byte[] value = [.. Enumerable.Repeat((byte)1, 40)];
+        await using BleAdapter adapter = await HostAsync(controller, onRead: (_, _) => ValueTask.FromResult(value));
+        var central = new FakeCentral(controller, 0x0001);
+        await central.ConnectAsync();
+        await central.RequestAsync(0x0A, Level, 0x00);
+        value = [.. Enumerable.Repeat((byte)2, 40)];
+
+        // Read By Type answers MTU - 4 = 19 bytes of the value
+        byte[] byType = await central.RequestAsync(0x08, Level, 0x00, Level, 0x00, 0x19, 0x2A);
+        value = [.. Enumerable.Repeat((byte)3, 40)];
+        byte[] rest = await central.RequestAsync(0x0C, Level, 0x00, 19, 0x00);
+
+        byType[4].ShouldBe((byte)2);
+        rest.ShouldBe([0x0D, .. Enumerable.Repeat((byte)2, 21)]);
+    }
+
+    [Fact]
+    public async Task ALongReadThatStartsWithReadBlob_AsksTheAppOnce()
+    {
+        await using var controller = new FakeController();
+        var reads = 0;
+        await using BleAdapter adapter = await HostAsync(
+            controller,
+            onRead: (_, _) => ValueTask.FromResult<byte[]>([.. Enumerable.Repeat((byte)++reads, 40)])
+        );
+        var central = new FakeCentral(controller, 0x0001);
+        await central.ConnectAsync();
+
+        byte[] first = await central.RequestAsync(0x0C, Level, 0x00, 0, 0x00);
+        byte[] second = await central.RequestAsync(0x0C, Level, 0x00, 22, 0x00);
+
+        first[1].ShouldBe((byte)1);
+        second[1].ShouldBe((byte)1);
+        reads.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task AWrite_EndsALongRead_SoTheNextPartComesFromTheNewValue()
+    {
+        await using var controller = new FakeController();
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+        byte[] value = [.. Enumerable.Repeat((byte)1, 40)];
+        var service = new LocalGattServiceBuilder(0x180F);
+        service.AddCharacteristic(
+            0xFF02,
+            GattProperty.Read | GattProperty.Write,
+            onRead: (_, _) => ValueTask.FromResult(value),
+            onWrite: (_, written, _) =>
+            {
+                value = [.. Enumerable.Repeat(written.Span[0], 40)];
+                return ValueTask.FromResult(GattProtocolStatus.Success);
+            }
+        );
+        await adapter.Peripheral.AddServiceAsync(service, Token);
+        var central = new FakeCentral(controller, 0x0001);
+        await central.ConnectAsync();
+        // The service's characteristic value follows the GAP and GATT services, as for the battery level
+        await central.RequestAsync(0x0A, Level, 0x00);
+
+        await central.RequestAsync(0x12, Level, 0x00, 7);
+        byte[] rest = await central.RequestAsync(0x0C, Level, 0x00, 22, 0x00);
+
+        rest.ShouldBe([0x0D, .. Enumerable.Repeat((byte)7, 18)]);
     }
 
     [Fact]
@@ -282,7 +430,7 @@ public sealed class PeripheralTests
             .. declarationType,
         ]);
 
-        byCustomType.ShouldBe([0x09, 0x03, 0x08, 0x00, 42]);
+        byCustomType.ShouldBe([0x09, 0x03, 0x0E, 0x00, 42]);
         byLongDeclarationType[0].ShouldBe((byte)0x09);
     }
 
@@ -304,7 +452,7 @@ public sealed class PeripheralTests
 
         byte[] services = await central.RequestAsync(0x10, Battery, 0x00, 0xFF, 0xFF, 0x00, 0x28);
         byte[] characteristics = await central.RequestAsync(0x08, Battery, 0x00, 0xFF, 0xFF, 0x03, 0x28);
-        byte[] information = await central.RequestAsync(0x04, 0x08, 0x00, 0x08, 0x00);
+        byte[] information = await central.RequestAsync(0x04, 0x0E, 0x00, 0x0E, 0x00);
 
         services[..2].ShouldBe([0x11, 4 + 16]);
         BleUuid.Read(services.AsSpan(6, 16)).Value.ShouldBe(BleUuid.FromUInt32(0x12345678).Value);

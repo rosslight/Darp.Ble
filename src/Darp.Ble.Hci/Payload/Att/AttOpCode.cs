@@ -46,6 +46,12 @@ public enum AttOpCode : byte
     /// <summary> The <see cref="AttReadRsp"/> </summary>
     ATT_READ_RSP = 0x0B,
 
+    /// <summary> The <see cref="AttReadBlobReq"/> </summary>
+    ATT_READ_BLOB_REQ = 0x0C,
+
+    /// <summary> The <see cref="AttReadBlobRsp"/> </summary>
+    ATT_READ_BLOB_RSP = 0x0D,
+
     /// <summary> The <see cref="AttReadByGroupTypeReq{TAttributeType}"/> </summary>
     ATT_READ_BY_GROUP_TYPE_REQ = 0x10,
 
@@ -75,4 +81,10 @@ public enum AttOpCode : byte
 
     /// <summary> The <see cref="AttHandleValueNtf"/> </summary>
     ATT_HANDLE_VALUE_NTF = 0x1B,
+
+    /// <summary> The <see cref="AttHandleValueInd"/> </summary>
+    ATT_HANDLE_VALUE_IND = 0x1D,
+
+    /// <summary> The client's confirmation of an indication </summary>
+    ATT_HANDLE_VALUE_CFM = 0x1E,
 }

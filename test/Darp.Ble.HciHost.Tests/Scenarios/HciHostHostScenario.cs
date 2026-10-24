@@ -1,4 +1,3 @@
-using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.HciHost.Verify;
 
@@ -8,8 +7,8 @@ namespace Darp.Ble.HciHost.Tests.Scenarios;
 internal sealed class HciHostHostScenario(FakeController controller, BleAdapter host, FakeCentral central)
     : IHostScenario
 {
-    // GAP takes handles 1-5; the service 6, its characteristic's declaration 7 and value 8
-    private const byte Value = 0x08;
+    // GAP takes handles 1-5 and GATT 6-11; the service 12, its characteristic's declaration 13 and value 14
+    private const byte Value = 0x0E;
 
     private readonly FakeController _controller = controller;
     private readonly FakeCentral _central = central;

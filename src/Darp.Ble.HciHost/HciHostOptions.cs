@@ -14,4 +14,8 @@ public sealed class HciHostOptions
 
     /// <summary> Timeouts of the HCI layer </summary>
     public HciSettings Settings { get; set; } = HciSettings.Default;
+
+    /// <summary> Whether the adapter serves the GATT service with Service Changed and Database Hash; true by default </summary>
+    /// <remarks> Without it, centrals cannot learn that services changed, as with devices that do not serve it </remarks>
+    public bool IncludeGattService { get; set; } = true;
 }

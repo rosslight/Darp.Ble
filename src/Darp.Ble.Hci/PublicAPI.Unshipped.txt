@@ -417,6 +417,20 @@ Darp.Ble.Hci.Payload.Att.AttGroupTypeData.TryWriteLittleEndian(System.Span<byte>
 Darp.Ble.Hci.Payload.Att.AttGroupTypeData.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) -> bool
 Darp.Ble.Hci.Payload.Att.AttGroupTypeData.Value.get -> System.ReadOnlyMemory<byte>
 Darp.Ble.Hci.Payload.Att.AttGroupTypeData.Value.init -> void
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.AttHandleValueInd() -> void
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.Equals(Darp.Ble.Hci.Payload.Att.AttHandleValueInd other) -> bool
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.GetByteCount() -> int
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.Handle.get -> ushort
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.Handle.init -> void
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.OpCode.get -> Darp.Ble.Hci.Payload.Att.AttOpCode
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.OpCode.init -> void
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.TryWriteBigEndian(System.Span<byte> destination) -> bool
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) -> bool
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.TryWriteLittleEndian(System.Span<byte> destination) -> bool
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) -> bool
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.Value.get -> System.ReadOnlyMemory<byte>
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.Value.init -> void
 Darp.Ble.Hci.Payload.Att.AttHandleValueNtf
 Darp.Ble.Hci.Payload.Att.AttHandleValueNtf.AttHandleValueNtf() -> void
 Darp.Ble.Hci.Payload.Att.AttHandleValueNtf.Equals(Darp.Ble.Hci.Payload.Att.AttHandleValueNtf other) -> bool
@@ -441,9 +455,13 @@ Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_FIND_BY_TYPE_VALUE_REQ = 6 -> Darp.Ble.Hc
 Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_FIND_BY_TYPE_VALUE_RSP = 7 -> Darp.Ble.Hci.Payload.Att.AttOpCode
 Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_FIND_INFORMATION_REQ = 4 -> Darp.Ble.Hci.Payload.Att.AttOpCode
 Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_FIND_INFORMATION_RSP = 5 -> Darp.Ble.Hci.Payload.Att.AttOpCode
+Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_HANDLE_VALUE_CFM = 30 -> Darp.Ble.Hci.Payload.Att.AttOpCode
+Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_HANDLE_VALUE_IND = 29 -> Darp.Ble.Hci.Payload.Att.AttOpCode
 Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_HANDLE_VALUE_NTF = 27 -> Darp.Ble.Hci.Payload.Att.AttOpCode
 Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_PREPARE_WRITE_REQ = 22 -> Darp.Ble.Hci.Payload.Att.AttOpCode
 Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_PREPARE_WRITE_RSP = 23 -> Darp.Ble.Hci.Payload.Att.AttOpCode
+Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_READ_BLOB_REQ = 12 -> Darp.Ble.Hci.Payload.Att.AttOpCode
+Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_READ_BLOB_RSP = 13 -> Darp.Ble.Hci.Payload.Att.AttOpCode
 Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_READ_BY_GROUP_TYPE_REQ = 16 -> Darp.Ble.Hci.Payload.Att.AttOpCode
 Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_READ_BY_GROUP_TYPE_RSP = 17 -> Darp.Ble.Hci.Payload.Att.AttOpCode
 Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_READ_BY_TYPE_REQ = 8 -> Darp.Ble.Hci.Payload.Att.AttOpCode
@@ -1637,6 +1655,7 @@ override Darp.Ble.Hci.Payload.Att.AttFindInformationData.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Att.AttFindInformationReq.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Att.AttFindInformationRsp.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Att.AttGroupTypeData.GetHashCode() -> int
+override Darp.Ble.Hci.Payload.Att.AttHandleValueInd.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Att.AttHandleValueNtf.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Att.AttReadByGroupTypeReq<TAttributeType>.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Att.AttReadByGroupTypeRsp.GetHashCode() -> int
@@ -1835,6 +1854,13 @@ static Darp.Ble.Hci.Payload.Att.AttGroupTypeData.TryReadLittleEndian(System.Read
 static Darp.Ble.Hci.Payload.Att.AttGroupTypeData.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttGroupTypeData value, out int bytesRead) -> bool
 static Darp.Ble.Hci.Payload.Att.AttGroupTypeData.operator !=(Darp.Ble.Hci.Payload.Att.AttGroupTypeData left, Darp.Ble.Hci.Payload.Att.AttGroupTypeData right) -> bool
 static Darp.Ble.Hci.Payload.Att.AttGroupTypeData.operator ==(Darp.Ble.Hci.Payload.Att.AttGroupTypeData left, Darp.Ble.Hci.Payload.Att.AttGroupTypeData right) -> bool
+static Darp.Ble.Hci.Payload.Att.AttHandleValueInd.ExpectedOpCode.get -> Darp.Ble.Hci.Payload.Att.AttOpCode
+static Darp.Ble.Hci.Payload.Att.AttHandleValueInd.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttHandleValueInd value) -> bool
+static Darp.Ble.Hci.Payload.Att.AttHandleValueInd.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttHandleValueInd value, out int bytesRead) -> bool
+static Darp.Ble.Hci.Payload.Att.AttHandleValueInd.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttHandleValueInd value) -> bool
+static Darp.Ble.Hci.Payload.Att.AttHandleValueInd.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttHandleValueInd value, out int bytesRead) -> bool
+static Darp.Ble.Hci.Payload.Att.AttHandleValueInd.operator !=(Darp.Ble.Hci.Payload.Att.AttHandleValueInd left, Darp.Ble.Hci.Payload.Att.AttHandleValueInd right) -> bool
+static Darp.Ble.Hci.Payload.Att.AttHandleValueInd.operator ==(Darp.Ble.Hci.Payload.Att.AttHandleValueInd left, Darp.Ble.Hci.Payload.Att.AttHandleValueInd right) -> bool
 static Darp.Ble.Hci.Payload.Att.AttHandleValueNtf.ExpectedOpCode.get -> Darp.Ble.Hci.Payload.Att.AttOpCode
 static Darp.Ble.Hci.Payload.Att.AttHandleValueNtf.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttHandleValueNtf value) -> bool
 static Darp.Ble.Hci.Payload.Att.AttHandleValueNtf.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttHandleValueNtf value, out int bytesRead) -> bool
@@ -2384,6 +2410,8 @@ virtual Darp.Ble.Hci.ReactiveExtensions.TrySelector<T, TResult>.Invoke(T value, 
 ~override Darp.Ble.Hci.Payload.Att.AttFindInformationRsp.ToString() -> string
 ~override Darp.Ble.Hci.Payload.Att.AttGroupTypeData.Equals(object obj) -> bool
 ~override Darp.Ble.Hci.Payload.Att.AttGroupTypeData.ToString() -> string
+~override Darp.Ble.Hci.Payload.Att.AttHandleValueInd.Equals(object obj) -> bool
+~override Darp.Ble.Hci.Payload.Att.AttHandleValueInd.ToString() -> string
 ~override Darp.Ble.Hci.Payload.Att.AttHandleValueNtf.Equals(object obj) -> bool
 ~override Darp.Ble.Hci.Payload.Att.AttHandleValueNtf.ToString() -> string
 ~override Darp.Ble.Hci.Payload.Att.AttReadByGroupTypeReq<TAttributeType>.Equals(object obj) -> bool
