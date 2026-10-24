@@ -17,7 +17,13 @@ public static class MockBleManagerBuilderExtensions
         configure?.Invoke(options);
         return builder.AddBackend(
             new MockBackend(
-                new MockSettings(options.Name, options.OpenFailure, [.. options.Peripherals], options.TxPowerToRssi)
+                new MockSettings(
+                    options.Name,
+                    options.OpenFailure,
+                    [.. options.Peripherals],
+                    options.TxPowerToRssi,
+                    options.IncludeGattService
+                )
             )
         );
     }

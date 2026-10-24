@@ -18,6 +18,9 @@ public sealed class MockBackendOptions
     /// <summary> The name of the mock adapter </summary>
     public string Name { get; set; } = "Mock";
 
+    /// <summary> Whether the mock adapter's peripheral role serves the GATT service with Service Changed and Database Hash; true by default </summary>
+    public bool IncludeGattService { get; set; } = true;
+
     /// <summary> Makes opening the mock adapter fail with this kind, e.g. to test how an app handles Bluetooth being off </summary>
     public BleOpenErrorKind? OpenFailure { get; set; }
 
@@ -36,14 +39,16 @@ public sealed class MockBackendOptions
     /// start advertising; opening waits for it and fails with its exception. Work that keeps running, like a sensor that notifies,
     /// goes to <see cref="MockBackgroundWork.Run"/>. The peripheral lives as long as the mock adapter </param>
     /// <param name="name"> The name of the peripheral's adapter </param>
+    /// <param name="includeGattService"> Whether the peripheral serves the GATT service; false simulates a device without it </param>
     /// <returns> These options </returns>
     public MockBackendOptions AddPeripheral(
         Func<BleAdapter, MockBackgroundWork, Task> configure,
-        string name = "Mock peripheral"
+        string name = "Mock peripheral",
+        bool includeGattService = true
     )
     {
         ArgumentNullException.ThrowIfNull(configure);
-        _peripherals.Add(new MockPeripheral(name, configure));
+        _peripherals.Add(new MockPeripheral(name, includeGattService, configure));
         return this;
     }
 

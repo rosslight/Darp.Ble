@@ -4,8 +4,8 @@ using Darp.Ble.Gatt;
 
 namespace Darp.Ble.Mock.Gatt;
 
-/// <summary> A read-only characteristic of the mock GAP service </summary>
-internal sealed class MockGapCharacteristic(ushort uuid, Func<byte[]> read) : IRemoteCharacteristicDriver
+/// <summary> A read-only characteristic of a service the mock peripheral serves itself, e.g. GAP </summary>
+internal sealed class MockReadOnlyCharacteristic(ushort uuid, Func<byte[]> read) : IRemoteCharacteristicDriver
 {
     private readonly Func<byte[]> _read = read;
 
@@ -21,7 +21,7 @@ internal sealed class MockGapCharacteristic(ushort uuid, Func<byte[]> read) : IR
     }
 
     public Task WriteAsync(ReadOnlyMemory<byte> value, GattRequest request) =>
-        Task.FromException(new GattException(GattProtocolStatus.WriteNotPermitted, "The GAP service is read-only"));
+        Task.FromException(new GattException(GattProtocolStatus.WriteNotPermitted, "The characteristic is read-only"));
 
     public ValueTask WriteWithoutResponseAsync(
         ReadOnlyMemory<byte> value,
@@ -31,7 +31,7 @@ internal sealed class MockGapCharacteristic(ushort uuid, Func<byte[]> read) : IR
 
     public Task SetNotificationsAsync(bool enabled, GattRequest request) =>
         Task.FromException(
-            new GattException(GattProtocolStatus.RequestNotSupported, "The GAP service does not notify")
+            new GattException(GattProtocolStatus.RequestNotSupported, "The characteristic does not notify")
         );
 
     public Task<IReadOnlyList<IRemoteDescriptorDriver>> DiscoverDescriptorsAsync(GattRequest request) =>

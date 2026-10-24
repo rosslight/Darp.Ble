@@ -33,6 +33,7 @@ internal sealed class MockLink
         _peripheralSink = peripheralSink;
         Central = new MockConnectionDriver(this);
         GapService = new MockGapService(peripheral);
+        GattService = peripheral.IncludeGattService ? new MockGattService(this) : null;
         Peripheral = new MockCentralConnection(this, centralAddress);
     }
 
@@ -41,6 +42,9 @@ internal sealed class MockLink
 
     /// <summary> The GAP service the peripheral serves itself </summary>
     public MockGapService GapService { get; }
+
+    /// <summary> The GATT service the peripheral serves itself, or null for one without it </summary>
+    public MockGattService? GattService { get; }
 
     /// <summary> The central's side </summary>
     public MockConnectionDriver Central { get; }

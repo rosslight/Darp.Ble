@@ -13,13 +13,14 @@ internal sealed class MockAdapterDriver : IBleAdapterDriver
     private readonly CancellationTokenSource _closing = new();
     private BleAddress _randomAddress = BleAddress.NewRandomStaticAddress();
 
-    public MockAdapterDriver(MockAir air, ILoggerFactory loggerFactory)
+    public MockAdapterDriver(MockAir air, bool includeGattService, ILoggerFactory loggerFactory)
     {
         Background = new MockBackgroundWork(
             air.TimeProvider,
             loggerFactory.CreateLogger<MockBackgroundWork>(),
             _closing.Token
         );
+        PeripheralDriver = new MockPeripheralDriver(includeGattService);
         Observer = new MockObserverDriver(air, this);
         Broadcaster = new MockBroadcasterDriver(air, this);
         Central = new MockCentralDriver(air, this);
@@ -36,7 +37,7 @@ internal sealed class MockAdapterDriver : IBleAdapterDriver
     public IPeripheralDriver? Peripheral => PeripheralDriver;
 
     /// <summary> The peripheral role, for centrals in the air that connect to this adapter </summary>
-    public MockPeripheralDriver PeripheralDriver { get; } = new();
+    public MockPeripheralDriver PeripheralDriver { get; }
 
     public BleAddress RandomAddress => _randomAddress;
 
