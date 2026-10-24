@@ -1,4 +1,3 @@
-using System.Numerics.Tensors;
 using System.Security.Cryptography;
 
 namespace Darp.Ble.Gatt;
@@ -58,12 +57,12 @@ public sealed class AesCmac : IDisposable
         int startIndexLastBlock = 16 * (n - 1);
         if (lastBlockComplete)
         {
-            TensorPrimitives.Xor(message[startIndexLastBlock..], subKey1, destination: lastBlock);
+            Xor(message[startIndexLastBlock..], subKey1, destination: lastBlock);
         }
         else
         {
             AddPadding(message[startIndexLastBlock..], destination: lastBlock);
-            TensorPrimitives.Xor(lastBlock, subKey2, destination: lastBlock);
+            Xor(lastBlock, subKey2, destination: lastBlock);
         }
 
         // Step 5
@@ -73,13 +72,20 @@ public sealed class AesCmac : IDisposable
         var yBuffer = new byte[16];
         for (var i = 0; i < n - 1; i++)
         {
-            TensorPrimitives.Xor(xBuffer, message.Slice(i * 16, 16), destination: yBuffer);
+            Xor(xBuffer, message.Slice(i * 16, 16), destination: yBuffer);
             byte[] x = encryptor.TransformFinalBlock(yBuffer, 0, 16);
             x.CopyTo(xBuffer);
         }
-        TensorPrimitives.Xor<byte>(lastBlock, xBuffer, destination: yBuffer);
+        Xor(lastBlock, xBuffer, destination: yBuffer);
 
         return encryptor.TransformFinalBlock(yBuffer, 0, 16);
+    }
+
+    /// <summary> XORs two blocks into the destination, which may be one of them </summary>
+    private static void Xor(ReadOnlySpan<byte> left, ReadOnlySpan<byte> right, Span<byte> destination)
+    {
+        for (var i = 0; i < destination.Length; i++)
+            destination[i] = (byte)(left[i] ^ right[i]);
     }
 
     private static void AddPadding(ReadOnlySpan<byte> partialBlock, Span<byte> destination)
@@ -115,12 +121,12 @@ public sealed class AesCmac : IDisposable
         // Step 2
         LeftShiftOneBit(l, destination: subKey1Destination);
         if ((l[0] & 0x80) != 0)
-            TensorPrimitives.Xor(subKey1Destination, Rb, destination: subKey1Destination);
+            Xor(subKey1Destination, Rb, destination: subKey1Destination);
 
         // Step 3
         LeftShiftOneBit(subKey1Destination, destination: subKey2Destination);
         if ((subKey1Destination[0] & 0x80) != 0)
-            TensorPrimitives.Xor(subKey2Destination, Rb, destination: subKey2Destination);
+            Xor(subKey2Destination, Rb, destination: subKey2Destination);
     }
 
     private static void LeftShiftOneBit(ReadOnlySpan<byte> input, Span<byte> destination)
