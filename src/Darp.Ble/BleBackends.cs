@@ -8,4 +8,7 @@ public static class BleBackends
 
     /// <summary> The HCI backend from the Darp.Ble.HciHost package, which drives a controller over a serial port </summary>
     public const string HciHost = "Darp.Ble.HciHost";
+
+    /// <summary> The Windows backend from the Darp.Ble.WinRT package, on Windows' own Bluetooth stack </summary>
+    public const string WinRT = "Darp.Ble.WinRT";
 }

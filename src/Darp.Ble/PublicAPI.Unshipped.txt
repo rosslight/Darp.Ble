@@ -4474,6 +4474,7 @@ Darp.Ble.QueueOptions.FullMode.get -> Darp.Ble.QueueFullMode
 Darp.Ble.QueueOptions.QueueOptions(int capacity, Darp.Ble.QueueFullMode fullMode) -> void
 const Darp.Ble.BleBackends.HciHost = "Darp.Ble.HciHost" -> string!
 const Darp.Ble.BleBackends.Mock = "Darp.Ble.Mock" -> string!
+const Darp.Ble.BleBackends.WinRT = "Darp.Ble.WinRT" -> string!
 const Darp.Ble.Diagnostics.BleTelemetry.MeterName = "Darp.Ble" -> string!
 const Darp.Ble.Diagnostics.BleTelemetry.SourceName = "Darp.Ble" -> string!
 override Darp.Ble.Connections.BleConnectionParameters.Equals(object? obj) -> bool

@@ -1,24 +1,18 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>net10.0;net10.0-windows10.0.19041.0</TargetFrameworks>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <LangVersion>13</LangVersion>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Darp.Ble\Darp.Ble.csproj" />
   </ItemGroup>
-  <!-- When NOT building windows, remove everything except for the public API -->
+  <!-- The drivers need Windows; the registration and the platform-independent parts build everywhere -->
   <ItemGroup Condition="'$(TargetFramework)'!='net10.0-windows10.0.19041.0'">
-    <!-- remove all .cs under the project -->
-    <Compile Remove="**\*.cs" />
-    <!-- Bring back the public API only. -->
-    <Compile Include="WinBleFactory.cs" />
-    <Compile Include="WinBleFactoryExtensions.cs" />
+    <Compile Remove="Windows\**\*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <AssemblyAttribute Include="System.Reflection.AssemblyMetadataAttribute">
-      <_Parameter1>TargetFramework</_Parameter1>
-      <_Parameter2>$(TargetFramework)</_Parameter2>
-    </AssemblyAttribute>
+    <InternalsVisibleTo Include="Darp.Ble.WinRT.Tests" />
+    <InternalsVisibleTo Include="Darp.Ble.WinRT.Hardware.Tests" />
   </ItemGroup>
 </Project>
