@@ -1,3 +1,4 @@
+using Darp.Ble.Connections;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Microsoft.Extensions.Logging;
@@ -88,4 +89,96 @@ internal static partial class Logging
         Message = "Advertising set {Address} stopped"
     )]
     public static partial void LogAdvertisingStopped(this ILogger logger, BleAddress address);
+
+    [LoggerMessage(
+        EventId = 1202,
+        EventName = "AdvertisingRestartFailed",
+        Level = LogLevel.Warning,
+        Message = "Advertising set {Address} could not start again after its central disconnected"
+    )]
+    public static partial void LogAdvertisingRestartFailed(
+        this ILogger logger,
+        BleAddress address,
+        Exception exception
+    );
+
+    [LoggerMessage(
+        EventId = 1300,
+        EventName = "Connecting",
+        Level = LogLevel.Debug,
+        Message = "Connecting to {Address}"
+    )]
+    public static partial void LogConnecting(this ILogger logger, BleAddress address);
+
+    [LoggerMessage(EventId = 1301, EventName = "Connected", Level = LogLevel.Debug, Message = "Connected to {Address}")]
+    public static partial void LogConnected(this ILogger logger, BleAddress address);
+
+    [LoggerMessage(
+        EventId = 1302,
+        EventName = "ConnectFailed",
+        Level = LogLevel.Warning,
+        Message = "Connecting to {Address} failed: {Kind}"
+    )]
+    public static partial void LogConnectFailed(
+        this ILogger logger,
+        BleAddress address,
+        BleConnectErrorKind kind,
+        Exception exception
+    );
+
+    [LoggerMessage(
+        EventId = 1303,
+        EventName = "Disconnected",
+        Level = LogLevel.Debug,
+        Message = "Connection to {Address} ended: {Reason}"
+    )]
+    public static partial void LogDisconnected(this ILogger logger, BleAddress address, DisconnectReason reason);
+
+    [LoggerMessage(
+        EventId = 1307,
+        EventName = "ConnectionCleanupFailed",
+        Level = LogLevel.Warning,
+        Message = "Releasing the connection to {Address} failed"
+    )]
+    public static partial void LogConnectionCleanupFailed(this ILogger logger, BleAddress address, Exception exception);
+
+    [LoggerMessage(
+        EventId = 1304,
+        EventName = "RequestAbandoned",
+        Level = LogLevel.Debug,
+        Message = "A request to {Address} was abandoned after sending; the next request waits for its answer"
+    )]
+    public static partial void LogRequestAbandoned(this ILogger logger, BleAddress address);
+
+    [LoggerMessage(
+        EventId = 1305,
+        EventName = "AbandonedRequestCompleted",
+        Level = LogLevel.Debug,
+        Message = "An abandoned request to {Address} ended after {Duration}"
+    )]
+    public static partial void LogAbandonedRequestCompleted(this ILogger logger, BleAddress address, TimeSpan duration);
+
+    [LoggerMessage(
+        EventId = 1306,
+        EventName = "AttTimeout",
+        Level = LogLevel.Warning,
+        Message = "{Address} did not answer within the ATT timeout; ending the connection"
+    )]
+    public static partial void LogAttTimeout(this ILogger logger, BleAddress address);
+
+    [LoggerMessage(
+        EventId = 1400,
+        EventName = "CentralConnected",
+        Level = LogLevel.Debug,
+        Message = "Central {Address} connected"
+    )]
+    public static partial void LogCentralConnected(this ILogger logger, BleAddress address);
+
+    [LoggerMessage(
+        EventId = 1401,
+        EventName = "CentralDisconnected",
+        Level = LogLevel.Debug,
+        Message = "Connection of central {Address} ended: {Reason}"
+    )]
+    public static partial void LogCentralDisconnected(this ILogger logger, BleAddress address, DisconnectReason reason);
 }

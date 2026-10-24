@@ -29,6 +29,18 @@ internal sealed class OperationTracker
         }
     }
 
+    /// <summary> Admits an operation unless the tracker is closed; every successful call needs exactly one <see cref="Exit"/> </summary>
+    public bool TryEnter()
+    {
+        lock (_lock)
+        {
+            if (_closed)
+                return false;
+            _running++;
+            return true;
+        }
+    }
+
     public void Exit()
     {
         lock (_lock)

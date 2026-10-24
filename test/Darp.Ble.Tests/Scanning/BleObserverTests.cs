@@ -312,31 +312,5 @@ public sealed class BleObserverTests
         return session;
     }
 
-    private static readonly Dictionary<byte, IGapAdvertisement> Advertisements = [];
-
-    /// <summary> One advertisement per number, the same instance each time, so assertions can compare references </summary>
-    private static IGapAdvertisement Adv(byte number)
-    {
-        lock (Advertisements)
-        {
-            if (!Advertisements.TryGetValue(number, out IGapAdvertisement? advertisement))
-            {
-                advertisement = GapAdvertisement.FromExtendedAdvertisingReport(
-                    DateTimeOffset.UnixEpoch,
-                    BleEventType.AdvNonConnInd,
-                    new BleAddress(BleAddressType.Public, (UInt48)number),
-                    Physical.Le1M,
-                    Physical.NotAvailable,
-                    AdvertisingSId.NoAdIProvided,
-                    TxPowerLevel.NotAvailable,
-                    (Rssi)(-50),
-                    PeriodicAdvertisingInterval.NoPeriodicAdvertising,
-                    BleAddress.NotAvailable,
-                    AdvertisingData.Empty
-                );
-                Advertisements[number] = advertisement;
-            }
-            return advertisement;
-        }
-    }
+    private static IGapAdvertisement Adv(byte number) => TestAdvertisements.Get(number);
 }

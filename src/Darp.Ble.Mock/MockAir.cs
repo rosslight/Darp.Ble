@@ -10,6 +10,7 @@ internal sealed class MockAir(TimeProvider timeProvider, Func<TxPowerLevel, Rssi
     private readonly Func<TxPowerLevel, Rssi> _txPowerToRssi = txPowerToRssi;
     private readonly Lock _lock = new();
     private MockObserverDriver[] _listeners = [];
+    private readonly List<MockAdvertisingSetDriver> _advertising = [];
 
     public TimeProvider TimeProvider { get; } = timeProvider;
 
@@ -23,6 +24,34 @@ internal sealed class MockAir(TimeProvider timeProvider, Func<TxPowerLevel, Rssi
     {
         lock (_lock)
             _listeners = [.. _listeners.Where(listener => !ReferenceEquals(listener, observer))];
+    }
+
+    public void StartAdvertising(MockAdvertisingSetDriver set)
+    {
+        lock (_lock)
+            _advertising.Add(set);
+    }
+
+    public void StopAdvertising(MockAdvertisingSetDriver set)
+    {
+        lock (_lock)
+            _advertising.Remove(set);
+    }
+
+    /// <summary> Finds a set that advertises connectable with this address, from another adapter than the central's </summary>
+    public MockAdvertisingSetDriver? FindConnectable(MockAdapterDriver central, BleAddress address)
+    {
+        MockAdvertisingSetDriver[] advertising;
+        lock (_lock)
+            advertising = [.. _advertising];
+        // Outside the air's lock: a set takes its own lock and may register with the air while holding it
+        return Array.Find(
+            advertising,
+            set =>
+                !ReferenceEquals(set.Adapter, central)
+                && set.RandomAddress == address
+                && set.Type.HasFlag(BleEventType.Connectable)
+        );
     }
 
     /// <summary> Delivers one advertising event of a set to every listening adapter except the sender </summary>

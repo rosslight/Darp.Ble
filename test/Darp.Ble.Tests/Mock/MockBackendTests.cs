@@ -7,7 +7,7 @@ namespace Darp.Ble.Tests.Mock;
 public sealed class MockBackendTests
 {
     [Fact]
-    public async Task AddMock_ListsOneAdapterThatScansAndAdvertises()
+    public async Task AddMock_ListsOneAdapterThatScansAdvertisesAndConnects()
     {
         var manager = new BleManager(builder => builder.AddMock(options => options.Name = "Sensor"));
 
@@ -19,7 +19,13 @@ public sealed class MockBackendTests
 
         info.Backend.ShouldBe(BleBackends.Mock);
         info.Name.ShouldBe("Sensor");
-        adapter.Capabilities.ShouldBe(Capabilities.Observer | Capabilities.Broadcaster | Capabilities.SetRandomAddress);
+        adapter.Capabilities.ShouldBe(
+            Capabilities.Observer
+                | Capabilities.Broadcaster
+                | Capabilities.Central
+                | Capabilities.Peripheral
+                | Capabilities.SetRandomAddress
+        );
     }
 
     [Fact]

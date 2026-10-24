@@ -13,10 +13,11 @@ internal sealed class MockBroadcasterDriver(MockAir air, MockAdapterDriver adapt
         AdvertisingParameters parameters,
         AdvertisingData data,
         AdvertisingData? scanResponseData,
+        IAdvertisingSetSink sink,
         CancellationToken cancellationToken
     )
     {
         var state = new MockAdvertisingState(parameters, _adapter.RandomAddress, data, scanResponseData);
-        return Task.FromResult<IAdvertisingSetDriver>(new MockAdvertisingSetDriver(_air, _adapter, state));
+        return Task.FromResult<IAdvertisingSetDriver>(new MockAdvertisingSetDriver(_air, _adapter, state, sink));
     }
 }

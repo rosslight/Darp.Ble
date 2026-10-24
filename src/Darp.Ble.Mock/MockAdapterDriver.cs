@@ -1,5 +1,6 @@
 using Darp.Ble.Backends;
 using Darp.Ble.Data;
+using Darp.Ble.Mock.Connections;
 using Darp.Ble.Mock.Gap;
 
 namespace Darp.Ble.Mock;
@@ -14,14 +15,26 @@ internal sealed class MockAdapterDriver : IBleAdapterDriver
     {
         Observer = new MockObserverDriver(air, this);
         Broadcaster = new MockBroadcasterDriver(air, this);
+        Central = new MockCentralDriver(air, this);
     }
 
     public Capabilities Capabilities =>
-        Capabilities.Observer | Capabilities.Broadcaster | Capabilities.SetRandomAddress;
+        Capabilities.Observer
+        | Capabilities.Broadcaster
+        | Capabilities.Central
+        | Capabilities.Peripheral
+        | Capabilities.SetRandomAddress;
 
     public IObserverDriver? Observer { get; }
 
     public IBroadcasterDriver? Broadcaster { get; }
+
+    public ICentralDriver? Central { get; }
+
+    public IPeripheralDriver? Peripheral => PeripheralDriver;
+
+    /// <summary> The peripheral role, for centrals in the air that connect to this adapter </summary>
+    public MockPeripheralDriver PeripheralDriver { get; } = new();
 
     public BleAddress RandomAddress => _randomAddress;
 
@@ -36,6 +49,7 @@ internal sealed class MockAdapterDriver : IBleAdapterDriver
     /// <summary> Disposes the simulated peripherals; tries all of them even if one fails </summary>
     public async ValueTask DisposeAsync()
     {
+        PeripheralDriver.Close();
         List<Exception>? failures = null;
         foreach (BleAdapter peripheral in _peripherals)
         {

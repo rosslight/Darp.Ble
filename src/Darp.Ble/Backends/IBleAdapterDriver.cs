@@ -14,6 +14,12 @@ public interface IBleAdapterDriver : IAsyncDisposable
     /// <summary> The broadcaster role, or null if the adapter cannot advertise </summary>
     IBroadcasterDriver? Broadcaster { get; }
 
+    /// <summary> The central role, or null if the adapter cannot connect to peripherals </summary>
+    ICentralDriver? Central { get; }
+
+    /// <summary> The peripheral role, or null if centrals cannot connect to the adapter </summary>
+    IPeripheralDriver? Peripheral { get; }
+
     /// <summary> The adapter's own random address </summary>
     BleAddress RandomAddress { get; }
 
