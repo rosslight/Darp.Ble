@@ -108,10 +108,10 @@ internal static partial class Logging
         Level = LogLevel.Debug,
         Message = "Connecting to {Address}"
     )]
-    public static partial void LogConnecting(this ILogger logger, BleAddress address);
+    public static partial void LogConnecting(this ILogger logger, object address);
 
     [LoggerMessage(EventId = 1301, EventName = "Connected", Level = LogLevel.Debug, Message = "Connected to {Address}")]
-    public static partial void LogConnected(this ILogger logger, BleAddress address);
+    public static partial void LogConnected(this ILogger logger, object address);
 
     [LoggerMessage(
         EventId = 1302,
@@ -121,9 +121,9 @@ internal static partial class Logging
     )]
     public static partial void LogConnectFailed(
         this ILogger logger,
-        BleAddress address,
+        object address,
         BleConnectErrorKind kind,
-        Exception exception
+        Exception? exception
     );
 
     [LoggerMessage(
@@ -132,7 +132,7 @@ internal static partial class Logging
         Level = LogLevel.Debug,
         Message = "Connection to {Address} ended: {Reason}"
     )]
-    public static partial void LogDisconnected(this ILogger logger, BleAddress address, DisconnectReason reason);
+    public static partial void LogDisconnected(this ILogger logger, object address, DisconnectReason reason);
 
     [LoggerMessage(
         EventId = 1307,
@@ -140,7 +140,7 @@ internal static partial class Logging
         Level = LogLevel.Warning,
         Message = "Releasing the connection to {Address} failed"
     )]
-    public static partial void LogConnectionCleanupFailed(this ILogger logger, BleAddress address, Exception exception);
+    public static partial void LogConnectionCleanupFailed(this ILogger logger, object address, Exception? exception);
 
     [LoggerMessage(
         EventId = 1304,
@@ -148,7 +148,7 @@ internal static partial class Logging
         Level = LogLevel.Debug,
         Message = "A request to {Address} was abandoned after sending; the next request waits for its answer"
     )]
-    public static partial void LogRequestAbandoned(this ILogger logger, BleAddress address);
+    public static partial void LogRequestAbandoned(this ILogger logger, object address);
 
     [LoggerMessage(
         EventId = 1305,
@@ -156,7 +156,7 @@ internal static partial class Logging
         Level = LogLevel.Debug,
         Message = "An abandoned request to {Address} ended after {Duration}"
     )]
-    public static partial void LogAbandonedRequestCompleted(this ILogger logger, BleAddress address, TimeSpan duration);
+    public static partial void LogAbandonedRequestCompleted(this ILogger logger, object address, TimeSpan duration);
 
     [LoggerMessage(
         EventId = 1306,
@@ -164,7 +164,7 @@ internal static partial class Logging
         Level = LogLevel.Warning,
         Message = "{Address} did not answer within the ATT timeout; ending the connection"
     )]
-    public static partial void LogAttTimeout(this ILogger logger, BleAddress address);
+    public static partial void LogAttTimeout(this ILogger logger, object address);
 
     [LoggerMessage(
         EventId = 1400,
@@ -172,7 +172,7 @@ internal static partial class Logging
         Level = LogLevel.Debug,
         Message = "Central {Address} connected"
     )]
-    public static partial void LogCentralConnected(this ILogger logger, BleAddress address);
+    public static partial void LogCentralConnected(this ILogger logger, object address);
 
     [LoggerMessage(
         EventId = 1401,
@@ -180,7 +180,7 @@ internal static partial class Logging
         Level = LogLevel.Debug,
         Message = "Connection of central {Address} ended: {Reason}"
     )]
-    public static partial void LogCentralDisconnected(this ILogger logger, BleAddress address, DisconnectReason reason);
+    public static partial void LogCentralDisconnected(this ILogger logger, object address, DisconnectReason reason);
 
     [LoggerMessage(
         EventId = 1402,
@@ -188,7 +188,7 @@ internal static partial class Logging
         Level = LogLevel.Warning,
         Message = "A handler for central {Address} failed; answering with UnlikelyError"
     )]
-    public static partial void LogHandlerFailed(this ILogger logger, BleAddress address, Exception exception);
+    public static partial void LogHandlerFailed(this ILogger logger, object address, Exception? exception);
 
     [LoggerMessage(
         EventId = 1403,
@@ -196,7 +196,7 @@ internal static partial class Logging
         Level = LogLevel.Warning,
         Message = "A notification to central {Address} failed; the other centrals still get theirs"
     )]
-    public static partial void LogNotifyAllCentralFailed(this ILogger logger, BleAddress address, Exception exception);
+    public static partial void LogNotifyAllCentralFailed(this ILogger logger, object address, Exception? exception);
 
     [LoggerMessage(
         EventId = 1404,
@@ -204,5 +204,13 @@ internal static partial class Logging
         Level = LogLevel.Warning,
         Message = "Disposing a state of central {Address} failed"
     )]
-    public static partial void LogStateDisposeFailed(this ILogger logger, BleAddress address, Exception exception);
+    public static partial void LogStateDisposeFailed(this ILogger logger, object address, Exception? exception);
+
+    [LoggerMessage(
+        EventId = 1405,
+        EventName = "SlowHandlers",
+        Level = LogLevel.Warning,
+        Message = "Handlers of central {Address} still run {Delay} after its connection started ending; its cleanup waits for them"
+    )]
+    public static partial void LogSlowHandlers(this ILogger logger, object address, TimeSpan delay);
 }

@@ -130,6 +130,18 @@ await using AdvertisingSet advertising = await adapter.Broadcaster.StartAdvertis
 The mock also serves the GATT service: Service Changed tells centrals that turned it on when a service was added, and Database Hash changes with the services. `IncludeGattService = false` in its options leaves it out, e.g. to simulate a device without it.
 The library brings contracts for the battery, heart rate, device information and echo services, e.g. `AddBatteryServiceAsync()` on the peripheral side and `DiscoverBatteryServiceAsync()` on the central side; `RemoteEchoService.QueryOneAsync(request)` writes a request and returns the reply.
 
+### Diagnostics
+
+The library logs through the `ILoggerFactory` you pass to `BleManager`, traces on the `Darp.Ble` activity source and measures on the `Darp.Ble` meter. [docs/telemetry.md](docs/telemetry.md) lists every span, tag, metric and event id; those names only change additively.
+
+```csharp
+tracing.AddSource(BleTelemetry.SourceName);
+metrics.AddMeter(BleTelemetry.MeterName);
+var manager = new BleManager(builder => builder.AddMock().ConfigureDiagnostics(options => options.IncludeAddresses = false));
+```
+
+With SerilogTracing, `Instrument.With<DarpBleActivityInstrumentor>()` from `Darp.Ble.SerilogTracing` renders each span with its template, e.g. `Read "2A19"`.
+
 ### Further Documentation
 
 Additional documentation exists in form of the unit tests.

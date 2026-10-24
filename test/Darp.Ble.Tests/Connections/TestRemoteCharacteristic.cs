@@ -26,8 +26,17 @@ internal sealed class TestRemoteCharacteristic(TestConnectionDriver connection) 
     public Task SetNotificationsAsync(bool enabled, GattRequest request) =>
         _connection.HandOver(enabled ? "enable" : "disable", request).Done;
 
+    /// <summary> When true, writes without response are accepted at once, as with free buffer space </summary>
+    public bool AcceptCommandsAtOnce { get; set; }
+
     /// <summary> Waits for buffer space until the test accepts it, honouring the hand-off token meanwhile </summary>
     public ValueTask WriteWithoutResponseAsync(ReadOnlyMemory<byte> value, GattRequest request)
+    {
+        // A separate method for the slow path, so the fast path allocates no closure
+        return AcceptCommandsAtOnce ? ValueTask.CompletedTask : HoldCommand(request);
+    }
+
+    private ValueTask HoldCommand(GattRequest request)
     {
         PendingRequest pending = _connection.HandOver("command", request);
         request.HandOffToken.Register(() => pending.Fail(new OperationCanceledException(request.HandOffToken)));

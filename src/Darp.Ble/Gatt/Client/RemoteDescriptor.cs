@@ -26,7 +26,7 @@ public sealed class RemoteDescriptor
     /// <exception cref="GattException"> The peripheral answered with an ATT error </exception>
     /// <exception cref="BleDisconnectedException"> The connection ended </exception>
     public Task<byte[]> ReadAsync(CancellationToken cancellationToken = default) =>
-        _connection.RunAsync(_driver.ReadAsync, cancellationToken);
+        _connection.RunAsync(GattOperation.ReadDescriptor(Uuid), _driver.ReadAsync, cancellationToken);
 
     /// <summary> Writes the value </summary>
     /// <param name="value"> The value; copied, so the caller may reuse the buffer at once </param>
@@ -37,6 +37,10 @@ public sealed class RemoteDescriptor
     public Task WriteAsync(ReadOnlyMemory<byte> value, CancellationToken cancellationToken = default)
     {
         byte[] copy = value.ToArray();
-        return _connection.RunAsync(request => _driver.WriteAsync(copy, request), cancellationToken);
+        return _connection.RunAsync(
+            GattOperation.WriteDescriptor(Uuid),
+            request => _driver.WriteAsync(copy, request),
+            cancellationToken
+        );
     }
 }

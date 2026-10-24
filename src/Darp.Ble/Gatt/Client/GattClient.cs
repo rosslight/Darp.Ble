@@ -26,7 +26,7 @@ public sealed class GattClient
     )
     {
         IReadOnlyList<IRemoteServiceDriver> services = await _connection
-            .RunAsync(_driver.DiscoverServicesAsync, cancellationToken)
+            .RunAsync(GattOperation.DiscoverServices, _driver.DiscoverServicesAsync, cancellationToken)
             .ConfigureAwait(false);
         return [.. services.Select(service => new RemoteGattService(_connection, service))];
     }

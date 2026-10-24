@@ -38,7 +38,7 @@ public sealed class RemoteGattCharacteristic
     public Task<byte[]> ReadAsync(CancellationToken cancellationToken = default)
     {
         EnsureSupports(GattProperty.Read);
-        return _connection.RunAsync(_driver.ReadAsync, cancellationToken);
+        return _connection.RunAsync(GattOperation.Read(Uuid), _driver.ReadAsync, cancellationToken);
     }
 
     /// <summary> Writes the value with a write request, which the peripheral answers </summary>
@@ -52,7 +52,11 @@ public sealed class RemoteGattCharacteristic
         EnsureSupports(GattProperty.Write);
         // An abandoned write keeps running; the copy makes it independent of the caller's buffer
         byte[] copy = value.ToArray();
-        return _connection.RunAsync(request => _driver.WriteAsync(copy, request), cancellationToken);
+        return _connection.RunAsync(
+            GattOperation.Write(Uuid),
+            request => _driver.WriteAsync(copy, request),
+            cancellationToken
+        );
     }
 
     /// <summary> Writes the value with a write command, which the peripheral does not answer (D8) </summary>
@@ -69,7 +73,7 @@ public sealed class RemoteGattCharacteristic
     )
     {
         EnsureSupports(GattProperty.WriteWithoutResponse);
-        return _connection.RunCommandAsync(_driver, value, cancellationToken);
+        return _connection.RunCommandAsync(GattOperation.WriteWithoutResponse(Uuid), _driver, value, cancellationToken);
     }
 
     /// <summary> Discovers the descriptors of the characteristic </summary>
@@ -82,7 +86,7 @@ public sealed class RemoteGattCharacteristic
     )
     {
         IReadOnlyList<IRemoteDescriptorDriver> descriptors = await _connection
-            .RunAsync(_driver.DiscoverDescriptorsAsync, cancellationToken)
+            .RunAsync(GattOperation.DiscoverDescriptors(Uuid), _driver.DiscoverDescriptorsAsync, cancellationToken)
             .ConfigureAwait(false);
         return [.. descriptors.Select(descriptor => new RemoteDescriptor(_connection, descriptor))];
     }

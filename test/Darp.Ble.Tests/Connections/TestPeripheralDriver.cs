@@ -79,9 +79,13 @@ internal sealed class TestPeripheralDriver : IPeripheralDriver
     public void SetGapIdentity(string deviceName, Darp.Ble.Data.AssignedNumbers.AppearanceValues appearance) =>
         Calls.Add($"identity {deviceName}");
 
-    public Task DisconnectAsync(ICentralConnectionDriver central, CancellationToken cancellationToken)
+    /// <summary> When set, taking a link down waits until the test completes it </summary>
+    public TaskCompletionSource? HoldDisconnect { get; init; }
+
+    public async Task DisconnectAsync(ICentralConnectionDriver central, CancellationToken cancellationToken)
     {
+        if (HoldDisconnect is not null)
+            await HoldDisconnect.Task.ConfigureAwait(false);
         Sink.OnCentralDisconnected(central, new DisconnectInfo(DisconnectReason.LocalRequest));
-        return Task.CompletedTask;
     }
 }

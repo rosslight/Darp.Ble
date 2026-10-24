@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Backends;
 using Darp.Ble.Data;
+using Darp.Ble.Diagnostics;
 using Darp.Ble.Gap;
 using Microsoft.Extensions.Logging;
 
@@ -18,9 +20,10 @@ namespace Darp.Ble.Gap;
     "CA1001:Types that own disposable fields should be disposable",
     Justification = "The semaphore outlives disposal: scans that end afterwards still wait on it. It holds no wait handle"
 )]
-internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
+internal sealed class ScanCoordinator(IObserverDriver driver, string backend, ILogger logger)
 {
     private readonly IObserverDriver _driver = driver;
+    private readonly string _backend = backend;
     private readonly ILogger _logger = logger;
     private readonly Lock _lock = new();
     private readonly SemaphoreSlim _commands = new(1, 1);
@@ -39,7 +42,7 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
         CancellationToken cancellationToken
     )
     {
-        var listener = new ItemQueue<IGapAdvertisement>(queue, DropCounter.Increment);
+        var listener = new ItemQueue<IGapAdvertisement>(queue, CountDrop);
         await _commands.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
@@ -62,6 +65,16 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
         {
             _commands.Release();
         }
+    }
+
+    /// <summary> Runs on the driver's thread; allocation-free with the fixed tags </summary>
+    private void CountDrop()
+    {
+        DropCounter.Increment();
+        Telemetry.Dropped.Add(
+            1,
+            new TagList { { Telemetry.BackendTag, _backend }, { Telemetry.QueueTag, "advertisements" } }
+        );
     }
 
     public async Task RemoveListenerAsync(ItemQueue<IGapAdvertisement> listener)

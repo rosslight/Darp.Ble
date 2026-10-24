@@ -1,4 +1,5 @@
 using Darp.Ble.Backends;
+using Darp.Ble.Diagnostics;
 using Darp.Ble.Gatt;
 
 namespace Darp.Ble.Connections;
@@ -8,6 +9,7 @@ namespace Darp.Ble.Connections;
 internal sealed class NotificationChannel
 {
     private readonly IRemoteCharacteristicDriver _driver;
+    private readonly string _backend;
     private readonly Lock _lock = new();
     private ItemQueue<byte[]>[] _queues = [];
     private bool _isOn;
@@ -15,15 +17,16 @@ internal sealed class NotificationChannel
     private Exception? _ended;
     private bool _endedNormally;
 
-    public NotificationChannel(IRemoteCharacteristicDriver driver)
+    public NotificationChannel(IRemoteCharacteristicDriver driver, string backend)
     {
         _driver = driver;
+        _backend = backend;
     }
 
     /// <summary> Registers the queue of a new stream; a stream of an ended connection ends at once the same way </summary>
     public NotificationStream<T> Subscribe<T>(QueueOptions queue, Func<byte[], T> decode)
     {
-        var items = new ItemQueue<byte[]>(queue, onDrop: () => { });
+        var items = new ItemQueue<byte[]>(queue, onDrop: CountDrop);
         bool ended;
         lock (_lock)
         {
@@ -35,6 +38,17 @@ internal sealed class NotificationChannel
             items.Complete(_ended);
         return new NotificationStream<T>(this, items, decode);
     }
+
+    /// <summary> Runs on the driver's thread; allocation-free with the fixed tags </summary>
+    private void CountDrop() =>
+        Telemetry.Dropped.Add(
+            1,
+            new System.Diagnostics.TagList
+            {
+                { Telemetry.BackendTag, _backend },
+                { Telemetry.QueueTag, "notifications" },
+            }
+        );
 
     public void Remove(ItemQueue<byte[]> queue)
     {
@@ -103,7 +117,11 @@ internal sealed class NotificationChannel
         try
         {
             await connection
-                .RunAsync(request => WriteCccdAsync(enabled, attempt, request), cancellationToken)
+                .RunAsync(
+                    GattOperation.SetNotifications(_driver.Uuid, enabled),
+                    request => WriteCccdAsync(enabled, attempt, request),
+                    cancellationToken
+                )
                 .ConfigureAwait(false);
         }
         finally

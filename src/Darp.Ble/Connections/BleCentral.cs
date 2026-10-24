@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using Darp.Ble.Backends;
 using Darp.Ble.Connections;
 using Darp.Ble.Data;
+using Darp.Ble.Diagnostics;
 using Darp.Ble.Gap;
 using Microsoft.Extensions.Logging;
 
@@ -18,6 +20,7 @@ public sealed class BleCentral
     private readonly BleObserver _observer;
     private readonly TimeProvider _timeProvider;
     private readonly QueueOptions _notificationQueue;
+    private readonly DiagnosticsSettings _diagnostics;
     private readonly ILogger _logger;
     private readonly Lock _lock = new();
     private readonly List<ConnectedPeripheral> _connections = [];
@@ -31,11 +34,12 @@ public sealed class BleCentral
         ICentralDriver driver,
         BleObserver observer,
         TimeProvider timeProvider,
-        QueueOptions notificationQueue,
+        BleCoreOptions options,
         ILogger logger
     )
     {
-        _notificationQueue = notificationQueue;
+        _notificationQueue = options.NotificationQueue;
+        _diagnostics = options.Diagnostics;
         Adapter = adapter;
         _driver = driver;
         _observer = observer;
@@ -74,17 +78,32 @@ public sealed class BleCentral
         parameters ??= new BleConnectionParameters();
         parameters.Validate(nameof(parameters));
         _attempts.Enter(typeof(BleCentral));
+        // Ends when ConnectAsync returns; the MTU exchange is a request inside it (D14)
+        using Activity? activity = Telemetry.Source.StartActivity("Connect", ActivityKind.Client);
+        if (activity is { IsAllDataRequested: true })
+        {
+            activity.SetTag(Telemetry.BackendTag, Adapter.Backend);
+            activity.SetTag(Telemetry.AddressTag, Telemetry.Text(_diagnostics.Peer(address)));
+        }
         try
         {
             using var attempt = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _closing.Token);
+            ConnectedPeripheral connection;
             try
             {
-                return await ConnectCoreAsync(address, parameters, attempt.Token).ConfigureAwait(false);
+                connection = await ConnectCoreAsync(address, parameters, attempt.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException e) when (!cancellationToken.IsCancellationRequested)
             {
                 throw new ObjectDisposedException("The adapter was disposed while connecting", e);
             }
+            Telemetry.Finish(activity, Telemetry.Success);
+            return connection;
+        }
+        catch (Exception e)
+        {
+            Telemetry.Finish(activity, Telemetry.OutcomeOf(e), e, _diagnostics);
+            throw;
         }
         finally
         {
@@ -98,7 +117,8 @@ public sealed class BleCentral
         CancellationToken cancellationToken
     )
     {
-        _logger.LogConnecting(address);
+        object peer = _diagnostics.Peer(address);
+        _logger.LogConnecting(peer);
         var events = new ConnectionEvents();
         IConnectionDriver driver;
         // The adapter's scans pause until the link is up (D6)
@@ -109,7 +129,7 @@ public sealed class BleCentral
         }
         catch (BleConnectException e)
         {
-            _logger.LogConnectFailed(address, e.Kind, e);
+            _logger.LogConnectFailed(peer, e.Kind, _diagnostics.Exception(e));
             throw;
         }
         finally
@@ -117,7 +137,16 @@ public sealed class BleCentral
             await _observer.ResumeAsync().ConfigureAwait(false);
         }
         // Until the caller gets it, this method owns the connection
-        var connection = new ConnectedPeripheral(this, address, driver, _timeProvider, _notificationQueue, _logger);
+        var connection = new ConnectedPeripheral(
+            this,
+            address,
+            driver,
+            _timeProvider,
+            _notificationQueue,
+            Adapter.Backend,
+            _diagnostics,
+            _logger
+        );
         events.Attach(connection);
         try
         {
@@ -130,6 +159,7 @@ public sealed class BleCentral
                 if (connection.Ending is { } ending)
                     throw new BleDisconnectedException(ending);
                 _connections.Add(connection);
+                connection.CountOpen();
             }
         }
         catch
@@ -137,7 +167,7 @@ public sealed class BleCentral
             await connection.DisposeAsync().ConfigureAwait(false);
             throw;
         }
-        _logger.LogConnected(address);
+        _logger.LogConnected(peer);
         return connection;
     }
 
