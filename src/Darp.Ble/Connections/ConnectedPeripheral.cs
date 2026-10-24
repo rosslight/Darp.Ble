@@ -23,6 +23,7 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
         TaskCreationOptions.RunContinuationsAsynchronously
     );
     private readonly RequestQueue _requests;
+    private readonly Dictionary<IRemoteCharacteristicDriver, NotificationChannel> _notifications = [];
     private DisconnectInfo? _ending;
     private int _maxWritePayloadLength;
 
@@ -31,9 +32,11 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
         BleAddress address,
         IConnectionDriver driver,
         TimeProvider timeProvider,
+        QueueOptions notificationQueue,
         ILogger logger
     )
     {
+        NotificationQueue = notificationQueue;
         _central = central;
         _driver = driver;
         _logger = logger;
@@ -71,6 +74,56 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
     internal Task<T> RunAsync<T>(Func<GattRequest, Task<T>> send, CancellationToken cancellationToken) =>
         _requests.RunAsync(send, cancellationToken);
 
+    /// <summary> Runs a write without response in this connection's send order </summary>
+    internal ValueTask RunCommandAsync(
+        IRemoteCharacteristicDriver characteristic,
+        ReadOnlyMemory<byte> value,
+        CancellationToken cancellationToken
+    ) => _requests.RunCommandAsync(characteristic, value, cancellationToken);
+
+    /// <summary> Runs a request without a result of this connection once the earlier ones ended </summary>
+    internal Task RunAsync(Func<GattRequest, Task> send, CancellationToken cancellationToken) =>
+        _requests.RunAsync(
+            async request =>
+            {
+                await send(request).ConfigureAwait(false);
+                return true;
+            },
+            cancellationToken
+        );
+
+    /// <summary> The queue of a stream that does not bring its own </summary>
+    internal QueueOptions NotificationQueue { get; }
+
+    /// <summary> The notifications of a characteristic; the same channel for the same driver object </summary>
+    internal NotificationChannel GetNotifications(IRemoteCharacteristicDriver characteristic)
+    {
+        NotificationChannel? channel;
+        DisconnectInfo? ending;
+        lock (_lock)
+        {
+            ending = _ending;
+            if (!_notifications.TryGetValue(characteristic, out channel))
+            {
+                channel = new NotificationChannel(characteristic);
+                _notifications.Add(characteristic, channel);
+            }
+        }
+        // A channel created after the end ends at once, so its streams end like all others
+        if (ending is not null)
+            channel.End(ending);
+        return channel;
+    }
+
+    internal void OnNotification(IRemoteCharacteristicDriver characteristic, ReadOnlySpan<byte> value)
+    {
+        NotificationChannel? channel;
+        lock (_lock)
+            _notifications.TryGetValue(characteristic, out channel);
+        // Without a channel nobody subscribed: dropped
+        channel?.Deliver(value);
+    }
+
     /// <summary> Why the connection ends, once it started ending </summary>
     internal DisconnectInfo? Ending
     {
@@ -101,6 +154,12 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
         }
         // Requests fail with this end from now on; the ones running end with the driver
         _requests.Close(info);
+        // Streams deliver what they queued, then end the same way (D7)
+        NotificationChannel[] channels;
+        lock (_lock)
+            channels = [.. _notifications.Values];
+        foreach (NotificationChannel channel in channels)
+            channel.End(info);
         // Off the caller's thread: a driver may report a disconnect from its read loop, and teardown calls back into it
         _ = Task.Run(() => TeardownAsync(info));
     }

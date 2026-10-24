@@ -8,4 +8,7 @@ public enum GattErrorKind
 
     /// <summary> The device does not have what was asked for, e.g. a service </summary>
     NotFound,
+
+    /// <summary> The characteristic does not support the operation, or not the properties a declaration asks for </summary>
+    PropertyMismatch,
 }

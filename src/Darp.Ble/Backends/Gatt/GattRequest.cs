@@ -2,30 +2,37 @@ using Darp.Ble.Connections;
 
 namespace Darp.Ble.Backends;
 
-/// <summary> One request on a connection, as its driver sees it. The core creates one per request and hands a connection's requests to the driver one at a time </summary>
-/// <remarks> A request can take several ATT transactions, e.g. discovery page by page. The driver reports each one, so the core can time out a peer that stops answering </remarks>
+/// <summary> One operation on a connection, as its driver sees it. The core hands a connection's operations to the driver in call order </summary>
+/// <remarks>
+/// A request takes one or more ATT transactions, e.g. discovery page by page, and reports each one, so the core can time out
+/// a peer that stops answering. A write without response has no transaction; its task completes once the backend accepted it.
+/// The core reuses the object of a write without response, so a driver must not keep it after the task completed
+/// </remarks>
 public sealed class GattRequest
 {
     private readonly RequestQueue _queue;
     private readonly Lock _lock = new();
-    private readonly CancellationTokenSource _handOff;
-    private readonly long _startedAt;
+
+    // A request owns a token source linked to the connection's end; a write without response passes the caller's token on
+    private readonly CancellationTokenSource? _handOff;
+    private CancellationToken _callerToken;
     private bool _sent;
     private bool _abandoned;
     private bool _completed;
 
-    internal GattRequest(RequestQueue queue, long startedAt, CancellationToken connectionClosed)
+    private GattRequest(RequestQueue queue, object? turn, long startedAt, CancellationTokenSource? handOff)
     {
         _queue = queue;
-        _handOff = CancellationTokenSource.CreateLinkedTokenSource(connectionClosed);
-        _startedAt = startedAt;
+        Turn = turn;
+        StartedAt = startedAt;
+        _handOff = handOff;
     }
 
-    /// <summary> The caller's cancellation until the controller accepted the first transaction </summary>
-    /// <remarks> Pass it to waits before sending, e.g. for buffer space. Never pass it to a transaction the controller accepted </remarks>
-    public CancellationToken HandOffToken => _handOff.Token;
+    /// <summary> The caller's cancellation until the backend accepted the operation's first packet </summary>
+    /// <remarks> Pass it to waits before sending, e.g. for buffer space. Never pass it to a transaction the backend accepted </remarks>
+    public CancellationToken HandOffToken => _handOff?.Token ?? _callerToken;
 
-    /// <summary> Whether the caller gave up after the first transaction was sent </summary>
+    /// <summary> Whether the caller gave up after the request's first transaction was sent </summary>
     /// <remarks> The caller already saw the cancellation. A request with several transactions checks it before each further one </remarks>
     public bool IsAbandoned
     {
@@ -36,18 +43,41 @@ public sealed class GattRequest
         }
     }
 
-    internal long StartedAt => _startedAt;
+    internal object? Turn { get; }
 
-    /// <summary> The controller accepted a transaction; the ATT timeout runs until its answer </summary>
+    internal long StartedAt { get; }
+
+    internal bool IsRequest => _handOff is not null;
+
+    /// <summary> The backend accepted a transaction of a request; the ATT timeout runs until its answer. A write without response ignores it </summary>
     public void OnTransactionSent()
     {
+        if (!IsRequest)
+            return;
         lock (_lock)
             _sent = true;
-        _queue.OnTransactionSent();
+        _queue.OnTransactionSent(this);
     }
 
-    /// <summary> The answer of the transaction sent last arrived </summary>
-    public void OnTransactionAnswered() => _queue.OnTransactionAnswered();
+    /// <summary> The answer of the transaction sent last arrived. A write without response ignores it </summary>
+    public void OnTransactionAnswered()
+    {
+        if (IsRequest)
+            _queue.OnTransactionAnswered(this);
+    }
+
+    internal static GattRequest ForRequest(
+        RequestQueue queue,
+        object turn,
+        long startedAt,
+        CancellationToken connectionClosed
+    ) => new(queue, turn, startedAt, CancellationTokenSource.CreateLinkedTokenSource(connectionClosed));
+
+    /// <summary> The one object a connection reuses for its writes without response, which reach the driver one at a time </summary>
+    internal static GattRequest ForCommands(RequestQueue queue) => new(queue, turn: null, startedAt: 0, handOff: null);
+
+    /// <summary> A write without response with this caller's token reaches the driver </summary>
+    internal void PrepareCommand(CancellationToken callerToken) => _callerToken = callerToken;
 
     /// <summary> The caller cancelled: before sending, the driver stops waiting; afterwards the request runs to its end abandoned </summary>
     /// <returns> Whether the request was abandoned after sending </returns>
@@ -62,18 +92,18 @@ public sealed class GattRequest
                 _abandoned = true;
                 return true;
             }
-            _handOff.Cancel();
+            _handOff?.Cancel();
             return false;
         }
     }
 
-    /// <summary> The driver's task ended </summary>
+    /// <summary> The driver's task of a request ended </summary>
     internal void Complete()
     {
         lock (_lock)
         {
             _completed = true;
-            _handOff.Dispose();
+            _handOff?.Dispose();
         }
     }
 }
