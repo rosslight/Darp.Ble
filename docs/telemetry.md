@@ -11,7 +11,7 @@ metrics.AddMeter(BleTelemetry.MeterName);     // "Darp.Ble"
 
 `BleManagerBuilder.ConfigureDiagnostics(options => options.IncludeAddresses = false)` replaces peer addresses with `<hidden>` in logs and spans. Addresses are never metric dimensions.
 
-The backends add their own sources and event ids when they are ported to v2 (HciHost and WinRT below; Android follows); their spans nest inside the core's.
+The backends add their own sources and event ids when they are ported to v2 (HciHost, WinRT and the mock below; Android has none of its own); their spans nest inside the core's.
 
 ## Spans (source `Darp.Ble`)
 
@@ -102,3 +102,11 @@ The WinRT backend logs under categories that start with `Darp.Ble.WinRT` and has
 | 3000 | NotOnWindows | Warning | The WinRT backend has no adapter: the app does not run on Windows 10 2004 or later, or was built without its Windows target |
 | 3001 | ReservedSectionDropped | Warning | Windows sets advertising data section {AdType} itself; the app's section is left out |
 | 3002 | HostedRequestFailed | Warning | A central's request to a hosted service could not be answered |
+
+## Mock backend (`Darp.Ble.Mock`)
+
+The mock backend logs under categories that start with `Darp.Ble.Mock` and has no spans of its own.
+
+| Id | Name | Level | Message |
+| --- | --- | --- | --- |
+| 4000 | BackgroundWorkFailed | Error | Background work of a simulated peripheral failed |
