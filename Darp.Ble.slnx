@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/Darp.Ble.Android/Darp.Ble.Android.csproj" />
     <Project Path="src/Darp.Ble.Hci/Darp.Ble.Hci.csproj" />
     <Project Path="src/Darp.Ble.HciHost/Darp.Ble.HciHost.csproj" />
     <Project Path="src/Darp.Ble.Mock/Darp.Ble.Mock.csproj" />

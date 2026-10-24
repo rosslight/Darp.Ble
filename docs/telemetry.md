@@ -11,7 +11,7 @@ metrics.AddMeter(BleTelemetry.MeterName);     // "Darp.Ble"
 
 `BleManagerBuilder.ConfigureDiagnostics(options => options.IncludeAddresses = false)` replaces peer addresses with `<hidden>` in logs and spans. Addresses are never metric dimensions.
 
-The backends add their own sources and event ids when they are ported to v2 (HciHost and WinRT below; Android follows); their spans nest inside the core's.
+The backends add their own sources and event ids when they are ported to v2 (HciHost and WinRT below; Android has none of its own); their spans nest inside the core's.
 
 ## Spans (source `Darp.Ble`)
 
