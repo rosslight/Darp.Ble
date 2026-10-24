@@ -23,16 +23,16 @@ public sealed class DiscoveryTests
     private readonly TaskCompletionSource<BleAddress> _peripheralAddress = new();
 
     [Fact]
-    public async Task Discovery_FindsTheGapServiceAndTheServicesAPeripheralHosts()
+    public async Task Discovery_FindsTheGapAndGattServicesAndTheServicesAPeripheralHosts()
     {
         await using BleAdapter adapter = await OpenAsync();
         ConnectedPeripheral connection = await ConnectAsync(adapter);
 
         IReadOnlyList<RemoteGattService> services = await connection.Gatt.DiscoverServicesAsync(Token);
 
-        // The peripheral's own GAP service comes first, as on a real device
-        services.Select(s => s.Uuid).ShouldBe([BleUuid.FromUInt16(0x1800), ServiceUuid]);
-        RemoteGattService service = services[1];
+        // The peripheral's own GAP and GATT services come first, as on a real device
+        services.Select(s => s.Uuid).ShouldBe([BleUuid.FromUInt16(0x1800), BleUuid.FromUInt16(0x1801), ServiceUuid]);
+        RemoteGattService service = services[2];
         IReadOnlyList<RemoteGattCharacteristic> characteristics = await service.DiscoverCharacteristicsAsync(Token);
         characteristics
             .Select(c => (c.Uuid, c.Properties))

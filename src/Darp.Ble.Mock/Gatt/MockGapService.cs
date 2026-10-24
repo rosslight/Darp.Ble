@@ -13,8 +13,11 @@ internal sealed class MockGapService : IRemoteServiceDriver
     {
         _characteristics =
         [
-            new MockGapCharacteristic(0x2A00, () => System.Text.Encoding.UTF8.GetBytes(peripheral.Identity.DeviceName)),
-            new MockGapCharacteristic(0x2A01, () => BitConverter.GetBytes((ushort)peripheral.Identity.Appearance)),
+            new MockReadOnlyCharacteristic(
+                0x2A00,
+                () => System.Text.Encoding.UTF8.GetBytes(peripheral.Identity.DeviceName)
+            ),
+            new MockReadOnlyCharacteristic(0x2A01, () => BitConverter.GetBytes((ushort)peripheral.Identity.Appearance)),
         ];
     }
 

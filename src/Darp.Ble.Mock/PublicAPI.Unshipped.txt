@@ -1,6 +1,8 @@
 #nullable enable
 Darp.Ble.Mock.MockBackendOptions
-Darp.Ble.Mock.MockBackendOptions.AddPeripheral(System.Func<Darp.Ble.BleAdapter!, System.Threading.Tasks.Task!>! configure, string! name = "Mock peripheral") -> Darp.Ble.Mock.MockBackendOptions!
+Darp.Ble.Mock.MockBackendOptions.AddPeripheral(System.Func<Darp.Ble.BleAdapter!, System.Threading.Tasks.Task!>! configure, string! name = "Mock peripheral", bool includeGattService = true) -> Darp.Ble.Mock.MockBackendOptions!
+Darp.Ble.Mock.MockBackendOptions.IncludeGattService.get -> bool
+Darp.Ble.Mock.MockBackendOptions.IncludeGattService.set -> void
 Darp.Ble.Mock.MockBackendOptions.MockBackendOptions() -> void
 Darp.Ble.Mock.MockBackendOptions.Name.get -> string!
 Darp.Ble.Mock.MockBackendOptions.Name.set -> void

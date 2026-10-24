@@ -6,8 +6,11 @@ using Darp.Ble.Data.AssignedNumbers;
 namespace Darp.Ble.Mock.Connections;
 
 /// <summary> Accepts connections from mock centrals in the same air; owns the links until they go down or the adapter closes </summary>
-internal sealed class MockPeripheralDriver : IPeripheralDriver
+internal sealed class MockPeripheralDriver(bool includeGattService) : IPeripheralDriver
 {
+    /// <summary> Whether centrals find the GATT service </summary>
+    public bool IncludeGattService { get; } = includeGattService;
+
     private readonly Lock _lock = new();
     private readonly List<MockLink> _links = [];
     private GattServiceDefinition[] _services = [];
@@ -74,8 +77,19 @@ internal sealed class MockPeripheralDriver : IPeripheralDriver
 
     public Task AddServiceAsync(GattServiceDefinition service, CancellationToken cancellationToken)
     {
+        if (IncludeGattService && service.Uuid == BleUuid.FromUInt16(0x1801))
+            throw new InvalidOperationException(
+                "The mock serves the GATT service itself; leave it out with includeGattService: false to publish one of your own"
+            );
+        MockLink[] links;
         lock (_lock)
+        {
             _services = [.. _services, service];
+            links = [.. _links];
+        }
+        // Centrals that asked for it learn that the services changed
+        foreach (MockLink link in links)
+            link.GattService?.OnServicesChanged();
         return Task.CompletedTask;
     }
 
