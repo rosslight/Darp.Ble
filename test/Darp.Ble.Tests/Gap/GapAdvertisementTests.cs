@@ -79,7 +79,7 @@ public sealed class GapAdvertisementTests
             new BleAddress(directAddressType, (UInt48)directAddress),
             AdvertisingData.From([(advertisingDataType1, sectionData1), (advertisingDataType2, sectionData2)])
         );
-        string byteString = Convert.ToHexString(adv.AsByteArray());
+        string byteString = Convert.ToHexString(adv.AsReadOnlyMemory().Span);
 
         byteString.ShouldBe(expectedReportHex);
         adv.EventType.ShouldBe(eventType);
@@ -138,6 +138,44 @@ public sealed class GapAdvertisementTests
         advWithData.Timestamp.ShouldBe(adv.Timestamp);
         advWithData.Address.ShouldBe(adv.Address);
         advWithData.Data.ShouldBe(adv.Data);
-        advWithData.AsByteArray().ShouldBe(adv.AsByteArray());
+        advWithData.AsReadOnlyMemory().ShouldBe(adv.AsReadOnlyMemory());
+    }
+
+    [Fact]
+    public void FromExtendedAdvertisingReport_CopiesTheReport()
+    {
+        byte[] report = "130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB".ToByteArray();
+        GapAdvertisement adv = GapAdvertisement.FromExtendedAdvertisingReport(DateTimeOffset.UtcNow, report);
+
+        report.AsSpan().Clear();
+
+        Convert
+            .ToHexString(adv.AsReadOnlyMemory().Span)
+            .ShouldBe("130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB");
+        adv.Address.Value.ShouldBe((UInt48)0xAABBCCDDEEFF);
+        adv.Data.Count.ShouldBe(2);
+    }
+
+    [Fact]
+    public void EqualAdvertisements_HaveTheSameHashCode()
+    {
+        byte[] report = "130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB".ToByteArray();
+        GapAdvertisement first = GapAdvertisement.FromExtendedAdvertisingReport(DateTimeOffset.UnixEpoch, report);
+        GapAdvertisement second = GapAdvertisement.FromExtendedAdvertisingReport(DateTimeOffset.UnixEpoch, report);
+
+        HashSet<IGapAdvertisement> seen = [first];
+
+        seen.Contains(second).ShouldBeTrue();
+    }
+
+    [Fact]
+    public void FromExtendedAdvertisingReport_DataIsTheEndOfTheReportBytes()
+    {
+        GapAdvertisement adv = GapAdvertisement.FromExtendedAdvertisingReport(
+            DateTimeOffset.UtcNow,
+            "130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB".ToByteArray()
+        );
+
+        adv.Data.AsReadOnlyMemory().ToArray().ShouldBe(adv.AsReadOnlyMemory()[24..].ToArray());
     }
 }

@@ -43,11 +43,11 @@ public sealed record AdvertisingParameters
     /// <summary>Gets the advertising event type to use.</summary>
     public BleEventType Type { get; init; } = BleEventType.AdvNonConnInd;
 
-    /// <summary>Gets the minimum interval between primary advertising events.</summary>
-    public ScanTiming MinPrimaryAdvertisingInterval { get; init; } = ScanTiming.Ms1000;
+    /// <summary>Gets the minimum interval between primary advertising events. The backend rounds it to the controller's units.</summary>
+    public TimeSpan MinPrimaryAdvertisingInterval { get; init; } = TimeSpan.FromSeconds(1);
 
-    /// <summary>Gets the maximum interval between primary advertising events.</summary>
-    public ScanTiming MaxPrimaryAdvertisingInterval { get; init; } = ScanTiming.Ms1000;
+    /// <summary>Gets the maximum interval between primary advertising events; at least <see cref="MinPrimaryAdvertisingInterval"/>.</summary>
+    public TimeSpan MaxPrimaryAdvertisingInterval { get; init; } = TimeSpan.FromSeconds(1);
 
     /// <summary>Gets the advertising channel map for the primary PHY.</summary>
     public AdvertisingChannelMap PrimaryAdvertisingChannelMap { get; init; } =
@@ -72,4 +72,15 @@ public sealed record AdvertisingParameters
 
     /// <summary>Gets the advertising SID used for extended advertising.</summary>
     public AdvertisingSId AdvertisingSId { get; init; }
+
+    internal void Validate(string parameterName)
+    {
+        if (MinPrimaryAdvertisingInterval <= TimeSpan.Zero)
+            throw new ArgumentException("The advertising interval must be positive", parameterName);
+        if (MaxPrimaryAdvertisingInterval < MinPrimaryAdvertisingInterval)
+            throw new ArgumentException(
+                "The maximum advertising interval must not be shorter than the minimum",
+                parameterName
+            );
+    }
 }
