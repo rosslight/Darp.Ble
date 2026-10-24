@@ -226,14 +226,17 @@ internal sealed partial class AttServer : IDisposable
             Error(request.OpCode, request.AttributeHandle, AttErrorCode.InvalidAttributeLengthError);
             return;
         }
-        if (attribute.CccdOf is { } characteristic)
+        if (attribute.IsServiceChangedCccd || attribute.CccdOf is not null)
         {
             if (request.AttributeValue.Length != 2)
             {
                 Error(request.OpCode, request.AttributeHandle, AttErrorCode.InvalidAttributeLengthError);
                 return;
             }
-            if (!_link.Configure(characteristic, request.AttributeValue.Span))
+            bool fits = attribute.CccdOf is { } characteristic
+                ? _link.Configure(characteristic, request.AttributeValue.Span)
+                : _link.ConfigureServiceChanged(request.AttributeValue.Span);
+            if (!fits)
             {
                 Error(request.OpCode, request.AttributeHandle, CccdImproperlyConfigured);
                 return;
@@ -292,6 +295,11 @@ internal sealed partial class AttServer : IDisposable
                 ReadByGroupType(start, end, type);
             return;
         }
+        if (opCode is AttOpCode.ATT_HANDLE_VALUE_CFM)
+        {
+            _link.OnIndicationConfirmed();
+            return;
+        }
         // Every other request gets an answer: requests are the even opcodes without the command flag, but the confirmation
         if ((byte)opCode % 2 == 0 && ((byte)opCode & 0x40) == 0 && (byte)opCode != 0x1E)
             Error(opCode, 0x0000, AttErrorCode.RequestNotSupportedError);
@@ -318,6 +326,8 @@ internal sealed partial class AttServer : IDisposable
     /// <summary> The value of an attribute for this central without answering anything; null when it cannot be read </summary>
     private async Task<byte[]?> TryReadAsync(HostedAttribute attribute)
     {
+        if (attribute.IsServiceChangedCccd)
+            return _link.ServiceChangedConfiguration;
         if (attribute.CccdOf is { } characteristic)
             return _link.ConfigurationOf(characteristic);
         if (attribute.StaticValue is { } value)
@@ -337,6 +347,8 @@ internal sealed partial class AttServer : IDisposable
     /// <summary> The value of an attribute for this central; null when an error was answered or nothing is to be answered </summary>
     private async Task<byte[]?> ReadAsync(AttOpCode requestOpCode, HostedAttribute attribute)
     {
+        if (attribute.IsServiceChangedCccd)
+            return _link.ServiceChangedConfiguration;
         if (attribute.CccdOf is { } characteristic)
             return _link.ConfigurationOf(characteristic);
         if (attribute.StaticValue is { } value)

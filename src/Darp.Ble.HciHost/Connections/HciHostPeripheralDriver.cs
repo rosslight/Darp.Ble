@@ -15,16 +15,17 @@ namespace Darp.Ble.HciHost.Connections;
 internal sealed partial class HciHostPeripheralDriver : IPeripheralDriver, IDisposable
 {
     private readonly HciDevice _device;
-    private readonly AttributeDatabase _database = new();
+    private readonly AttributeDatabase _database;
     private readonly Lock _lock = new();
     private readonly Dictionary<ushort, HciHostCentralLink> _links = [];
     private readonly IDisposable _subscription;
     private IGattServerSink? _sink;
     private bool _transportFailed;
 
-    public HciHostPeripheralDriver(HciDevice device)
+    public HciHostPeripheralDriver(HciDevice device, bool includeGattService)
     {
         _device = device;
+        _database = new AttributeDatabase(includeGattService);
         _subscription = device.Host.Subscribe(this);
         device.Host.TransportFailed += OnTransportFailed;
     }
@@ -42,6 +43,12 @@ internal sealed partial class HciHostPeripheralDriver : IPeripheralDriver, IDisp
     {
         cancellationToken.ThrowIfCancellationRequested();
         _database.Add(service);
+        HciHostCentralLink[] links;
+        lock (_lock)
+            links = [.. _links.Values.Where(link => link.IsAnnounced)];
+        // Centrals that asked for it learn that the database changed
+        foreach (HciHostCentralLink link in links)
+            link.IndicateServiceChanged();
         return Task.CompletedTask;
     }
 
@@ -89,7 +96,14 @@ internal sealed partial class HciHostPeripheralDriver : IPeripheralDriver, IDisp
         );
         // On the read loop, so the link serves the central's first request
 #pragma warning disable CA2000 // The driver owns the link until Disconnection Complete
-        var link = new HciHostCentralLink(connection, address, _database, sink);
+        var link = new HciHostCentralLink(
+            connection,
+            address,
+            _database,
+            sink,
+            _device.TimeProvider,
+            OnIndicationTimeout
+        );
 #pragma warning restore CA2000
         lock (_lock)
         {
@@ -149,9 +163,26 @@ internal sealed partial class HciHostPeripheralDriver : IPeripheralDriver, IDisp
             End(link, info);
     }
 
+    // A central that leaves an indication unconfirmed failed its ATT transaction; its link goes down
+    private void OnIndicationTimeout(HciHostCentralLink link) => _ = DisconnectTimedOutAsync(link);
+
+    private async Task DisconnectTimedOutAsync(HciHostCentralLink link)
+    {
+        try
+        {
+            await HciDisconnects.RequestAsync(_device, link.Connection.ConnectionHandle).ConfigureAwait(false);
+        }
+        catch (Exception exception) when (exception is BleException or Hci.Exceptions.HciException)
+        {
+            // The transport failed or the controller refused; the link ends with the transport
+        }
+    }
+
     /// <summary> Also for a disconnect this adapter asked for: the core ends the central's connection here </summary>
     private void End(HciHostCentralLink link, DisconnectInfo info)
     {
+        if (link.IndicationTimedOut)
+            info = new DisconnectInfo(DisconnectReason.AttTimeout, info.NativeCode);
         if (!link.LinkDown(info))
             return;
         link.Dispose();

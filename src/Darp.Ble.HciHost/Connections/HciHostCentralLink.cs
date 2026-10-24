@@ -19,6 +19,13 @@ internal sealed class HciHostCentralLink : ICentralConnectionDriver, IDisposable
 
     // The value of each CCCD for this central; reset with every connection
     private readonly Dictionary<GattCharacteristicDefinition, ushort> _configurations = [];
+    private ushort _serviceChangedConfiguration;
+    private bool _indicating;
+    private bool _changedWhileIndicating;
+    private int _indication;
+    private ITimer? _indicationTimer;
+    private readonly TimeProvider _timeProvider;
+    private readonly Action<HciHostCentralLink> _onIndicationTimeout;
     private readonly TaskCompletionSource<DisconnectInfo> _down = new(
         TaskCreationOptions.RunContinuationsAsynchronously
     );
@@ -27,10 +34,14 @@ internal sealed class HciHostCentralLink : ICentralConnectionDriver, IDisposable
         AclConnection connection,
         BleAddress address,
         AttributeDatabase database,
-        IGattServerSink sink
+        IGattServerSink sink,
+        TimeProvider timeProvider,
+        Action<HciHostCentralLink> onIndicationTimeout
     )
     {
         Connection = connection;
+        _timeProvider = timeProvider;
+        _onIndicationTimeout = onIndicationTimeout;
         Address = address;
         _database = database;
         _sink = sink;
@@ -46,6 +57,9 @@ internal sealed class HciHostCentralLink : ICentralConnectionDriver, IDisposable
 
     /// <summary> Why the link went down before the core learned of it; guarded by the peripheral driver </summary>
     public DisconnectInfo? PendingEnd { get; set; }
+
+    /// <summary> Whether the central left an indication unconfirmed for the ATT timeout </summary>
+    public bool IndicationTimedOut { get; private set; }
 
     /// <summary> Completes once the link is down </summary>
     public Task<DisconnectInfo> Down => _down.Task;
@@ -73,6 +87,122 @@ internal sealed class HciHostCentralLink : ICentralConnectionDriver, IDisposable
         if (isOn != wasOn)
             _sink.OnSubscriptionChanged(this, characteristic, isOn);
         return true;
+    }
+
+    /// <summary> The central wrote the CCCD of Service Changed, which only indicates </summary>
+    /// <returns> Whether the value fits </returns>
+    public bool ConfigureServiceChanged(ReadOnlySpan<byte> value)
+    {
+        ushort configuration = BinaryPrimitives.ReadUInt16LittleEndian(value);
+        if ((configuration & ~IndicationBit) != 0)
+            return false;
+        lock (_lock)
+            _serviceChangedConfiguration = configuration;
+        return true;
+    }
+
+    /// <summary> The CCCD value of Service Changed this central wrote </summary>
+    public byte[] ServiceChangedConfiguration
+    {
+        get
+        {
+            lock (_lock)
+                return [(byte)_serviceChangedConfiguration, (byte)(_serviceChangedConfiguration >> 8)];
+        }
+    }
+
+    /// <summary>
+    /// Tells the central that services changed, if it turned Service Changed indications on. The range covers every
+    /// handle, so the central discovers again. One indication waits for its confirmation; changes meanwhile are
+    /// indicated once it came, if the central still wants them. A central that does not confirm within the ATT
+    /// timeout gets no more indications, and its link is taken down
+    /// </summary>
+    public void IndicateServiceChanged()
+    {
+        int indication;
+        lock (_lock)
+        {
+            if (_down.Task.IsCompleted || (_serviceChangedConfiguration & IndicationBit) == 0)
+                return;
+            if (_indicating)
+            {
+                _changedWhileIndicating = true;
+                return;
+            }
+            _indicating = true;
+            indication = ++_indication;
+        }
+        _ = SendServiceChangedAsync(indication);
+    }
+
+    /// <summary> The central confirmed an indication </summary>
+    public void OnIndicationConfirmed()
+    {
+        int indication;
+        lock (_lock)
+        {
+            if (!_indicating || IndicationTimedOut)
+                return;
+            _indicationTimer?.Dispose();
+            _indicationTimer = null;
+            _indicating =
+                _changedWhileIndicating
+                && (_serviceChangedConfiguration & IndicationBit) != 0
+                && !_down.Task.IsCompleted;
+            _changedWhileIndicating = false;
+            if (!_indicating)
+                return;
+            indication = ++_indication;
+        }
+        _ = SendServiceChangedAsync(indication);
+    }
+
+    private async Task SendServiceChangedAsync(int indication)
+    {
+        if (_database.ServiceChangedHandle is not { } handle)
+            return;
+        try
+        {
+            await Connection
+                .SendGattPacketAsync(
+                    new AttHandleValueInd { Handle = handle, Value = new byte[] { 0x01, 0x00, 0xFF, 0xFF } },
+                    onHandOff: () => StartIndicationTimer(indication),
+                    CancellationToken.None
+                )
+                .ConfigureAwait(false);
+        }
+        catch (Hci.Exceptions.HciException)
+        {
+            // The link went down; the central discovers again when it reconnects
+        }
+    }
+
+    // The ATT timeout starts once the indication goes to the transport, before its confirmation can arrive
+    private void StartIndicationTimer(int indication)
+    {
+        lock (_lock)
+        {
+            if (!_indicating || _indication != indication || _down.Task.IsCompleted)
+                return;
+            _indicationTimer = _timeProvider.CreateTimer(
+                _ => OnIndicationTimeout(indication),
+                state: null,
+                AttTimeout,
+                Timeout.InfiniteTimeSpan
+            );
+        }
+    }
+
+    private void OnIndicationTimeout(int indication)
+    {
+        lock (_lock)
+        {
+            if (!_indicating || _indication != indication || _down.Task.IsCompleted)
+                return;
+            // The indication stays outstanding, so nothing more is indicated on this link
+            IndicationTimedOut = true;
+        }
+        _onIndicationTimeout(this);
     }
 
     /// <summary> The CCCD value this central wrote </summary>
@@ -108,11 +238,17 @@ internal sealed class HciHostCentralLink : ICentralConnectionDriver, IDisposable
     /// <summary> The link went down; returns false when it was down already </summary>
     public bool LinkDown(DisconnectInfo info) => _down.TrySetResult(info);
 
+    private static readonly TimeSpan AttTimeout = TimeSpan.FromSeconds(30);
     private const ushort NotificationBit = 0b01;
     private const ushort IndicationBit = 0b10;
 
     // Notifications are on when the central set the notification bit; this backend sends no indications
     private static bool IsOn(ushort configuration) => (configuration & NotificationBit) != 0;
 
-    public void Dispose() => _server.Dispose();
+    public void Dispose()
+    {
+        lock (_lock)
+            _indicationTimer?.Dispose();
+        _server.Dispose();
+    }
 }

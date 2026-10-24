@@ -12,13 +12,14 @@ public sealed class PeripheralTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    // GAP: service 1, device name 2-3, appearance 4-5; the battery service follows
-    private const byte Battery = 0x06;
-    private const byte Level = 0x08;
-    private const byte LevelCccd = 0x09;
+    // GAP: service 1, device name 2-3, appearance 4-5. GATT: service 6, Service Changed 7-8 with its CCCD 9,
+    // Database Hash 10-11. The battery service follows
+    private const byte Battery = 0x0C;
+    private const byte Level = 0x0E;
+    private const byte LevelCccd = 0x0F;
 
-    // A second characteristic for writes: declaration 10, value 11
-    private const byte Control = 0x0B;
+    // A second characteristic for writes: declaration 16, value 17
+    private const byte Control = 0x11;
 
     private static LocalGattCharacteristic? _level;
 
@@ -46,7 +47,7 @@ public sealed class PeripheralTests
     }
 
     [Fact]
-    public async Task ACentral_DiscoversTheGapServiceFirst_AndThenTheHostedServices()
+    public async Task ACentral_DiscoversTheGapAndGattServicesFirst_AndThenTheHostedServices()
     {
         await using var controller = new FakeController();
         await using BleAdapter adapter = await HostAsync(controller);
@@ -58,9 +59,9 @@ public sealed class PeripheralTests
         byte[] characteristics = await central.RequestAsync(0x08, Battery, 0x00, 0xFF, 0xFF, 0x03, 0x28);
         byte[] descriptors = await central.RequestAsync(0x04, LevelCccd, 0x00, LevelCccd, 0x00);
 
-        Convert.ToHexString(services).ShouldBe("1106" + "010005000018" + "06000B000F18");
-        Convert.ToHexString(characteristics).ShouldBe("0907" + "0700120800192A" + "0A000C0B0001FF");
-        Convert.ToHexString(descriptors).ShouldBe("0501" + "0900" + "0229");
+        Convert.ToHexString(services).ShouldBe("1106" + "010005000018" + "06000B000118" + "0C0011000F18");
+        Convert.ToHexString(characteristics).ShouldBe("0907" + "0D00120E00192A" + "10000C110001FF");
+        Convert.ToHexString(descriptors).ShouldBe("0501" + "0F00" + "0229");
     }
 
     [Fact]
@@ -282,7 +283,7 @@ public sealed class PeripheralTests
             .. declarationType,
         ]);
 
-        byCustomType.ShouldBe([0x09, 0x03, 0x08, 0x00, 42]);
+        byCustomType.ShouldBe([0x09, 0x03, 0x0E, 0x00, 42]);
         byLongDeclarationType[0].ShouldBe((byte)0x09);
     }
 
@@ -304,7 +305,7 @@ public sealed class PeripheralTests
 
         byte[] services = await central.RequestAsync(0x10, Battery, 0x00, 0xFF, 0xFF, 0x00, 0x28);
         byte[] characteristics = await central.RequestAsync(0x08, Battery, 0x00, 0xFF, 0xFF, 0x03, 0x28);
-        byte[] information = await central.RequestAsync(0x04, 0x08, 0x00, 0x08, 0x00);
+        byte[] information = await central.RequestAsync(0x04, 0x0E, 0x00, 0x0E, 0x00);
 
         services[..2].ShouldBe([0x11, 4 + 16]);
         BleUuid.Read(services.AsSpan(6, 16)).Value.ShouldBe(BleUuid.FromUInt32(0x12345678).Value);

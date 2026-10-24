@@ -128,7 +128,7 @@ await using AdvertisingSet advertising = await adapter.Broadcaster.StartAdvertis
 ```
 
 `adapter.Peripheral.DeviceName` and `Appearance` set what centrals read from the GAP service, which the backend serves itself.
-The mock also serves the GATT service: Service Changed tells centrals that turned it on when a service was added, and Database Hash changes with the services. `IncludeGattService = false` in its options leaves it out, e.g. to simulate a device without it.
+HciHost and the mock also serve the GATT service: Service Changed tells centrals that turned it on when a service was added, and Database Hash changes with the services. `IncludeGattService = false` in their options leaves it out, e.g. to simulate a device without it.
 The library brings contracts for the battery, heart rate, device information and echo services, e.g. `AddBatteryServiceAsync()` on the peripheral side and `DiscoverBatteryServiceAsync()` on the central side; `RemoteEchoService.QueryOneAsync(request)` writes a request and returns the reply.
 
 ### Diagnostics

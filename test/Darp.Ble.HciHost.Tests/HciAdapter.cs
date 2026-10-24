@@ -14,7 +14,11 @@ internal static class HciAdapter
     public static readonly BleAddress Address = BleAddress.CreateRandomAddress((UInt48)0xE0C5AA968B6E);
     public static readonly BleAddress Peer = BleAddress.CreateRandomAddress((UInt48)0x112233445566);
 
-    public static BleManager Manager(FakeController controller, TimeProvider? time = null) =>
+    public static BleManager Manager(
+        FakeController controller,
+        TimeProvider? time = null,
+        Action<HciHostOptions>? configure = null
+    ) =>
         new(
             builder =>
                 builder.AddHciHost(
@@ -23,14 +27,19 @@ internal static class HciAdapter
                     {
                         options.Name = "Fake controller";
                         options.RandomAddress = Address;
+                        configure?.Invoke(options);
                     }
                 ),
             timeProvider: time ?? new FakeTimeProvider()
         );
 
-    public static async Task<BleAdapter> OpenAsync(FakeController controller, TimeProvider? time = null)
+    public static async Task<BleAdapter> OpenAsync(
+        FakeController controller,
+        TimeProvider? time = null,
+        Action<HciHostOptions>? configure = null
+    )
     {
-        IReadOnlyList<BleAdapterInfo> adapters = await Manager(controller, time)
+        IReadOnlyList<BleAdapterInfo> adapters = await Manager(controller, time, configure)
             .EnumerateAdaptersAsync(TestContext.Current.CancellationToken);
         BleAdapter adapter = await adapters[0].OpenAsync(TestContext.Current.CancellationToken);
         controller.StartRecording();
