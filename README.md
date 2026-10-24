@@ -16,7 +16,7 @@ This package is under heavy development. Huge changes to the API are to be expec
 | Implementation   | Observer | Central | Broadcaster | Peripheral | Nuget                                                                                                                        |
 |------------------|----------|---------|-------------|------------|------------------------------------------------------------------------------------------------------------------------------|
 | Darp.Ble.WinRT   | X        | X       | X           | X          | [![Darp.Ble.WinRT](https://img.shields.io/nuget/v/Darp.Ble.WinRT.svg)](https://www.nuget.org/packages/Darp.Ble.WinRT/)       |
-| Darp.Ble.Android | X        | X       |             |            | [![Darp.Ble.Android](https://img.shields.io/nuget/v/Darp.Ble.Android.svg)](https://www.nuget.org/packages/Darp.Ble.Android/) |
+| Darp.Ble.Android | X        |         |             |            | [![Darp.Ble.Android](https://img.shields.io/nuget/v/Darp.Ble.Android.svg)](https://www.nuget.org/packages/Darp.Ble.Android/) |
 | Darp.Ble.HciHost | X        | X       | X           | X          | [![Darp.Ble.HciHost](https://img.shields.io/nuget/v/Darp.Ble.HciHost.svg)](https://www.nuget.org/packages/Darp.Ble.HciHost/) |
 | Darp.Ble.iOS     |          |         |             |            | planned                                                                                                                      |
 | Darp.Ble.Mac     |          |         |             |            | planned                                                                                                                      |
@@ -38,6 +38,7 @@ await using BleAdapter adapter = await adapters[0].OpenAsync();
 ```
 
 `builder.AddSerialHciHost()` adds an adapter for every HCI dongle on a USB serial port (the nRF52840 dongle by default, more through `DeviceNameMapping`), and `builder.AddSerialHciHost("COM3")` the one on that port.
+`builder.AddWinRT()` adds Windows' Bluetooth adapter and `builder.AddAndroid()` Android's; see [Backends](#backends) for what each one supports.
 With dependency injection, `services.AddBleManager(builder => builder.AddMock())` registers the same manager and uses the container's `ILoggerFactory` and `TimeProvider`.
 For unit tests, `await MockBle.OpenAdapterAsync()` opens a mock adapter in one line.
 
@@ -127,7 +128,7 @@ await using AdvertisingSet advertising = await adapter.Broadcaster.StartAdvertis
     autoRestart: true);
 ```
 
-`adapter.Peripheral.DeviceName` and `Appearance` set what centrals read from the GAP service, which the backend serves itself.
+`adapter.Peripheral.DeviceName` and `Appearance` set what centrals read from the GAP service, which the backend serves itself, on adapters with `Capabilities.SetGapIdentity`.
 HciHost and the mock also serve the GATT service: Service Changed tells centrals that turned it on when a service was added, and Database Hash changes with the services. `IncludeGattService = false` in their options leaves it out, e.g. to simulate a device without it.
 The library brings contracts for the battery, heart rate, device information and echo services, e.g. `AddBatteryServiceAsync()` on the peripheral side and `DiscoverBatteryServiceAsync()` on the central side; `RemoteEchoService.QueryOneAsync(request)` writes a request and returns the reply.
 
@@ -143,9 +144,26 @@ var manager = new BleManager(builder => builder.AddMock().ConfigureDiagnostics(o
 
 With SerilogTracing, `Instrument.With<DarpBleActivityInstrumentor>()` from `Darp.Ble.SerilogTracing` renders each span with its template, e.g. `Read "2A19"`.
 
-### Further Documentation
+## Backends
 
-Additional documentation exists in form of the unit tests.
+The roles behave the same on every backend; where a platform decides something itself, the backend says so in its docs.
+
+- **HciHost** drives an HCI controller, by default the nRF52840 dongle over a serial port, and supports all four roles.
+- **WinRT** needs Windows 10 2004 or later, and an app that targets `net10.0-windows10.0.19041.0`; on other platforms it offers no adapter.
+  Windows chooses the advertising addresses and intervals, sends no scan response data of the app's own, and keeps advertising when a central connects.
+  It serves a hosted service only while it advertises it, so published services are live while a connectable advertising set runs, and such a set takes no data of the app's own.
+  A request counts as sent once its Windows call started, and disposing a connection ends it for this app while Windows may keep the link for others.
+- **Android** scans, on Android 12 or later; the other roles are not ported to 2.0 yet. Android chooses the scan type and timing itself, and the backend reports legacy advertisements only.
+  The app needs the `BLUETOOTH_SCAN` permission granted, and either location access with location services on, or `android:usesPermissionFlags="neverForLocation"` on that permission in its manifest; with `neverForLocation`, Android leaves out some beacon advertisements. A scan that needs location services while they are off fails.
+- **Mock** runs in-process for tests, with simulated peripherals added through `AddMock(...)`.
+
+## Migrating from 1.x
+
+[docs/migration.md](docs/migration.md) shows the changes from 1.x with code before and after: registering backends, async streams instead of observables, notifications, typed errors, hosting and tests.
+
+## Further Documentation
+
+Additional documentation exists in form of the unit tests and the [examples](examples).
 
 ## Why use this library?
 
@@ -169,8 +187,8 @@ dotnet build -t:InstallAndroidDependencies -f net10.0-android -p:AndroidSdkDirec
 setx JAVA_HOME C:\work\jdk\
 setx ANDROID_HOME C:\work\android-sdk\
 
-# Restore android workload
-dotnet workload restore
+# Install the android workload
+dotnet workload install android
 ```
 
 ## About
