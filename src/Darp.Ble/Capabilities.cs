@@ -1,7 +1,14 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Darp.Ble;
 
 /// <summary> There are four GAP roles defined for devices operating over an LE physical transport </summary>
 [Flags]
+[SuppressMessage(
+    "Usage",
+    "CA2217:Do not mark enums with FlagsAttribute",
+    Justification = "Peripheral includes Broadcaster and Central includes Observer, as the roles require"
+)]
 public enum Capabilities
 {
     /// <summary> A device with unknown capabilities </summary>
