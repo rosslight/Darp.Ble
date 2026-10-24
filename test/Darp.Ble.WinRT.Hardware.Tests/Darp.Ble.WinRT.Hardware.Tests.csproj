@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Runs on Windows with a radio and an nRF52840 dongle running HciHost; CI on Linux only builds it -->
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows10.0.19041.0</TargetFramework>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <IsPackable>false</IsPackable>
+    <OutputType>Exe</OutputType>
+    <!-- dotnet test runs every testing platform application; off Windows this is not one -->
+    <IsTestingPlatformApplication Condition="'$(OS)' != 'Windows_NT'">false</IsTestingPlatformApplication>
+    <LangVersion>13</LangVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Shouldly" />
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Darp.Ble.WinRT\Darp.Ble.WinRT.csproj" />
+    <ProjectReference Include="..\..\src\Darp.Ble.HciHost\Darp.Ble.HciHost.csproj" />
+  </ItemGroup>
+</Project>
