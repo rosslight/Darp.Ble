@@ -5,9 +5,6 @@ namespace Darp.Ble.Gap;
 /// <summary> The advertisement definition </summary>
 public interface IGapAdvertisement : IEquatable<IGapAdvertisement>
 {
-    /// <summary> The ble observer which registered the advertisement </summary>
-    internal IBleObserver Observer { get; }
-
     /// <summary> The Timestamp when the report was received </summary>
     DateTimeOffset Timestamp { get; }
 

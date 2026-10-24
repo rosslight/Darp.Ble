@@ -3,8 +3,8 @@ name: Build and test
 on:
   push:
     branches: [ "main" ]
+  # Every target branch, so stacked pull requests are checked too
   pull_request:
-    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
@@ -24,16 +24,6 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-nuget
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
-      - name: Install workloads
-        run: dotnet workload install android
-
       - name: Check format
         run: |
           dotnet tool restore
@@ -43,6 +33,11 @@ jobs:
         run:  dotnet restore /p:EnableWindowsTargeting=true
       - name: Build
         run: dotnet build --no-restore --configuration Release /p:EnableWindowsTargeting=true
+      - name: Build examples
+        run: |
+          for example in examples/*.cs; do
+            dotnet build "$example" --configuration Release
+          done
       # Without the include filter, coverlet.MTP skips assemblies named like the test assembly,
       # e.g. Darp.Ble.HciHost for Darp.Ble.HciHost.Tests
       - name: Test

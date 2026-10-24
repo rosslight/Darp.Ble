@@ -1,37 +1,39 @@
-using Darp.Ble.Data;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble;
 
 internal static partial class Logging
 {
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Ble device '{DeviceName}' initialized!")]
-    public static partial void LogBleDeviceInitialized(this ILogger logger, string? deviceName);
+    /// <summary> The logger category of the core </summary>
+    public const string Category = "Darp.Ble";
 
-    [LoggerMessage(Level = LogLevel.Debug, Message = "Ble device '{DeviceName}' disposed!")]
-    public static partial void LogBleDeviceDisposed(this ILogger logger, string? deviceName);
+    [LoggerMessage(
+        EventId = 1000,
+        EventName = "AdapterOpened",
+        Level = LogLevel.Debug,
+        Message = "Adapter {AdapterName} of backend {Backend} opened"
+    )]
+    public static partial void LogAdapterOpened(this ILogger logger, string backend, string? adapterName);
 
-    [LoggerMessage(Level = LogLevel.Trace, Message = "Ble server peer '{Address}' connected!")]
-    public static partial void LogBleServerPeerConnected(this ILogger logger, BleAddress address);
+    [LoggerMessage(
+        EventId = 1001,
+        EventName = "AdapterDisposed",
+        Level = LogLevel.Debug,
+        Message = "Adapter {AdapterName} of backend {Backend} disposed"
+    )]
+    public static partial void LogAdapterDisposed(this ILogger logger, string backend, string? adapterName);
 
-    [LoggerMessage(Level = LogLevel.Trace, Message = "Ble server peer '{Address}' disposed!")]
-    public static partial void LogBleServerPeerDisposed(this ILogger logger, BleAddress address);
-
-    [LoggerMessage(Level = LogLevel.Trace, Message = "Started advertising observation")]
-    public static partial void LogObserverStarted(this ILogger logger);
-
-    [LoggerMessage(Level = LogLevel.Trace, Message = "Stopped advertising observation")]
-    public static partial void LogObserverStopped(this ILogger logger);
-
-    [LoggerMessage(Level = LogLevel.Error, Message = "Exception while handling advertisement event")]
-    public static partial void LogObservationErrorDuringAdvertisementHandling(this ILogger logger, Exception e);
-
-    [LoggerMessage(Level = LogLevel.Error, Message = "Advertising observation failed")]
-    public static partial void LogObservationFailed(this ILogger logger, Exception e);
-
-    [LoggerMessage(Level = LogLevel.Error, Message = "Exception while handling advertisement error")]
-    public static partial void LogObservationErrorDuringErrorHandling(this ILogger logger, Exception e);
-
-    [LoggerMessage(Level = LogLevel.Error, Message = "Exception while stopping observation")]
-    public static partial void LogObserverErrorDuringStopping(this ILogger logger, Exception e);
+    [LoggerMessage(
+        EventId = 1002,
+        EventName = "AdapterOpenFailed",
+        Level = LogLevel.Warning,
+        Message = "Adapter {AdapterName} of backend {Backend} could not be opened: {Kind}"
+    )]
+    public static partial void LogAdapterOpenFailed(
+        this ILogger logger,
+        string backend,
+        string? adapterName,
+        BleOpenErrorKind kind,
+        Exception exception
+    );
 }

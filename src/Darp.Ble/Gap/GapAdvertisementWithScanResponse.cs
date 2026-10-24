@@ -9,7 +9,6 @@ internal sealed class GapAdvertisementWithScanResponse(IGapAdvertisement adverti
     private readonly IGapAdvertisement _scanResponse = scanResponse;
 
     IGapAdvertisement IGapAdvertisementWithScanResponse.ScanResponse => _scanResponse;
-    public IBleObserver Observer => _advertisement.Observer;
     public DateTimeOffset Timestamp => _advertisement.Timestamp;
     public BleEventType EventType => _advertisement.EventType;
     public BleAddress Address => _advertisement.Address;

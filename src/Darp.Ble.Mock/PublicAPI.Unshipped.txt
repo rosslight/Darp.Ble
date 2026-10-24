@@ -1,0 +1,11 @@
+#nullable enable
+Darp.Ble.Mock.MockBackendOptions
+Darp.Ble.Mock.MockBackendOptions.MockBackendOptions() -> void
+Darp.Ble.Mock.MockBackendOptions.Name.get -> string!
+Darp.Ble.Mock.MockBackendOptions.Name.set -> void
+Darp.Ble.Mock.MockBackendOptions.OpenFailure.get -> Darp.Ble.BleOpenErrorKind?
+Darp.Ble.Mock.MockBackendOptions.OpenFailure.set -> void
+Darp.Ble.Mock.MockBle
+Darp.Ble.Mock.MockBleManagerBuilderExtensions
+static Darp.Ble.Mock.MockBle.OpenAdapterAsync(string! name = "Mock", System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.BleAdapter!>!
+static Darp.Ble.Mock.MockBleManagerBuilderExtensions.AddMock(this Darp.Ble.BleManagerBuilder! builder, System.Action<Darp.Ble.Mock.MockBackendOptions!>? configure = null) -> Darp.Ble.BleManagerBuilder!
