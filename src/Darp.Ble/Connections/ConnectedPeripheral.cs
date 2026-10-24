@@ -24,6 +24,7 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
     );
     private readonly RequestQueue _requests;
     private readonly Dictionary<IRemoteCharacteristicDriver, NotificationChannel> _notifications = [];
+    private readonly Dictionary<(IRemoteCharacteristicDriver, Type), object> _helpers = [];
     private DisconnectInfo? _ending;
     private int _maxWritePayloadLength;
 
@@ -37,6 +38,7 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
     )
     {
         NotificationQueue = notificationQueue;
+        TimeProvider = timeProvider;
         _central = central;
         _driver = driver;
         _logger = logger;
@@ -94,6 +96,24 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
 
     /// <summary> The queue of a stream that does not bring its own </summary>
     internal QueueOptions NotificationQueue { get; }
+
+    /// <summary> State a library helper shares across wrappers of the same characteristic, e.g. an echo query session </summary>
+    internal T GetOrAddHelper<T>(IRemoteCharacteristicDriver characteristic, Func<T> create)
+        where T : class
+    {
+        lock (_lock)
+        {
+            if (!_helpers.TryGetValue((characteristic, typeof(T)), out object? helper))
+            {
+                helper = create();
+                _helpers.Add((characteristic, typeof(T)), helper);
+            }
+            return (T)helper;
+        }
+    }
+
+    /// <summary> The manager's clock, for timeouts of helpers built on this connection </summary>
+    internal TimeProvider TimeProvider { get; }
 
     /// <summary> The notifications of a characteristic; the same channel for the same driver object </summary>
     internal NotificationChannel GetNotifications(IRemoteCharacteristicDriver characteristic)

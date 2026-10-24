@@ -8,5 +8,6 @@ internal sealed record MockSettings(
     string Name,
     BleOpenErrorKind? OpenFailure,
     IReadOnlyList<MockPeripheral> Peripherals,
-    Func<TxPowerLevel, Rssi> TxPowerToRssi
+    Func<TxPowerLevel, Rssi> TxPowerToRssi,
+    bool IncludeGattService
 );

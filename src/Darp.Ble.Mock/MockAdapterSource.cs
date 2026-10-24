@@ -17,12 +17,12 @@ internal sealed class MockAdapterSource(MockSettings settings) : IBleAdapterSour
             throw new BleOpenException(kind, $"The mock adapter '{Name}' is configured to fail opening with {kind}");
 
         var air = new MockAir(context.TimeProvider, _settings.TxPowerToRssi);
-        var driver = new MockAdapterDriver(air);
+        var driver = new MockAdapterDriver(air, _settings.IncludeGattService);
         try
         {
             foreach (MockPeripheral peripheral in _settings.Peripherals)
             {
-                BleAdapter adapter = await OpenPeripheralAsync(air, peripheral.Name, context, cancellationToken)
+                BleAdapter adapter = await OpenPeripheralAsync(air, peripheral, context, cancellationToken)
                     .ConfigureAwait(false);
                 // The mock adapter owns its peripherals from here on and disposes them with itself
                 driver.AddPeripheral(adapter);
@@ -41,13 +41,13 @@ internal sealed class MockAdapterSource(MockSettings settings) : IBleAdapterSour
     /// <summary> Opens a peripheral through the public path, so its callback gets a real <see cref="BleAdapter"/> </summary>
     private static async Task<BleAdapter> OpenPeripheralAsync(
         MockAir air,
-        string name,
+        MockPeripheral peripheral,
         BleBackendContext context,
         CancellationToken cancellationToken
     )
     {
         var manager = new BleManager(
-            builder => builder.AddBackend(new MockPeripheralBackend(air, name)),
+            builder => builder.AddBackend(new MockPeripheralBackend(air, peripheral)),
             context.LoggerFactory,
             context.TimeProvider
         );

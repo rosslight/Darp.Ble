@@ -11,8 +11,9 @@ internal sealed class MockAdapterDriver : IBleAdapterDriver
     private readonly List<BleAdapter> _peripherals = [];
     private BleAddress _randomAddress = BleAddress.NewRandomStaticAddress();
 
-    public MockAdapterDriver(MockAir air)
+    public MockAdapterDriver(MockAir air, bool includeGattService)
     {
+        PeripheralDriver = new MockPeripheralDriver(includeGattService);
         Observer = new MockObserverDriver(air, this);
         Broadcaster = new MockBroadcasterDriver(air, this);
         Central = new MockCentralDriver(air, this);
@@ -23,7 +24,8 @@ internal sealed class MockAdapterDriver : IBleAdapterDriver
         | Capabilities.Broadcaster
         | Capabilities.Central
         | Capabilities.Peripheral
-        | Capabilities.SetRandomAddress;
+        | Capabilities.SetRandomAddress
+        | Capabilities.SetGapIdentity;
 
     public IObserverDriver? Observer { get; }
 
@@ -34,7 +36,7 @@ internal sealed class MockAdapterDriver : IBleAdapterDriver
     public IPeripheralDriver? Peripheral => PeripheralDriver;
 
     /// <summary> The peripheral role, for centrals in the air that connect to this adapter </summary>
-    public MockPeripheralDriver PeripheralDriver { get; } = new();
+    public MockPeripheralDriver PeripheralDriver { get; }
 
     public BleAddress RandomAddress => _randomAddress;
 

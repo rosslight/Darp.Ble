@@ -1,3 +1,5 @@
+using Darp.Ble.Data.AssignedNumbers;
+
 namespace Darp.Ble.Backends;
 
 /// <summary> The peripheral role of an adapter: accepts connections from centrals </summary>
@@ -25,6 +27,12 @@ public interface IPeripheralDriver
         ReadOnlyMemory<byte> value,
         CancellationToken cancellationToken
     );
+
+    /// <summary> Sets what centrals read from the GAP service, which the backend serves itself </summary>
+    /// <remarks> Only with <see cref="Capabilities.SetGapIdentity"/>. The core calls it with defaults before centrals can connect, and with the complete identity on every change </remarks>
+    /// <param name="deviceName"> The device name </param>
+    /// <param name="appearance"> The appearance </param>
+    void SetGapIdentity(string deviceName, AppearanceValues appearance);
 
     /// <summary> Ends the connection of a central </summary>
     /// <param name="central"> The connection reported to the sink </param>
