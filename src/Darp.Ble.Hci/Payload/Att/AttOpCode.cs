@@ -75,4 +75,10 @@ public enum AttOpCode : byte
 
     /// <summary> The <see cref="AttHandleValueNtf"/> </summary>
     ATT_HANDLE_VALUE_NTF = 0x1B,
+
+    /// <summary> The <see cref="AttHandleValueInd"/> </summary>
+    ATT_HANDLE_VALUE_IND = 0x1D,
+
+    /// <summary> The client's confirmation of an indication </summary>
+    ATT_HANDLE_VALUE_CFM = 0x1E,
 }

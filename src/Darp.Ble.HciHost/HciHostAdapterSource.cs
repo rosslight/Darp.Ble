@@ -10,9 +10,11 @@ internal sealed class HciHostAdapterSource(
     string? name,
     Func<BleBackendContext, ITransportLayer> createTransport,
     BleAddress? randomAddress,
-    HciSettings settings
+    HciSettings settings,
+    bool includeGattService
 ) : IBleAdapterSource
 {
+    private readonly bool _includeGattService = includeGattService;
     private readonly Func<BleBackendContext, ITransportLayer> _createTransport = createTransport;
     private readonly BleAddress? _randomAddress = randomAddress;
     private readonly HciSettings _settings = settings;
@@ -34,7 +36,9 @@ internal sealed class HciHostAdapterSource(
 #pragma warning restore CA2000
         try
         {
-            return await HciHostAdapterDriver.OpenAsync(device, cancellationToken).ConfigureAwait(false);
+            return await HciHostAdapterDriver
+                .OpenAsync(device, _includeGattService, cancellationToken)
+                .ConfigureAwait(false);
         }
         catch (Exception e)
         {

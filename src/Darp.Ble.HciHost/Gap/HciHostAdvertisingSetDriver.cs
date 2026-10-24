@@ -12,10 +12,17 @@ internal sealed class HciHostAdvertisingSetDriver(
     HciDevice device,
     byte handle,
     int maxDataLength,
+    IAdvertisingSetSink sink,
     Action releaseHandle
 ) : IAdvertisingSetDriver
 {
     private readonly int _maxDataLength = maxDataLength;
+
+    /// <summary> The controller's handle of the set </summary>
+    public byte Handle { get; } = handle;
+
+    /// <summary> Learns when a central connected through the set, which stopped it </summary>
+    public IAdvertisingSetSink Sink { get; } = sink;
 
 #pragma warning disable CA2213 // The adapter owns the device
     private readonly HciDevice _device = device;
@@ -52,17 +59,6 @@ internal sealed class HciHostAdvertisingSetDriver(
             cancellationToken
         );
 
-    /// <summary> Connectable advertising needs the peripheral role, which joins in the next step </summary>
-    public static void CheckType(AdvertisingParameters parameters)
-    {
-        if (parameters.Type.HasFlag(BleEventType.Connectable))
-        {
-            throw new NotSupportedException(
-                "Connectable advertising needs the peripheral role, which HciHost does not have yet"
-            );
-        }
-    }
-
     /// <summary> The data must fit the controller and one command </summary>
     public static void CheckLength(AdvertisingData data, int maxLength, string name)
     {
@@ -79,7 +75,6 @@ internal sealed class HciHostAdvertisingSetDriver(
 
     public Task SetParametersAsync(AdvertisingParameters parameters, CancellationToken cancellationToken)
     {
-        CheckType(parameters);
         return _device.RunAsync<
             HciLeSetExtendedAdvertisingParametersV1Command,
             HciLeSetExtendedAdvertisingParametersResult

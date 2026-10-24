@@ -227,7 +227,13 @@ public sealed record BleUuid
             }
             case BleUuidType.Uuid128:
             default:
-                return Value.TryWriteBytes(destination);
+            {
+                // Bluetooth sends 128-bit UUIDs least significant byte first, the reverse of how they are written
+                if (destination.Length < 16 || !Value.TryWriteBytes(destination[..16], bigEndian: true, out _))
+                    return false;
+                destination[..16].Reverse();
+                return true;
+            }
         }
     }
 
@@ -258,10 +264,19 @@ public sealed record BleUuid
         {
             2 => FromUInt16(BinaryPrimitives.ReadUInt16LittleEndian(source)),
             4 => FromUInt32(BinaryPrimitives.ReadUInt32LittleEndian(source)),
-            >= 16 => FromGuid(new Guid(source[..16]), inferType: false),
+            >= 16 => FromGuid(ReadGuid(source[..16]), inferType: false),
             _ => null,
         };
         return uuid is not null;
+    }
+
+    /// <summary> A 128-bit UUID in Bluetooth byte order, least significant byte first </summary>
+    private static Guid ReadGuid(ReadOnlySpan<byte> source)
+    {
+        Span<byte> bigEndian = stackalloc byte[16];
+        source.CopyTo(bigEndian);
+        bigEndian.Reverse();
+        return new Guid(bigEndian, bigEndian: true);
     }
 
     /// <summary> Write the ble uuid to a byte array </summary>
