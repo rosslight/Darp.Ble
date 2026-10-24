@@ -4473,6 +4473,7 @@ Darp.Ble.QueueOptions.QueueOptions(int capacity, Darp.Ble.QueueFullMode fullMode
 [DARPBLE0001]Darp.Ble.Gatt.AesCmac.Dispose() -> void
 [DARPBLE0001]Darp.Ble.Gatt.AesCmac.Encrypt(System.ReadOnlySpan<byte> message) -> byte[]!
 [DARPBLE0001]static Darp.Ble.Gap.GapAdvertisement.Create(System.DateTimeOffset timestamp, Darp.Ble.Gap.BleEventType eventType, Darp.Ble.Data.BleAddress! address, Darp.Ble.Data.Physical primaryPhy, Darp.Ble.Data.Physical secondaryPhy, Darp.Ble.Gap.AdvertisingSId advertisingSId, Darp.Ble.Data.TxPowerLevel txPower, Darp.Ble.Data.Rssi rssi, Darp.Ble.Gap.PeriodicAdvertisingInterval periodicAdvertisingInterval, Darp.Ble.Data.BleAddress! directAddress, Darp.Ble.Gap.AdvertisingData! data) -> Darp.Ble.Gap.GapAdvertisement!
+const Darp.Ble.BleBackends.Android = "Darp.Ble.Android" -> string!
 const Darp.Ble.BleBackends.HciHost = "Darp.Ble.HciHost" -> string!
 const Darp.Ble.BleBackends.Mock = "Darp.Ble.Mock" -> string!
 const Darp.Ble.BleBackends.WinRT = "Darp.Ble.WinRT" -> string!

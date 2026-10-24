@@ -12,17 +12,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v6
-        with:
-          dotnet-version: '10.0.x'
-
-      - uses: actions/cache@v6
-        with:
-          path: ~/.nuget/packages
-          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj', 'Directory.Packages.props', 'nuget.config') }}
-          restore-keys: |
-            ${{ runner.os }}-nuget
+      - uses: ./.github/actions/setup-build
 
       - name: Check format
         run: |
@@ -38,9 +28,15 @@ jobs:
           for example in examples/*.cs; do
             dotnet build "$example" --configuration Release
           done
+      - name: Pack
+        run: dotnet pack --no-build --configuration Release --output packages
+      - name: Check packages
+        run: dotnet run tools/check-packages.cs -- "$(dotnet msbuild src/Darp.Ble -getProperty:Version)" packages
       # Without the include filter, coverlet.MTP skips assemblies named like the test assembly,
       # e.g. Darp.Ble.HciHost for Darp.Ble.HciHost.Tests
+      # A backstop for a test that hangs; the tests' own watchdogs name what they waited for first
       - name: Test
+        timeout-minutes: 10
         run: |
           dotnet test --no-build --configuration Release \
             --coverlet --coverlet-output-format cobertura \
