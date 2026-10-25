@@ -134,6 +134,12 @@ public sealed partial class L2CapAssembler(ushort connectionHandle, ILogger<L2Ca
             case AttOpCode.ATT_READ_RSP when AttReadRsp.TryReadLittleEndian(l2Cap.Pdu, out var rsp):
                 PublishEventPacketAndLog(rsp, l2Cap.Pdu);
                 break;
+            case AttOpCode.ATT_READ_BLOB_REQ when AttReadBlobReq.TryReadLittleEndian(l2Cap.Pdu, out var req):
+                PublishEventPacketAndLog(req, l2Cap.Pdu);
+                break;
+            case AttOpCode.ATT_READ_BLOB_RSP when AttReadBlobRsp.TryReadLittleEndian(l2Cap.Pdu, out var rsp):
+                PublishEventPacketAndLog(rsp, l2Cap.Pdu);
+                break;
             case AttOpCode.ATT_READ_BY_GROUP_TYPE_REQ
                 when l2Cap.Pdu.Length == 7 && AttReadByGroupTypeReq<ushort>.TryReadLittleEndian(l2Cap.Pdu, out var req):
                 PublishEventPacketAndLog(req, l2Cap.Pdu);

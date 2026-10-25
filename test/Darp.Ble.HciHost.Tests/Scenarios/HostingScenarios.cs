@@ -1,13 +1,13 @@
+using Darp.Ble.Connections;
 using Darp.Ble.Gatt;
+using Darp.Ble.Testing;
 using Shouldly;
 
 namespace Darp.Ble.HciHost.Tests.Scenarios;
 
-/// <summary> Hosting behaviour every backend shares, run against Mock and HciHost (D9, D12) </summary>
+/// <summary> Hosting behaviour every backend shares, run against Mock and HciHost </summary>
 public abstract class HostingScenarios
 {
-    private static CancellationToken Token => TestContext.Current.CancellationToken;
-
     private protected abstract Task<IHostScenario> StartAsync(Action<LocalGattServiceBuilder> build);
 
     [Fact]
@@ -31,15 +31,15 @@ public abstract class HostingScenarios
     [Fact]
     public async Task AHandlerRunningWhenItsCentralDisconnects_IsCancelled_AndNotAnswered()
     {
-        var running = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var running = new TaskCompletionSource<ConnectedCentral>(TaskCreationOptions.RunContinuationsAsynchronously);
         var cancelled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         await using IHostScenario scenario = await StartAsync(service =>
             service.AddCharacteristic(
                 0xFF01,
                 GattProperty.Read,
-                onRead: async (_, cancellationToken) =>
+                onRead: async (central, cancellationToken) =>
                 {
-                    running.SetResult();
+                    running.SetResult(central);
                     try
                     {
                         await Task.Delay(Timeout.Infinite, cancellationToken);
@@ -54,14 +54,13 @@ public abstract class HostingScenarios
             )
         );
         await scenario.StartReadAsync();
-        await running.Task.WaitAsync(Token);
+        ConnectedCentral central = await running.Task.WithWatchdog();
 
         await scenario.DisconnectAsync();
 
-        await cancelled.Task.WaitAsync(Token);
+        await cancelled.Task.WithWatchdog();
+        await central.Disconnected.WithWatchdog();
         (await scenario.GotAnswerAsync()).ShouldBeFalse();
-        while (scenario.Host.Peripheral.ConnectedCentrals.Count > 0)
-            await Task.Delay(5, Token);
     }
 }
 

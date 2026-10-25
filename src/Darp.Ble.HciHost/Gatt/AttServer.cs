@@ -26,6 +26,10 @@ internal sealed partial class AttServer : IDisposable
     private readonly AclConnection _connection;
     private readonly IDisposable _subscription;
 
+    // The value a read answered in part, which Read Blob continues; a central reads one value at a time. The next read
+    // (Read, Read By Type, or Read Blob at offset 0) or a write of the attribute replaces it, so a new read asks the app again
+    private (ushort Handle, byte[] Value)? _longRead;
+
     public AttServer(
         HciHostCentralLink link,
         AclConnection connection,
@@ -51,7 +55,7 @@ internal sealed partial class AttServer : IDisposable
         const AttOpCode opCode = AttOpCode.ATT_READ_BY_GROUP_TYPE_REQ;
         if (!IsValidRange(opCode, start, end))
             return;
-        if (!SameType(type, PrimaryService) && !SameType(type, SecondaryService))
+        if (!IsGroupType(type))
         {
             Error(opCode, start, AttErrorCode.UnsupportedGroupTypeError);
             return;
@@ -60,7 +64,7 @@ internal sealed partial class AttServer : IDisposable
         int space = Mtu - 2;
         foreach (HostedAttribute service in InRange(start, end))
         {
-            if (!SameType(service.Type, type) || service.StaticValue is not { } uuid)
+            if (service.Type != type || service.StaticValue is not { } uuid)
                 continue;
             // One length per answer: 16-bit and 128-bit service UUIDs go in separate answers
             if (services.Count > 0 && services[0].Value.Length != uuid.Length)
@@ -97,7 +101,7 @@ internal sealed partial class AttServer : IDisposable
         int space = Mtu - 1;
         foreach (HostedAttribute attribute in InRange(request.StartingHandle, request.EndingHandle))
         {
-            if (!SameType(attribute.Type, type))
+            if (attribute.Type != type)
                 continue;
             // Values the app answers for count too; one it does not allow reading matches nothing
             if (
@@ -128,7 +132,7 @@ internal sealed partial class AttServer : IDisposable
         const AttOpCode opCode = AttOpCode.ATT_READ_BY_TYPE_REQ;
         if (!IsValidRange(opCode, start, end))
             return;
-        HostedAttribute[] matches = [.. InRange(start, end).Where(attribute => SameType(attribute.Type, type))];
+        HostedAttribute[] matches = [.. InRange(start, end).Where(attribute => attribute.Type == type)];
         if (matches.Length == 0)
         {
             Error(opCode, start, AttErrorCode.AttributeNotFoundError);
@@ -139,7 +143,7 @@ internal sealed partial class AttServer : IDisposable
         // A value the app answers for is the only one in its answer
         if (matches[0].StaticValue is null)
         {
-            if (await ReadAsync(opCode, matches[0]).ConfigureAwait(false) is not { } value)
+            if (await StartReadAsync(opCode, matches[0], maxLength).ConfigureAwait(false) is not { } value)
                 return;
             data.Add(new AttReadByTypeData(matches[0].Handle, value.AsMemory(0, Math.Min(value.Length, maxLength))));
         }
@@ -206,9 +210,37 @@ internal sealed partial class AttServer : IDisposable
             Error(request.OpCode, request.AttributeHandle, AttErrorCode.InvalidHandle);
             return;
         }
-        if (await ReadAsync(request.OpCode, attribute).ConfigureAwait(false) is not { } value)
+        if (await StartReadAsync(request.OpCode, attribute, Mtu - 1).ConfigureAwait(false) is not { } value)
             return;
-        Answer(new AttReadRsp { AttributeValue = value.AsMemory(0, Math.Min(value.Length, Mtu - 1)) });
+        int length = Math.Min(Math.Min(value.Length, MaxValueLength), Mtu - 1);
+        Answer(new AttReadRsp { AttributeValue = value.AsMemory(0, length) });
+    }
+
+    [MessageSink]
+    private void OnReadBlob(AttReadBlobReq request) => _ = ReadBlobRequestAsync(request);
+
+    private async Task ReadBlobRequestAsync(AttReadBlobReq request)
+    {
+        if (_database.Find(request.AttributeHandle) is not { } attribute)
+        {
+            Error(request.OpCode, request.AttributeHandle, AttErrorCode.InvalidHandle);
+            return;
+        }
+        // Offset 0 starts a new read; a later offset continues the value a read started with
+        byte[]? value =
+            request.ValueOffset > 0 && _longRead is { } longRead && longRead.Handle == attribute.Handle
+                ? longRead.Value
+                : await StartReadAsync(request.OpCode, attribute, request.ValueOffset + Mtu - 1).ConfigureAwait(false);
+        if (value is null)
+            return;
+        int length = Math.Min(value.Length, MaxValueLength);
+        if (request.ValueOffset > length)
+        {
+            Error(request.OpCode, request.AttributeHandle, AttErrorCode.InvalidOffsetError);
+            return;
+        }
+        int partLength = Math.Min(length - request.ValueOffset, Mtu - 1);
+        Answer(new AttReadBlobRsp { PartAttributeValue = value.AsMemory(request.ValueOffset, partLength) });
     }
 
     [MessageSink]
@@ -249,6 +281,7 @@ internal sealed partial class AttServer : IDisposable
             Error(request.OpCode, request.AttributeHandle, AttErrorCode.WriteNotPermittedError);
             return;
         }
+        ForgetLongRead(attribute.Handle);
         try
         {
             // The core copies the value before it returns
@@ -272,8 +305,26 @@ internal sealed partial class AttServer : IDisposable
             && command.Value.Length <= MaxValueLength
         )
         {
+            ForgetLongRead(command.Handle);
             _sink.OnWriteCommand(_link, hosted, command.Value);
         }
+    }
+
+    /// <summary> Asks the app for the value; one that fills the part sent first is kept for Read Blob to continue </summary>
+    private async Task<byte[]?> StartReadAsync(AttOpCode requestOpCode, HostedAttribute attribute, int sentFirst)
+    {
+        byte[]? value = await ReadAsync(requestOpCode, attribute).ConfigureAwait(false);
+        // A central continues after a full part, also one that ends exactly where the value ends
+        _longRead =
+            value is not null && Math.Min(value.Length, MaxValueLength) >= sentFirst ? (attribute.Handle, value) : null;
+        return value;
+    }
+
+    /// <summary> A written value is read anew </summary>
+    private void ForgetLongRead(ushort handle)
+    {
+        if (_longRead is { } longRead && longRead.Handle == handle)
+            _longRead = null;
     }
 
     [MessageSink]
@@ -300,10 +351,14 @@ internal sealed partial class AttServer : IDisposable
             _link.OnIndicationConfirmed();
             return;
         }
-        // Every other request gets an answer: requests are the even opcodes without the command flag, but the confirmation
-        if ((byte)opCode % 2 == 0 && ((byte)opCode & 0x40) == 0 && (byte)opCode != 0x1E)
+        // Every other request gets an answer
+        if (IsRequest(opCode))
             Error(opCode, 0x0000, AttErrorCode.RequestNotSupportedError);
     }
+
+    /// <summary> Whether the peer waits for an answer: requests are the even opcodes without the command flag, but the confirmation </summary>
+    internal static bool IsRequest(AttOpCode opCode) =>
+        (byte)opCode % 2 == 0 && ((byte)opCode & 0x40) == 0 && opCode is not AttOpCode.ATT_HANDLE_VALUE_CFM;
 
     // The common profile error for a CCCD value the characteristic does not support
     private const AttErrorCode CccdImproperlyConfigured = (AttErrorCode)0xFD;
@@ -311,8 +366,8 @@ internal sealed partial class AttServer : IDisposable
     private static readonly BleUuid PrimaryService = BleUuid.FromUInt16(0x2800);
     private static readonly BleUuid SecondaryService = BleUuid.FromUInt16(0x2801);
 
-    // A type in a request matches whatever width it came in, e.g. a 16-bit UUID sent as 128 bits
-    private static bool SameType(BleUuid left, BleUuid right) => left.Value == right.Value;
+    /// <summary> Whether Read By Group Type can ask for this type: only services group attributes </summary>
+    internal static bool IsGroupType(BleUuid type) => type == PrimaryService || type == SecondaryService;
 
     /// <summary> A range starts at handle 1 and does not end before it starts; otherwise Invalid Handle is answered </summary>
     private bool IsValidRange(AttOpCode requestOpCode, ushort start, ushort end)
@@ -377,7 +432,7 @@ internal sealed partial class AttServer : IDisposable
     {
         switch (exception)
         {
-            // The central's connection ends: nothing is answered (D9)
+            // The central's connection ends: nothing is answered
             case OperationCanceledException:
                 return;
             case GattException { AttStatus: { } status }:

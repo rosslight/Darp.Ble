@@ -1,5 +1,6 @@
 using Darp.Ble.Connections;
 using Darp.Ble.Gatt;
+using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Att;
 using Darp.Ble.HciHost.Verify;
 using Microsoft.Extensions.Time.Testing;
@@ -65,14 +66,31 @@ internal sealed class HciHostPeer : IScenarioPeer
 
     public IReadOnlyList<string> Requests => [.. _peripheral.Received.Select(Describe).OfType<string>()];
 
+    // In the controller's record, which keeps the host's packets and the peripheral's in the order they passed
+    public IReadOnlyList<string> Traffic => [.. _controller.Messages.Select(DescribeTraffic).OfType<string>()];
+
     public Task WaitForRequestsAsync(int count) =>
-        _peripheral.WaitForReceivedAsync(received => received.Select(Describe).OfType<string>().Count() >= count);
+        _peripheral.WaitForReceivedAsync(
+            received => received.Select(Describe).OfType<string>().Count() >= count,
+            $"{count} requests"
+        );
 
     public Task ReleaseAnswerAsync() => _peripheral.ReleaseAsync();
 
     public void SetValue(byte[] value) => _peripheral.SetValue(_value, value);
 
     public Task DisconnectAsync() => _peripheral.DisconnectAsync();
+
+    private string? DescribeTraffic(HciMessage message)
+    {
+        if (message.Type is not HciPacketType.HciAclData)
+            return null;
+        // The ATT PDU follows the ACL header and the L2CAP header, 4 bytes each
+        byte[] pdu = message.PduBytes[8..];
+        if (message.Direction is HciDirection.HostToController)
+            return Describe(pdu);
+        return (AttOpCode)pdu[0] is AttOpCode.ATT_READ_RSP or AttOpCode.ATT_WRITE_RSP ? "answer" : null;
+    }
 
     private string? Describe(byte[] pdu) =>
         (AttOpCode)pdu[0] switch

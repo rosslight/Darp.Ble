@@ -3,6 +3,7 @@ using Darp.Ble.Connections;
 using Darp.Ble.Gap;
 using Darp.Ble.Gatt;
 using Darp.Ble.Mock;
+using Darp.Ble.Testing;
 using Microsoft.Extensions.Time.Testing;
 
 namespace Darp.Ble.HciHost.Tests.Scenarios;
@@ -100,11 +101,22 @@ internal sealed class MockPeer : IScenarioPeer
         get
         {
             lock (_state)
-                return [.. _state.Requests];
+                return [.. _state.Traffic.Where(entry => entry is not Answer)];
         }
     }
 
-    public async Task WaitForRequestsAsync(int count)
+    public IReadOnlyList<string> Traffic
+    {
+        get
+        {
+            lock (_state)
+                return [.. _state.Traffic];
+        }
+    }
+
+    public Task WaitForRequestsAsync(int count) => WaitForAsync(count).WithWatchdog($"{count} requests");
+
+    private async Task WaitForAsync(int count)
     {
         while (Requests.Count < count)
             await _state.Changed.Reader.ReadAsync(TestContext.Current.CancellationToken);
@@ -114,7 +126,10 @@ internal sealed class MockPeer : IScenarioPeer
     {
         TaskCompletionSource held;
         lock (_state)
+        {
             held = _state.Held.Dequeue();
+            _state.Traffic.Add(Answer);
+        }
         held.SetResult();
         return Task.CompletedTask;
     }
@@ -127,12 +142,14 @@ internal sealed class MockPeer : IScenarioPeer
 
     public ValueTask DisposeAsync() => _adapter.DisposeAsync();
 
+    private const string Answer = "answer";
+
     private sealed class State
     {
         public BleAdapter? Peripheral { get; set; }
         public bool Hold { get; set; }
         public byte[] Value { get; set; } = [0];
-        public List<string> Requests { get; } = [];
+        public List<string> Traffic { get; } = [];
         public Queue<TaskCompletionSource> Held { get; } = new();
         public Channel<bool> Changed { get; } = Channel.CreateUnbounded<bool>();
 
@@ -142,12 +159,16 @@ internal sealed class MockPeer : IScenarioPeer
             Task answer = Task.CompletedTask;
             lock (this)
             {
-                Requests.Add(request);
+                Traffic.Add(request);
                 if (Hold)
                 {
                     var held = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
                     Held.Enqueue(held);
                     answer = held.Task.WaitAsync(cancellationToken);
+                }
+                else
+                {
+                    Traffic.Add(Answer);
                 }
             }
             Changed.Writer.TryWrite(true);

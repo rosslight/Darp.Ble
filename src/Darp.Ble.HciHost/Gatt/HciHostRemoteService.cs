@@ -25,13 +25,14 @@ internal sealed class HciHostRemoteService(HciHostConnectionDriver connection, B
         while (next <= _end && !request.IsAbandoned)
         {
             AttReadByTypeRsp? page = await _connection
-                .Client.QueryUnlessNotFoundAsync<AttReadByTypeReq<ushort>, AttReadByTypeRsp>(
+                .Client.QueryUnlessAsync<AttReadByTypeReq<ushort>, AttReadByTypeRsp>(
                     new AttReadByTypeReq<ushort>
                     {
                         StartingHandle = next,
                         EndingHandle = _end,
                         AttributeType = 0x2803,
                     },
+                    AttErrorCode.AttributeNotFoundError,
                     request
                 )
                 .ConfigureAwait(false);

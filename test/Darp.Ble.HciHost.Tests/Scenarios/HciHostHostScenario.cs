@@ -1,5 +1,6 @@
 using Darp.Ble.Gatt;
 using Darp.Ble.HciHost.Verify;
+using Darp.Ble.Testing;
 
 namespace Darp.Ble.HciHost.Tests.Scenarios;
 
@@ -12,6 +13,7 @@ internal sealed class HciHostHostScenario(FakeController controller, BleAdapter 
 
     private readonly FakeController _controller = controller;
     private readonly FakeCentral _central = central;
+    private int _sentBeforeRead;
 
     public static async Task<IHostScenario> StartAsync(Action<LocalGattServiceBuilder> build)
     {
@@ -27,24 +29,29 @@ internal sealed class HciHostHostScenario(FakeController controller, BleAdapter 
 
     public BleAdapter Host { get; } = host;
 
-    public async Task<byte[]> ReadAsync() => (await _central.RequestAsync(0x0A, Value, 0x00))[1..];
+    public async Task<byte[]> ReadAsync() => (await _central.RequestAsync(0x0A, Value, 0x00).WithWatchdog())[1..];
 
-    public Task StartReadAsync() => _central.SendAsync(0x0A, Value, 0x00);
+    public Task StartReadAsync()
+    {
+        _sentBeforeRead = SentOnLink();
+        return _central.SendAsync(0x0A, Value, 0x00);
+    }
 
     public async Task<GattProtocolStatus> WriteAsync(byte[] value)
     {
-        byte[] answer = await _central.RequestAsync([0x12, Value, 0x00, .. value]);
+        byte[] answer = await _central.RequestAsync([0x12, Value, 0x00, .. value]).WithWatchdog();
         return answer[0] == 0x13 ? GattProtocolStatus.Success : (GattProtocolStatus)answer[^1];
     }
 
     public Task DisconnectAsync() => _central.DisconnectAsync();
 
-    public async Task<bool> GotAnswerAsync()
-    {
-        // The host answers on its own threads; give it the time an answer takes
-        await Task.Delay(100, TestContext.Current.CancellationToken);
-        return _central.HasPending;
-    }
+    public Task<bool> GotAnswerAsync() => Task.FromResult(SentOnLink() > _sentBeforeRead);
+
+    /// <summary>
+    /// The ACL packets the host sent on the central's link, as the controller recorded them. Final once the link is down:
+    /// the host drops what it would send on it from then on
+    /// </summary>
+    private int SentOnLink() => _controller.AclPackets.Count(packet => packet.Handle == _central.Handle);
 
     public async ValueTask DisposeAsync()
     {

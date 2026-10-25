@@ -22,6 +22,9 @@ public interface IScenarioPeer : IAsyncDisposable
     /// <summary> The reads and writes the peripheral got, e.g. "read" or "write 01" </summary>
     IReadOnlyList<string> Requests { get; }
 
+    /// <summary> The reads and writes and the answers to them, in the order the link carried them, e.g. "read", "answer" </summary>
+    IReadOnlyList<string> Traffic { get; }
+
     /// <summary> Waits until the peripheral got this many reads and writes </summary>
     Task WaitForRequestsAsync(int count);
 

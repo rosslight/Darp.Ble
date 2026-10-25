@@ -20,6 +20,6 @@ public interface IHostScenario : IAsyncDisposable
     /// <summary> The central takes the link down </summary>
     Task DisconnectAsync();
 
-    /// <summary> Whether the central got an answer to a read it started </summary>
+    /// <summary> Whether the host answered the read the central started; asked once the host's connection to it ended </summary>
     Task<bool> GotAnswerAsync();
 }

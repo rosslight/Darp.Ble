@@ -2,6 +2,7 @@ using Darp.Ble.Connections;
 using Darp.Ble.Gap;
 using Darp.Ble.Gatt;
 using Darp.Ble.Mock;
+using Darp.Ble.Testing;
 
 namespace Darp.Ble.HciHost.Tests.Scenarios;
 
@@ -84,7 +85,7 @@ internal sealed class MockHostScenario(
             return false;
         try
         {
-            await _started;
+            await _started.WithWatchdog();
             return true;
         }
         catch (GattException)

@@ -9,7 +9,7 @@ using Darp.Utils.Messaging;
 namespace Darp.Ble.HciHost.Gatt;
 
 /// <summary>
-/// The ATT client of one link. The core sends one request at a time (D11) and owns the ATT timeout,
+/// The ATT client of one link. The core sends one request at a time and owns the ATT timeout,
 /// so a request waits for its answer without a timeout of its own until the link ends
 /// </summary>
 internal sealed class AttClient(AclConnection connection)
@@ -33,11 +33,14 @@ internal sealed class AttClient(AclConnection connection)
         return response.IsError ? throw Failed(request.OpCode, response.Error) : response.Value;
     }
 
-    /// <summary> Like <see cref="QueryAsync{TRequest,TResponse}"/>, but null when the peer has no attribute in the range, which ends a discovery </summary>
-    public async Task<TResponse?> QueryUnlessNotFoundAsync<
+    /// <summary>
+    /// Like <see cref="QueryAsync{TRequest,TResponse}"/>, but null when the peer answers with the given error, which is
+    /// an expected end, e.g. no attribute left in a discovery's range
+    /// </summary>
+    public async Task<TResponse?> QueryUnlessAsync<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TRequest,
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TResponse
-    >(TRequest request, GattRequest gattRequest)
+    >(TRequest request, AttErrorCode expected, GattRequest gattRequest)
         where TRequest : IAttPdu, IBinaryWritable
         where TResponse : struct, IAttPdu, IBinaryReadable<TResponse>
     {
@@ -45,9 +48,7 @@ internal sealed class AttClient(AclConnection connection)
             .ConfigureAwait(false);
         if (!response.IsError)
             return response.Value;
-        return response.Error.ErrorCode is AttErrorCode.AttributeNotFoundError
-            ? null
-            : throw Failed(request.OpCode, response.Error);
+        return response.Error.ErrorCode == expected ? null : throw Failed(request.OpCode, response.Error);
     }
 
     private static GattException Failed(AttOpCode requestOpCode, AttErrorRsp error) =>
