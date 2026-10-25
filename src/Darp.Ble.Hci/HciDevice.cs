@@ -1,18 +1,14 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Runtime.CompilerServices;
 using Darp.BinaryObjects;
-using Darp.Ble.Hci.AssignedNumbers;
 using Darp.Ble.Hci.Exceptions;
 using Darp.Ble.Hci.Host;
 using Darp.Ble.Hci.Payload;
-using Darp.Ble.Hci.Payload.Att;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.Hci.Payload.Result;
 using Darp.Ble.Hci.Transport;
-using Darp.Utils.Messaging;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci;
@@ -123,11 +119,6 @@ public sealed class HciDevice : IAsyncDisposable
         }
     }
 
-    /// <summary>Resets the host and re-applies the required controller configuration.</summary>
-    /// <param name="token">Cancels the reset while waiting for controller responses.</param>
-    /// <returns>A task that completes when the reset has finished.</returns>
-    public Task ResetAsync(CancellationToken token) => Host.ResetAsync(token);
-
     /// <summary>Attempts to retrieve an active ACL connection by its handle.</summary>
     /// <param name="connectionHandle">The connection handle to look up.</param>
     /// <param name="connection">The matching connection when the lookup succeeds.</param>
@@ -160,7 +151,6 @@ public sealed class HciDevice : IAsyncDisposable
             Address,
             evt.PeerAddress,
             evt.Role,
-            new AclConnectionParameters(evt.ConnectionInterval, evt.PeripheralLatency, evt.SupervisionTimeout, 0, 0),
             _loggerFactory
         );
         Host.AclPacketQueue.AddLink(evt.ConnectionHandle);
@@ -186,39 +176,6 @@ public sealed class HciDevice : IAsyncDisposable
             )
             .ConfigureAwait(false);
         Address = randomAddress;
-    }
-
-    /// <summary>Initiates a new LE connection to a peer device.</summary>
-    /// <param name="peerAddressType">The peer address type expected by the controller.</param>
-    /// <param name="peerAddress">The peer device address.</param>
-    /// <param name="token">Cancels the connection attempt.</param>
-    /// <returns>The created ACL connection.</returns>
-    public async Task<AclConnection> ConnectAsync(byte peerAddressType, UInt48 peerAddress, CancellationToken token)
-    {
-        var packet = new HciLeExtendedCreateConnectionV1Command
-        {
-            InitiatorFilterPolicy = 0x00,
-            OwnAddressType = 0x01,
-            PeerAddressType = peerAddressType,
-            PeerAddress = peerAddress,
-            InitiatingPhys = 0b1,
-            ScanInterval = 96,
-            ScanWindow = 96,
-            ConnectionIntervalMin = 12,
-            ConnectionIntervalMax = 24,
-            MaxLatency = 0,
-            SupervisionTimeout = 72, // 720ms
-            MinCeLength = 0,
-            MaxCeLength = 0,
-        };
-        HciLeEnhancedConnectionCompleteV1Event evt = await Host.QueryCommandAsync<
-            HciLeExtendedCreateConnectionV1Command,
-            HciLeEnhancedConnectionCompleteV1Event
-        >(packet, timeout: TimeSpan.FromSeconds(30), cancellationToken: token)
-            .ConfigureAwait(false);
-        return TryGetConnection(evt.ConnectionHandle, out AclConnection? connection)
-            ? connection
-            : throw new Exception($"Connection {evt.ConnectionHandle} was not found");
     }
 
     /// <inheritdoc />

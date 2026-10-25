@@ -11,7 +11,6 @@
     <PackageReference Include="Darp.Utils.Messaging" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
     <PackageReference Include="System.IO.Ports" />
-    <PackageReference Include="System.Reactive" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="AssignedNumbers\" />

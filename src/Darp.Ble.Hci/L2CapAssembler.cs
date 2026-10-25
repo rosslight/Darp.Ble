@@ -1,5 +1,4 @@
 using System.Buffers.Binary;
-using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Att;
 using Darp.Utils.Messaging;
@@ -8,23 +7,11 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.Hci;
 
 /// <summary>
-/// Reassembles complete L2CAP PDUs from incoming ACL packets.
-/// </summary>
-public interface IL2CapAssembler : IMessageSource
-{
-    /// <summary>
-    /// Processes an incoming ACL packet.
-    /// </summary>
-    /// <param name="packet">The ACL packet to incorporate into the current assembly state.</param>
-    void OnAclPacket(HciAclPacket packet);
-}
-
-/// <summary>
 /// Reassembles L2CAP PDUs for a specific ACL connection.
 /// </summary>
 /// <param name="connectionHandle">The connection handle to filter for.</param>
 /// <param name="logger">An optional logger.</param>
-public sealed partial class L2CapAssembler(ushort connectionHandle, ILogger<L2CapAssembler>? logger) : IL2CapAssembler
+public sealed partial class L2CapAssembler(ushort connectionHandle, ILogger<L2CapAssembler>? logger) : IMessageSource
 {
     private readonly MessageSinks _sinks = new();
 
@@ -39,7 +26,8 @@ public sealed partial class L2CapAssembler(ushort connectionHandle, ILogger<L2Ca
     private readonly List<byte> _dataBytes = [];
     private ushort _targetLength;
 
-    /// <inheritdoc />
+    /// <summary> Adds an incoming ACL packet; a complete PDU goes to the subscribers </summary>
+    /// <param name="packet"> The ACL packet </param>
     public void OnAclPacket(HciAclPacket packet)
     {
         if (packet.ConnectionHandle != _connectionHandle)
