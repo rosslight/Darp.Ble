@@ -1,6 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Darp.Ble.Backends;
 
 /// <summary> Receives what happens to an advertising set without the core asking. Called on the driver's thread; the core returns at once </summary>
+[Experimental(Experiments.Backends)]
 public interface IAdvertisingSetSink
 {
     /// <summary> A central connected through the set, so the set stopped advertising </summary>

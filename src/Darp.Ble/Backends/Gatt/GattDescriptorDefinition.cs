@@ -1,8 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data;
 
 namespace Darp.Ble.Backends;
 
 /// <summary> A descriptor of an added characteristic. The object itself identifies it </summary>
+[Experimental(Experiments.Backends)]
 public sealed class GattDescriptorDefinition : GattAttributeDefinition
 {
     internal GattDescriptorDefinition(BleUuid uuid, ReadOnlyMemory<byte>? staticValue)

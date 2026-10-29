@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Backends;
 using Darp.Ble.Diagnostics;
 
@@ -15,6 +16,7 @@ public sealed class BleManagerBuilder
     /// <summary> Adds a backend. Backend packages call this from their extensions, e.g. <c>AddMock()</c> </summary>
     /// <param name="backend"> The backend to add; adapters are enumerated in the order backends were added </param>
     /// <returns> This builder </returns>
+    [Experimental(Experiments.Backends)]
     public BleManagerBuilder AddBackend(IBleBackend backend)
     {
         ArgumentNullException.ThrowIfNull(backend);

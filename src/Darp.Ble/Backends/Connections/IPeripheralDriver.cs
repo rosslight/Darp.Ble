@@ -1,8 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data.AssignedNumbers;
 
 namespace Darp.Ble.Backends;
 
 /// <summary> The peripheral role of an adapter: accepts connections from centrals </summary>
+[Experimental(Experiments.Backends)]
 public interface IPeripheralDriver
 {
     /// <summary> Binds the sink that receives connections. The core calls it once, when the adapter opens, before anything else </summary>

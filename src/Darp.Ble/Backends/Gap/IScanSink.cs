@@ -1,8 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Gap;
 
 namespace Darp.Ble.Backends;
 
 /// <summary> Receives the reports of one radio scan. The core keeps every call cheap: it never blocks and never runs app code </summary>
+[Experimental(Experiments.Backends)]
 public interface IScanSink
 {
     /// <summary> Reports an advertisement; may be called on the driver's read loop </summary>

@@ -1,7 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Darp.Ble.Backends;
 
 /// <summary> A backend that connects the library to a platform or a radio, e.g. the mock, HCI or WinRT backend </summary>
 /// <remarks> Implemented only by the backends of this library; apps register backends through their builder extensions </remarks>
+[Experimental(Experiments.Backends)]
 public interface IBleBackend
 {
     /// <summary> The name apps see as <see cref="BleAdapterInfo.Backend"/>, e.g. <see cref="BleBackends.Mock"/> </summary>

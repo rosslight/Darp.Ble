@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+using Darp.Ble.Backends;
 using Darp.Ble.Data;
 
 namespace Darp.Ble.Gap;
@@ -78,6 +80,7 @@ public sealed class GapAdvertisement : IGapAdvertisement
     /// <param name="directAddress"> The address of the device the advertisement is directed to </param>
     /// <param name="data"> The data sections of the whole advertisement </param>
     /// <returns> The advertisement </returns>
+    [Experimental(Experiments.Backends)]
     public static GapAdvertisement Create(
         DateTimeOffset timestamp,
         BleEventType eventType,

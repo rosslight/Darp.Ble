@@ -1,9 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
 
 namespace Darp.Ble.Backends;
 
 /// <summary> One advertising set. The core serializes the calls of a set and only changes parameters while it is stopped </summary>
+[Experimental(Experiments.Backends)]
 public interface IAdvertisingSetDriver : IAsyncDisposable
 {
     /// <summary> The address the set advertises with </summary>

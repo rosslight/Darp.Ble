@@ -1,8 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Connections;
 
 namespace Darp.Ble.Backends;
 
 /// <summary> Receives the events of one connection. Calls must stay cheap; the core does its work elsewhere </summary>
+[Experimental(Experiments.Backends)]
 public interface IConnectionSink
 {
     /// <summary> Reports that the link ended without this app asking for it </summary>

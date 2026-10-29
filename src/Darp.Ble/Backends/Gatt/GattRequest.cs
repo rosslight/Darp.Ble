@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Connections;
 
 namespace Darp.Ble.Backends;
@@ -7,6 +8,7 @@ namespace Darp.Ble.Backends;
 /// A request takes one or more ATT transactions, e.g. discovery page by page, and reports each one, so the core can time out
 /// a peer that stops answering. A write without response has no transaction and gets its tokens directly
 /// </remarks>
+[Experimental(Experiments.Backends)]
 public sealed class GattRequest
 {
     private readonly RequestQueue _queue;
