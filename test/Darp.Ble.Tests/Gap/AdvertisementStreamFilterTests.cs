@@ -42,6 +42,18 @@ public sealed class AdvertisementStreamFilterTests
     }
 
     [Fact]
+    public async Task WhereAddress_WithAnAddressWithoutItsType_KeepsItsValueOfAnyType()
+    {
+        BleAddress parsed = BleAddress.Parse("00:00:00:00:00:01", provider: null);
+
+        IGapAdvertisement[] result = await All.ToAsyncEnumerable()
+            .WhereAddress(parsed)
+            .ToArrayAsync(TestContext.Current.CancellationToken);
+
+        result.ShouldBe([HeartRateSensor, ScanResponse]);
+    }
+
+    [Fact]
     public async Task EventFilters_KeepTheirEventType()
     {
         CancellationToken token = TestContext.Current.CancellationToken;

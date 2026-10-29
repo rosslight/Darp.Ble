@@ -2,6 +2,7 @@ using System.Buffers.Binary;
 using Darp.BinaryObjects;
 using Darp.Ble.Connections;
 using Darp.Ble.Data;
+using Darp.Ble.Gap;
 using Darp.Ble.Gatt;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload;
@@ -31,6 +32,62 @@ public sealed class CentralTests
         connection.MaxWritePayloadLength.ShouldBe(62);
         (await connection.Disconnected).Reason.ShouldBe(DisconnectReason.LocalRequest);
         await Verifier.Verify(controller.Messages);
+    }
+
+    [Fact]
+    public async Task AnAddressWithoutItsType_ConnectsWithTheTypeItWasHeardWith()
+    {
+        await using var controller = new FakeController();
+        controller.Answer(
+            HciOpCode.HCI_LE_Create_Connection_Cancel,
+            _ =>
+                [
+                    HciMessage.CommandCompleteEventToHost("010E2000"),
+                    HciAdapter.ConnectionComplete(0, HciCommandStatus.UnknownConnectionIdentifier),
+                ]
+        );
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+        // A legacy report from the random address EE:66:19:91:C4:15
+        await using (
+            IAsyncEnumerator<IGapAdvertisement> scan = adapter.Observer.ScanAsync(Token).GetAsyncEnumerator(Token)
+        )
+        {
+            ValueTask<bool> next = scan.MoveNextAsync();
+            await controller.WaitForCommandAsync(HciOpCode.HCI_LE_Set_Extended_Scan_Enable);
+            await controller.PushAsync(
+                HciMessage.LeEventToHost("0D0110000115C4911966EE0100FF7FB40000FF0000000000000807FF4C0012020000")
+            );
+            (await next).ShouldBeTrue();
+        }
+        using var cancel = CancellationTokenSource.CreateLinkedTokenSource(Token);
+
+        Task<ConnectedPeripheral> connecting = adapter.Central.ConnectAsync(
+            BleAddress.Parse("EE:66:19:91:C4:15", provider: null),
+            cancellationToken: cancel.Token
+        );
+        HciMessage command = await controller.WaitForCommandAsync(HciOpCode.HCI_LE_Extended_Create_Connection_V1);
+        await cancel.CancelAsync();
+
+        // After the opcode and the length: Initiator_Filter_Policy, Own_Address_Type, then Peer_Address_Type
+        command.PduBytes[5].ShouldBe((byte)BleAddressType.Random);
+        await Should.ThrowAsync<OperationCanceledException>(connecting);
+    }
+
+    [Fact]
+    public async Task AnAddressWithoutItsType_ThatWasNeverHeard_IsUnreachable()
+    {
+        await using var controller = new FakeController();
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+
+        BleConnectException exception = await Should.ThrowAsync<BleConnectException>(
+            adapter.Central.ConnectAsync(
+                BleAddress.Parse("11:22:33:44:55:66", provider: null),
+                cancellationToken: Token
+            )
+        );
+
+        exception.Kind.ShouldBe(BleConnectErrorKind.Unreachable);
+        controller.Commands.ShouldNotContain(HciOpCode.HCI_LE_Extended_Create_Connection_V1);
     }
 
     [Fact]

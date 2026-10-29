@@ -3823,6 +3823,7 @@ Darp.Ble.Data.BleAddress.Equals(Darp.Ble.Data.BleAddress? other) -> bool
 Darp.Ble.Data.BleAddress.Equals(Darp.Ble.Data.UInt48 other) -> bool
 Darp.Ble.Data.BleAddress.Equals(ulong other) -> bool
 Darp.Ble.Data.BleAddress.RandomKind.get -> Darp.Ble.Data.BleRandomAddressKind?
+Darp.Ble.Data.BleAddress.ToString(string? format, System.IFormatProvider? formatProvider) -> string!
 Darp.Ble.Data.BleAddress.Type.get -> Darp.Ble.Data.BleAddressType
 Darp.Ble.Data.BleAddress.Type.init -> void
 Darp.Ble.Data.BleAddress.Value.get -> Darp.Ble.Data.UInt48

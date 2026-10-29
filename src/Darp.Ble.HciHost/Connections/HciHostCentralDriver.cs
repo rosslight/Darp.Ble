@@ -6,6 +6,7 @@ using Darp.Ble.Hci.Host;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Result;
+using Darp.Ble.HciHost.Gap;
 
 namespace Darp.Ble.HciHost.Connections;
 
@@ -15,11 +16,12 @@ namespace Darp.Ble.HciHost.Connections;
     "CA1001:Types that own disposable fields should be disposable",
     Justification = "The semaphore never creates its wait handle"
 )]
-internal sealed class HciHostCentralDriver(HciDevice device) : ICentralDriver
+internal sealed class HciHostCentralDriver(HciDevice device, HciHostObserverDriver observer) : ICentralDriver
 {
     private static readonly TimeSpan MinSupervisionTimeout = TimeSpan.FromMilliseconds(720);
 
     private readonly HciDevice _device = device;
+    private readonly HciHostObserverDriver _observer = observer;
 
     // The controller initiates one connection at a time; further attempts wait for their turn.
     // Without its wait handle the semaphore holds nothing to dispose
@@ -34,6 +36,19 @@ internal sealed class HciHostCentralDriver(HciDevice device) : ICentralDriver
         CancellationToken cancellationToken
     )
     {
+        // The controller needs the address type; an address without it, e.g. parsed from text, takes the type it was heard with
+        if (address.Type is BleAddressType.NotAvailable)
+        {
+            address = _observer.TypeOf(address.Value) is { } type
+                ? address with
+                {
+                    Type = type,
+                }
+                : throw new BleConnectException(
+                    BleConnectErrorKind.Unreachable,
+                    $"The address type of {address} is unknown; scan until the device is heard, then connect"
+                );
+        }
         ushort interval = HciTiming.ToConnectionIntervalUnits(
             parameters.ConnectionInterval,
             nameof(parameters.ConnectionInterval)
