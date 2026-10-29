@@ -133,7 +133,7 @@ internal sealed class WinRTObserverDriver(Radio radio, TimeProvider timeProvider
                 ((AdTypes)section.DataType, (ReadOnlyMemory<byte>)section.Data.ToArray())
             ),
         ];
-        return GapAdvertisement.FromExtendedAdvertisingReport(
+        return GapAdvertisement.Create(
             timestamp,
             WinRTMapping.ToEventType(report),
             WinRTMapping.ToAddress(report.BluetoothAddress, report.BluetoothAddressType),

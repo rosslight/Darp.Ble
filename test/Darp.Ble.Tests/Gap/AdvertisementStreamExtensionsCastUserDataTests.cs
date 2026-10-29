@@ -1,3 +1,4 @@
+using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
 using Shouldly;
 
@@ -11,10 +12,8 @@ public sealed class AdvertisementStreamExtensionsCastUserDataTests
 
     private sealed class Dog : Animal, ICreature;
 
-    private const string ReportHex = "130000FFEEDDCCBBAA0100FF7FD80000FF0000000000000702011A0303AABB";
-
     private static GapAdvertisement CreateBaseAdvertisement() =>
-        GapAdvertisement.FromExtendedAdvertisingReport(DateTimeOffset.UtcNow, ReportHex.ToByteArray());
+        GapAdvertisementTests.Create(AdvertisingData.From([(AdTypes.Flags, [0x1A])]));
 
     [Fact]
     public async Task CastUserData_WhenAlreadyGeneric_ShouldPassThroughSameInstance()
@@ -46,7 +45,7 @@ public sealed class AdvertisementStreamExtensionsCastUserDataTests
 
         // Assert
         result.UserData.ShouldBe(12345);
-        result.AsReadOnlyMemory().ShouldBe(advWithObject.AsReadOnlyMemory());
+        result.Data.ShouldBe(advWithObject.Data);
         result.Address.ShouldBe(advWithObject.Address);
         result.EventType.ShouldBe(advWithObject.EventType);
     }
@@ -129,7 +128,7 @@ public sealed class AdvertisementStreamExtensionsCastUserDataTests
 
         // Assert
         result.UserData.ShouldBeAssignableTo<Dog>();
-        result.AsReadOnlyMemory().ShouldBe(adv.AsReadOnlyMemory());
+        result.Data.ShouldBe(adv.Data);
     }
 
     [Fact]

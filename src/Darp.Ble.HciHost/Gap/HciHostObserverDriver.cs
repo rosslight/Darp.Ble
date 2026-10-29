@@ -19,6 +19,10 @@ internal sealed partial class HciHostObserverDriver : IObserverDriver, IDisposab
     private IScanSink? _sink;
     private bool _transportFailed;
 
+    // Used on the read loop only; a new scan's sink starts it afresh
+    private readonly AdvertisingReportAssembler _assembler = new();
+    private IScanSink? _assembledFor;
+
     public HciHostObserverDriver(HciDevice device)
     {
         _device = device;
@@ -93,25 +97,33 @@ internal sealed partial class HciHostObserverDriver : IObserverDriver, IDisposab
             sink = _sink;
         if (sink is null)
             return;
+        if (!ReferenceEquals(sink, _assembledFor))
+        {
+            _assembler.Clear();
+            _assembledFor = sink;
+        }
         DateTimeOffset timestamp = _device.TimeProvider.GetUtcNow();
         foreach (HciLeExtendedAdvertisingReport report in reportEvent.Reports)
         {
+            if (!_assembler.TryEnd(report, out ReadOnlyMemory<byte> data, out sbyte txPower))
+                continue;
             sink.OnReport(
-                GapAdvertisement.FromExtendedAdvertisingReport(
+                GapAdvertisement.Create(
                     timestamp,
-                    (BleEventType)report.EventType,
+                    // Without the data status in bits 5 and 6: the advertisement is whole
+                    (BleEventType)(report.EventType & 0b11111),
                     new BleAddress((BleAddressType)report.AddressType, (Data.UInt48)report.Address.ToUInt64()),
                     (Physical)report.PrimaryPhy,
                     (Physical)report.SecondaryPhy,
                     (AdvertisingSId)report.AdvertisingSId,
-                    (TxPowerLevel)report.TxPower,
+                    (TxPowerLevel)txPower,
                     (Rssi)report.Rssi,
                     (PeriodicAdvertisingInterval)report.PeriodicAdvertisingInterval,
                     new BleAddress(
                         (BleAddressType)report.DirectAddressType,
                         (Data.UInt48)report.DirectAddress.ToUInt64()
                     ),
-                    AdvertisingData.From(report.Data)
+                    AdvertisingData.From(data)
                 )
             );
         }

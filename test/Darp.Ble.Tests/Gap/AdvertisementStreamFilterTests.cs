@@ -79,7 +79,7 @@ public sealed class AdvertisementStreamFilterTests
     }
 
     private static GapAdvertisement Create(ulong address, BleEventType eventType, AdvertisingData data) =>
-        GapAdvertisement.FromExtendedAdvertisingReport(
+        GapAdvertisement.Create(
             DateTimeOffset.UnixEpoch,
             eventType,
             new BleAddress(BleAddressType.Public, (UInt48)address),
