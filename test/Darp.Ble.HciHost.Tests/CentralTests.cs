@@ -7,6 +7,7 @@ using Darp.Ble.Gatt;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Att;
+using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.HciHost.Verify;
 using Microsoft.Extensions.Time.Testing;
 using Shouldly;
@@ -203,8 +204,11 @@ public sealed class CentralTests
         exception.NativeCode.ShouldBe(0x0C);
     }
 
-    [Fact]
-    public async Task AnAttemptTheControllerGivesUp_IsUnreachable()
+    // Of a failed event only the status is valid, so its role may be anything
+    [Theory]
+    [InlineData(HciLeConnectionRole.Central)]
+    [InlineData(HciLeConnectionRole.Peripheral)]
+    public async Task AnAttemptTheControllerGivesUp_IsUnreachable(HciLeConnectionRole role)
     {
         await using var controller = new FakeController();
         await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
@@ -212,7 +216,11 @@ public sealed class CentralTests
         await controller.WaitForCommandAsync(HciOpCode.HCI_LE_Extended_Create_Connection_V1);
 
         await controller.PushAsync(
-            HciAdapter.ConnectionComplete(0, HciCommandStatus.ConnectionFailedToBeEstablishedOrSynchronizationTimeout)
+            HciAdapter.ConnectionComplete(
+                0,
+                HciCommandStatus.ConnectionFailedToBeEstablishedOrSynchronizationTimeout,
+                role
+            )
         );
 
         BleConnectException exception = await Should.ThrowAsync<BleConnectException>(connecting);
