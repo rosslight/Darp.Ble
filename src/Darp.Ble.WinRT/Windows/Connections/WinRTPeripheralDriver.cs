@@ -7,6 +7,7 @@ using Darp.Ble.WinRT.Gatt;
 using Microsoft.Extensions.Logging;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.GenericAttributeProfile;
+using Windows.Devices.Radios;
 
 namespace Darp.Ble.WinRT.Connections;
 
@@ -14,9 +15,10 @@ namespace Darp.Ble.WinRT.Connections;
 /// Hosting on Windows. Windows owns the GAP, GATT, Device Information and Scan Parameters services, so adding
 /// those fails. Windows serves a service only while it advertises it, so added services are live while a connectable
 /// advertising set runs. A central becomes known through its first request or subscription; Windows has no event for a
-/// connection alone, and this app cannot take a central's link down, only end its own part
+/// connection alone, and this app cannot take a central's link down, only end its own part. When the radio turns off and
+/// on again, Windows advertises the services again by itself
 /// </summary>
-internal sealed class WinRTPeripheralDriver(ILogger logger) : IPeripheralDriver, IDisposable
+internal sealed class WinRTPeripheralDriver(Radio radio, ILogger logger) : IPeripheralDriver, IDisposable
 {
     private static readonly HashSet<BleUuid> Reserved =
     [
@@ -26,6 +28,7 @@ internal sealed class WinRTPeripheralDriver(ILogger logger) : IPeripheralDriver,
         BleUuid.FromUInt16(0x1813),
     ];
 
+    private readonly Radio _radio = radio;
     private readonly Lock _lock = new();
 
     // Resolving and announcing a central, and ending it, happen under this lock: no callback sees a central the core
@@ -60,6 +63,9 @@ internal sealed class WinRTPeripheralDriver(ILogger logger) : IPeripheralDriver,
         await _adding.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            // An advertised service starts advertising at once, which waits silently while the radio is off
+            if (_connectableSets > 0)
+                WinRTRadio.ThrowIfOff(_radio);
             WinRTHostedService? hosted = await WinRTHostedService
                 .CreateAsync(this, service, cancellationToken)
                 .ConfigureAwait(false);
@@ -102,6 +108,8 @@ internal sealed class WinRTPeripheralDriver(ILogger logger) : IPeripheralDriver,
         await _adding.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            if (advertised)
+                WinRTRadio.ThrowIfOff(_radio);
             int sets = Math.Max(0, _connectableSets + (advertised ? 1 : -1));
             WinRTHostedService[] services;
             lock (_lock)

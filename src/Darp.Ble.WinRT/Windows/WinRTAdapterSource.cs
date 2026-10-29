@@ -31,6 +31,6 @@ internal sealed class WinRTAdapterSource : IBleAdapterSource
                 isTransient: true
             );
         }
-        return new WinRTAdapterDriver(adapter, context);
+        return new WinRTAdapterDriver(adapter, radio, context);
     }
 }

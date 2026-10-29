@@ -4,6 +4,7 @@ using Darp.Ble.WinRT.Connections;
 using Darp.Ble.WinRT.Gap;
 using Microsoft.Extensions.Logging;
 using Windows.Devices.Bluetooth;
+using Windows.Devices.Radios;
 
 namespace Darp.Ble.WinRT;
 
@@ -15,15 +16,15 @@ internal sealed class WinRTAdapterDriver : IBleAdapterDriver
     private readonly WinRTPeripheralDriver? _peripheral;
     private readonly WinRTBroadcasterDriver? _broadcaster;
 
-    public WinRTAdapterDriver(BluetoothAdapter adapter, BleBackendContext context)
+    public WinRTAdapterDriver(BluetoothAdapter adapter, Radio radio, BleBackendContext context)
     {
-        _observer = new WinRTObserverDriver(context.TimeProvider);
+        _observer = new WinRTObserverDriver(radio, context.TimeProvider);
         RandomAddress = new BleAddress(BleAddressType.Public, (UInt48)adapter.BluetoothAddress);
         if (adapter.IsCentralRoleSupported)
             _central = new WinRTCentralDriver();
         ILogger logger = context.LoggerFactory.CreateLogger<WinRTAdapterDriver>();
         if (adapter.IsPeripheralRoleSupported)
-            _peripheral = new WinRTPeripheralDriver(logger);
+            _peripheral = new WinRTPeripheralDriver(radio, logger);
         // The peripheral role includes the broadcaster; without it, advertising needs offloading
         if (adapter.IsPeripheralRoleSupported || adapter.IsAdvertisementOffloadSupported)
             _broadcaster = new WinRTBroadcasterDriver(_peripheral, logger);

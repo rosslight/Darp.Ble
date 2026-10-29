@@ -5,21 +5,25 @@ using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
 using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.Advertisement;
+using Windows.Devices.Radios;
 
 namespace Darp.Ble.WinRT.Gap;
 
 /// <summary>
 /// One watcher per radio scan. Windows chooses scan interval and window itself; only the scan type applies.
-/// Each scan's callbacks belong to its own watcher, so a stopped scan never reports into the next one
+/// Each scan's callbacks belong to its own watcher, so a stopped scan never reports into the next one.
+/// When the radio turns off, Windows stops the watcher for good, so the scan fails
 /// </summary>
-internal sealed class WinRTObserverDriver(TimeProvider timeProvider) : IObserverDriver, IAsyncDisposable
+internal sealed class WinRTObserverDriver(Radio radio, TimeProvider timeProvider) : IObserverDriver, IAsyncDisposable
 {
+    private readonly Radio _radio = radio;
     private readonly TimeProvider _timeProvider = timeProvider;
     private Run? _run;
 
     public Task StartScanAsync(BleScanParameters parameters, IScanSink sink, CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        WinRTRadio.ThrowIfOff(_radio);
         var watcher = new BluetoothLEAdvertisementWatcher
         {
             ScanningMode =
@@ -72,10 +76,26 @@ internal sealed class WinRTObserverDriver(TimeProvider timeProvider) : IObserver
         )
         {
             _stopped.TrySetResult();
-            if (_detached || args.Error is BluetoothError.Success)
+            // A stop this driver asked for detached the run first; any other stop ends the scan
+            if (_detached)
                 return;
             _detached = true;
-            sink.OnFailed(new BleException($"Windows stopped scanning: {args.Error}"));
+            sink.OnFailed(
+                args.Error is BluetoothError.Success
+                    // Windows reports no error when the radio turns off
+                    ? new BleException(
+                        "Windows stopped scanning; the Bluetooth radio may be off",
+                        isTransient: true,
+                        nativeCode: null,
+                        innerException: null
+                    )
+                    : new BleException(
+                        $"Windows stopped scanning: {args.Error}",
+                        isTransient: args.Error is BluetoothError.RadioNotAvailable,
+                        nativeCode: null,
+                        innerException: null
+                    )
+            );
         }
 
         /// <summary> Stop only asks the watcher to stop; it has stopped once it reports so </summary>

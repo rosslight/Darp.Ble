@@ -5,21 +5,27 @@ using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gap;
 using Darp.Ble.WinRT.Connections;
 using Microsoft.Extensions.Logging;
+using Windows.Devices.Bluetooth;
 using Windows.Devices.Bluetooth.Advertisement;
 
 namespace Darp.Ble.WinRT.Gap;
 
-/// <summary> One advertising set; the core serializes its calls and changes parameters only while it is stopped </summary>
+/// <summary>
+/// One advertising set; the core serializes its calls and changes parameters only while it is stopped. Windows aborts a
+/// running publisher for good when the radio turns off; the set reports that to the core
+/// </summary>
 internal sealed class WinRTAdvertisingSetDriver(
     WinRTPeripheralDriver? peripheral,
     AdvertisingParameters parameters,
     AdvertisingData data,
+    IAdvertisingSetSink sink,
     ILogger logger
 ) : IAdvertisingSetDriver
 {
 #pragma warning disable CA2213 // The adapter owns the peripheral
     private readonly WinRTPeripheralDriver? _peripheral = peripheral;
 #pragma warning restore CA2213
+    private readonly IAdvertisingSetSink _sink = sink;
     private readonly ILogger _logger = logger;
 
     // The core serializes the calls, so the fields below need no lock
@@ -47,7 +53,10 @@ internal sealed class WinRTAdvertisingSetDriver(
             _servicesAdvertised = true;
             return;
         }
-        _publisher = await StartPublisherAsync(cancellationToken).ConfigureAwait(false);
+        // The core starts only a stopped set, so a publisher still here was aborted and reported; a late duplicate of
+        // that report must not reach the new run
+        _publisher = null;
+        Publish(await StartPublisherAsync(cancellationToken).ConfigureAwait(false));
     }
 
     /// <summary> A publisher with the current data, once Windows advertises it; a failed start leaves nothing running </summary>
@@ -59,6 +68,7 @@ internal sealed class WinRTAdvertisingSetDriver(
         try
         {
             await started.ConfigureAwait(false);
+            publisher.StatusChanged += OnRunningStatusChanged;
             return publisher;
         }
         catch
@@ -91,8 +101,9 @@ internal sealed class WinRTAdvertisingSetDriver(
     }
 
     /// <summary> Once asked to stop, Windows stops, so the wait for it is not cancellable: the set never looks advertising when it is not </summary>
-    private static async Task StopPublisherAsync(BluetoothLEAdvertisementPublisher publisher)
+    private async Task StopPublisherAsync(BluetoothLEAdvertisementPublisher publisher)
     {
+        publisher.StatusChanged -= OnRunningStatusChanged;
         if (
             publisher.Status
             is not BluetoothLEAdvertisementPublisherStatus.Started
@@ -122,7 +133,8 @@ internal sealed class WinRTAdvertisingSetDriver(
             );
         AdvertisingData previous = _data;
         _data = data;
-        if (_publisher is not { } running)
+        // An aborted publisher was reported to the core as stopped; the data apply at the next start
+        if (_publisher is not { Status: not BluetoothLEAdvertisementPublisherStatus.Aborted } running)
             return;
         BluetoothLEAdvertisementPublisher started;
         try
@@ -134,7 +146,7 @@ internal sealed class WinRTAdvertisingSetDriver(
             _data = previous;
             throw;
         }
-        _publisher = started;
+        Publish(started);
         // The new data apply already; the old publisher only has to go
         await StopPublisherAsync(running).ConfigureAwait(false);
     }
@@ -169,6 +181,42 @@ internal sealed class WinRTAdvertisingSetDriver(
         return publisher;
     }
 
+    /// <summary> Makes a started publisher the set's; an abort it ignored while it was not the set's yet is reported now </summary>
+    private void Publish(BluetoothLEAdvertisementPublisher publisher)
+    {
+        _publisher = publisher;
+        if (publisher.Status is BluetoothLEAdvertisementPublisherStatus.Aborted)
+            ReportAborted(publisher, null);
+    }
+
+    /// <summary> Only a started publisher has this handler, and a stop the core asks for removes it first </summary>
+    private void OnRunningStatusChanged(
+        BluetoothLEAdvertisementPublisher sender,
+        BluetoothLEAdvertisementPublisherStatusChangedEventArgs args
+    )
+    {
+        if (args.Status is BluetoothLEAdvertisementPublisherStatus.Aborted)
+            ReportAborted(sender, args.Error);
+    }
+
+    /// <summary> A publisher this set replaced, or has not taken yet, reports nothing for the current one </summary>
+    private void ReportAborted(BluetoothLEAdvertisementPublisher publisher, BluetoothError? error)
+    {
+        if (!ReferenceEquals(publisher, _publisher))
+            return;
+        publisher.StatusChanged -= OnRunningStatusChanged;
+        _sink.OnFailed(Stopped(error));
+    }
+
+    /// <summary> Without an error, Windows aborted the publisher before the set took it; Windows reports no reason then </summary>
+    private static BleException Stopped(BluetoothError? error) =>
+        new(
+            error is null ? "Windows stopped advertising" : $"Windows stopped advertising: {error}",
+            isTransient: error is null or BluetoothError.RadioNotAvailable,
+            nativeCode: null,
+            innerException: null
+        );
+
     /// <summary> Waits for the publisher's status; Aborted fails with Windows' error </summary>
     private static async Task WaitForAsync(
         BluetoothLEAdvertisementPublisher publisher,
@@ -185,7 +233,7 @@ internal sealed class WinRTAdvertisingSetDriver(
             if (args.Status == status)
                 reached.TrySetResult();
             else if (args.Status is BluetoothLEAdvertisementPublisherStatus.Aborted)
-                reached.TrySetException(new BleException($"Windows stopped advertising: {args.Error}"));
+                reached.TrySetException(Stopped(args.Error));
         }
         publisher.StatusChanged += OnChanged;
         try

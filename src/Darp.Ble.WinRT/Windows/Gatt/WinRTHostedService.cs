@@ -44,7 +44,12 @@ internal sealed class WinRTHostedService : IDisposable
             .AsTask(cancellationToken)
             .ConfigureAwait(false);
         if (result.Error is not BluetoothError.Success)
-            throw new BleException($"Windows could not create the service {definition.Uuid}: {result.Error}");
+            throw new BleException(
+                $"Windows could not create the service {definition.Uuid}: {result.Error}",
+                isTransient: result.Error is BluetoothError.RadioNotAvailable,
+                nativeCode: null,
+                innerException: null
+            );
         var service = new WinRTHostedService(peripheral, result.ServiceProvider);
         try
         {
