@@ -58,6 +58,7 @@ Span names are message templates; values are only in tags. A cancelled operation
 | 1200 | AdvertisingStarted | Debug | Advertising set {Address} started |
 | 1201 | AdvertisingStopped | Debug | Advertising set {Address} stopped |
 | 1202 | AdvertisingRestartFailed | Warning | Advertising set {Address} could not start again after its central disconnected |
+| 1203 | AdvertisingFailed | Warning | Advertising set {Address} stopped because of an error |
 | 1300 | Connecting | Debug | Connecting to {Address} |
 | 1301 | Connected | Debug | Connected to {Address} |
 | 1302 | ConnectFailed | Warning | Connecting to {Address} failed: {Kind} |

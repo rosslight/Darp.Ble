@@ -103,6 +103,14 @@ internal static partial class Logging
     );
 
     [LoggerMessage(
+        EventId = 1203,
+        EventName = "AdvertisingFailed",
+        Level = LogLevel.Warning,
+        Message = "Advertising set {Address} stopped because of an error"
+    )]
+    public static partial void LogAdvertisingFailed(this ILogger logger, BleAddress address, Exception exception);
+
+    [LoggerMessage(
         EventId = 1300,
         EventName = "Connecting",
         Level = LogLevel.Debug,

@@ -116,6 +116,23 @@ public sealed class BleBroadcasterTests
     }
 
     [Fact]
+    public async Task StartAsync_AfterTheBackendStoppedTheSet_StartsItAgain()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        AdvertisingSet set = await adapter.Broadcaster.StartAdvertisingAsync(
+            AdvertisingData.Empty,
+            TimeSpan.FromSeconds(1),
+            cancellationToken: Token
+        );
+        TestAdvertisingSetDriver driver = _driver.Sets.ShouldHaveSingleItem();
+
+        driver.Sink.OnFailed(new BleException("The radio turned off"));
+        await set.StartAsync(Token);
+
+        driver.Calls.ShouldBe(["start", "start"]);
+    }
+
+    [Fact]
     public async Task SetAdvertisingDataAsync_WhenTheDriverRejectsIt_KeepsTheOldData()
     {
         await using BleAdapter adapter = await OpenAsync();

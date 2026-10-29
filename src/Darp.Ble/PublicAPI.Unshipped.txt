@@ -28,6 +28,7 @@ Darp.Ble.Backends.IAdvertisingSetDriver.SetScanResponseDataAsync(Darp.Ble.Gap.Ad
 Darp.Ble.Backends.IAdvertisingSetDriver.StartAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Darp.Ble.Backends.IAdvertisingSetDriver.StopAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Darp.Ble.Backends.IAdvertisingSetSink
+Darp.Ble.Backends.IAdvertisingSetSink.OnFailed(Darp.Ble.BleException! error) -> void
 Darp.Ble.Backends.IAdvertisingSetSink.OnStoppedByConnection(Darp.Ble.Backends.ICentralConnectionDriver! central) -> void
 Darp.Ble.Backends.IBleAdapterDriver
 Darp.Ble.Backends.IBleAdapterDriver.Broadcaster.get -> Darp.Ble.Backends.IBroadcasterDriver?

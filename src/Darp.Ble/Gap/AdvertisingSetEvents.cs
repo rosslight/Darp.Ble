@@ -11,4 +11,6 @@ internal sealed class AdvertisingSetEvents : IAdvertisingSetSink
 
     public void OnStoppedByConnection(ICentralConnectionDriver central) =>
         Volatile.Read(ref _set)?.OnStoppedByConnection(central);
+
+    public void OnFailed(BleException error) => Volatile.Read(ref _set)?.OnFailed(error);
 }

@@ -24,7 +24,7 @@ internal sealed class TestBroadcasterDriver : IBroadcasterDriver
     {
         if (HoldCreation is not null)
             await HoldCreation.Task.ConfigureAwait(false);
-        var set = new TestAdvertisingSetDriver(this);
+        var set = new TestAdvertisingSetDriver(this, sink);
         Sets.Add(set);
         return set;
     }

@@ -9,7 +9,8 @@ namespace Darp.Ble.Gap;
 /// <summary> An advertising set: what an adapter advertises, and how </summary>
 /// <remarks>
 /// Its operations run one at a time. Its state changes only after the backend accepted a change.
-/// A central that connects through the set stops it; with autoRestart the set starts again once that central disconnected
+/// A central that connects through the set stops it; with autoRestart the set starts again once that central disconnected.
+/// A set the backend stopped because of an error, e.g. the radio turned off, stays stopped until it is started again
 /// </remarks>
 [SuppressMessage(
     "Usage",
@@ -259,6 +260,18 @@ public sealed class AdvertisingSet : IAsyncDisposable
         _logger.LogAdvertisingStopped(RandomAddress);
         if (restart is not null)
             _ = RestartAfterDisconnectAsync(central, restart);
+    }
+
+    /// <summary> The backend stopped the set because of an error. Called on the driver's thread </summary>
+    internal void OnFailed(BleException error)
+    {
+        lock (_lock)
+        {
+            if (!_isAdvertising)
+                return;
+            _isAdvertising = false;
+        }
+        _logger.LogAdvertisingFailed(RandomAddress, error);
     }
 
     /// <summary> Starts the set again once the central disconnected, unless a command or disposal cancelled the restart </summary>
