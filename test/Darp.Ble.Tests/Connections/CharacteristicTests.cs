@@ -87,6 +87,37 @@ public sealed class CharacteristicTests
     }
 
     [Fact]
+    public async Task AWriteAndAWriteWithoutResponseAfterIt_ReachTheHandlerInCallOrder()
+    {
+        var order = new List<byte>();
+        await using BleAdapter adapter = await OpenAsync(service =>
+            service.AddCharacteristic(
+                LevelUuid,
+                GattProperty.Write | GattProperty.WriteWithoutResponse,
+                onWrite: (_, value, _) =>
+                {
+                    lock (order)
+                        order.Add(value.Span[0]);
+                    return ValueTask.FromResult(GattProtocolStatus.Success);
+                }
+            )
+        );
+        RemoteGattCharacteristic level = await DiscoverAsync(adapter, LevelUuid);
+
+        for (byte i = 0; i < 100; i += 2)
+        {
+            Task request = level.WriteAsync(new[] { i }, Token);
+            await level.WriteWithoutResponseAsync(new[] { (byte)(i + 1) }, Token);
+            await request;
+        }
+        // The last write without response has no answer to wait for
+        await level.WriteAsync(new byte[] { 100 }, Token);
+
+        lock (order)
+            order.ShouldBe(Enumerable.Range(0, 101).Select(i => (byte)i));
+    }
+
+    [Fact]
     public async Task AWriteWithoutResponseLongerThanTheMaxWritePayload_IsRejected_WithoutReachingThePeripheral()
     {
         var written = new TaskCompletionSource<byte[]>();
