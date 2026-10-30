@@ -1,5 +1,3 @@
-using Darp.Ble.Data;
-
 namespace Darp.Ble.Gatt;
 
 /// <summary> The ble property </summary>

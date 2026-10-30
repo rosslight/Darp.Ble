@@ -25,28 +25,22 @@ This package is under heavy development. Huge changes to the API are to be expec
 
 ## Features
 
-### Initialize BLE device
+### Open an adapter
 
-To get a BleDevice, you will need a BleManager. When creating it implementation specific factories are registered.
-`EnumerateDevices` then looks through all defined implementations, yields them to the user and allows for device selection.
-Enumerating the devices does not connect to it yet.
-
-This is done when calling `InitializeAsync`. After that, the device will be usable.
-To release resources call `DisposeAsync`.
+A `BleManager` lists the adapters of the backends you register. Opening one returns a ready `BleAdapter`, or throws a `BleOpenException` whose `Kind` says why (`NotAvailable`, `Disabled`, `MissingPermission`).
+You own the adapter: disposing it closes it.
 
 ```csharp
-var bleManager = new BleManagerBuilder()
-    .AddWinRT()
-    .AddSerialHciHost())
-    .CreateManager();
+var bleManager = new BleManager(builder => builder.AddMock());
 
-var bleDevice = bleManager.EnumerateDevices().First();
-await bleDevice.InitializeAsync();
-
-...
-
-await bleDevice.DisposeAsync();
+IReadOnlyList<BleAdapterInfo> adapters = await bleManager.EnumerateAdaptersAsync();
+await using BleAdapter adapter = await adapters[0].OpenAsync();
 ```
+
+With dependency injection, `services.AddBleManager(builder => builder.AddMock())` registers the same manager and uses the container's `ILoggerFactory` and `TimeProvider`.
+For unit tests, `await MockBle.OpenAdapterAsync()` opens a mock adapter in one line.
+
+The [examples](examples) are single-file programs for one task each, e.g. `dotnet run examples/list-adapters.cs`.
 
 ### Observer
 

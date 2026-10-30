@@ -6,14 +6,27 @@
     <IsAotCompatible>true</IsAotCompatible>
     <Authors>rosslight GmbH</Authors>
     <Description>Abstraction for BLE implementations</Description>
+    <IsPackable>true</IsPackable>
     <PackageProjectUrl>https://github.com/rosslight/Darp.Ble</PackageProjectUrl>
     <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <!-- The PDB travels inside the DLL, so debuggers get the Source Link data from either feed -->
+    <DebugType>embedded</DebugType>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>BLE,communication,near-field,nordic,nrf52840,hci,windows,android</PackageTags>
     <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
     <!-- Version applied to all the packages. Automatically updated by release-please -->
     <Version>2.0.0-preview</Version>
   </PropertyGroup>
+  <!-- Public API tracking: every change to the public surface shows up in PublicAPI.*.txt and must be declared there -->
+  <PropertyGroup>
+    <WarningsAsErrors>$(WarningsAsErrors);RS0016;RS0017;RS0036;RS0037</WarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.PublicApiAnalyzers" PrivateAssets="all" />
+    <AdditionalFiles Include="PublicAPI.Shipped.txt" />
+    <AdditionalFiles Include="PublicAPI.Unshipped.txt" />
+  </ItemGroup>
   <ItemGroup>
     <None Include="../../README.md" Pack="true" PackagePath="/"/>
     <None Include="../../LICENSE.md" Pack="true" PackagePath="/"/>

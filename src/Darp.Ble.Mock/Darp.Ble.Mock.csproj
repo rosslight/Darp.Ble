@@ -8,7 +8,5 @@
   </ItemGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="Darp.Ble.Tests" />
-    <InternalsVisibleTo Include="Darp.Ble.Mock.Tests" />
-    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
   </ItemGroup>
 </Project>

@@ -1,43 +1,26 @@
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Darp.Ble;
 
-/// <summary> Extensions setting up the BleManager with DI </summary>
+/// <summary> Registers the <see cref="BleManager"/> in a service collection </summary>
 public static class BleManagerServiceCollectionExtensions
 {
-    /// <summary> Add a ble manager to the DI container and provide an action to configure it </summary>
-    /// <param name="services"> The service collection to add to </param>
-    /// <param name="configure"> The callback to configure the BleManager </param>
-    /// <returns> The <see cref="IServiceCollection"/> so that additional calls can be chained. </returns>
+    /// <summary> Registers a singleton <see cref="BleManager"/> </summary>
+    /// <param name="services"> The service collection </param>
+    /// <param name="configure"> Adds backends, e.g. <c>builder => builder.AddMock()</c> </param>
+    /// <returns> The service collection </returns>
+    /// <remarks> The manager uses the container's <see cref="ILoggerFactory"/> and <see cref="TimeProvider"/> when they are registered </remarks>
     public static IServiceCollection AddBleManager(
         this IServiceCollection services,
         Action<BleManagerBuilder> configure
     )
     {
-        return services.AddBleManager((_, builder) => configure(builder));
-    }
-
-    /// <summary> Add a ble manager to the DI container and provide an action to configure it with an additional IServiceProvider </summary>
-    /// <param name="services"> The service collection to add to </param>
-    /// <param name="configure"> The callback to configure the BleManager </param>
-    /// <returns> The <see cref="IServiceCollection"/> so that additional calls can be chained. </returns>
-    public static IServiceCollection AddBleManager(
-        this IServiceCollection services,
-        Action<IServiceProvider, BleManagerBuilder> configure
-    )
-    {
-        // Set defaults for logging if not already set
-        services.TryAddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
-        services.TryAdd(ServiceDescriptor.Singleton(typeof(ILogger<>), typeof(Logger<>)));
-
-        return services.AddSingleton(provider =>
-        {
-            var builder = new BleManagerBuilder(provider);
-            configure.Invoke(provider, builder);
-            return builder.CreateManager();
-        });
+        ArgumentNullException.ThrowIfNull(configure);
+        return services.AddSingleton(provider => new BleManager(
+            configure,
+            provider.GetService<ILoggerFactory>(),
+            provider.GetService<TimeProvider>()
+        ));
     }
 }

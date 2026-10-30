@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Security.Cryptography;
 
 namespace Darp.Ble.Data;
@@ -49,11 +50,25 @@ public sealed record BleAddress : ISpanParsable<BleAddress>, IEquatable<UInt48>,
     /// <summary> Convert the ble address to it's underlying value </summary>
     /// <param name="bleAddress"> The ble address </param>
     /// <returns> The 48 bit address </returns>
-    public static implicit operator UInt48(BleAddress bleAddress) => bleAddress.Value;
+    [SuppressMessage(
+        "Usage",
+        "CA2225:Operator overloads have named alternates",
+        Justification = "Value is the named alternate"
+    )]
+    public static implicit operator UInt48(BleAddress bleAddress)
+    {
+        ArgumentNullException.ThrowIfNull(bleAddress);
+        return bleAddress.Value;
+    }
 
     /// <summary> Convert the 48bit value to a ble address </summary>
     /// <param name="value"> The 48 bit address </param>
     /// <returns> A ble address </returns>
+    [SuppressMessage(
+        "Usage",
+        "CA2225:Operator overloads have named alternates",
+        Justification = "The constructor is the named alternate"
+    )]
     public static explicit operator BleAddress(UInt48 value) => new(value);
 
     /// <summary> Parses a string of suitable format and returns a ble address </summary>
@@ -155,8 +170,11 @@ public sealed record BleAddress : ISpanParsable<BleAddress>, IEquatable<UInt48>,
     /// <summary> Zero BleAddress with type <see cref="BleAddressType.NotAvailable"/> </summary>
     public static BleAddress NotAvailable { get; } = new(BleAddressType.NotAvailable, UInt48.Zero);
 
-    /// <inheritdoc />
-    public override string ToString() => $"{Value:X12}";
+    /// <summary> The address as six hex bytes separated by colons, most significant first, e.g. AA:BB:CC:DD:EE:FF </summary>
+    /// <remarks> <see cref="Parse(string,IFormatProvider?)"/> reads it back without the type </remarks>
+    /// <returns> The formatted address </returns>
+    public override string ToString() =>
+        string.Join(':', Value.ToString("X12", CultureInfo.InvariantCulture).Chunk(2).Select(pair => new string(pair)));
 
     /// <inheritdoc />
     public bool Equals(BleAddress? other)

@@ -1,3 +1,5 @@
+using Darp.Ble.Gap;
+
 namespace Darp.Ble.Data;
 
 /// <summary> The parameters used when configuring a ble scan </summary>

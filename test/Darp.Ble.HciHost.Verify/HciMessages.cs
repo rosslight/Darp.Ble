@@ -1,13 +1,11 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
 using Darp.BinaryObjects;
-using Darp.Ble.Hci;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Att;
 using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.Hci.Payload.Result;
-using UInt48 = Darp.Ble.Hci.Payload.Command.UInt48;
 
 namespace Darp.Ble.HciHost.Verify;
 

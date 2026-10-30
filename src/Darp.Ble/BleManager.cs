@@ -1,15 +1,53 @@
-﻿namespace Darp.Ble;
+using Darp.Ble.Backends;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
-/// <summary> The base manager class. Holds all implementations </summary>
-/// <param name="factories"> All factories to consider when enumerating devices </param>
-/// <param name="serviceProvider"> The service provider </param>
-public sealed class BleManager(IReadOnlyCollection<IBleFactory> factories, IServiceProvider serviceProvider)
+namespace Darp.Ble;
+
+/// <summary> The entry point: lists the adapters of all registered backends </summary>
+public sealed class BleManager
 {
-    private readonly IReadOnlyCollection<IBleFactory> _factories = factories;
-    private readonly IServiceProvider _serviceProvider = serviceProvider;
+    private readonly IBleBackend[] _backends;
+    private readonly BleBackendContext _context;
+    private readonly ILogger _logger;
 
-    /// <summary> Enumerate all implementations for devices </summary>
-    /// <returns> A list of all available devices </returns>
-    public IEnumerable<IBleDevice> EnumerateDevices() =>
-        _factories.SelectMany(x => x.EnumerateDevices(_serviceProvider));
+    /// <summary> Creates a manager with the backends the configuration adds </summary>
+    /// <param name="configure"> Adds backends, e.g. <c>builder => builder.AddMock()</c> </param>
+    /// <param name="loggerFactory"> Creates the library's loggers; no logging when null </param>
+    /// <param name="timeProvider"> The only clock of the library and its backends; the system clock when null </param>
+    public BleManager(
+        Action<BleManagerBuilder> configure,
+        ILoggerFactory? loggerFactory = null,
+        TimeProvider? timeProvider = null
+    )
+    {
+        ArgumentNullException.ThrowIfNull(configure);
+        var builder = new BleManagerBuilder();
+        configure(builder);
+        _backends = builder.Build();
+        _context = new BleBackendContext(
+            loggerFactory ?? NullLoggerFactory.Instance,
+            timeProvider ?? TimeProvider.System
+        );
+        _logger = _context.LoggerFactory.CreateLogger(Logging.Category);
+    }
+
+    /// <summary> Lists the adapters of all backends, in the order the backends were added </summary>
+    /// <param name="cancellationToken"> Cancels the enumeration </param>
+    /// <returns> The adapters that can be opened right now </returns>
+    public async Task<IReadOnlyList<BleAdapterInfo>> EnumerateAdaptersAsync(
+        CancellationToken cancellationToken = default
+    )
+    {
+        List<BleAdapterInfo> adapters = [];
+        foreach (IBleBackend backend in _backends)
+        {
+            IReadOnlyList<IBleAdapterSource> sources = await backend
+                .EnumerateAdaptersAsync(_context, cancellationToken)
+                .ConfigureAwait(false);
+            foreach (IBleAdapterSource source in sources)
+                adapters.Add(new BleAdapterInfo(backend.Name, source, _context, _logger));
+        }
+        return adapters;
+    }
 }
