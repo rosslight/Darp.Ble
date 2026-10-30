@@ -8,14 +8,22 @@ public sealed class BleAdapterInfo
 {
     private readonly IBleAdapterSource _source;
     private readonly BleBackendContext _context;
+    private readonly BleCoreOptions _options;
     private readonly ILogger _logger;
 
-    internal BleAdapterInfo(string backend, IBleAdapterSource source, BleBackendContext context, ILogger logger)
+    internal BleAdapterInfo(
+        string backend,
+        IBleAdapterSource source,
+        BleBackendContext context,
+        BleCoreOptions options,
+        ILogger logger
+    )
     {
         Backend = backend;
         Name = source.Name;
         _source = source;
         _context = context;
+        _options = options;
         _logger = logger;
     }
 
@@ -45,7 +53,7 @@ public sealed class BleAdapterInfo
         // Until the adapter exists, this method owns the driver
         try
         {
-            var adapter = new BleAdapter(Backend, Name, driver, _logger);
+            var adapter = new BleAdapter(Backend, Name, driver, _options, _logger);
             _logger.LogAdapterOpened(Backend, Name);
             return adapter;
         }

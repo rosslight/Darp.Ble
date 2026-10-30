@@ -40,9 +40,9 @@ public interface IGapAdvertisement : IEquatable<IGapAdvertisement>
     /// <summary> The data sections </summary>
     AdvertisingData Data { get; }
 
-    /// <summary> Gives back the advertising report in the layout of a single report of the HCI LE Extended Advertising Report event </summary>
+    /// <summary> The advertising report in the layout of a single report of the HCI LE Extended Advertising Report event </summary>
     /// <remarks>
-    /// The bytes start at Event_Type and do not include the event header.
+    /// The bytes start at Event_Type and do not include the event header. They are read-only; every scan shares them, and the call does not copy.
     /// Only the HCI host receives these bytes from the controller.
     /// Other backends, e.g. WinRT or Android, build them from the values the platform reports.
     /// A value the platform does not report holds its "not available" value,
@@ -50,7 +50,7 @@ public interface IGapAdvertisement : IEquatable<IGapAdvertisement>
     /// Treat the bytes as a received HCI report only if the advertisement came from the HCI host.
     /// </remarks>
     /// <returns> The bytes of the advertising report </returns>
-    byte[] AsByteArray();
+    ReadOnlyMemory<byte> AsReadOnlyMemory();
 }
 
 /// <summary> An advertisement with attached user data </summary>

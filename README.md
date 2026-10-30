@@ -42,27 +42,31 @@ For unit tests, `await MockBle.OpenAdapterAsync()` opens a mock adapter in one l
 
 The [examples](examples) are single-file programs for one task each, e.g. `dotnet run examples/list-adapters.cs`.
 
-### Observer
+### Scan
 
-If the device supports observer mode, use the `Observer` property. The observer works as a connectable observable.
-Subscribe to it to receive events and connect to actually start the scan.
-To stop the scan, dispose of the return of the connection or use `StopScan`.
+`adapter.Observer.ScanAsync()` scans while you enumerate it. Every call has its own queue, so a slow loop only delays itself, and all scans of an adapter share one radio scan.
+Ending the loop, cancelling the token, or disposing the adapter ends the scan. The radio settings belong to the observer and apply to every scan.
 
 ```csharp
-var observer = bleDevice.Observer;
-observer.Configure(new BleScanParameters
-{
-    ScanType = ScanType.Active,
-    ScanInterval = ScanTiming.Ms100,
-    ScanWindow = ScanTiming.Ms100,
-});
-var connectableObservable = observer.Publish();
-connectableObservable.Subscribe(advertisement =>
-{
-    Console.WriteLine($"Received advertisement from {advertisement.Address}");
-});
-var disposable = connectableObservable.Connect();
+await adapter.Observer.ConfigureAsync(new BleScanParameters { ScanType = ScanType.Active });
+
+await foreach (IGapAdvertisement advertisement in adapter.Observer.ScanAsync(cancellationToken).WhereService(0x180D))
+    Console.WriteLine($"{advertisement.Address} {advertisement.Rssi}");
 ```
+
+A queue holds 10,000 advertisements and drops the oldest when full. `ScanAsync(new QueueOptions(capacity, QueueFullMode.Fail), cancellationToken)` changes it for one scan, `builder.ConfigureQueues(...)` for all of them.
+
+### Advertise
+
+`adapter.Broadcaster.StartAdvertisingAsync(data, interval)` starts an advertising set right away; `CreateAdvertisingSetAsync(parameters, data)` creates one to start later. Disposing the set stops advertising.
+
+```csharp
+await using AdvertisingSet advertising = await adapter.Broadcaster.StartAdvertisingAsync(
+    AdvertisingData.Empty.WithCompleteLocalName("Sensor"),
+    interval: TimeSpan.FromMilliseconds(100));
+```
+
+In tests, `AddMock(mock => mock.AddPeripheral(...))` adds simulated peripherals that advertise into the mock adapter's scans.
 
 ### Central
 
