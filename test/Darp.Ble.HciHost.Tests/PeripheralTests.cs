@@ -475,6 +475,41 @@ public sealed class PeripheralTests
         answer.ShouldBe([0x07, Level, 0x00, Level, 0x00]);
     }
 
+    [Fact]
+    public async Task FindByTypeValue_FindsAServiceByItsUuidInEitherWidth()
+    {
+        await using var controller = new FakeController();
+        await using BleAdapter adapter = await HostAsync(controller);
+        var central = new FakeCentral(controller, 0x0001);
+        await central.ConnectAsync();
+        // Primary service 0x2800 with the value Battery 0x180F, as 16 bits and as the 128-bit Bluetooth base UUID
+        byte[] battery128 =
+        [
+            0xFB,
+            0x34,
+            0x9B,
+            0x5F,
+            0x80,
+            0x00,
+            0x00,
+            0x80,
+            0x00,
+            0x10,
+            0x00,
+            0x00,
+            0x0F,
+            0x18,
+            0x00,
+            0x00,
+        ];
+
+        byte[] by16 = await central.RequestAsync(0x06, 0x01, 0x00, 0xFF, 0xFF, 0x00, 0x28, 0x0F, 0x18);
+        byte[] by128 = await central.RequestAsync([0x06, 0x01, 0x00, 0xFF, 0xFF, 0x00, 0x28, .. battery128]);
+
+        by16[0].ShouldBe((byte)0x07);
+        by128.ShouldBe(by16);
+    }
+
     [Theory]
     [InlineData(0x10)]
     [InlineData(0x08)]

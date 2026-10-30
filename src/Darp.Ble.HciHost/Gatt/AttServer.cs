@@ -104,10 +104,7 @@ internal sealed partial class AttServer : IDisposable
             if (attribute.Type != type)
                 continue;
             // Values the app answers for count too; one it does not allow reading matches nothing
-            if (
-                await TryReadAsync(attribute).ConfigureAwait(false) is not { } bytes
-                || !bytes.AsSpan().SequenceEqual(value)
-            )
+            if (await TryReadAsync(attribute).ConfigureAwait(false) is not { } bytes || !Matches(type, bytes, value))
                 continue;
             if (space < 4)
                 break;
@@ -121,6 +118,18 @@ internal sealed partial class AttServer : IDisposable
             return;
         }
         Answer(new AttFindByTypeValueRsp { HandlesInformationList = [.. found] });
+    }
+
+    /// <summary> A service declaration holds a UUID, which a central may ask for in 16 or 128 bits; other values match byte for byte </summary>
+    private static bool Matches(BleUuid type, byte[] attributeValue, byte[] requested)
+    {
+        if (
+            IsGroupType(type)
+            && BleUuid.TryRead(attributeValue, out BleUuid? declared)
+            && BleUuid.TryRead(requested, out BleUuid? asked)
+        )
+            return declared == asked;
+        return attributeValue.AsSpan().SequenceEqual(requested);
     }
 
     [MessageSink]
