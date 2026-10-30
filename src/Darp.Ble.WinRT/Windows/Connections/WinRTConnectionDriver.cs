@@ -14,6 +14,11 @@ namespace Darp.Ble.WinRT.Connections;
 /// </summary>
 internal sealed class WinRTConnectionDriver : IConnectionDriver
 {
+    private const int DefaultMtu = 23;
+
+    // Twice the longest delay measured from the session going active to Windows reporting a larger MTU
+    private static readonly TimeSpan MtuWait = TimeSpan.FromMilliseconds(500);
+
     private readonly BluetoothLEDevice _device;
     private readonly GattSession _session;
     private readonly IConnectionSink _sink;
@@ -46,8 +51,32 @@ internal sealed class WinRTConnectionDriver : IConnectionDriver
 
     public IConnectionSink Sink => _sink;
 
-    /// <summary> Reports Windows' MTU; Windows exchanges it itself, often after this, and reports the change </summary>
-    public Task<int> ExchangeMtuAsync(int clientMtu, GattRequest request) => Task.FromResult((int)_session.MaxPduSize);
+    /// <summary>
+    /// Waits briefly for the MTU Windows exchanges itself, about 0.2 s after the session is active, so the connection
+    /// starts with it. Windows reports only a larger MTU: a peer that keeps the default costs the whole wait, and an
+    /// MTU that grows after the wait still reaches the sink
+    /// </summary>
+    public async Task<int> ExchangeMtuAsync(int clientMtu, GattRequest request)
+    {
+        var changed = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        void OnChanged(GattSession sender, object args) => changed.TrySetResult();
+        _session.MaxPduSizeChanged += OnChanged;
+        try
+        {
+            // Nothing is sent, so the wait ends with the request
+            if (_session.MaxPduSize <= DefaultMtu)
+                await changed.Task.WaitAsync(MtuWait, request.HandOffToken).ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            // The peer keeps the default MTU, or Windows exchanges later
+        }
+        finally
+        {
+            _session.MaxPduSizeChanged -= OnChanged;
+        }
+        return _session.MaxPduSize;
+    }
 
     public async Task<IReadOnlyList<IRemoteServiceDriver>> DiscoverServicesAsync(GattRequest request)
     {
