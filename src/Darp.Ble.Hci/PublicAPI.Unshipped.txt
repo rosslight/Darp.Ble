@@ -1061,6 +1061,8 @@ Darp.Ble.Hci.Payload.Event.HciLeConnectionUpdateCompleteEvent.GetByteCount() -> 
 Darp.Ble.Hci.Payload.Event.HciLeConnectionUpdateCompleteEvent.HciLeConnectionUpdateCompleteEvent() -> void
 Darp.Ble.Hci.Payload.Event.HciLeConnectionUpdateCompleteEvent.PeripheralLatency.get -> ushort
 Darp.Ble.Hci.Payload.Event.HciLeConnectionUpdateCompleteEvent.PeripheralLatency.init -> void
+Darp.Ble.Hci.Payload.Event.HciLeConnectionUpdateCompleteEvent.Status.get -> Darp.Ble.Hci.Payload.HciCommandStatus
+Darp.Ble.Hci.Payload.Event.HciLeConnectionUpdateCompleteEvent.Status.init -> void
 Darp.Ble.Hci.Payload.Event.HciLeConnectionUpdateCompleteEvent.SubEventCode.get -> Darp.Ble.Hci.Payload.Event.HciLeMetaSubEventType
 Darp.Ble.Hci.Payload.Event.HciLeConnectionUpdateCompleteEvent.SubEventCode.init -> void
 Darp.Ble.Hci.Payload.Event.HciLeConnectionUpdateCompleteEvent.SupervisionTimeout.get -> ushort
