@@ -13,7 +13,7 @@ public sealed class AttributeWrappersTests
         _wrappers = new AttributeWrappers<Native, Wrapper>(n => n.Handle, n => new Wrapper(n), _released.Add);
 
     [Fact]
-    public void ARediscoveredAttribute_GetsItsFirstWrapper_AndTheNewNativeObjectIsReleased()
+    public void ARediscoveredAttribute_GetsItsFirstWrapper_AndNothingIsReleased()
     {
         var first = new Native(1);
         var again = new Native(1);
@@ -21,7 +21,8 @@ public sealed class AttributeWrappersTests
 
         _wrappers.Wrap([again]).ShouldNotBeNull().ShouldHaveSingleItem().ShouldBeSameAs(wrapper);
 
-        _released.ShouldBe([again]);
+        // Windows may return the wrapped object again; releasing it would break the wrapper
+        _released.ShouldBeEmpty();
     }
 
     [Fact]
