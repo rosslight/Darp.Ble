@@ -96,14 +96,7 @@ public sealed class AdvertisingSet : IAsyncDisposable
     /// <param name="cancellationToken"> Cancels stopping </param>
     /// <returns> A task that completes once the set stopped </returns>
     public Task StopAsync(CancellationToken cancellationToken = default) =>
-        RunAsync(
-            () =>
-            {
-                CancelPendingRestart();
-                return StopCoreAsync(cancellationToken);
-            },
-            cancellationToken
-        );
+        RunAsync(() => StopCoreAsync(cancellationToken), cancellationToken);
 
     /// <summary> Changes how the set advertises. Controllers reject this while advertising </summary>
     /// <param name="parameters"> The new parameters </param>
@@ -369,8 +362,11 @@ public sealed class AdvertisingSet : IAsyncDisposable
 
     private async Task StopCoreAsync(CancellationToken cancellationToken)
     {
+        // In one step with the connection callback's check: a central connecting now admits no restart
         lock (_lock)
         {
+            _pendingRestart?.Cancel();
+            _pendingRestart = null;
             if (!_isAdvertising)
                 return;
             _isStopping = true;
