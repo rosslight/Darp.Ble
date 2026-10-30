@@ -471,6 +471,21 @@ public sealed class RequestQueueTests
         return ((await service.DiscoverCharacteristicsAsync(Token)).Single(), driver);
     }
 
+    [Fact]
+    public async Task ALargerMtuTheDriverReportsLater_LetsWritesCarryMore_AndASmallerOneIsIgnored()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        (ConnectedPeripheral connection, TestConnectionDriver driver) = await ConnectAsync(adapter);
+        // The exchange agreed on 247
+        connection.MaxWritePayloadLength.ShouldBe(244);
+
+        // Windows exchanges the MTU itself, often after the connection was handed out
+        driver.Sink.OnMtuChanged(517);
+        driver.Sink.OnMtuChanged(23);
+
+        connection.MaxWritePayloadLength.ShouldBe(514);
+    }
+
     private async Task<(ConnectedPeripheral Connection, TestConnectionDriver Driver)> ConnectAsync(BleAdapter adapter)
     {
         ConnectedPeripheral connection = await adapter.Central.ConnectAsync(

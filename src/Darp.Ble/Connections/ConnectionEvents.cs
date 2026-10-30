@@ -30,6 +30,15 @@ internal sealed class ConnectionEvents : IConnectionSink
         connection?.OnNotification(characteristic, value);
     }
 
+    /// <summary> A change before the connection object exists is part of the exchange that follows </summary>
+    public void OnMtuChanged(int mtu)
+    {
+        ConnectedPeripheral? connection;
+        lock (_lock)
+            connection = _connection;
+        connection?.OnMtuChanged(mtu);
+    }
+
     public void Attach(ConnectedPeripheral connection)
     {
         DisconnectInfo? earlyDisconnect;

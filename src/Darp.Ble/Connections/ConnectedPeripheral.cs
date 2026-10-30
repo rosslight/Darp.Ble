@@ -118,7 +118,7 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
             ?? throw new GattException(GattErrorKind.NotFound, $"The peripheral has no service {uuid}");
     }
 
-    /// <summary> The longest value a write can carry, from the MTU agreed when connecting </summary>
+    /// <summary> The longest value a write can carry, from the MTU agreed when connecting; it may grow later, e.g. on Windows </summary>
     /// <remarks> Longer writes are rejected on every backend; a notification longer than this is cut to it </remarks>
     public int MaxWritePayloadLength => _maxWritePayloadLength;
 
@@ -272,7 +272,17 @@ public sealed class ConnectedPeripheral : IAsyncDisposable
                 cancellationToken
             )
             .ConfigureAwait(false);
-        _maxWritePayloadLength = mtu - WriteHeaderLength;
+        GrowMtu(mtu);
+    }
+
+    /// <summary> The backend reports a larger MTU than the exchange returned </summary>
+    internal void OnMtuChanged(int mtu) => GrowMtu(mtu);
+
+    /// <summary> Keeps the larger MTU: an MTU never shrinks, and the exchange and a change may arrive in either order </summary>
+    private void GrowMtu(int mtu)
+    {
+        lock (_lock)
+            _maxWritePayloadLength = Math.Max(_maxWritePayloadLength, mtu - WriteHeaderLength);
     }
 
     /// <summary> Ends the connection exactly once; the first reason wins </summary>

@@ -30,11 +30,12 @@ internal sealed class WinRTConnectionDriver : IConnectionDriver
         _device = device;
         _session = session;
         _sink = sink;
-        // A rediscovered or late service is a new native object to release; a characteristic holds nothing to release
+        // A service that arrives after the end is released; a characteristic holds nothing to release
         _services = new(s => s.AttributeHandle, s => new WinRTRemoteService(this, s), s => s.Dispose());
         _characteristics = new(c => c.AttributeHandle, c => new WinRTRemoteCharacteristic(this, c), _ => { });
         _device.ConnectionStatusChanged += OnConnectionStatusChanged;
         _session.SessionStatusChanged += OnSessionStatusChanged;
+        _session.MaxPduSizeChanged += OnMaxPduSizeChanged;
         // The link may have ended before the handlers were attached
         if (
             _device.ConnectionStatus is BluetoothConnectionStatus.Disconnected
@@ -45,7 +46,7 @@ internal sealed class WinRTConnectionDriver : IConnectionDriver
 
     public IConnectionSink Sink => _sink;
 
-    /// <summary> Reports Windows' MTU; Windows exchanges it itself and may change it later </summary>
+    /// <summary> Reports Windows' MTU; Windows exchanges it itself, often after this, and reports the change </summary>
     public Task<int> ExchangeMtuAsync(int clientMtu, GattRequest request) => Task.FromResult((int)_session.MaxPduSize);
 
     public async Task<IReadOnlyList<IRemoteServiceDriver>> DiscoverServicesAsync(GattRequest request)
@@ -97,6 +98,8 @@ internal sealed class WinRTConnectionDriver : IConnectionDriver
             LinkDown(DisconnectReason.RemoteRequest);
     }
 
+    private void OnMaxPduSizeChanged(GattSession sender, object args) => _sink.OnMtuChanged(sender.MaxPduSize);
+
     private void OnSessionStatusChanged(GattSession sender, GattSessionStatusChangedEventArgs args)
     {
         if (args.Status is GattSessionStatus.Closed)
@@ -145,6 +148,7 @@ internal sealed class WinRTConnectionDriver : IConnectionDriver
         Interlocked.Exchange(ref _ended, 1);
         _device.ConnectionStatusChanged -= OnConnectionStatusChanged;
         _session.SessionStatusChanged -= OnSessionStatusChanged;
+        _session.MaxPduSizeChanged -= OnMaxPduSizeChanged;
         foreach (WinRTRemoteCharacteristic characteristic in _characteristics.End())
             characteristic.Detach();
         foreach (WinRTRemoteService service in _services.End())

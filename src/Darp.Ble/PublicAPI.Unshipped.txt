@@ -4432,6 +4432,7 @@ Darp.Ble.QueueOptions.QueueOptions(int capacity, Darp.Ble.QueueFullMode fullMode
 [DARPBLE0001]Darp.Ble.Backends.IConnectionSink
 [DARPBLE0001]Darp.Ble.Backends.IConnectionSink.OnDisconnected(Darp.Ble.Connections.DisconnectInfo! info) -> void
 [DARPBLE0001]Darp.Ble.Backends.IConnectionSink.OnNotification(Darp.Ble.Backends.IRemoteCharacteristicDriver! characteristic, System.ReadOnlySpan<byte> value) -> void
+[DARPBLE0001]Darp.Ble.Backends.IConnectionSink.OnMtuChanged(int mtu) -> void
 [DARPBLE0001]Darp.Ble.Backends.IGattServerSink
 [DARPBLE0001]Darp.Ble.Backends.IGattServerSink.OnCentralConnected(Darp.Ble.Backends.ICentralConnectionDriver! central) -> void
 [DARPBLE0001]Darp.Ble.Backends.IGattServerSink.OnCentralDisconnected(Darp.Ble.Backends.ICentralConnectionDriver! central, Darp.Ble.Connections.DisconnectInfo! info) -> void
