@@ -215,7 +215,8 @@ public sealed class AdvertisingSet : IAsyncDisposable
         {
             lock (_lock)
                 _isDisposed = true;
-            CancelPendingRestart();
+            // Closed first: a central connecting now admits no restart that disposal would wait for
+            CloseAdmission();
             await StopCoreAsync(CancellationToken.None).ConfigureAwait(false);
         }
         finally
