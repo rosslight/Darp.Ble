@@ -55,6 +55,11 @@ public sealed class BleAddressTests
     [InlineData("00:11:22:33445500")]
     [InlineData("00:11:22:33:44550")]
     [InlineData("GG:HH:II:JJ:KK:LL")]
+    [InlineData("0/:00:00:00:00:00")]
+    [InlineData("@@:00:00:00:00:00")]
+    [InlineData("+1:00:00:00:00:00")]
+    [InlineData("AA:BB:CC:DD:EE:FFjunk")]
+    [InlineData("X:AA:BB:CC:DD:EE:FF")]
     public void Parse_InvalidString_ShouldNotBeSuccessful(string? input)
     {
         // Act
@@ -105,6 +110,19 @@ public sealed class BleAddressTests
         string s = addr.ToString();
         // Assert
         s.ShouldBe("0A:1B:2C:3D:4E:5F");
+    }
+
+    [Theory]
+    [InlineData(BleAddressType.Public, "P:CC:F3:72:C1:1A:0A")]
+    [InlineData(BleAddressType.Random, "R:CC:F3:72:C1:1A:0A")]
+    public void FormatT_KeepsTheType_AndParseReadsItBack(BleAddressType type, string expected)
+    {
+        var address = new BleAddress(type, (UInt48)0xCCF372C11A0A);
+
+        string text = $"{address:T}";
+
+        text.ShouldBe(expected);
+        BleAddress.Parse(text, provider: null).ShouldBe(address);
     }
 
     [Fact]

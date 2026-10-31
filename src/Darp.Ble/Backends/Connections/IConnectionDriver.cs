@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Connections;
 using Darp.Ble.Gatt;
 
@@ -16,6 +17,7 @@ namespace Darp.Ble.Backends;
 /// </list>
 /// Disposing it ends this app's connection and must end every task still running
 /// </remarks>
+[Experimental(Experiments.Backends)]
 public interface IConnectionDriver : IAsyncDisposable
 {
     /// <summary> Agrees on the ATT MTU with the peer </summary>

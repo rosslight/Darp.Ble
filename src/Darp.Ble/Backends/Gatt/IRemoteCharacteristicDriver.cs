@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 
@@ -5,6 +6,7 @@ namespace Darp.Ble.Backends;
 
 /// <summary> A characteristic discovered on a peripheral. Belongs to its connection, which returns the same object for the same characteristic every time </summary>
 /// <remarks> Its operations fail as <see cref="IConnectionDriver"/> describes </remarks>
+[Experimental(Experiments.Backends)]
 public interface IRemoteCharacteristicDriver
 {
     /// <summary> The UUID of the characteristic </summary>

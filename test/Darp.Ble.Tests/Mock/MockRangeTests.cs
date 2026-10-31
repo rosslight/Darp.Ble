@@ -1,4 +1,5 @@
 using Darp.Ble.Connections;
+using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Darp.Ble.Mock;
 using Darp.Ble.Testing;
@@ -38,6 +39,21 @@ public sealed class MockRangeTests
         range.IsInRange.ShouldBeFalse();
         (await connection.Disconnected.WithWatchdog()).Reason.ShouldBe(DisconnectReason.ConnectionTimeout);
         (await central.Disconnected.WithWatchdog()).Reason.ShouldBe(DisconnectReason.ConnectionTimeout);
+    }
+
+    [Fact]
+    public async Task AnAddressParsedFromText_ConnectsToThePeripheralWithThatValue()
+    {
+        await using BleAdapter adapter = await OpenAsync(new MockRange());
+        (_, AdvertisingSet set) = await _sensor.Task;
+        BleAddress parsed = BleAddress.Parse(set.RandomAddress.ToString(), provider: null);
+
+        await using ConnectedPeripheral connection = await adapter.Central.ConnectAsync(
+            parsed,
+            cancellationToken: Token
+        );
+
+        connection.Address.Value.ShouldBe(set.RandomAddress.Value);
     }
 
     [Fact]

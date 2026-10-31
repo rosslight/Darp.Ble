@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 
@@ -5,6 +6,7 @@ namespace Darp.Ble.Backends;
 
 /// <summary> A descriptor discovered on a peripheral. Belongs to its connection </summary>
 /// <remarks> Its operations fail as <see cref="IConnectionDriver"/> describes </remarks>
+[Experimental(Experiments.Backends)]
 public interface IRemoteDescriptorDriver
 {
     /// <summary> The UUID of the descriptor </summary>

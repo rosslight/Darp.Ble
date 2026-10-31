@@ -28,7 +28,7 @@ internal sealed class HciHostAdapterDriver : IBleAdapterDriver
         _device = device;
         _observer = new HciHostObserverDriver(device);
         _peripheral = new HciHostPeripheralDriver(device, includeGattService);
-        _central = new HciHostCentralDriver(device);
+        _central = new HciHostCentralDriver(device, _observer);
         _broadcaster = new HciHostBroadcasterDriver(
             device,
             maxAdvertisingDataLength,

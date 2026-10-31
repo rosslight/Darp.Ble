@@ -1,6 +1,7 @@
 using Darp.Ble.Connections;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
+using Darp.Ble.Testing;
 using Darp.Ble.Tests.Lifecycle;
 using Darp.Ble.Tests.Scanning;
 using Microsoft.Extensions.Time.Testing;
@@ -8,7 +9,7 @@ using Shouldly;
 
 namespace Darp.Ble.Tests.Connections;
 
-/// <summary> How a connection's requests reach the driver, end and time out, through the public calls (seam 3) </summary>
+/// <summary> How a connection's requests reach the driver, end and time out, through the public calls </summary>
 public sealed class RequestQueueTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -151,6 +152,114 @@ public sealed class RequestQueueTests
         (
             await Should.ThrowAsync<BleDisconnectedException>(() => connection.DiscoverServicesAsync(Token))
         ).Info.ShouldBe(expected);
+        driver.DisposeCount.ShouldBe(1);
+    }
+
+    [Fact]
+    public async Task ADriverThatLearnsOfTheLostLinkFromAFailedRequest_ReportsItFirst_AndTheCallerGetsADisconnect()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        (ConnectedPeripheral connection, TestConnectionDriver driver) = await ConnectAsync(adapter);
+        Task<IReadOnlyList<RemoteGattService>> discovery = connection.DiscoverServicesAsync(Token);
+        PendingRequest request = await driver.NextRequestAsync(Token);
+        var info = new DisconnectInfo(DisconnectReason.ConnectionTimeout);
+        var failure = new BleException("The device cannot be reached");
+
+        driver.Sink.OnDisconnected(info);
+        request.Fail(failure);
+
+        BleDisconnectedException exception = await Should.ThrowAsync<BleDisconnectedException>(() => discovery);
+        exception.Info.ShouldBe(info);
+        exception.InnerException.ShouldBe(failure);
+        (await connection.Disconnected).ShouldBe(info);
+    }
+
+    [Fact]
+    public async Task ARequestThatFailsBecauseTheLinkWasLost_SeesTheConnectionEndedAndGone()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        (RemoteGattCharacteristic characteristic, TestConnectionDriver driver) = await DiscoverAsync(adapter);
+        ConnectedPeripheral connection = adapter.Central.Connections.Single();
+        Task<(bool Disconnected, IReadOnlyList<ConnectedPeripheral> Open)> failed = ReadUntilDisconnectedAsync();
+        await driver.NextRequestAsync(Token);
+        // The driver's cleanup still runs when the read fails
+        driver.HoldDispose = new TaskCompletionSource();
+
+        driver.Sink.OnDisconnected(new DisconnectInfo(DisconnectReason.ConnectionTimeout));
+
+        (bool disconnected, IReadOnlyList<ConnectedPeripheral> open) = await ReleasedAfter(failed, driver);
+        disconnected.ShouldBeTrue();
+        open.ShouldBeEmpty();
+
+        async Task<(bool, IReadOnlyList<ConnectedPeripheral>)> ReadUntilDisconnectedAsync()
+        {
+            try
+            {
+                await characteristic.ReadAsync(Token);
+            }
+            catch (BleDisconnectedException)
+            {
+                return (connection.Disconnected.IsCompleted, adapter.Central.Connections);
+            }
+            throw new InvalidOperationException("The read did not fail");
+        }
+    }
+
+    [Fact]
+    public async Task AStreamThatEndsBecauseTheLinkWasLost_SeesTheConnectionEndedAndGone()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        (RemoteGattCharacteristic characteristic, TestConnectionDriver driver) = await DiscoverAsync(adapter);
+        ConnectedPeripheral connection = adapter.Central.Connections.Single();
+        using NotificationStream<byte[]> stream = characteristic.Subscribe();
+        Task enable = characteristic.EnableNotificationsAsync(Token);
+        PendingRequest cccd = await driver.NextRequestAsync(Token);
+        cccd.Send();
+        cccd.Answer();
+        await enable;
+        Task<(bool Disconnected, IReadOnlyList<ConnectedPeripheral> Open)> ended = EnumerateUntilDisconnectedAsync();
+        // The driver's cleanup still runs when the stream ends
+        driver.HoldDispose = new TaskCompletionSource();
+
+        driver.Sink.OnDisconnected(new DisconnectInfo(DisconnectReason.ConnectionTimeout));
+
+        (bool disconnected, IReadOnlyList<ConnectedPeripheral> open) = await ReleasedAfter(ended, driver);
+        disconnected.ShouldBeTrue();
+        open.ShouldBeEmpty();
+
+        async Task<(bool, IReadOnlyList<ConnectedPeripheral>)> EnumerateUntilDisconnectedAsync()
+        {
+            try
+            {
+                await foreach (byte[] _ in stream.WithCancellation(Token)) { }
+            }
+            catch (BleDisconnectedException)
+            {
+                return (connection.Disconnected.IsCompleted, adapter.Central.Connections);
+            }
+            throw new InvalidOperationException("The stream did not fail");
+        }
+    }
+
+    [Fact]
+    public async Task AfterALostLink_DisposingTheConnectionAndItsAdapter_WaitForTheDriversCleanup()
+    {
+        BleAdapter adapter = await OpenAsync();
+        (ConnectedPeripheral connection, TestConnectionDriver driver) = await ConnectAsync(adapter);
+        driver.HoldDispose = new TaskCompletionSource();
+        driver.Sink.OnDisconnected(new DisconnectInfo(DisconnectReason.ConnectionTimeout));
+
+        Task disposingConnection = connection.DisposeAsync().AsTask();
+        Task disposingAdapter = adapter.DisposeAsync().AsTask();
+
+        // Taken while the driver's cleanup still runs; asserted once it ended, so a failure cannot hang the test
+        bool connectionWaited = !disposingConnection.IsCompleted;
+        bool adapterWaited = !disposingAdapter.IsCompleted;
+        driver.HoldDispose.SetResult();
+        await disposingConnection.WithWatchdog();
+        await disposingAdapter.WithWatchdog();
+        connectionWaited.ShouldBeTrue();
+        adapterWaited.ShouldBeTrue();
         driver.DisposeCount.ShouldBe(1);
     }
 
@@ -338,6 +447,19 @@ public sealed class RequestQueueTests
         (await stream.FirstAsync(Token)).ShouldBe([7]);
     }
 
+    /// <summary> Waits for what the app saw while the driver's disposal is held, then lets the disposal go, also on a failure </summary>
+    private static async Task<T> ReleasedAfter<T>(Task<T> seen, TestConnectionDriver driver)
+    {
+        try
+        {
+            return await seen.WithWatchdog();
+        }
+        finally
+        {
+            driver.HoldDispose?.TrySetResult();
+        }
+    }
+
     private async Task<(RemoteGattCharacteristic Characteristic, TestConnectionDriver Driver)> DiscoverAsync(
         BleAdapter adapter
     )
@@ -347,6 +469,21 @@ public sealed class RequestQueueTests
         (await driver.NextRequestAsync(Token)).Complete(ServiceUuid);
         RemoteGattService service = (await discovery).Single();
         return ((await service.DiscoverCharacteristicsAsync(Token)).Single(), driver);
+    }
+
+    [Fact]
+    public async Task ALargerMtuTheDriverReportsLater_LetsWritesCarryMore_AndASmallerOneIsIgnored()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        (ConnectedPeripheral connection, TestConnectionDriver driver) = await ConnectAsync(adapter);
+        // The exchange agreed on 247
+        connection.MaxWritePayloadLength.ShouldBe(244);
+
+        // Windows exchanges the MTU itself, often after the connection was handed out
+        driver.Sink.OnMtuChanged(517);
+        driver.Sink.OnMtuChanged(23);
+
+        connection.MaxWritePayloadLength.ShouldBe(514);
     }
 
     private async Task<(ConnectedPeripheral Connection, TestConnectionDriver Driver)> ConnectAsync(BleAdapter adapter)

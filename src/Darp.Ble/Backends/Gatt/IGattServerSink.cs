@@ -1,9 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Connections;
 using Darp.Ble.Gatt;
 
 namespace Darp.Ble.Backends;
 
 /// <summary> Receives what centrals do with the adapter's peripheral role. Called on the driver's thread; the core returns at once </summary>
+[Experimental(Experiments.Backends)]
 public interface IGattServerSink
 {
     /// <summary> A central connected </summary>

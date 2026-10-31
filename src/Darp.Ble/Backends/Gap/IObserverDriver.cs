@@ -1,8 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Gap;
 
 namespace Darp.Ble.Backends;
 
 /// <summary> The scanning of an adapter. The core runs at most one radio scan at a time and shares it between all scans of the app </summary>
+[Experimental(Experiments.Backends)]
 public interface IObserverDriver
 {
     /// <summary> Starts scanning and reports every advertisement to the sink until stopped </summary>

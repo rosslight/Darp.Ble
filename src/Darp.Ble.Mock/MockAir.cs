@@ -53,7 +53,11 @@ internal sealed class MockAir(TimeProvider timeProvider, Func<TxPowerLevel, Rssi
             set =>
                 !ReferenceEquals(set.Adapter, central)
                 && set.Adapter.IsInRange
-                && set.RandomAddress == address
+                // An address without its type, e.g. parsed from text, is looked up by its value
+                && (
+                    set.RandomAddress == address
+                    || (address.Type is BleAddressType.NotAvailable && set.RandomAddress.Value == address.Value)
+                )
                 && set.Type.HasFlag(BleEventType.Connectable)
         );
     }

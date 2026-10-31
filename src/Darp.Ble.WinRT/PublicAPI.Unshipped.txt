@@ -1,0 +1,3 @@
+#nullable enable
+Darp.Ble.WinRT.WinRTBleManagerBuilderExtensions
+static Darp.Ble.WinRT.WinRTBleManagerBuilderExtensions.AddWinRT(this Darp.Ble.BleManagerBuilder! builder) -> Darp.Ble.BleManagerBuilder!

@@ -11,7 +11,7 @@ metrics.AddMeter(BleTelemetry.MeterName);     // "Darp.Ble"
 
 `BleManagerBuilder.ConfigureDiagnostics(options => options.IncludeAddresses = false)` replaces peer addresses with `<hidden>` in logs and spans. Addresses are never metric dimensions.
 
-The backends add their own sources and event ids when they are ported to v2 (HciHost below; WinRT and Android follow); their spans nest inside the core's.
+The backends add their own sources and event ids when they are ported to v2 (HciHost and WinRT below; Android follows); their spans nest inside the core's.
 
 ## Spans (source `Darp.Ble`)
 
@@ -58,6 +58,7 @@ Span names are message templates; values are only in tags. A cancelled operation
 | 1200 | AdvertisingStarted | Debug | Advertising set {Address} started |
 | 1201 | AdvertisingStopped | Debug | Advertising set {Address} stopped |
 | 1202 | AdvertisingRestartFailed | Warning | Advertising set {Address} could not start again after its central disconnected |
+| 1203 | AdvertisingFailed | Warning | Advertising set {Address} stopped because of an error |
 | 1300 | Connecting | Debug | Connecting to {Address} |
 | 1301 | Connected | Debug | Connected to {Address} |
 | 1302 | ConnectFailed | Warning | Connecting to {Address} failed: {Kind} |
@@ -91,3 +92,13 @@ The HCI layer logs under categories that start with `Darp.Ble.Hci` and traces on
 | 2007 | AttPacketTransmission | Trace | {Source} to {Destination}: [0x{ConnectionHandle:X3}]: {PacketName} |
 | 2008 | ReceivedUnknownAttPacket | Warning | {Source} to {Destination}: [0x{ConnectionHandle:X3}]: {OpCode} |
 | 2009 | AttPacketTransmissionWarning | Warning | {Source} to {Destination}: [0x{ConnectionHandle:X3}]: {PacketName} {Message} |
+
+## WinRT backend (`Darp.Ble.WinRT`)
+
+The WinRT backend logs under categories that start with `Darp.Ble.WinRT` and has no spans of its own.
+
+| Id | Name | Level | Message |
+| --- | --- | --- | --- |
+| 3000 | NotOnWindows | Warning | The WinRT backend has no adapter: the app does not run on Windows 10 2004 or later, or was built without its Windows target |
+| 3001 | ReservedSectionDropped | Warning | Windows sets advertising data section {AdType} itself; the app's section is left out |
+| 3002 | HostedRequestFailed | Warning | A central's request to a hosted service could not be answered |

@@ -68,7 +68,7 @@ public sealed class BleCentral
     /// so pass one that times out. The Mock fails at once for an address nobody advertises connectable.
     /// The adapter's scans pause while the link comes up and continue afterwards
     /// </remarks>
-    /// <param name="address"> The address of the peripheral </param>
+    /// <param name="address"> The address of the peripheral; without its type (<see cref="BleAddressType.NotAvailable"/>, e.g. parsed from text) the backend uses the type the device was heard with, so scan for it first </param>
     /// <param name="parameters"> How the connection runs; the defaults when null </param>
     /// <param name="cancellationToken"> Cancels connecting; the only limit on how long it takes </param>
     /// <returns> The connection once the link is up. The caller owns it; disposing the adapter ends it too </returns>

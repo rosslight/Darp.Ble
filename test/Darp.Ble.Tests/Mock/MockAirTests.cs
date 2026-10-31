@@ -87,6 +87,29 @@ public sealed class MockAirTests
     }
 
     [Fact]
+    public async Task AnExtendedSetWithMoreThan255Bytes_ArrivesWhole()
+    {
+        AdvertisingData longData = AdvertisingData.From([
+            .. Enumerable.Range(0, 10).Select(i => (AdTypes.ManufacturerSpecificData, new byte[29])),
+        ]);
+        await using BleAdapter adapter = await OpenAsync(options =>
+            options.AddPeripheral(
+                async (peripheral, _) =>
+                    await peripheral.Broadcaster.StartAdvertisingAsync(longData, Interval, BleEventType.None)
+            )
+        );
+        await using IAsyncEnumerator<IGapAdvertisement> scan = adapter
+            .Observer.ScanAsync(Token)
+            .GetAsyncEnumerator(Token);
+
+        ValueTask<bool> next = scan.MoveNextAsync();
+        _time.Advance(Interval);
+
+        (await next).ShouldBeTrue();
+        scan.Current.Data.ToByteArray().ShouldBe(longData.ToByteArray());
+    }
+
+    [Fact]
     public async Task ChangedAdvertisingData_ShowsUpInTheNextReport()
     {
         var advertising = new TaskCompletionSource<AdvertisingSet>();

@@ -5,9 +5,13 @@ using Darp.Ble.Gap;
 namespace Darp.Ble.Tests.Advertising;
 
 /// <summary> An advertising set that records its calls; its broadcaster decides which ones fail </summary>
-internal sealed class TestAdvertisingSetDriver(TestBroadcasterDriver broadcaster) : IAdvertisingSetDriver
+internal sealed class TestAdvertisingSetDriver(TestBroadcasterDriver broadcaster, IAdvertisingSetSink sink)
+    : IAdvertisingSetDriver
 {
     private readonly TestBroadcasterDriver _broadcaster = broadcaster;
+
+    /// <summary> Where the set reports what the backend did on its own </summary>
+    public IAdvertisingSetSink Sink { get; } = sink;
 
     public List<string> Calls { get; } = [];
 

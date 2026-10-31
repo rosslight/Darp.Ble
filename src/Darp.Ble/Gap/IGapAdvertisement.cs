@@ -37,20 +37,8 @@ public interface IGapAdvertisement : IEquatable<IGapAdvertisement>
     /// <summary> The address of the device the advertisement is directed to </summary>
     BleAddress DirectAddress { get; }
 
-    /// <summary> The data sections </summary>
+    /// <summary> The data sections of the whole advertisement; an HCI controller may report it in several parts, which the backend joins </summary>
     AdvertisingData Data { get; }
-
-    /// <summary> The advertising report in the layout of a single report of the HCI LE Extended Advertising Report event </summary>
-    /// <remarks>
-    /// The bytes start at Event_Type and do not include the event header. They are read-only; every scan shares them, and the call does not copy.
-    /// Only the HCI host receives these bytes from the controller.
-    /// Other backends, e.g. WinRT or Android, build them from the values the platform reports.
-    /// A value the platform does not report holds its "not available" value,
-    /// e.g. <see cref="Physical.NotAvailable"/> (0) for both PHYs on Windows, which a controller never reports as primary PHY.
-    /// Treat the bytes as a received HCI report only if the advertisement came from the HCI host.
-    /// </remarks>
-    /// <returns> The bytes of the advertising report </returns>
-    ReadOnlyMemory<byte> AsReadOnlyMemory();
 }
 
 /// <summary> An advertisement with attached user data </summary>

@@ -5,7 +5,7 @@ using System.Security.Cryptography;
 namespace Darp.Ble.Data;
 
 /// <summary> The ble address </summary>
-public sealed record BleAddress : ISpanParsable<BleAddress>, IEquatable<UInt48>, IEquatable<ulong>
+public sealed record BleAddress : ISpanParsable<BleAddress>, IFormattable, IEquatable<UInt48>, IEquatable<ulong>
 {
     /// <summary> Initializes a new ble address </summary>
     /// <param name="value"> The 48bit address </param>
@@ -71,22 +71,20 @@ public sealed record BleAddress : ISpanParsable<BleAddress>, IEquatable<UInt48>,
     )]
     public static explicit operator BleAddress(UInt48 value) => new(value);
 
-    /// <summary> Parses a string of suitable format and returns a ble address </summary>
-    /// <param name="s">The string to parse.</param>
-    /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="s" />. Will be ignored</param>
-    /// <example>AA:BB:CC:DD:EE:FF</example>
-    /// <returns> The parsed BleAddress with type <see cref="BleAddressType.NotAvailable"/> </returns>
+    /// <summary> Parses an address as <see cref="ToString(string?, IFormatProvider?)"/> writes it </summary>
+    /// <param name="s"> The address: AA:BB:CC:DD:EE:FF, or with its type as P:AA:BB:CC:DD:EE:FF (public) or R:AA:BB:CC:DD:EE:FF (random) </param>
+    /// <param name="provider"> Ignored </param>
+    /// <returns> The address; without a type in the text, of type <see cref="BleAddressType.NotAvailable"/> </returns>
     /// <exception cref="FormatException"> Thrown if the format does not comply. </exception>
     public static BleAddress Parse(ReadOnlySpan<char> s, IFormatProvider? provider) =>
         TryParse(s, provider, out BleAddress? address)
             ? address
             : throw new FormatException($"Given input '{s}' could not be parsed");
 
-    /// <summary> Parses a string of suitable format and returns a ble address </summary>
-    /// <param name="s">The string to parse.</param>
-    /// <param name="provider">An object that provides culture-specific formatting information about <paramref name="s" />. Will be ignored</param>
-    /// <param name="result"> The parsed BleAddress with type <see cref="BleAddressType.NotAvailable"/> or default </param>
-    /// <example>AA:BB:CC:DD:EE:FF</example>
+    /// <summary> Parses an address as <see cref="ToString(string?, IFormatProvider?)"/> writes it </summary>
+    /// <param name="s"> The address: AA:BB:CC:DD:EE:FF, or with its type as P:AA:BB:CC:DD:EE:FF (public) or R:AA:BB:CC:DD:EE:FF (random) </param>
+    /// <param name="provider"> Ignored </param>
+    /// <param name="result"> The address; without a type in the text, of type <see cref="BleAddressType.NotAvailable"/> </param>
     /// <returns> True if the parsing was successful </returns>
     public static bool TryParse(
         ReadOnlySpan<char> s,
@@ -94,61 +92,40 @@ public sealed record BleAddress : ISpanParsable<BleAddress>, IEquatable<UInt48>,
         [NotNullWhen(true)] out BleAddress? result
     )
     {
-        if (s.Length < 17)
+        result = null;
+        BleAddressType type = BleAddressType.NotAvailable;
+        if (s.Length == 19 && s[1] == ':')
         {
-            result = null;
-            return false;
+            type = s[0] switch
+            {
+                'P' => BleAddressType.Public,
+                'R' => BleAddressType.Random,
+                _ => BleAddressType.NotAvailable,
+            };
+            if (type is BleAddressType.NotAvailable)
+                return false;
+            s = s[2..];
         }
-        if (s[2] != ':' || s[5] != ':' || s[8] != ':' || s[11] != ':' || s[14] != ':')
+        if (s.Length != 17)
+            return false;
+        ulong value = 0;
+        for (var i = 0; i < 6; i++)
         {
-            result = null;
-            return false;
+            if (i > 0 && s[(3 * i) - 1] != ':')
+                return false;
+            if (
+                !byte.TryParse(
+                    s.Slice(3 * i, 2),
+                    NumberStyles.AllowHexSpecifier,
+                    CultureInfo.InvariantCulture,
+                    out byte b
+                )
+            )
+                return false;
+            value = (value << 8) | b;
         }
-        if (
-            !TryGetHexVal(s, out byte b0)
-            || !TryGetHexVal(s[3..], out byte b1)
-            || !TryGetHexVal(s[6..], out byte b2)
-            || !TryGetHexVal(s[9..], out byte b3)
-            || !TryGetHexVal(s[12..], out byte b4)
-            || !TryGetHexVal(s[15..], out byte b5)
-        )
-        {
-            result = null;
-            return false;
-        }
-        var value = new UInt48(b5, b4, b3, b2, b1, b0);
-        result = new BleAddress(BleAddressType.NotAvailable, value);
+        result = new BleAddress(type, (UInt48)value);
         return true;
-    }
-
-    private static bool TryGetHexVal(in ReadOnlySpan<char> s, out byte res)
-    {
-        // The calling method already checked that the span is at least 2 characters long
-        int lower = GetHexVal(s[1]);
-        int upper = GetHexVal(s[0]);
-        if (lower > 15 || upper > 15)
-        {
-            res = default;
-            return false;
-        }
-        res = (byte)((upper << 4) + lower);
-        return true;
-    }
-
-    private static int GetHexVal(char hex)
-    {
-        int val = hex;
-        //For uppercase A-F letters:
-        //return val - (val < 58 ? 48 : 55);
-        //For lowercase a-f letters:
-        //return val - (val < 58 ? 48 : 87);
-        //Or the two combined, but a bit slower:
-        return val
-            - (
-                val < 58 ? 48
-                : val < 97 ? 55
-                : 87
-            );
     }
 
     /// <inheritdoc cref="Parse(ReadOnlySpan{char},System.IFormatProvider?)"/>
@@ -171,10 +148,29 @@ public sealed record BleAddress : ISpanParsable<BleAddress>, IEquatable<UInt48>,
     public static BleAddress NotAvailable { get; } = new(BleAddressType.NotAvailable, UInt48.Zero);
 
     /// <summary> The address as six hex bytes separated by colons, most significant first, e.g. AA:BB:CC:DD:EE:FF </summary>
-    /// <remarks> <see cref="Parse(string,IFormatProvider?)"/> reads it back without the type </remarks>
+    /// <remarks> <see cref="Parse(string,IFormatProvider?)"/> reads it back without the type; the format "T" keeps it </remarks>
     /// <returns> The formatted address </returns>
     public override string ToString() =>
         string.Join(':', Value.ToString("X12", CultureInfo.InvariantCulture).Chunk(2).Select(pair => new string(pair)));
+
+    /// <summary> The address in a format: null or empty as <see cref="ToString()"/>; "T" with its type in front, P: for public and R: for random addresses </summary>
+    /// <remarks> Only public and random addresses get a type; <see cref="Parse(string,IFormatProvider?)"/> reads both forms back </remarks>
+    /// <param name="format"> Null, empty or "T" </param>
+    /// <param name="formatProvider"> Ignored </param>
+    /// <returns> The formatted address </returns>
+    /// <exception cref="FormatException"> Thrown for any other format </exception>
+    public string ToString(string? format, IFormatProvider? formatProvider) =>
+        format switch
+        {
+            null or "" => ToString(),
+            "T" => Type switch
+            {
+                BleAddressType.Public => $"P:{this}",
+                BleAddressType.Random => $"R:{this}",
+                _ => ToString(),
+            },
+            _ => throw new FormatException($"The format '{format}' is not supported; use \"T\" or none"),
+        };
 
     /// <inheritdoc />
     public bool Equals(BleAddress? other)

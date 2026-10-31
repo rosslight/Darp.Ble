@@ -1,6 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Darp.Ble.Backends;
 
 /// <summary> One adapter a backend enumerated; the core shows it to apps as <see cref="BleAdapterInfo"/> </summary>
+[Experimental(Experiments.Backends)]
 public interface IBleAdapterSource
 {
     /// <summary> The name of the adapter, if the backend knows one </summary>

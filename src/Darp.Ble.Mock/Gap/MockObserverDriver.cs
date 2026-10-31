@@ -60,7 +60,7 @@ internal sealed class MockObserverDriver(MockAir air, MockAdapterDriver adapter)
     {
         AdvertisingParameters parameters = advertising.Parameters;
         bool isLegacy = eventType.HasFlag(BleEventType.Legacy);
-        return GapAdvertisement.FromExtendedAdvertisingReport(
+        return GapAdvertisement.Create(
             timestamp,
             eventType,
             advertising.Address,

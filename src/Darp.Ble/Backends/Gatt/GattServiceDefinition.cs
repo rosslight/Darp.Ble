@@ -1,8 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data;
 
 namespace Darp.Ble.Backends;
 
 /// <summary> A complete service to add; it does not change afterwards </summary>
+[Experimental(Experiments.Backends)]
 public sealed class GattServiceDefinition
 {
     internal GattServiceDefinition(

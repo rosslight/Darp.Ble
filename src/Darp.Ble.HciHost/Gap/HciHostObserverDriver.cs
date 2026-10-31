@@ -19,6 +19,15 @@ internal sealed partial class HciHostObserverDriver : IObserverDriver, IDisposab
     private IScanSink? _sink;
     private bool _transportFailed;
 
+    // The type each address was last heard with, so an address known only by its value can be connected.
+    // Bounded: a long scan among devices with changing private addresses hears ever new ones
+    private const int MaxKnownAddresses = 1024;
+    private readonly Dictionary<ulong, BleAddressType> _addressTypes = [];
+
+    // Used on the read loop only; a new scan's sink starts it afresh
+    private readonly AdvertisingReportAssembler _assembler = new();
+    private IScanSink? _assembledFor;
+
     public HciHostObserverDriver(HciDevice device)
     {
         _device = device;
@@ -85,33 +94,64 @@ internal sealed partial class HciHostObserverDriver : IObserverDriver, IDisposab
             .ConfigureAwait(false);
     }
 
+    /// <summary> The type the address was last heard with, if it was heard </summary>
+    /// <param name="address"> The value of the address </param>
+    /// <returns> The address type, or null </returns>
+    public BleAddressType? TypeOf(Data.UInt48 address)
+    {
+        lock (_lock)
+            return _addressTypes.TryGetValue((ulong)address, out BleAddressType type) ? type : null;
+    }
+
+    private void Remember(ulong address, BleAddressType type)
+    {
+        // Anonymous advertisements have no address to connect to
+        if (type is BleAddressType.NotAvailable)
+            return;
+        if (_addressTypes.Count >= MaxKnownAddresses && !_addressTypes.ContainsKey(address))
+            _addressTypes.Clear();
+        _addressTypes[address] = type;
+    }
+
     [MessageSink]
     private void OnAdvertisingReport(HciLeExtendedAdvertisingReportEvent reportEvent)
     {
         IScanSink? sink;
         lock (_lock)
+        {
             sink = _sink;
+            foreach (HciLeExtendedAdvertisingReport report in reportEvent.Reports)
+                Remember(report.Address.ToUInt64(), (BleAddressType)report.AddressType);
+        }
         if (sink is null)
             return;
+        if (!ReferenceEquals(sink, _assembledFor))
+        {
+            _assembler.Clear();
+            _assembledFor = sink;
+        }
         DateTimeOffset timestamp = _device.TimeProvider.GetUtcNow();
         foreach (HciLeExtendedAdvertisingReport report in reportEvent.Reports)
         {
+            if (!_assembler.TryEnd(report, out ReadOnlyMemory<byte> data, out sbyte txPower))
+                continue;
             sink.OnReport(
-                GapAdvertisement.FromExtendedAdvertisingReport(
+                GapAdvertisement.Create(
                     timestamp,
-                    (BleEventType)report.EventType,
+                    // Without the data status in bits 5 and 6: the advertisement is whole
+                    (BleEventType)(report.EventType & 0b11111),
                     new BleAddress((BleAddressType)report.AddressType, (Data.UInt48)report.Address.ToUInt64()),
                     (Physical)report.PrimaryPhy,
                     (Physical)report.SecondaryPhy,
                     (AdvertisingSId)report.AdvertisingSId,
-                    (TxPowerLevel)report.TxPower,
+                    (TxPowerLevel)txPower,
                     (Rssi)report.Rssi,
                     (PeriodicAdvertisingInterval)report.PeriodicAdvertisingInterval,
                     new BleAddress(
                         (BleAddressType)report.DirectAddressType,
                         (Data.UInt48)report.DirectAddress.ToUInt64()
                     ),
-                    AdvertisingData.From(report.Data)
+                    AdvertisingData.From(data)
                 )
             );
         }

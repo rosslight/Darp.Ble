@@ -1,8 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Security.Cryptography;
+using Darp.Ble.Backends;
 
 namespace Darp.Ble.Gatt;
 
 /// <summary> The AES-CMAC encryption algorithm </summary>
+[Experimental(Experiments.Backends)]
 public sealed class AesCmac : IDisposable
 {
     private readonly Aes _aes;

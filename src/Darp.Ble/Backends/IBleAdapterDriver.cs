@@ -1,8 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Data;
 
 namespace Darp.Ble.Backends;
 
 /// <summary> The driver of an opened adapter. The core wraps it in a <see cref="BleAdapter"/> and disposes it once </summary>
+[Experimental(Experiments.Backends)]
 public interface IBleAdapterDriver : IAsyncDisposable
 {
     /// <summary> The features beyond the roles, e.g. <see cref="Capabilities.SetRandomAddress"/>; the core adds the roles of the role drivers </summary>

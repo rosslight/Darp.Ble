@@ -1,8 +1,10 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Gap;
 
 namespace Darp.Ble.Backends;
 
 /// <summary> The advertising of an adapter </summary>
+[Experimental(Experiments.Backends)]
 public interface IBroadcasterDriver
 {
     /// <summary> Creates a stopped advertising set </summary>

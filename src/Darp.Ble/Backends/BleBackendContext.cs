@@ -1,9 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Backends;
 
 /// <summary> The services a <see cref="BleManager"/> gives to its backends and their drivers </summary>
+[Experimental(Experiments.Backends)]
 public sealed class BleBackendContext
 {
     internal BleBackendContext(ILoggerFactory loggerFactory, TimeProvider timeProvider, DiagnosticsSettings diagnostics)

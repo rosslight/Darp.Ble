@@ -9,7 +9,8 @@ namespace Darp.Ble.Gap;
 /// <summary> An advertising set: what an adapter advertises, and how </summary>
 /// <remarks>
 /// Its operations run one at a time. Its state changes only after the backend accepted a change.
-/// A central that connects through the set stops it; with autoRestart the set starts again once that central disconnected
+/// A central that connects through the set stops it; with autoRestart the set starts again once that central disconnected.
+/// A set the backend stopped because of an error, e.g. the radio turned off, stays stopped until it is started again
 /// </remarks>
 [SuppressMessage(
     "Usage",
@@ -95,14 +96,7 @@ public sealed class AdvertisingSet : IAsyncDisposable
     /// <param name="cancellationToken"> Cancels stopping </param>
     /// <returns> A task that completes once the set stopped </returns>
     public Task StopAsync(CancellationToken cancellationToken = default) =>
-        RunAsync(
-            () =>
-            {
-                CancelPendingRestart();
-                return StopCoreAsync(cancellationToken);
-            },
-            cancellationToken
-        );
+        RunAsync(() => StopCoreAsync(cancellationToken), cancellationToken);
 
     /// <summary> Changes how the set advertises. Controllers reject this while advertising </summary>
     /// <param name="parameters"> The new parameters </param>
@@ -214,7 +208,8 @@ public sealed class AdvertisingSet : IAsyncDisposable
         {
             lock (_lock)
                 _isDisposed = true;
-            CancelPendingRestart();
+            // Closed first: a central connecting now admits no restart that disposal would wait for
+            CloseAdmission();
             await StopCoreAsync(CancellationToken.None).ConfigureAwait(false);
         }
         finally
@@ -259,6 +254,18 @@ public sealed class AdvertisingSet : IAsyncDisposable
         _logger.LogAdvertisingStopped(RandomAddress);
         if (restart is not null)
             _ = RestartAfterDisconnectAsync(central, restart);
+    }
+
+    /// <summary> The backend stopped the set because of an error. Called on the driver's thread </summary>
+    internal void OnFailed(BleException error)
+    {
+        lock (_lock)
+        {
+            if (!_isAdvertising)
+                return;
+            _isAdvertising = false;
+        }
+        _logger.LogAdvertisingFailed(RandomAddress, error);
     }
 
     /// <summary> Starts the set again once the central disconnected, unless a command or disposal cancelled the restart </summary>
@@ -355,8 +362,11 @@ public sealed class AdvertisingSet : IAsyncDisposable
 
     private async Task StopCoreAsync(CancellationToken cancellationToken)
     {
+        // In one step with the connection callback's check: a central connecting now admits no restart
         lock (_lock)
         {
+            _pendingRestart?.Cancel();
+            _pendingRestart = null;
             if (!_isAdvertising)
                 return;
             _isStopping = true;

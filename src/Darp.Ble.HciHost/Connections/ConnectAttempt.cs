@@ -50,8 +50,9 @@ internal sealed partial class ConnectAttempt : IDisposable
     [MessageSink]
     private void OnConnectionComplete(HciLeEnhancedConnectionCompleteV1Event hciEvent)
     {
-        if (hciEvent.Role is not HciLeConnectionRole.Central || _result.Task.IsCompleted)
+        if (_result.Task.IsCompleted)
             return;
+        // Of a failed event only the status is valid; it is this attempt's, as the controller runs one at a time
         if (hciEvent.Status is HciCommandStatus.UnknownConnectionIdentifier)
         {
             // The attempt was cancelled
@@ -69,8 +70,11 @@ internal sealed partial class ConnectAttempt : IDisposable
             );
             return;
         }
-        // A link to another peer is not this attempt's
-        if (hciEvent.PeerAddress.ToUInt64() != _peer.Value.ToUInt64())
+        // A link a central made to our peripheral role, or one to another peer, is not this attempt's
+        if (
+            hciEvent.Role is not HciLeConnectionRole.Central
+            || hciEvent.PeerAddress.ToUInt64() != _peer.Value.ToUInt64()
+        )
             return;
         if (!_device.TryGetConnection(hciEvent.ConnectionHandle, out AclConnection? connection))
             return;

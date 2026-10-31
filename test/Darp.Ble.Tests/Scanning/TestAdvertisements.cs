@@ -15,7 +15,7 @@ internal static class TestAdvertisements
         {
             if (!Advertisements.TryGetValue(number, out IGapAdvertisement? advertisement))
             {
-                advertisement = GapAdvertisement.FromExtendedAdvertisingReport(
+                advertisement = GapAdvertisement.Create(
                     DateTimeOffset.UnixEpoch,
                     BleEventType.AdvNonConnInd,
                     new BleAddress(BleAddressType.Public, (UInt48)number),

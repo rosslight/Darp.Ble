@@ -8,14 +8,19 @@ public static class AdvertisementStreamExtensions
 {
     /// <summary> Only advertisements from this address; all of them when the address is null </summary>
     /// <param name="source"> The advertisements </param>
-    /// <param name="address"> The address to keep </param>
+    /// <param name="address"> The address to keep; without its type (<see cref="BleAddressType.NotAvailable"/>), of any type </param>
     /// <typeparam name="TAdv"> The type of the advertisements </typeparam>
     /// <returns> The filtered advertisements </returns>
     public static IAsyncEnumerable<TAdv> WhereAddress<TAdv>(this IAsyncEnumerable<TAdv> source, BleAddress? address)
         where TAdv : IGapAdvertisement
     {
         ArgumentNullException.ThrowIfNull(source);
-        return address is null ? source : source.Where(adv => adv.Address.Equals(address));
+        if (address is null)
+            return source;
+        // An address without its type, e.g. parsed from text, matches its value of any type
+        return address.Type is BleAddressType.NotAvailable
+            ? source.Where(adv => adv.Address.Value == address.Value)
+            : source.Where(adv => adv.Address.Equals(address));
     }
 
     /// <summary> Only advertisements from this address value; all of them when the address is null </summary>

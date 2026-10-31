@@ -1,9 +1,11 @@
+using System.Diagnostics.CodeAnalysis;
 using Darp.Ble.Connections;
 using Darp.Ble.Data;
 
 namespace Darp.Ble.Backends;
 
 /// <summary> The central role of an adapter: connects to peripherals </summary>
+[Experimental(Experiments.Backends)]
 public interface ICentralDriver
 {
     /// <summary> Connects to a peripheral </summary>
