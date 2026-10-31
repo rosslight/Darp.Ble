@@ -3,7 +3,7 @@ namespace Darp.Ble.Connections;
 /// <summary> Why a peripheral could not be connected </summary>
 public enum BleConnectErrorKind
 {
-    /// <summary> The link failed to come up, or the backend knows no connectable device at the address </summary>
+    /// <summary> The link failed to come up or went down before the connection was set up, or the backend knows no connectable device at the address </summary>
     /// <remarks> A peripheral out of range does not end the attempt on HciHost and WinRT; they keep trying until the token is cancelled </remarks>
     Unreachable,
 

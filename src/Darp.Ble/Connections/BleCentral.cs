@@ -59,8 +59,10 @@ public sealed class BleCentral
     /// <param name="parameters"> How the connection runs; the defaults when null </param>
     /// <param name="cancellationToken"> Cancels connecting </param>
     /// <returns> The connection once the link is up. The caller owns it; disposing the adapter ends it too </returns>
-    /// <exception cref="BleConnectException"> The peripheral could not be connected; <see cref="BleConnectException.Kind"/> says why </exception>
-    /// <exception cref="BleDisconnectedException"> The link went down while the connection was being set up </exception>
+    /// <exception cref="BleConnectException">
+    /// The peripheral could not be connected; <see cref="BleConnectException.Kind"/> says why. A link that goes down
+    /// before the connection is set up is <see cref="BleConnectErrorKind.Unreachable"/>, with the end as its inner exception
+    /// </exception>
     public async Task<ConnectedPeripheral> ConnectAsync(
         BleAddress address,
         BleConnectionParameters? parameters = null,
@@ -129,9 +131,21 @@ public sealed class BleCentral
                 _connections.Add(connection);
             }
         }
-        catch
+        catch (Exception e)
         {
             await connection.DisposeAsync().ConfigureAwait(false);
+            // A link that ends this early failed to come up, e.g. a peer that never answered on it
+            if (e is BleDisconnectedException disconnected)
+            {
+                var failed = new BleConnectException(
+                    BleConnectErrorKind.Unreachable,
+                    "The link went down before the connection was set up",
+                    disconnected.Info.NativeCode,
+                    disconnected
+                );
+                _logger.LogConnectFailed(address, failed.Kind, failed);
+                throw failed;
+            }
             throw;
         }
         _logger.LogConnected(address);
