@@ -10,6 +10,12 @@ public sealed class RemoteGattCharacteristic
     private readonly ConnectedPeripheral _connection;
     private readonly IRemoteCharacteristicDriver _driver;
 
+    /// <summary> The connection the characteristic belongs to </summary>
+    internal ConnectedPeripheral Connection => _connection;
+
+    /// <summary> The driver object; the same for the same characteristic on every discovery of the connection </summary>
+    internal IRemoteCharacteristicDriver Driver => _driver;
+
     internal RemoteGattCharacteristic(ConnectedPeripheral connection, IRemoteCharacteristicDriver driver)
     {
         _connection = connection;

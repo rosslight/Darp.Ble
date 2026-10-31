@@ -3,9 +3,13 @@ Darp.Ble.Backends.BleBackendContext
 Darp.Ble.Backends.BleBackendContext.BleBackendContext(Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, System.TimeProvider! timeProvider) -> void
 Darp.Ble.Backends.BleBackendContext.LoggerFactory.get -> Microsoft.Extensions.Logging.ILoggerFactory!
 Darp.Ble.Backends.BleBackendContext.TimeProvider.get -> System.TimeProvider!
+Darp.Ble.Backends.GattAttributeDefinition
+Darp.Ble.Backends.GattAttributeDefinition.Uuid.get -> Darp.Ble.Data.BleUuid!
 Darp.Ble.Backends.GattCharacteristicDefinition
+Darp.Ble.Backends.GattCharacteristicDefinition.Descriptors.get -> System.Collections.Generic.IReadOnlyList<Darp.Ble.Backends.GattDescriptorDefinition!>!
 Darp.Ble.Backends.GattCharacteristicDefinition.Properties.get -> Darp.Ble.Gatt.GattProperty
-Darp.Ble.Backends.GattCharacteristicDefinition.Uuid.get -> Darp.Ble.Data.BleUuid!
+Darp.Ble.Backends.GattDescriptorDefinition
+Darp.Ble.Backends.GattDescriptorDefinition.StaticValue.get -> System.ReadOnlyMemory<byte>?
 Darp.Ble.Backends.GattRequest
 Darp.Ble.Backends.GattRequest.HandOffToken.get -> System.Threading.CancellationToken
 Darp.Ble.Backends.GattRequest.IsAbandoned.get -> bool
@@ -54,9 +58,10 @@ Darp.Ble.Backends.IConnectionSink.OnNotification(Darp.Ble.Backends.IRemoteCharac
 Darp.Ble.Backends.IGattServerSink
 Darp.Ble.Backends.IGattServerSink.OnCentralConnected(Darp.Ble.Backends.ICentralConnectionDriver! central) -> void
 Darp.Ble.Backends.IGattServerSink.OnCentralDisconnected(Darp.Ble.Backends.ICentralConnectionDriver! central, Darp.Ble.Connections.DisconnectInfo! info) -> void
-Darp.Ble.Backends.IGattServerSink.OnReadRequest(Darp.Ble.Backends.ICentralConnectionDriver! central, Darp.Ble.Backends.GattCharacteristicDefinition! characteristic) -> System.Threading.Tasks.Task<byte[]!>!
-Darp.Ble.Backends.IGattServerSink.OnWriteCommand(Darp.Ble.Backends.ICentralConnectionDriver! central, Darp.Ble.Backends.GattCharacteristicDefinition! characteristic, System.ReadOnlyMemory<byte> value) -> void
-Darp.Ble.Backends.IGattServerSink.OnWriteRequest(Darp.Ble.Backends.ICentralConnectionDriver! central, Darp.Ble.Backends.GattCharacteristicDefinition! characteristic, System.ReadOnlyMemory<byte> value) -> System.Threading.Tasks.Task!
+Darp.Ble.Backends.IGattServerSink.OnReadRequest(Darp.Ble.Backends.ICentralConnectionDriver! central, Darp.Ble.Backends.GattAttributeDefinition! attribute) -> System.Threading.Tasks.Task<byte[]!>!
+Darp.Ble.Backends.IGattServerSink.OnSubscriptionChanged(Darp.Ble.Backends.ICentralConnectionDriver! central, Darp.Ble.Backends.GattCharacteristicDefinition! characteristic, bool enabled) -> void
+Darp.Ble.Backends.IGattServerSink.OnWriteCommand(Darp.Ble.Backends.ICentralConnectionDriver! central, Darp.Ble.Backends.GattAttributeDefinition! attribute, System.ReadOnlyMemory<byte> value) -> void
+Darp.Ble.Backends.IGattServerSink.OnWriteRequest(Darp.Ble.Backends.ICentralConnectionDriver! central, Darp.Ble.Backends.GattAttributeDefinition! attribute, System.ReadOnlyMemory<byte> value) -> System.Threading.Tasks.Task!
 Darp.Ble.Backends.IObserverDriver
 Darp.Ble.Backends.IObserverDriver.StartScanAsync(Darp.Ble.Gap.BleScanParameters! parameters, Darp.Ble.Backends.IScanSink! sink, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Darp.Ble.Backends.IObserverDriver.StopScanAsync(System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
@@ -65,6 +70,7 @@ Darp.Ble.Backends.IPeripheralDriver.AddServiceAsync(Darp.Ble.Backends.GattServic
 Darp.Ble.Backends.IPeripheralDriver.Attach(Darp.Ble.Backends.IGattServerSink! sink) -> void
 Darp.Ble.Backends.IPeripheralDriver.DisconnectAsync(Darp.Ble.Backends.ICentralConnectionDriver! central, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Darp.Ble.Backends.IPeripheralDriver.NotifyAsync(Darp.Ble.Backends.ICentralConnectionDriver! central, Darp.Ble.Backends.GattCharacteristicDefinition! characteristic, System.ReadOnlyMemory<byte> value, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask
+Darp.Ble.Backends.IPeripheralDriver.SetGapIdentity(string! deviceName, Darp.Ble.Data.AssignedNumbers.AppearanceValues appearance) -> void
 Darp.Ble.Backends.IRemoteCharacteristicDriver
 Darp.Ble.Backends.IRemoteCharacteristicDriver.DiscoverDescriptorsAsync(Darp.Ble.Backends.GattRequest! request) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Darp.Ble.Backends.IRemoteDescriptorDriver!>!>!
 Darp.Ble.Backends.IRemoteCharacteristicDriver.Properties.get -> Darp.Ble.Gatt.GattProperty
@@ -134,6 +140,7 @@ Darp.Ble.Capabilities.Central = 10 -> Darp.Ble.Capabilities
 Darp.Ble.Capabilities.None = 0 -> Darp.Ble.Capabilities
 Darp.Ble.Capabilities.Observer = 2 -> Darp.Ble.Capabilities
 Darp.Ble.Capabilities.Peripheral = 5 -> Darp.Ble.Capabilities
+Darp.Ble.Capabilities.SetGapIdentity = 32 -> Darp.Ble.Capabilities
 Darp.Ble.Capabilities.SetRandomAddress = 16 -> Darp.Ble.Capabilities
 Darp.Ble.Connections.BleCentral
 Darp.Ble.Connections.BleCentral.Adapter.get -> Darp.Ble.BleAdapter!
@@ -159,11 +166,16 @@ Darp.Ble.Connections.BleDisconnectedException.Info.get -> Darp.Ble.Connections.D
 Darp.Ble.Connections.BlePeripheral
 Darp.Ble.Connections.BlePeripheral.Adapter.get -> Darp.Ble.BleAdapter!
 Darp.Ble.Connections.BlePeripheral.AddServiceAsync(Darp.Ble.Gatt.LocalGattServiceBuilder! service, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gatt.LocalGattService!>!
+Darp.Ble.Connections.BlePeripheral.Appearance.get -> Darp.Ble.Data.AssignedNumbers.AppearanceValues
+Darp.Ble.Connections.BlePeripheral.Appearance.set -> void
 Darp.Ble.Connections.BlePeripheral.ConnectedCentrals.get -> System.Collections.Generic.IReadOnlyList<Darp.Ble.Connections.ConnectedCentral!>!
+Darp.Ble.Connections.BlePeripheral.DeviceName.get -> string!
+Darp.Ble.Connections.BlePeripheral.DeviceName.set -> void
 Darp.Ble.Connections.ConnectedCentral
 Darp.Ble.Connections.ConnectedCentral.Address.get -> Darp.Ble.Data.BleAddress!
 Darp.Ble.Connections.ConnectedCentral.DisconnectAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Darp.Ble.Connections.ConnectedCentral.Disconnected.get -> System.Threading.Tasks.Task<Darp.Ble.Connections.DisconnectInfo!>!
+Darp.Ble.Connections.ConnectedCentral.GetOrAddState<T>(System.Func<T!>! create) -> T!
 Darp.Ble.Connections.ConnectedPeripheral
 Darp.Ble.Connections.ConnectedPeripheral.Address.get -> Darp.Ble.Data.BleAddress!
 Darp.Ble.Connections.ConnectedPeripheral.DisconnectAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
@@ -4174,6 +4186,11 @@ Darp.Ble.Gatt.IGattTypedCharacteristic<T>.Decode(System.ReadOnlySpan<byte> sourc
 Darp.Ble.Gatt.IGattTypedCharacteristic<T>.DecodeFunc
 Darp.Ble.Gatt.IGattTypedCharacteristic<T>.Encode(T value) -> byte[]!
 Darp.Ble.Gatt.IGattTypedCharacteristic<T>.EncodeFunc
+Darp.Ble.Gatt.ILocalCharacteristic
+Darp.Ble.Gatt.ILocalCharacteristic.Characteristic.get -> Darp.Ble.Gatt.LocalGattCharacteristic!
+Darp.Ble.Gatt.ILocalCharacteristic.Properties.get -> Darp.Ble.Gatt.GattProperty
+Darp.Ble.Gatt.ILocalCharacteristic.Uuid.get -> Darp.Ble.Data.BleUuid!
+Darp.Ble.Gatt.ILocalCharacteristic<TProp1>
 Darp.Ble.Gatt.IRemoteCharacteristic
 Darp.Ble.Gatt.IRemoteCharacteristic.Characteristic.get -> Darp.Ble.Gatt.RemoteGattCharacteristic!
 Darp.Ble.Gatt.IRemoteCharacteristic.Properties.get -> Darp.Ble.Gatt.GattProperty
@@ -4182,25 +4199,43 @@ Darp.Ble.Gatt.IRemoteCharacteristic<TProp1>
 Darp.Ble.Gatt.IServiceDeclaration
 Darp.Ble.Gatt.IServiceDeclaration.Type.get -> Darp.Ble.Gatt.GattServiceType
 Darp.Ble.Gatt.ITypedCharacteristicDeclaration<T, TProp1>
+Darp.Ble.Gatt.ITypedLocalCharacteristic<T, TProp1, TProp2>
+Darp.Ble.Gatt.ITypedLocalCharacteristic<T, TProp1, TProp2>.Declaration.get -> Darp.Ble.Gatt.IGattTypedCharacteristic<T>!
+Darp.Ble.Gatt.ITypedLocalCharacteristic<T, TProp1>
+Darp.Ble.Gatt.ITypedLocalCharacteristic<T, TProp1>.Declaration.get -> Darp.Ble.Gatt.IGattTypedCharacteristic<T>!
 Darp.Ble.Gatt.ITypedRemoteCharacteristic<T, TProp1, TProp2>
 Darp.Ble.Gatt.ITypedRemoteCharacteristic<T, TProp1, TProp2>.Declaration.get -> Darp.Ble.Gatt.IGattTypedCharacteristic<T>!
 Darp.Ble.Gatt.ITypedRemoteCharacteristic<T, TProp1>
 Darp.Ble.Gatt.ITypedRemoteCharacteristic<T, TProp1>.Declaration.get -> Darp.Ble.Gatt.IGattTypedCharacteristic<T>!
+Darp.Ble.Gatt.LocalCharacteristic<TProp1, TProp2>
+Darp.Ble.Gatt.LocalCharacteristic<TProp1>
+Darp.Ble.Gatt.LocalCharacteristic<TProp1>.Characteristic.get -> Darp.Ble.Gatt.LocalGattCharacteristic!
+Darp.Ble.Gatt.LocalCharacteristic<TProp1>.Properties.get -> Darp.Ble.Gatt.GattProperty
+Darp.Ble.Gatt.LocalCharacteristic<TProp1>.Uuid.get -> Darp.Ble.Data.BleUuid!
+Darp.Ble.Gatt.LocalCharacteristicExtensions
 Darp.Ble.Gatt.LocalGattCharacteristic
+Darp.Ble.Gatt.LocalGattCharacteristic.AddDescriptor(Darp.Ble.Data.BleUuid! uuid, Darp.Ble.Gatt.OnReadHandler? onRead = null, Darp.Ble.Gatt.OnWriteHandler? onWrite = null) -> Darp.Ble.Gatt.LocalGattDescriptor!
+Darp.Ble.Gatt.LocalGattCharacteristic.NotifyAllAsync(System.ReadOnlyMemory<byte> value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
 Darp.Ble.Gatt.LocalGattCharacteristic.NotifyAsync(Darp.Ble.Connections.ConnectedCentral! central, System.ReadOnlyMemory<byte> value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
 Darp.Ble.Gatt.LocalGattCharacteristic.Properties.get -> Darp.Ble.Gatt.GattProperty
 Darp.Ble.Gatt.LocalGattCharacteristic.Uuid.get -> Darp.Ble.Data.BleUuid!
+Darp.Ble.Gatt.LocalGattCharacteristicExtensions
+Darp.Ble.Gatt.LocalGattDescriptor
+Darp.Ble.Gatt.LocalGattDescriptor.Uuid.get -> Darp.Ble.Data.BleUuid!
 Darp.Ble.Gatt.LocalGattService
 Darp.Ble.Gatt.LocalGattService.Uuid.get -> Darp.Ble.Data.BleUuid!
 Darp.Ble.Gatt.LocalGattServiceBuilder
 Darp.Ble.Gatt.LocalGattServiceBuilder.AddCharacteristic(Darp.Ble.Data.BleUuid! uuid, Darp.Ble.Gatt.GattProperty properties, Darp.Ble.Gatt.OnReadHandler? onRead = null, Darp.Ble.Gatt.OnWriteHandler? onWrite = null) -> Darp.Ble.Gatt.LocalGattCharacteristic!
 Darp.Ble.Gatt.LocalGattServiceBuilder.LocalGattServiceBuilder(Darp.Ble.Data.BleUuid! uuid, bool isPrimary = true) -> void
 Darp.Ble.Gatt.LocalGattServiceBuilder.LocalGattServiceBuilder(Darp.Ble.Gatt.ServiceDeclaration! declaration) -> void
+Darp.Ble.Gatt.LocalGattServiceBuilderExtensions
 Darp.Ble.Gatt.NotificationStream<T>
 Darp.Ble.Gatt.NotificationStream<T>.Dispose() -> void
 Darp.Ble.Gatt.NotificationStream<T>.GetAsyncEnumerator(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerator<T>!
 Darp.Ble.Gatt.OnReadHandler
+Darp.Ble.Gatt.OnReadHandler<T>
 Darp.Ble.Gatt.OnWriteHandler
+Darp.Ble.Gatt.OnWriteHandler<T>
 Darp.Ble.Gatt.Properties
 Darp.Ble.Gatt.Properties.Indicate
 Darp.Ble.Gatt.Properties.Indicate.Indicate() -> void
@@ -4241,13 +4276,177 @@ Darp.Ble.Gatt.ServiceDeclaration
 Darp.Ble.Gatt.ServiceDeclaration.ServiceDeclaration(Darp.Ble.Data.BleUuid! uuid, Darp.Ble.Gatt.GattServiceType type = Darp.Ble.Gatt.GattServiceType.Primary) -> void
 Darp.Ble.Gatt.ServiceDeclaration.Type.get -> Darp.Ble.Gatt.GattServiceType
 Darp.Ble.Gatt.ServiceDeclaration.Uuid.get -> Darp.Ble.Data.BleUuid!
+Darp.Ble.Gatt.Services.BatteryServiceContract
+Darp.Ble.Gatt.Services.DeviceInformationServiceContract
+Darp.Ble.Gatt.Services.EchoRequestHandler
+Darp.Ble.Gatt.Services.EchoServiceContract
+Darp.Ble.Gatt.Services.GapServiceContract
+Darp.Ble.Gatt.Services.HeartRateBodySensorLocation
+Darp.Ble.Gatt.Services.HeartRateBodySensorLocation.Chest = 1 -> Darp.Ble.Gatt.Services.HeartRateBodySensorLocation
+Darp.Ble.Gatt.Services.HeartRateBodySensorLocation.EarLobe = 5 -> Darp.Ble.Gatt.Services.HeartRateBodySensorLocation
+Darp.Ble.Gatt.Services.HeartRateBodySensorLocation.Finger = 3 -> Darp.Ble.Gatt.Services.HeartRateBodySensorLocation
+Darp.Ble.Gatt.Services.HeartRateBodySensorLocation.Foot = 6 -> Darp.Ble.Gatt.Services.HeartRateBodySensorLocation
+Darp.Ble.Gatt.Services.HeartRateBodySensorLocation.Hand = 4 -> Darp.Ble.Gatt.Services.HeartRateBodySensorLocation
+Darp.Ble.Gatt.Services.HeartRateBodySensorLocation.Other = 0 -> Darp.Ble.Gatt.Services.HeartRateBodySensorLocation
+Darp.Ble.Gatt.Services.HeartRateBodySensorLocation.Wrist = 2 -> Darp.Ble.Gatt.Services.HeartRateBodySensorLocation
+Darp.Ble.Gatt.Services.HeartRateMeasurement
+Darp.Ble.Gatt.Services.HeartRateMeasurement.Deconstruct(out ushort Value) -> void
+Darp.Ble.Gatt.Services.HeartRateMeasurement.EnergyExpended.get -> ushort?
+Darp.Ble.Gatt.Services.HeartRateMeasurement.EnergyExpended.init -> void
+Darp.Ble.Gatt.Services.HeartRateMeasurement.Equals(Darp.Ble.Gatt.Services.HeartRateMeasurement other) -> bool
+Darp.Ble.Gatt.Services.HeartRateMeasurement.HeartRateMeasurement() -> void
+Darp.Ble.Gatt.Services.HeartRateMeasurement.HeartRateMeasurement(ushort Value) -> void
+Darp.Ble.Gatt.Services.HeartRateMeasurement.IsSensorContactDetected.get -> bool?
+Darp.Ble.Gatt.Services.HeartRateMeasurement.IsSensorContactDetected.init -> void
+Darp.Ble.Gatt.Services.HeartRateMeasurement.RrIntervals.get -> System.ReadOnlyMemory<ushort>
+Darp.Ble.Gatt.Services.HeartRateMeasurement.RrIntervals.init -> void
+Darp.Ble.Gatt.Services.HeartRateMeasurement.ToByteArrayLittleEndian() -> byte[]!
+Darp.Ble.Gatt.Services.HeartRateMeasurement.Value.get -> ushort
+Darp.Ble.Gatt.Services.HeartRateMeasurement.Value.init -> void
+Darp.Ble.Gatt.Services.HeartRateServiceContract
+Darp.Ble.Gatt.Services.LocalBatteryService
+Darp.Ble.Gatt.Services.LocalBatteryService.<Clone>$() -> Darp.Ble.Gatt.Services.LocalBatteryService!
+Darp.Ble.Gatt.Services.LocalBatteryService.BatteryLevel.get -> byte
+Darp.Ble.Gatt.Services.LocalBatteryService.BatteryLevelCharacteristic.get -> Darp.Ble.Gatt.TypedLocalCharacteristic<byte, Darp.Ble.Gatt.Properties.Read!, Darp.Ble.Gatt.Properties.Notify!>!
+Darp.Ble.Gatt.Services.LocalBatteryService.BatteryLevelCharacteristic.init -> void
+Darp.Ble.Gatt.Services.LocalBatteryService.Deconstruct(out Darp.Ble.Gatt.LocalGattService! Service, out Darp.Ble.Gatt.TypedLocalCharacteristic<byte, Darp.Ble.Gatt.Properties.Read!, Darp.Ble.Gatt.Properties.Notify!>! BatteryLevelCharacteristic, out byte BatteryLevel) -> void
+Darp.Ble.Gatt.Services.LocalBatteryService.Equals(Darp.Ble.Gatt.Services.LocalBatteryService? other) -> bool
+Darp.Ble.Gatt.Services.LocalBatteryService.LocalBatteryService(Darp.Ble.Gatt.LocalGattService! Service, Darp.Ble.Gatt.TypedLocalCharacteristic<byte, Darp.Ble.Gatt.Properties.Read!, Darp.Ble.Gatt.Properties.Notify!>! BatteryLevelCharacteristic, byte BatteryLevel) -> void
+Darp.Ble.Gatt.Services.LocalBatteryService.Service.get -> Darp.Ble.Gatt.LocalGattService!
+Darp.Ble.Gatt.Services.LocalBatteryService.Service.init -> void
+Darp.Ble.Gatt.Services.LocalBatteryService.SetBatteryLevelAsync(byte level, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+Darp.Ble.Gatt.Services.LocalDeviceInformationService
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.<Clone>$() -> Darp.Ble.Gatt.Services.LocalDeviceInformationService!
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.Deconstruct(out Darp.Ble.Gatt.LocalGattService! Service, out Darp.Ble.Gatt.TypedLocalCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? ManufacturerName, out Darp.Ble.Gatt.TypedLocalCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? ModelNumber, out Darp.Ble.Gatt.TypedLocalCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? SerialNumber, out Darp.Ble.Gatt.TypedLocalCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? HardwareRevision, out Darp.Ble.Gatt.TypedLocalCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? FirmwareRevision, out Darp.Ble.Gatt.TypedLocalCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? SoftwareRevision, out Darp.Ble.Gatt.TypedLocalCharacteristic<Darp.Ble.Gatt.Services.SystemId, Darp.Ble.Gatt.Properties.Read!>? SystemId, out Darp.Ble.Gatt.LocalCharacteristic<Darp.Ble.Gatt.Properties.Read!>? RegulatoryCertificationData, out Darp.Ble.Gatt.LocalCharacteristic<Darp.Ble.Gatt.Properties.Read!>? PnPId) -> void
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.Equals(Darp.Ble.Gatt.Services.LocalDeviceInformationService? other) -> bool
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.FirmwareRevision.get -> Darp.Ble.Gatt.TypedLocalCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>?
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.FirmwareRevision.init -> void
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.HardwareRevision.get -> Darp.Ble.Gatt.TypedLocalCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>?
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.HardwareRevision.init -> void
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.LocalDeviceInformationService(Darp.Ble.Gatt.LocalGattService! Service, Darp.Ble.Gatt.TypedLocalCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? ManufacturerName, Darp.Ble.Gatt.TypedLocalCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? ModelNumber, Darp.Ble.Gatt.TypedLocalCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? SerialNumber, Darp.Ble.Gatt.TypedLocalCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? HardwareRevision, Darp.Ble.Gatt.TypedLocalCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? FirmwareRevision, Darp.Ble.Gatt.TypedLocalCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? SoftwareRevision, Darp.Ble.Gatt.TypedLocalCharacteristic<Darp.Ble.Gatt.Services.SystemId, Darp.Ble.Gatt.Properties.Read!>? SystemId, Darp.Ble.Gatt.LocalCharacteristic<Darp.Ble.Gatt.Properties.Read!>? RegulatoryCertificationData, Darp.Ble.Gatt.LocalCharacteristic<Darp.Ble.Gatt.Properties.Read!>? PnPId) -> void
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.ManufacturerName.get -> Darp.Ble.Gatt.TypedLocalCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>?
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.ManufacturerName.init -> void
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.ModelNumber.get -> Darp.Ble.Gatt.TypedLocalCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>?
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.ModelNumber.init -> void
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.PnPId.get -> Darp.Ble.Gatt.LocalCharacteristic<Darp.Ble.Gatt.Properties.Read!>?
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.PnPId.init -> void
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.RegulatoryCertificationData.get -> Darp.Ble.Gatt.LocalCharacteristic<Darp.Ble.Gatt.Properties.Read!>?
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.RegulatoryCertificationData.init -> void
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.SerialNumber.get -> Darp.Ble.Gatt.TypedLocalCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>?
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.SerialNumber.init -> void
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.Service.get -> Darp.Ble.Gatt.LocalGattService!
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.Service.init -> void
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.SoftwareRevision.get -> Darp.Ble.Gatt.TypedLocalCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>?
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.SoftwareRevision.init -> void
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.SystemId.get -> Darp.Ble.Gatt.TypedLocalCharacteristic<Darp.Ble.Gatt.Services.SystemId, Darp.Ble.Gatt.Properties.Read!>?
+Darp.Ble.Gatt.Services.LocalDeviceInformationService.SystemId.init -> void
+Darp.Ble.Gatt.Services.LocalEchoService
+Darp.Ble.Gatt.Services.LocalEchoService.<Clone>$() -> Darp.Ble.Gatt.Services.LocalEchoService!
+Darp.Ble.Gatt.Services.LocalEchoService.Deconstruct(out Darp.Ble.Gatt.LocalGattService! Service, out Darp.Ble.Gatt.LocalCharacteristic<Darp.Ble.Gatt.Properties.Write!>! Write, out Darp.Ble.Gatt.LocalCharacteristic<Darp.Ble.Gatt.Properties.Notify!>! Notify) -> void
+Darp.Ble.Gatt.Services.LocalEchoService.Equals(Darp.Ble.Gatt.Services.LocalEchoService? other) -> bool
+Darp.Ble.Gatt.Services.LocalEchoService.LocalEchoService(Darp.Ble.Gatt.LocalGattService! Service, Darp.Ble.Gatt.LocalCharacteristic<Darp.Ble.Gatt.Properties.Write!>! Write, Darp.Ble.Gatt.LocalCharacteristic<Darp.Ble.Gatt.Properties.Notify!>! Notify) -> void
+Darp.Ble.Gatt.Services.LocalEchoService.Notify.get -> Darp.Ble.Gatt.LocalCharacteristic<Darp.Ble.Gatt.Properties.Notify!>!
+Darp.Ble.Gatt.Services.LocalEchoService.Notify.init -> void
+Darp.Ble.Gatt.Services.LocalEchoService.Service.get -> Darp.Ble.Gatt.LocalGattService!
+Darp.Ble.Gatt.Services.LocalEchoService.Service.init -> void
+Darp.Ble.Gatt.Services.LocalEchoService.Write.get -> Darp.Ble.Gatt.LocalCharacteristic<Darp.Ble.Gatt.Properties.Write!>!
+Darp.Ble.Gatt.Services.LocalEchoService.Write.init -> void
+Darp.Ble.Gatt.Services.LocalHeartRateService
+Darp.Ble.Gatt.Services.LocalHeartRateService.<Clone>$() -> Darp.Ble.Gatt.Services.LocalHeartRateService!
+Darp.Ble.Gatt.Services.LocalHeartRateService.BodySensorLocation.get -> Darp.Ble.Gatt.TypedLocalCharacteristic<Darp.Ble.Gatt.Services.HeartRateBodySensorLocation, Darp.Ble.Gatt.Properties.Read!>?
+Darp.Ble.Gatt.Services.LocalHeartRateService.BodySensorLocation.init -> void
+Darp.Ble.Gatt.Services.LocalHeartRateService.Deconstruct(out Darp.Ble.Gatt.LocalGattService! Service, out Darp.Ble.Gatt.TypedLocalCharacteristic<Darp.Ble.Gatt.Services.HeartRateMeasurement, Darp.Ble.Gatt.Properties.Notify!>! HeartRateMeasurement, out Darp.Ble.Gatt.TypedLocalCharacteristic<Darp.Ble.Gatt.Services.HeartRateBodySensorLocation, Darp.Ble.Gatt.Properties.Read!>? BodySensorLocation, out Darp.Ble.Gatt.LocalCharacteristic<Darp.Ble.Gatt.Properties.Write!>? HeartRateControlPoint) -> void
+Darp.Ble.Gatt.Services.LocalHeartRateService.Equals(Darp.Ble.Gatt.Services.LocalHeartRateService? other) -> bool
+Darp.Ble.Gatt.Services.LocalHeartRateService.HeartRateControlPoint.get -> Darp.Ble.Gatt.LocalCharacteristic<Darp.Ble.Gatt.Properties.Write!>?
+Darp.Ble.Gatt.Services.LocalHeartRateService.HeartRateControlPoint.init -> void
+Darp.Ble.Gatt.Services.LocalHeartRateService.HeartRateMeasurement.get -> Darp.Ble.Gatt.TypedLocalCharacteristic<Darp.Ble.Gatt.Services.HeartRateMeasurement, Darp.Ble.Gatt.Properties.Notify!>!
+Darp.Ble.Gatt.Services.LocalHeartRateService.HeartRateMeasurement.init -> void
+Darp.Ble.Gatt.Services.LocalHeartRateService.LocalHeartRateService(Darp.Ble.Gatt.LocalGattService! Service, Darp.Ble.Gatt.TypedLocalCharacteristic<Darp.Ble.Gatt.Services.HeartRateMeasurement, Darp.Ble.Gatt.Properties.Notify!>! HeartRateMeasurement, Darp.Ble.Gatt.TypedLocalCharacteristic<Darp.Ble.Gatt.Services.HeartRateBodySensorLocation, Darp.Ble.Gatt.Properties.Read!>? BodySensorLocation, Darp.Ble.Gatt.LocalCharacteristic<Darp.Ble.Gatt.Properties.Write!>? HeartRateControlPoint) -> void
+Darp.Ble.Gatt.Services.LocalHeartRateService.Service.get -> Darp.Ble.Gatt.LocalGattService!
+Darp.Ble.Gatt.Services.LocalHeartRateService.Service.init -> void
+Darp.Ble.Gatt.Services.RemoteBatteryService
+Darp.Ble.Gatt.Services.RemoteBatteryService.<Clone>$() -> Darp.Ble.Gatt.Services.RemoteBatteryService!
+Darp.Ble.Gatt.Services.RemoteBatteryService.BatteryLevel.get -> Darp.Ble.Gatt.TypedRemoteCharacteristic<byte, Darp.Ble.Gatt.Properties.Read!>!
+Darp.Ble.Gatt.Services.RemoteBatteryService.BatteryLevel.init -> void
+Darp.Ble.Gatt.Services.RemoteBatteryService.Deconstruct(out Darp.Ble.Gatt.TypedRemoteCharacteristic<byte, Darp.Ble.Gatt.Properties.Read!>! BatteryLevel, out Darp.Ble.Gatt.TypedRemoteCharacteristic<byte, Darp.Ble.Gatt.Properties.Notify!>? NotifyingBatteryLevel) -> void
+Darp.Ble.Gatt.Services.RemoteBatteryService.Equals(Darp.Ble.Gatt.Services.RemoteBatteryService? other) -> bool
+Darp.Ble.Gatt.Services.RemoteBatteryService.NotifyingBatteryLevel.get -> Darp.Ble.Gatt.TypedRemoteCharacteristic<byte, Darp.Ble.Gatt.Properties.Notify!>?
+Darp.Ble.Gatt.Services.RemoteBatteryService.NotifyingBatteryLevel.init -> void
+Darp.Ble.Gatt.Services.RemoteBatteryService.RemoteBatteryService(Darp.Ble.Gatt.TypedRemoteCharacteristic<byte, Darp.Ble.Gatt.Properties.Read!>! BatteryLevel, Darp.Ble.Gatt.TypedRemoteCharacteristic<byte, Darp.Ble.Gatt.Properties.Notify!>? NotifyingBatteryLevel) -> void
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.<Clone>$() -> Darp.Ble.Gatt.Services.RemoteDeviceInformationService!
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.Deconstruct(out Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? ManufacturerName, out Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? ModelNumber, out Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? SerialNumber, out Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? HardwareRevision, out Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? FirmwareRevision, out Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? SoftwareRevision, out Darp.Ble.Gatt.TypedRemoteCharacteristic<Darp.Ble.Gatt.Services.SystemId, Darp.Ble.Gatt.Properties.Read!>? SystemId, out Darp.Ble.Gatt.RemoteCharacteristic<Darp.Ble.Gatt.Properties.Read!>? RegulatoryCertificationData, out Darp.Ble.Gatt.RemoteCharacteristic<Darp.Ble.Gatt.Properties.Read!>? PnPId) -> void
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.Equals(Darp.Ble.Gatt.Services.RemoteDeviceInformationService? other) -> bool
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.FirmwareRevision.get -> Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>?
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.FirmwareRevision.init -> void
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.HardwareRevision.get -> Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>?
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.HardwareRevision.init -> void
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.ManufacturerName.get -> Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>?
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.ManufacturerName.init -> void
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.ModelNumber.get -> Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>?
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.ModelNumber.init -> void
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.PnPId.get -> Darp.Ble.Gatt.RemoteCharacteristic<Darp.Ble.Gatt.Properties.Read!>?
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.PnPId.init -> void
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.RegulatoryCertificationData.get -> Darp.Ble.Gatt.RemoteCharacteristic<Darp.Ble.Gatt.Properties.Read!>?
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.RegulatoryCertificationData.init -> void
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.RemoteDeviceInformationService(Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? ManufacturerName, Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? ModelNumber, Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? SerialNumber, Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? HardwareRevision, Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? FirmwareRevision, Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>? SoftwareRevision, Darp.Ble.Gatt.TypedRemoteCharacteristic<Darp.Ble.Gatt.Services.SystemId, Darp.Ble.Gatt.Properties.Read!>? SystemId, Darp.Ble.Gatt.RemoteCharacteristic<Darp.Ble.Gatt.Properties.Read!>? RegulatoryCertificationData, Darp.Ble.Gatt.RemoteCharacteristic<Darp.Ble.Gatt.Properties.Read!>? PnPId) -> void
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.SerialNumber.get -> Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>?
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.SerialNumber.init -> void
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.SoftwareRevision.get -> Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>?
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.SoftwareRevision.init -> void
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.SystemId.get -> Darp.Ble.Gatt.TypedRemoteCharacteristic<Darp.Ble.Gatt.Services.SystemId, Darp.Ble.Gatt.Properties.Read!>?
+Darp.Ble.Gatt.Services.RemoteDeviceInformationService.SystemId.init -> void
+Darp.Ble.Gatt.Services.RemoteEchoService
+Darp.Ble.Gatt.Services.RemoteEchoService.Notify.get -> Darp.Ble.Gatt.RemoteCharacteristic<Darp.Ble.Gatt.Properties.Notify!>!
+Darp.Ble.Gatt.Services.RemoteEchoService.QueryOneAsync(System.ReadOnlyMemory<byte> request, System.TimeSpan? timeout = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<byte[]!>!
+Darp.Ble.Gatt.Services.RemoteEchoService.Write.get -> Darp.Ble.Gatt.RemoteCharacteristic<Darp.Ble.Gatt.Properties.Write!>!
+Darp.Ble.Gatt.Services.RemoteGapService
+Darp.Ble.Gatt.Services.RemoteGapService.<Clone>$() -> Darp.Ble.Gatt.Services.RemoteGapService!
+Darp.Ble.Gatt.Services.RemoteGapService.Appearance.get -> Darp.Ble.Gatt.TypedRemoteCharacteristic<Darp.Ble.Data.AssignedNumbers.AppearanceValues, Darp.Ble.Gatt.Properties.Read!>!
+Darp.Ble.Gatt.Services.RemoteGapService.Appearance.init -> void
+Darp.Ble.Gatt.Services.RemoteGapService.Deconstruct(out Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>! DeviceName, out Darp.Ble.Gatt.TypedRemoteCharacteristic<Darp.Ble.Data.AssignedNumbers.AppearanceValues, Darp.Ble.Gatt.Properties.Read!>! Appearance) -> void
+Darp.Ble.Gatt.Services.RemoteGapService.DeviceName.get -> Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>!
+Darp.Ble.Gatt.Services.RemoteGapService.DeviceName.init -> void
+Darp.Ble.Gatt.Services.RemoteGapService.Equals(Darp.Ble.Gatt.Services.RemoteGapService? other) -> bool
+Darp.Ble.Gatt.Services.RemoteGapService.RemoteGapService(Darp.Ble.Gatt.TypedRemoteCharacteristic<string!, Darp.Ble.Gatt.Properties.Read!>! DeviceName, Darp.Ble.Gatt.TypedRemoteCharacteristic<Darp.Ble.Data.AssignedNumbers.AppearanceValues, Darp.Ble.Gatt.Properties.Read!>! Appearance) -> void
+Darp.Ble.Gatt.Services.RemoteHeartRateService
+Darp.Ble.Gatt.Services.RemoteHeartRateService.<Clone>$() -> Darp.Ble.Gatt.Services.RemoteHeartRateService!
+Darp.Ble.Gatt.Services.RemoteHeartRateService.BodySensorLocation.get -> Darp.Ble.Gatt.TypedRemoteCharacteristic<Darp.Ble.Gatt.Services.HeartRateBodySensorLocation, Darp.Ble.Gatt.Properties.Read!>?
+Darp.Ble.Gatt.Services.RemoteHeartRateService.BodySensorLocation.init -> void
+Darp.Ble.Gatt.Services.RemoteHeartRateService.Deconstruct(out Darp.Ble.Gatt.TypedRemoteCharacteristic<Darp.Ble.Gatt.Services.HeartRateMeasurement, Darp.Ble.Gatt.Properties.Notify!>! HeartRateMeasurement, out Darp.Ble.Gatt.TypedRemoteCharacteristic<Darp.Ble.Gatt.Services.HeartRateBodySensorLocation, Darp.Ble.Gatt.Properties.Read!>? BodySensorLocation, out Darp.Ble.Gatt.RemoteCharacteristic<Darp.Ble.Gatt.Properties.Write!>? HeartRateControlPoint) -> void
+Darp.Ble.Gatt.Services.RemoteHeartRateService.Equals(Darp.Ble.Gatt.Services.RemoteHeartRateService? other) -> bool
+Darp.Ble.Gatt.Services.RemoteHeartRateService.HeartRateControlPoint.get -> Darp.Ble.Gatt.RemoteCharacteristic<Darp.Ble.Gatt.Properties.Write!>?
+Darp.Ble.Gatt.Services.RemoteHeartRateService.HeartRateControlPoint.init -> void
+Darp.Ble.Gatt.Services.RemoteHeartRateService.HeartRateMeasurement.get -> Darp.Ble.Gatt.TypedRemoteCharacteristic<Darp.Ble.Gatt.Services.HeartRateMeasurement, Darp.Ble.Gatt.Properties.Notify!>!
+Darp.Ble.Gatt.Services.RemoteHeartRateService.HeartRateMeasurement.init -> void
+Darp.Ble.Gatt.Services.RemoteHeartRateService.RemoteHeartRateService(Darp.Ble.Gatt.TypedRemoteCharacteristic<Darp.Ble.Gatt.Services.HeartRateMeasurement, Darp.Ble.Gatt.Properties.Notify!>! HeartRateMeasurement, Darp.Ble.Gatt.TypedRemoteCharacteristic<Darp.Ble.Gatt.Services.HeartRateBodySensorLocation, Darp.Ble.Gatt.Properties.Read!>? BodySensorLocation, Darp.Ble.Gatt.RemoteCharacteristic<Darp.Ble.Gatt.Properties.Write!>? HeartRateControlPoint) -> void
+Darp.Ble.Gatt.Services.SystemId
+Darp.Ble.Gatt.Services.SystemId.Deconstruct(out ulong ManufacturerDefinedIdentifier, out uint OrganizationallyUniqueIdentifier) -> void
+Darp.Ble.Gatt.Services.SystemId.Equals(Darp.Ble.Gatt.Services.SystemId other) -> bool
+Darp.Ble.Gatt.Services.SystemId.ManufacturerDefinedIdentifier.get -> ulong
+Darp.Ble.Gatt.Services.SystemId.ManufacturerDefinedIdentifier.init -> void
+Darp.Ble.Gatt.Services.SystemId.OrganizationallyUniqueIdentifier.get -> uint
+Darp.Ble.Gatt.Services.SystemId.OrganizationallyUniqueIdentifier.init -> void
+Darp.Ble.Gatt.Services.SystemId.SystemId() -> void
+Darp.Ble.Gatt.Services.SystemId.SystemId(ulong ManufacturerDefinedIdentifier, uint OrganizationallyUniqueIdentifier) -> void
+Darp.Ble.Gatt.Services.SystemId.ToByteArrayLittleEndian() -> byte[]!
 Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1, TProp2>
-Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1, TProp2>.TypedCharacteristicDeclaration(Darp.Ble.Data.BleUuid! uuid, Darp.Ble.Gatt.IGattTypedCharacteristic<T>.DecodeFunc! onRead, Darp.Ble.Gatt.IGattTypedCharacteristic<T>.EncodeFunc! onWrite) -> void
+Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1, TProp2>.TypedCharacteristicDeclaration(Darp.Ble.Data.BleUuid! uuid, Darp.Ble.Gatt.IGattTypedCharacteristic<T>.DecodeFunc! decode, Darp.Ble.Gatt.IGattTypedCharacteristic<T>.EncodeFunc! encode) -> void
 Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>
-Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>.ReadValue(System.ReadOnlySpan<byte> source) -> T
-Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>.TypedCharacteristicDeclaration(Darp.Ble.Data.BleUuid! uuid, Darp.Ble.Gatt.IGattTypedCharacteristic<T>.DecodeFunc! onRead, Darp.Ble.Gatt.IGattTypedCharacteristic<T>.EncodeFunc! onWrite) -> void
+Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>.Decode(System.ReadOnlySpan<byte> source) -> T
+Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>.Encode(T value) -> byte[]!
+Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>.TypedCharacteristicDeclaration(Darp.Ble.Data.BleUuid! uuid, Darp.Ble.Gatt.IGattTypedCharacteristic<T>.DecodeFunc! decode, Darp.Ble.Gatt.IGattTypedCharacteristic<T>.EncodeFunc! encode) -> void
 Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>.Uuid.get -> Darp.Ble.Data.BleUuid!
-Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>.WriteValue(T value) -> byte[]!
+Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1, TProp2>
+Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1, TProp2>.Characteristic.get -> Darp.Ble.Gatt.LocalGattCharacteristic!
+Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1, TProp2>.Declaration.get -> Darp.Ble.Gatt.IGattTypedCharacteristic<T>!
+Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1, TProp2>.Properties.get -> Darp.Ble.Gatt.GattProperty
+Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1, TProp2>.Uuid.get -> Darp.Ble.Data.BleUuid!
+Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1>
+Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1>.Characteristic.get -> Darp.Ble.Gatt.LocalGattCharacteristic!
+Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1>.Declaration.get -> Darp.Ble.Gatt.IGattTypedCharacteristic<T>!
+Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1>.Properties.get -> Darp.Ble.Gatt.GattProperty
+Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1>.Uuid.get -> Darp.Ble.Data.BleUuid!
 Darp.Ble.Gatt.TypedRemoteCharacteristic<T, TProp1, TProp2>
 Darp.Ble.Gatt.TypedRemoteCharacteristic<T, TProp1, TProp2>.Characteristic.get -> Darp.Ble.Gatt.RemoteGattCharacteristic!
 Darp.Ble.Gatt.TypedRemoteCharacteristic<T, TProp1, TProp2>.Declaration.get -> Darp.Ble.Gatt.IGattTypedCharacteristic<T>!
@@ -4294,6 +4493,32 @@ override Darp.Ble.Gap.GapAdvertisement.GetHashCode() -> int
 override Darp.Ble.Gap.GapAdvertisement<TUserData>.Equals(object? obj) -> bool
 override Darp.Ble.Gap.GapAdvertisement<TUserData>.GetHashCode() -> int
 override Darp.Ble.Gatt.CharacteristicDeclaration<TProp1, TProp2>.Properties.get -> Darp.Ble.Gatt.GattProperty
+override Darp.Ble.Gatt.Services.HeartRateMeasurement.GetHashCode() -> int
+override Darp.Ble.Gatt.Services.LocalBatteryService.Equals(object? obj) -> bool
+override Darp.Ble.Gatt.Services.LocalBatteryService.GetHashCode() -> int
+override Darp.Ble.Gatt.Services.LocalBatteryService.ToString() -> string!
+override Darp.Ble.Gatt.Services.LocalDeviceInformationService.Equals(object? obj) -> bool
+override Darp.Ble.Gatt.Services.LocalDeviceInformationService.GetHashCode() -> int
+override Darp.Ble.Gatt.Services.LocalDeviceInformationService.ToString() -> string!
+override Darp.Ble.Gatt.Services.LocalEchoService.Equals(object? obj) -> bool
+override Darp.Ble.Gatt.Services.LocalEchoService.GetHashCode() -> int
+override Darp.Ble.Gatt.Services.LocalEchoService.ToString() -> string!
+override Darp.Ble.Gatt.Services.LocalHeartRateService.Equals(object? obj) -> bool
+override Darp.Ble.Gatt.Services.LocalHeartRateService.GetHashCode() -> int
+override Darp.Ble.Gatt.Services.LocalHeartRateService.ToString() -> string!
+override Darp.Ble.Gatt.Services.RemoteBatteryService.Equals(object? obj) -> bool
+override Darp.Ble.Gatt.Services.RemoteBatteryService.GetHashCode() -> int
+override Darp.Ble.Gatt.Services.RemoteBatteryService.ToString() -> string!
+override Darp.Ble.Gatt.Services.RemoteDeviceInformationService.Equals(object? obj) -> bool
+override Darp.Ble.Gatt.Services.RemoteDeviceInformationService.GetHashCode() -> int
+override Darp.Ble.Gatt.Services.RemoteDeviceInformationService.ToString() -> string!
+override Darp.Ble.Gatt.Services.RemoteGapService.Equals(object? obj) -> bool
+override Darp.Ble.Gatt.Services.RemoteGapService.GetHashCode() -> int
+override Darp.Ble.Gatt.Services.RemoteGapService.ToString() -> string!
+override Darp.Ble.Gatt.Services.RemoteHeartRateService.Equals(object? obj) -> bool
+override Darp.Ble.Gatt.Services.RemoteHeartRateService.GetHashCode() -> int
+override Darp.Ble.Gatt.Services.RemoteHeartRateService.ToString() -> string!
+override Darp.Ble.Gatt.Services.SystemId.GetHashCode() -> int
 override Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1, TProp2>.Properties.get -> Darp.Ble.Gatt.GattProperty
 static Darp.Ble.BleManagerServiceCollectionExtensions.AddBleManager(this Microsoft.Extensions.DependencyInjection.IServiceCollection! services, System.Action<Darp.Ble.BleManagerBuilder!>! configure) -> Microsoft.Extensions.DependencyInjection.IServiceCollection!
 static Darp.Ble.Connections.BleConnectionParameters.operator !=(Darp.Ble.Connections.BleConnectionParameters? left, Darp.Ble.Connections.BleConnectionParameters? right) -> bool
@@ -4385,9 +4610,9 @@ static Darp.Ble.Gap.BleScanParameters.operator ==(Darp.Ble.Gap.BleScanParameters
 static Darp.Ble.Gap.GapAdvertisement.FromExtendedAdvertisingReport(System.DateTimeOffset timestamp, Darp.Ble.Gap.BleEventType eventType, Darp.Ble.Data.BleAddress! address, Darp.Ble.Data.Physical primaryPhy, Darp.Ble.Data.Physical secondaryPhy, Darp.Ble.Gap.AdvertisingSId advertisingSId, Darp.Ble.Data.TxPowerLevel txPower, Darp.Ble.Data.Rssi rssi, Darp.Ble.Gap.PeriodicAdvertisingInterval periodicAdvertisingInterval, Darp.Ble.Data.BleAddress! directAddress, Darp.Ble.Gap.AdvertisingData! advertisingData) -> Darp.Ble.Gap.GapAdvertisement!
 static Darp.Ble.Gap.GapAdvertisement.FromExtendedAdvertisingReport(System.DateTimeOffset timestamp, System.ReadOnlySpan<byte> report) -> Darp.Ble.Gap.GapAdvertisement!
 static Darp.Ble.Gatt.CharacteristicDeclaration.Create<T, TProp1, TProp2>(Darp.Ble.Data.BleUuid! uuid) -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1, TProp2>!
-static Darp.Ble.Gatt.CharacteristicDeclaration.Create<T, TProp1, TProp2>(Darp.Ble.Data.BleUuid! uuid, Darp.Ble.Gatt.IGattTypedCharacteristic<T>.DecodeFunc! onRead, Darp.Ble.Gatt.IGattTypedCharacteristic<T>.EncodeFunc! onWrite) -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1, TProp2>!
+static Darp.Ble.Gatt.CharacteristicDeclaration.Create<T, TProp1, TProp2>(Darp.Ble.Data.BleUuid! uuid, Darp.Ble.Gatt.IGattTypedCharacteristic<T>.DecodeFunc! decode, Darp.Ble.Gatt.IGattTypedCharacteristic<T>.EncodeFunc! encode) -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1, TProp2>!
 static Darp.Ble.Gatt.CharacteristicDeclaration.Create<T, TProp1>(Darp.Ble.Data.BleUuid! uuid) -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>!
-static Darp.Ble.Gatt.CharacteristicDeclaration.Create<T, TProp1>(Darp.Ble.Data.BleUuid! uuid, Darp.Ble.Gatt.IGattTypedCharacteristic<T>.DecodeFunc! onRead, Darp.Ble.Gatt.IGattTypedCharacteristic<T>.EncodeFunc! onWrite) -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>!
+static Darp.Ble.Gatt.CharacteristicDeclaration.Create<T, TProp1>(Darp.Ble.Data.BleUuid! uuid, Darp.Ble.Gatt.IGattTypedCharacteristic<T>.DecodeFunc! decode, Darp.Ble.Gatt.IGattTypedCharacteristic<T>.EncodeFunc! encode) -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>!
 static Darp.Ble.Gatt.CharacteristicDeclaration.Create<TProp1, TProp2>(Darp.Ble.Data.BleUuid! uuid, System.Text.Encoding! encoding) -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<string!, TProp1, TProp2>!
 static Darp.Ble.Gatt.CharacteristicDeclaration.Create<TProp1>(Darp.Ble.Data.BleUuid! uuid, System.Text.Encoding! encoding) -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<string!, TProp1>!
 static Darp.Ble.Gatt.CharacteristicDeclaration<TProp1, TProp2>.implicit operator Darp.Ble.Gatt.CharacteristicDeclaration<TProp2, TProp1>!(Darp.Ble.Gatt.CharacteristicDeclaration<TProp1, TProp2>! characteristicDeclaration) -> Darp.Ble.Gatt.CharacteristicDeclaration<TProp2, TProp1>!
@@ -4398,6 +4623,20 @@ static Darp.Ble.Gatt.DescriptorDeclaration.CharacteristicPresentationFormat.get 
 static Darp.Ble.Gatt.DescriptorDeclaration.CharacteristicUserDescription.get -> Darp.Ble.Gatt.DescriptorDeclaration!
 static Darp.Ble.Gatt.DescriptorDeclaration.ClientCharacteristicConfiguration.get -> Darp.Ble.Gatt.DescriptorDeclaration!
 static Darp.Ble.Gatt.DescriptorDeclaration.ServerCharacteristicConfiguration.get -> Darp.Ble.Gatt.DescriptorDeclaration!
+static Darp.Ble.Gatt.LocalCharacteristicExtensions.NotifyAllAsync(this Darp.Ble.Gatt.ILocalCharacteristic<Darp.Ble.Gatt.Properties.Notify!>! characteristic, System.ReadOnlyMemory<byte> value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+static Darp.Ble.Gatt.LocalCharacteristicExtensions.NotifyAllAsync<T, TOther>(this Darp.Ble.Gatt.ITypedLocalCharacteristic<T, Darp.Ble.Gatt.Properties.Notify!, TOther>! characteristic, T value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+static Darp.Ble.Gatt.LocalCharacteristicExtensions.NotifyAllAsync<T, TOther>(this Darp.Ble.Gatt.ITypedLocalCharacteristic<T, TOther, Darp.Ble.Gatt.Properties.Notify!>! characteristic, T value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+static Darp.Ble.Gatt.LocalCharacteristicExtensions.NotifyAllAsync<T>(this Darp.Ble.Gatt.ITypedLocalCharacteristic<T, Darp.Ble.Gatt.Properties.Notify!>! characteristic, T value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+static Darp.Ble.Gatt.LocalCharacteristicExtensions.NotifyAsync(this Darp.Ble.Gatt.ILocalCharacteristic<Darp.Ble.Gatt.Properties.Notify!>! characteristic, Darp.Ble.Connections.ConnectedCentral! central, System.ReadOnlyMemory<byte> value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+static Darp.Ble.Gatt.LocalCharacteristicExtensions.NotifyAsync<T, TOther>(this Darp.Ble.Gatt.ITypedLocalCharacteristic<T, Darp.Ble.Gatt.Properties.Notify!, TOther>! characteristic, Darp.Ble.Connections.ConnectedCentral! central, T value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+static Darp.Ble.Gatt.LocalCharacteristicExtensions.NotifyAsync<T, TOther>(this Darp.Ble.Gatt.ITypedLocalCharacteristic<T, TOther, Darp.Ble.Gatt.Properties.Notify!>! characteristic, Darp.Ble.Connections.ConnectedCentral! central, T value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+static Darp.Ble.Gatt.LocalCharacteristicExtensions.NotifyAsync<T>(this Darp.Ble.Gatt.ITypedLocalCharacteristic<T, Darp.Ble.Gatt.Properties.Notify!>! characteristic, Darp.Ble.Connections.ConnectedCentral! central, T value, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
+static Darp.Ble.Gatt.LocalGattCharacteristicExtensions.AddUserDescription(this Darp.Ble.Gatt.LocalGattCharacteristic! characteristic, string! description) -> Darp.Ble.Gatt.LocalGattDescriptor!
+static Darp.Ble.Gatt.LocalGattServiceBuilderExtensions.AddCharacteristic<T, TProp1, TProp2>(this Darp.Ble.Gatt.LocalGattServiceBuilder! service, Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1, TProp2>! declaration, Darp.Ble.Gatt.OnReadHandler<T>? onRead = null, Darp.Ble.Gatt.OnWriteHandler<T>? onWrite = null) -> Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1, TProp2>!
+static Darp.Ble.Gatt.LocalGattServiceBuilderExtensions.AddCharacteristic<T, TProp1>(this Darp.Ble.Gatt.LocalGattServiceBuilder! service, Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>! declaration, Darp.Ble.Gatt.OnReadHandler<T>? onRead = null, Darp.Ble.Gatt.OnWriteHandler<T>? onWrite = null) -> Darp.Ble.Gatt.TypedLocalCharacteristic<T, TProp1>!
+static Darp.Ble.Gatt.LocalGattServiceBuilderExtensions.AddCharacteristic<TProp1, TProp2>(this Darp.Ble.Gatt.LocalGattServiceBuilder! service, Darp.Ble.Gatt.CharacteristicDeclaration<TProp1, TProp2>! declaration, Darp.Ble.Gatt.OnReadHandler? onRead = null, Darp.Ble.Gatt.OnWriteHandler? onWrite = null) -> Darp.Ble.Gatt.LocalCharacteristic<TProp1, TProp2>!
+static Darp.Ble.Gatt.LocalGattServiceBuilderExtensions.AddCharacteristic<TProp1>(this Darp.Ble.Gatt.LocalGattServiceBuilder! service, Darp.Ble.Data.BleUuid! uuid, Darp.Ble.Gatt.OnReadHandler? onRead = null, Darp.Ble.Gatt.OnWriteHandler? onWrite = null) -> Darp.Ble.Gatt.LocalCharacteristic<TProp1>!
+static Darp.Ble.Gatt.LocalGattServiceBuilderExtensions.AddCharacteristic<TProp1>(this Darp.Ble.Gatt.LocalGattServiceBuilder! service, Darp.Ble.Gatt.CharacteristicDeclaration<TProp1>! declaration, Darp.Ble.Gatt.OnReadHandler? onRead = null, Darp.Ble.Gatt.OnWriteHandler? onWrite = null) -> Darp.Ble.Gatt.LocalCharacteristic<TProp1>!
 static Darp.Ble.Gatt.RemoteCharacteristicExtensions.DisableNotificationsAsync(this Darp.Ble.Gatt.IRemoteCharacteristic<Darp.Ble.Gatt.Properties.Notify!>! characteristic, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 static Darp.Ble.Gatt.RemoteCharacteristicExtensions.EnableNotificationsAsync(this Darp.Ble.Gatt.IRemoteCharacteristic<Darp.Ble.Gatt.Properties.Notify!>! characteristic, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 static Darp.Ble.Gatt.RemoteCharacteristicExtensions.ReadAsync(this Darp.Ble.Gatt.IRemoteCharacteristic<Darp.Ble.Gatt.Properties.Read!>! characteristic, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<byte[]!>!
@@ -4409,6 +4648,56 @@ static Darp.Ble.Gatt.RemoteGattServiceExtensions.DiscoverCharacteristicAsync<T, 
 static Darp.Ble.Gatt.RemoteGattServiceExtensions.DiscoverCharacteristicAsync<T, TProp1>(this Darp.Ble.Gatt.RemoteGattService! service, Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>! declaration, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gatt.TypedRemoteCharacteristic<T, TProp1>!>!
 static Darp.Ble.Gatt.RemoteGattServiceExtensions.DiscoverCharacteristicAsync<TProp1, TProp2>(this Darp.Ble.Gatt.RemoteGattService! service, Darp.Ble.Gatt.CharacteristicDeclaration<TProp1, TProp2>! declaration, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gatt.RemoteCharacteristic<TProp1, TProp2>!>!
 static Darp.Ble.Gatt.RemoteGattServiceExtensions.DiscoverCharacteristicAsync<TProp1>(this Darp.Ble.Gatt.RemoteGattService! service, Darp.Ble.Gatt.CharacteristicDeclaration<TProp1>! declaration, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gatt.RemoteCharacteristic<TProp1>!>!
+static Darp.Ble.Gatt.Services.BatteryServiceContract.AddBatteryServiceAsync(this Darp.Ble.Connections.BlePeripheral! peripheral, byte initialBatteryLevel = 50, string? batteryLevelDescription = "main", System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gatt.Services.LocalBatteryService!>!
+static Darp.Ble.Gatt.Services.BatteryServiceContract.BatteryLevelCharacteristic.get -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<byte, Darp.Ble.Gatt.Properties.Read!, Darp.Ble.Gatt.Properties.Notify!>!
+static Darp.Ble.Gatt.Services.BatteryServiceContract.BatteryService.get -> Darp.Ble.Gatt.ServiceDeclaration!
+static Darp.Ble.Gatt.Services.BatteryServiceContract.DiscoverBatteryServiceAsync(this Darp.Ble.Connections.ConnectedPeripheral! connection, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gatt.Services.RemoteBatteryService!>!
+static Darp.Ble.Gatt.Services.DeviceInformationServiceContract.AddDeviceInformationServiceAsync(this Darp.Ble.Connections.BlePeripheral! peripheral, string? manufacturerName = null, string? modelNumber = null, string? serialNumber = null, string? hardwareRevision = null, string? firmwareRevision = null, string? softwareRevision = null, Darp.Ble.Gatt.Services.SystemId? systemId = null, byte[]? regulatoryCertificationData = null, byte[]? pnpId = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gatt.Services.LocalDeviceInformationService!>!
+static Darp.Ble.Gatt.Services.DeviceInformationServiceContract.DeviceInformationService.get -> Darp.Ble.Gatt.ServiceDeclaration!
+static Darp.Ble.Gatt.Services.DeviceInformationServiceContract.DiscoverDeviceInformationServiceAsync(this Darp.Ble.Connections.ConnectedPeripheral! connection, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gatt.Services.RemoteDeviceInformationService!>!
+static Darp.Ble.Gatt.Services.DeviceInformationServiceContract.FirmwareRevisionCharacteristic.get -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<string!, Darp.Ble.Gatt.Properties.Read!>!
+static Darp.Ble.Gatt.Services.DeviceInformationServiceContract.HardwareRevisionCharacteristic.get -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<string!, Darp.Ble.Gatt.Properties.Read!>!
+static Darp.Ble.Gatt.Services.DeviceInformationServiceContract.ManufacturerNameCharacteristic.get -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<string!, Darp.Ble.Gatt.Properties.Read!>!
+static Darp.Ble.Gatt.Services.DeviceInformationServiceContract.ModelNumberCharacteristic.get -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<string!, Darp.Ble.Gatt.Properties.Read!>!
+static Darp.Ble.Gatt.Services.DeviceInformationServiceContract.PnPIdCharacteristic.get -> Darp.Ble.Gatt.CharacteristicDeclaration<Darp.Ble.Gatt.Properties.Read!>!
+static Darp.Ble.Gatt.Services.DeviceInformationServiceContract.RegulatoryCertificationDataCharacteristic.get -> Darp.Ble.Gatt.CharacteristicDeclaration<Darp.Ble.Gatt.Properties.Read!>!
+static Darp.Ble.Gatt.Services.DeviceInformationServiceContract.SerialNumberCharacteristic.get -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<string!, Darp.Ble.Gatt.Properties.Read!>!
+static Darp.Ble.Gatt.Services.DeviceInformationServiceContract.SoftwareRevisionCharacteristic.get -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<string!, Darp.Ble.Gatt.Properties.Read!>!
+static Darp.Ble.Gatt.Services.DeviceInformationServiceContract.SystemIdCharacteristic.get -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<Darp.Ble.Gatt.Services.SystemId, Darp.Ble.Gatt.Properties.Read!>!
+static Darp.Ble.Gatt.Services.EchoServiceContract.AddEchoServiceAsync(this Darp.Ble.Connections.BlePeripheral! peripheral, Darp.Ble.Data.BleUuid! serviceUuid, Darp.Ble.Data.BleUuid! writeUuid, Darp.Ble.Data.BleUuid! notifyUuid, Darp.Ble.Gatt.Services.EchoRequestHandler? handleRequest = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gatt.Services.LocalEchoService!>!
+static Darp.Ble.Gatt.Services.EchoServiceContract.DiscoverEchoServiceAsync(this Darp.Ble.Connections.ConnectedPeripheral! connection, Darp.Ble.Data.BleUuid! serviceUuid, Darp.Ble.Data.BleUuid! writeUuid, Darp.Ble.Data.BleUuid! notifyUuid, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gatt.Services.RemoteEchoService!>!
+static Darp.Ble.Gatt.Services.GapServiceContract.AppearanceCharacteristic.get -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<Darp.Ble.Data.AssignedNumbers.AppearanceValues, Darp.Ble.Gatt.Properties.Read!>!
+static Darp.Ble.Gatt.Services.GapServiceContract.DeviceNameCharacteristic.get -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<string!, Darp.Ble.Gatt.Properties.Read!>!
+static Darp.Ble.Gatt.Services.GapServiceContract.DiscoverGapServiceAsync(this Darp.Ble.Connections.ConnectedPeripheral! connection, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gatt.Services.RemoteGapService!>!
+static Darp.Ble.Gatt.Services.GapServiceContract.GapService.get -> Darp.Ble.Gatt.ServiceDeclaration!
+static Darp.Ble.Gatt.Services.HeartRateMeasurement.ReadLittleEndian(System.ReadOnlySpan<byte> source) -> Darp.Ble.Gatt.Services.HeartRateMeasurement
+static Darp.Ble.Gatt.Services.HeartRateMeasurement.operator !=(Darp.Ble.Gatt.Services.HeartRateMeasurement left, Darp.Ble.Gatt.Services.HeartRateMeasurement right) -> bool
+static Darp.Ble.Gatt.Services.HeartRateMeasurement.operator ==(Darp.Ble.Gatt.Services.HeartRateMeasurement left, Darp.Ble.Gatt.Services.HeartRateMeasurement right) -> bool
+static Darp.Ble.Gatt.Services.HeartRateServiceContract.AddHeartRateServiceAsync(this Darp.Ble.Connections.BlePeripheral! peripheral, Darp.Ble.Gatt.Services.HeartRateBodySensorLocation? bodySensorLocation = null, System.Action? onResetExpendedEnergy = null, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gatt.Services.LocalHeartRateService!>!
+static Darp.Ble.Gatt.Services.HeartRateServiceContract.BodySensorLocationCharacteristic.get -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<Darp.Ble.Gatt.Services.HeartRateBodySensorLocation, Darp.Ble.Gatt.Properties.Read!>!
+static Darp.Ble.Gatt.Services.HeartRateServiceContract.DiscoverHeartRateServiceAsync(this Darp.Ble.Connections.ConnectedPeripheral! connection, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Gatt.Services.RemoteHeartRateService!>!
+static Darp.Ble.Gatt.Services.HeartRateServiceContract.HeartRateControlPointCharacteristic.get -> Darp.Ble.Gatt.CharacteristicDeclaration<Darp.Ble.Gatt.Properties.Write!>!
+static Darp.Ble.Gatt.Services.HeartRateServiceContract.HeartRateMeasurementCharacteristic.get -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<Darp.Ble.Gatt.Services.HeartRateMeasurement, Darp.Ble.Gatt.Properties.Notify!>!
+static Darp.Ble.Gatt.Services.HeartRateServiceContract.HeartRateService.get -> Darp.Ble.Gatt.ServiceDeclaration!
+static Darp.Ble.Gatt.Services.LocalBatteryService.operator !=(Darp.Ble.Gatt.Services.LocalBatteryService? left, Darp.Ble.Gatt.Services.LocalBatteryService? right) -> bool
+static Darp.Ble.Gatt.Services.LocalBatteryService.operator ==(Darp.Ble.Gatt.Services.LocalBatteryService? left, Darp.Ble.Gatt.Services.LocalBatteryService? right) -> bool
+static Darp.Ble.Gatt.Services.LocalDeviceInformationService.operator !=(Darp.Ble.Gatt.Services.LocalDeviceInformationService? left, Darp.Ble.Gatt.Services.LocalDeviceInformationService? right) -> bool
+static Darp.Ble.Gatt.Services.LocalDeviceInformationService.operator ==(Darp.Ble.Gatt.Services.LocalDeviceInformationService? left, Darp.Ble.Gatt.Services.LocalDeviceInformationService? right) -> bool
+static Darp.Ble.Gatt.Services.LocalEchoService.operator !=(Darp.Ble.Gatt.Services.LocalEchoService? left, Darp.Ble.Gatt.Services.LocalEchoService? right) -> bool
+static Darp.Ble.Gatt.Services.LocalEchoService.operator ==(Darp.Ble.Gatt.Services.LocalEchoService? left, Darp.Ble.Gatt.Services.LocalEchoService? right) -> bool
+static Darp.Ble.Gatt.Services.LocalHeartRateService.operator !=(Darp.Ble.Gatt.Services.LocalHeartRateService? left, Darp.Ble.Gatt.Services.LocalHeartRateService? right) -> bool
+static Darp.Ble.Gatt.Services.LocalHeartRateService.operator ==(Darp.Ble.Gatt.Services.LocalHeartRateService? left, Darp.Ble.Gatt.Services.LocalHeartRateService? right) -> bool
+static Darp.Ble.Gatt.Services.RemoteBatteryService.operator !=(Darp.Ble.Gatt.Services.RemoteBatteryService? left, Darp.Ble.Gatt.Services.RemoteBatteryService? right) -> bool
+static Darp.Ble.Gatt.Services.RemoteBatteryService.operator ==(Darp.Ble.Gatt.Services.RemoteBatteryService? left, Darp.Ble.Gatt.Services.RemoteBatteryService? right) -> bool
+static Darp.Ble.Gatt.Services.RemoteDeviceInformationService.operator !=(Darp.Ble.Gatt.Services.RemoteDeviceInformationService? left, Darp.Ble.Gatt.Services.RemoteDeviceInformationService? right) -> bool
+static Darp.Ble.Gatt.Services.RemoteDeviceInformationService.operator ==(Darp.Ble.Gatt.Services.RemoteDeviceInformationService? left, Darp.Ble.Gatt.Services.RemoteDeviceInformationService? right) -> bool
+static Darp.Ble.Gatt.Services.RemoteGapService.operator !=(Darp.Ble.Gatt.Services.RemoteGapService? left, Darp.Ble.Gatt.Services.RemoteGapService? right) -> bool
+static Darp.Ble.Gatt.Services.RemoteGapService.operator ==(Darp.Ble.Gatt.Services.RemoteGapService? left, Darp.Ble.Gatt.Services.RemoteGapService? right) -> bool
+static Darp.Ble.Gatt.Services.RemoteHeartRateService.operator !=(Darp.Ble.Gatt.Services.RemoteHeartRateService? left, Darp.Ble.Gatt.Services.RemoteHeartRateService? right) -> bool
+static Darp.Ble.Gatt.Services.RemoteHeartRateService.operator ==(Darp.Ble.Gatt.Services.RemoteHeartRateService? left, Darp.Ble.Gatt.Services.RemoteHeartRateService? right) -> bool
+static Darp.Ble.Gatt.Services.SystemId.ReadLittleEndian(System.ReadOnlySpan<byte> source) -> Darp.Ble.Gatt.Services.SystemId
+static Darp.Ble.Gatt.Services.SystemId.operator !=(Darp.Ble.Gatt.Services.SystemId left, Darp.Ble.Gatt.Services.SystemId right) -> bool
+static Darp.Ble.Gatt.Services.SystemId.operator ==(Darp.Ble.Gatt.Services.SystemId left, Darp.Ble.Gatt.Services.SystemId right) -> bool
 static Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1, TProp2>.implicit operator Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp2, TProp1>!(Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1, TProp2>! characteristicDeclaration) -> Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp2, TProp1>!
 static Darp.Ble.Gatt.TypedRemoteCharacteristicExtensions.DisableNotificationsAsync<T, TOther>(this Darp.Ble.Gatt.ITypedRemoteCharacteristic<T, Darp.Ble.Gatt.Properties.Notify!, TOther>! characteristic, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 static Darp.Ble.Gatt.TypedRemoteCharacteristicExtensions.DisableNotificationsAsync<T, TOther>(this Darp.Ble.Gatt.ITypedRemoteCharacteristic<T, TOther, Darp.Ble.Gatt.Properties.Notify!>! characteristic, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
@@ -4436,5 +4725,12 @@ virtual Darp.Ble.Gatt.CharacteristicDeclaration<TProp1>.Properties.get -> Darp.B
 virtual Darp.Ble.Gatt.IGattTypedCharacteristic<T>.DecodeFunc.Invoke(System.ReadOnlySpan<byte> source) -> T
 virtual Darp.Ble.Gatt.IGattTypedCharacteristic<T>.EncodeFunc.Invoke(T value) -> byte[]!
 virtual Darp.Ble.Gatt.OnReadHandler.Invoke(Darp.Ble.Connections.ConnectedCentral! central, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<byte[]!>
+virtual Darp.Ble.Gatt.OnReadHandler<T>.Invoke(Darp.Ble.Connections.ConnectedCentral! central, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<T>
 virtual Darp.Ble.Gatt.OnWriteHandler.Invoke(Darp.Ble.Connections.ConnectedCentral! central, System.ReadOnlyMemory<byte> value, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Darp.Ble.Gatt.GattProtocolStatus>
+virtual Darp.Ble.Gatt.OnWriteHandler<T>.Invoke(Darp.Ble.Connections.ConnectedCentral! central, T value, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<Darp.Ble.Gatt.GattProtocolStatus>
+virtual Darp.Ble.Gatt.Services.EchoRequestHandler.Invoke(Darp.Ble.Connections.ConnectedCentral! central, System.ReadOnlyMemory<byte> request, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.ValueTask<byte[]!>
 virtual Darp.Ble.Gatt.TypedCharacteristicDeclaration<T, TProp1>.Properties.get -> Darp.Ble.Gatt.GattProperty
+~override Darp.Ble.Gatt.Services.HeartRateMeasurement.Equals(object obj) -> bool
+~override Darp.Ble.Gatt.Services.HeartRateMeasurement.ToString() -> string
+~override Darp.Ble.Gatt.Services.SystemId.Equals(object obj) -> bool
+~override Darp.Ble.Gatt.Services.SystemId.ToString() -> string

@@ -1,3 +1,4 @@
+#:project ../src/Darp.Ble/Darp.Ble.csproj
 #:project ../src/Darp.Ble.Mock/Darp.Ble.Mock.csproj
 
 // Connects to a peripheral, reads a typed value, writes a new one and reads it back.
@@ -17,9 +18,9 @@ TypedCharacteristicDeclaration<ushort, Properties.Read, Properties.Write> setpoi
     ushort,
     Properties.Read,
     Properties.Write
->(BleUuid.FromUInt16(0xFFF1));
+>(0xFFF1);
 
-var stored = new byte[] { 20, 0 };
+ushort stored = 20;
 var manager = new BleManager(builder =>
     builder.AddMock(mock =>
         mock.AddPeripheral(
@@ -27,13 +28,12 @@ var manager = new BleManager(builder =>
             {
                 var service = new LocalGattServiceBuilder(serviceUuid);
                 service.AddCharacteristic(
-                    setpoint.Uuid,
-                    setpoint.Properties,
+                    setpoint,
                     onRead: (_, _) => ValueTask.FromResult(stored),
-                    onWrite: (central, value, _) =>
+                    onWrite: (connection, value, _) =>
                     {
-                        Console.WriteLine($"Peripheral: {central.Address} wrote {Convert.ToHexString(value.Span)}");
-                        stored = value.ToArray();
+                        Console.WriteLine($"Peripheral: {connection.Address} wrote {value}");
+                        stored = value;
                         return ValueTask.FromResult(GattProtocolStatus.Success);
                     }
                 );
@@ -48,6 +48,11 @@ var manager = new BleManager(builder =>
 );
 
 IReadOnlyList<BleAdapterInfo> adapters = await manager.EnumerateAdaptersAsync();
+if (adapters.Count == 0)
+{
+    Console.Error.WriteLine("No adapter found");
+    return 1;
+}
 await using BleAdapter adapter = await adapters[0].OpenAsync();
 
 using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10));
@@ -71,3 +76,4 @@ TypedRemoteCharacteristic<ushort, Properties.Read, Properties.Write> remote = aw
 Console.WriteLine($"Setpoint: {await remote.ReadAsync(timeout.Token)}");
 await remote.WriteAsync((ushort)22, timeout.Token);
 Console.WriteLine($"Setpoint after the write: {await remote.ReadAsync(timeout.Token)}");
+return 0;

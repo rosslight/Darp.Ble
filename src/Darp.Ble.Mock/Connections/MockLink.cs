@@ -13,6 +13,7 @@ internal sealed class MockLink
     private readonly Lock _lock = new();
     private readonly Dictionary<GattServiceDefinition, MockRemoteService> _services = [];
     private readonly Dictionary<GattCharacteristicDefinition, MockRemoteCharacteristic> _characteristics = [];
+    private readonly Dictionary<GattDescriptorDefinition, MockRemoteDescriptor> _descriptors = [];
     private readonly HashSet<GattCharacteristicDefinition> _subscribed = [];
 
     // Fails the central's request that waits for the peripheral's answer; one at a time, as the core holds the ATT slot
@@ -31,11 +32,19 @@ internal sealed class MockLink
         _centralSink = centralSink;
         _peripheralSink = peripheralSink;
         Central = new MockConnectionDriver(this);
+        GapService = new MockGapService(peripheral);
+        GattService = peripheral.IncludeGattService ? new MockGattService(this) : null;
         Peripheral = new MockCentralConnection(this, centralAddress);
     }
 
     /// <summary> The peripheral role the central connected to </summary>
     public MockPeripheralDriver PeripheralDriver { get; }
+
+    /// <summary> The GAP service the peripheral serves itself </summary>
+    public MockGapService GapService { get; }
+
+    /// <summary> The GATT service the peripheral serves itself, or null for one without it </summary>
+    public MockGattService? GattService { get; }
 
     /// <summary> The central's side </summary>
     public MockConnectionDriver Central { get; }
@@ -68,12 +77,26 @@ internal sealed class MockLink
         }
     }
 
+    /// <summary> The central's object for a descriptor; the same one on every discovery, which the core runs one at a time </summary>
+    public MockRemoteDescriptor GetDescriptor(GattDescriptorDefinition definition)
+    {
+        if (!_descriptors.TryGetValue(definition, out MockRemoteDescriptor? descriptor))
+        {
+            descriptor = new MockRemoteDescriptor(this, definition);
+            _descriptors.Add(definition, descriptor);
+        }
+        return descriptor;
+    }
+
     /// <summary> The central reads; the peripheral's handler answers </summary>
-    public Task<byte[]> ReadAsync(GattCharacteristicDefinition characteristic) =>
-        CarryAsync(async () => await _peripheralSink.OnReadRequest(Peripheral, characteristic).ConfigureAwait(false));
+    public Task<byte[]> ReadAsync(GattAttributeDefinition characteristic) =>
+        CarryAsync(async () =>
+            // A transport copies what it sends; the central never shares the peripheral's buffer
+            (await _peripheralSink.OnReadRequest(Peripheral, characteristic).ConfigureAwait(false)).ToArray()
+        );
 
     /// <summary> The central writes with a write request; the peripheral's handler answers </summary>
-    public Task WriteAsync(GattCharacteristicDefinition characteristic, ReadOnlyMemory<byte> value) =>
+    public Task WriteAsync(GattAttributeDefinition characteristic, ReadOnlyMemory<byte> value) =>
         CarryAsync<object?>(async () =>
         {
             await _peripheralSink.OnWriteRequest(Peripheral, characteristic, value).ConfigureAwait(false);
@@ -100,6 +123,8 @@ internal sealed class MockLink
             else
                 _subscribed.Remove(characteristic);
         }
+        // As a peripheral's stack does when a CCCD is written
+        _peripheralSink.OnSubscriptionChanged(Peripheral, characteristic, enabled);
     }
 
     /// <summary> The peripheral notifies; the central gets it while it subscribed, as a peripheral's stack decides </summary>

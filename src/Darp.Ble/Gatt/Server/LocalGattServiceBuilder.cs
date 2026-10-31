@@ -6,7 +6,8 @@ namespace Darp.Ble.Gatt;
 /// <summary> Describes a service to add with <see cref="Darp.Ble.Connections.BlePeripheral.AddServiceAsync"/>. A builder is used once and not shared between threads </summary>
 public sealed class LocalGattServiceBuilder
 {
-    private readonly BleUuid _uuid;
+    internal BleUuid Uuid { get; }
+
     private readonly bool _isPrimary;
     private readonly List<LocalGattCharacteristic> _characteristics = [];
     private bool _added;
@@ -17,7 +18,7 @@ public sealed class LocalGattServiceBuilder
     public LocalGattServiceBuilder(BleUuid uuid, bool isPrimary = true)
     {
         ArgumentNullException.ThrowIfNull(uuid);
-        _uuid = uuid;
+        Uuid = uuid;
         _isPrimary = isPrimary;
     }
 
@@ -45,6 +46,7 @@ public sealed class LocalGattServiceBuilder
     {
         ArgumentNullException.ThrowIfNull(uuid);
         var characteristic = new LocalGattCharacteristic(
+            this,
             new GattCharacteristicDefinition(uuid, properties),
             onRead,
             onWrite
@@ -55,24 +57,38 @@ public sealed class LocalGattServiceBuilder
     }
 
     /// <summary> Freezes the service and builds its definition; the builder cannot change or be added again afterwards </summary>
-    internal (GattServiceDefinition Definition, LocalGattCharacteristic[] Characteristics) Build()
+    internal (GattServiceDefinition Definition, IHostedAttribute[] Attributes) Build()
     {
         EnsureNotAdded();
         _added = true;
-        LocalGattCharacteristic[] characteristics = [.. _characteristics];
+        List<IHostedAttribute> attributes = [];
+        foreach (LocalGattCharacteristic characteristic in _characteristics)
+        {
+            attributes.Add(characteristic);
+            attributes.AddRange(characteristic.Freeze());
+        }
         var definition = new GattServiceDefinition(
-            _uuid,
+            Uuid,
             _isPrimary,
-            [.. characteristics.Select(characteristic => characteristic.Definition)]
+            [.. _characteristics.Select(characteristic => characteristic.Definition)]
         );
-        return (definition, characteristics);
+        return (definition, [.. attributes]);
+    }
+
+    /// <summary> Changes the service while it is not added </summary>
+    /// <exception cref="InvalidOperationException"> The service was already added </exception>
+    internal void Change(Action change)
+    {
+        EnsureNotAdded();
+        change();
     }
 
     private void EnsureNotAdded()
     {
-        if (_added)
-            throw new InvalidOperationException(
-                "The service was already added with BlePeripheral.AddServiceAsync and can no longer change; use a new LocalGattServiceBuilder to add another service"
-            );
+        if (!_added)
+            return;
+        throw new InvalidOperationException(
+            "The service was already added with BlePeripheral.AddServiceAsync and can no longer change; use a new LocalGattServiceBuilder to add another service"
+        );
     }
 }

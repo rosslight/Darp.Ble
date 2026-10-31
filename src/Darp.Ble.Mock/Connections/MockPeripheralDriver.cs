@@ -1,16 +1,31 @@
 using Darp.Ble.Backends;
 using Darp.Ble.Connections;
 using Darp.Ble.Data;
+using Darp.Ble.Data.AssignedNumbers;
 
 namespace Darp.Ble.Mock.Connections;
 
 /// <summary> Accepts connections from mock centrals in the same air; owns the links until they go down or the adapter closes </summary>
-internal sealed class MockPeripheralDriver : IPeripheralDriver
+internal sealed class MockPeripheralDriver(bool includeGattService) : IPeripheralDriver
 {
+    /// <summary> Whether centrals find the GATT service </summary>
+    public bool IncludeGattService { get; } = includeGattService;
+
     private readonly Lock _lock = new();
     private readonly List<MockLink> _links = [];
     private GattServiceDefinition[] _services = [];
     private bool _closed;
+    private (string DeviceName, AppearanceValues Appearance) _identity = ("Darp.Ble", AppearanceValues.Unknown);
+
+    /// <summary> What centrals read from the GAP service </summary>
+    public (string DeviceName, AppearanceValues Appearance) Identity
+    {
+        get
+        {
+            lock (_lock)
+                return _identity;
+        }
+    }
     private IGattServerSink? _sink;
 
     /// <summary> The added services, in order </summary>
@@ -62,6 +77,10 @@ internal sealed class MockPeripheralDriver : IPeripheralDriver
 
     public Task AddServiceAsync(GattServiceDefinition service, CancellationToken cancellationToken)
     {
+        if (IncludeGattService && service.Uuid == BleUuid.FromUInt16(0x1801))
+            throw new InvalidOperationException(
+                "The mock serves the GATT service itself; leave it out with includeGattService: false to add one of your own"
+            );
         lock (_lock)
             _services = [.. _services, service];
         return Task.CompletedTask;
@@ -77,6 +96,12 @@ internal sealed class MockPeripheralDriver : IPeripheralDriver
         cancellationToken.ThrowIfCancellationRequested();
         ((MockCentralConnection)central).Link.Notify(characteristic, value.Span);
         return ValueTask.CompletedTask;
+    }
+
+    public void SetGapIdentity(string deviceName, AppearanceValues appearance)
+    {
+        lock (_lock)
+            _identity = (deviceName, appearance);
     }
 
     public Task DisconnectAsync(ICentralConnectionDriver central, CancellationToken cancellationToken)

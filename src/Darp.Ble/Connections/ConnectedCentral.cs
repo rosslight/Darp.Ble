@@ -23,6 +23,15 @@ public sealed class ConnectedCentral
     );
     private DisconnectInfo? _ending;
 
+    // State of the app for this connection (D9). Its own lock: a slow factory must not block the driver's thread,
+    // which takes _lock to end the connection
+    private readonly Lock _stateLock = new();
+    private readonly Dictionary<Type, object> _states = [];
+    private bool _statesSealed;
+
+    // The characteristics this central turned notifications on for; empty for good once the connection ends
+    private readonly HashSet<GattCharacteristicDefinition> _subscriptions = [];
+
     // Hosted handlers of this central: one at a time, cancelled and awaited when the connection ends (D9)
     private readonly SemaphoreSlim _handlerTurn = new(1, 1);
     private readonly CancellationTokenSource _lifetime = new();
@@ -106,6 +115,50 @@ public sealed class ConnectedCentral
         }
     }
 
+    /// <summary> Gets the app's state of type <typeparamref name="T"/> for this connection, creating it on first use </summary>
+    /// <remarks>
+    /// The state is disposed once (<see cref="IAsyncDisposable"/> first, else <see cref="IDisposable"/>) after the connection
+    /// ended and its running handlers returned, so a handler can use it until it returns. A factory that throws leaves no state
+    /// </remarks>
+    /// <param name="create"> Creates the state; runs at most once per type and connection </param>
+    /// <typeparam name="T"> The type of the state; one per type </typeparam>
+    /// <returns> The state </returns>
+    /// <exception cref="ObjectDisposedException"> The connection ended and its states were disposed </exception>
+    public T GetOrAddState<T>(Func<T> create)
+        where T : class
+    {
+        ArgumentNullException.ThrowIfNull(create);
+        lock (_stateLock)
+        {
+            ObjectDisposedException.ThrowIf(_statesSealed, this);
+            if (_states.TryGetValue(typeof(T), out object? existing))
+                return (T)existing;
+            T state = create();
+            _states.Add(typeof(T), state);
+            return state;
+        }
+    }
+
+    /// <summary> The central changed its CCCD; ignored once the connection ends, so a late callback cannot bring it back </summary>
+    internal void SetSubscribed(GattCharacteristicDefinition characteristic, bool enabled)
+    {
+        lock (_lock)
+        {
+            if (_ending is not null)
+                return;
+            if (enabled)
+                _subscriptions.Add(characteristic);
+            else
+                _subscriptions.Remove(characteristic);
+        }
+    }
+
+    internal bool IsSubscribed(GattCharacteristicDefinition characteristic)
+    {
+        lock (_lock)
+            return _subscriptions.Contains(characteristic);
+    }
+
     /// <summary> Runs a hosted handler for this central. An unexpected failure answers with <see cref="GattProtocolStatus.UnlikelyError"/> </summary>
     /// <remarks> Handlers of one central run one at a time; their token is cancelled when the connection ends </remarks>
     internal async Task<T> RunHandlerAsync<T>(Func<CancellationToken, ValueTask<T>> handler)
@@ -164,6 +217,7 @@ public sealed class ConnectedCentral
             if (_ending is not null)
                 return;
             _ending = info;
+            _subscriptions.Clear();
         }
         // No handler or notification starts from now on
         _handlers.Close();
@@ -199,6 +253,7 @@ public sealed class ConnectedCentral
             // A handler that ignores its token delays only this connection's end
             await _handlers.CloseAndWaitAsync().ConfigureAwait(false);
             await _notifications.CloseAndWaitAsync().ConfigureAwait(false);
+            await DisposeStatesAsync().ConfigureAwait(false);
             _lifetime.Dispose();
             _handlerTurn.Dispose();
             _notifyTurn.Dispose();
@@ -226,5 +281,31 @@ public sealed class ConnectedCentral
         lock (_lock)
             info = _ending ?? throw new InvalidOperationException("The connection did not end");
         return new BleDisconnectedException(info, innerException);
+    }
+
+    /// <summary> Seals the states, then disposes each once; a failing disposal is logged and the others still run </summary>
+    private async Task DisposeStatesAsync()
+    {
+        object[] states;
+        lock (_stateLock)
+        {
+            _statesSealed = true;
+            states = [.. _states.Values];
+            _states.Clear();
+        }
+        foreach (object state in states)
+        {
+            try
+            {
+                if (state is IAsyncDisposable asyncDisposable)
+                    await asyncDisposable.DisposeAsync().ConfigureAwait(false);
+                else
+                    (state as IDisposable)?.Dispose();
+            }
+            catch (Exception e)
+            {
+                _logger.LogStateDisposeFailed(Address, e);
+            }
+        }
     }
 }

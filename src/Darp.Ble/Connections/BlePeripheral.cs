@@ -1,6 +1,7 @@
 using Darp.Ble.Backends;
 using Darp.Ble.Connections;
 using Darp.Ble.Data;
+using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gatt;
 using Microsoft.Extensions.Logging;
 
@@ -9,11 +10,19 @@ namespace Darp.Ble.Connections;
 /// <summary> The peripheral role of an adapter: centrals connect to it </summary>
 public sealed class BlePeripheral
 {
+    /// <summary> The Generic Access service, which the backend owns </summary>
+    private static readonly BleUuid GapServiceUuid = BleUuid.FromUInt16(0x1800);
+
     private readonly IPeripheralDriver _driver;
     private readonly ILogger _logger;
     private readonly Lock _lock = new();
     private readonly Dictionary<ICentralConnectionDriver, ConnectedCentral> _centrals = [];
-    private readonly Dictionary<GattCharacteristicDefinition, LocalGattCharacteristic> _hosted = [];
+    private readonly Dictionary<GattAttributeDefinition, IHostedAttribute> _hosted = [];
+
+    // The GAP identity; changes are serialized and committed once the driver took them
+    private readonly Lock _identityLock = new();
+    private string _deviceName;
+    private AppearanceValues _appearance = AppearanceValues.Unknown;
     private bool _closed;
 
     // Set once disposal disconnected every central; a central reported later goes with the driver
@@ -27,11 +36,47 @@ public sealed class BlePeripheral
         Adapter = adapter;
         _driver = driver;
         _logger = logger;
+        _deviceName = adapter.Name ?? DefaultDeviceName;
+        // Attach comes first, as the driver contract promises; the identity follows before the adapter is handed out
         driver.Attach(new PeripheralEvents(this));
+        if (adapter.Capabilities.HasFlag(Capabilities.SetGapIdentity))
+            driver.SetGapIdentity(_deviceName, _appearance);
     }
 
     /// <summary> The adapter this peripheral belongs to </summary>
     public BleAdapter Adapter { get; }
+
+    private const string DefaultDeviceName = "Darp.Ble";
+
+    /// <summary> The device name centrals read from the GAP service; the adapter's name by default </summary>
+    /// <exception cref="NotSupportedException"> The backend owns the GAP service; see <see cref="Capabilities.SetGapIdentity"/> </exception>
+    public string DeviceName
+    {
+        get
+        {
+            EnsureGapIdentity();
+            lock (_identityLock)
+                return _deviceName;
+        }
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            SetIdentity(value, appearance: null);
+        }
+    }
+
+    /// <summary> The appearance centrals read from the GAP service; <see cref="AppearanceValues.Unknown"/> by default </summary>
+    /// <exception cref="NotSupportedException"> The backend owns the GAP service; see <see cref="Capabilities.SetGapIdentity"/> </exception>
+    public AppearanceValues Appearance
+    {
+        get
+        {
+            EnsureGapIdentity();
+            lock (_identityLock)
+                return _appearance;
+        }
+        set { SetIdentity(deviceName: null, value); }
+    }
 
     /// <summary> Adds a complete service </summary>
     /// <param name="service"> The service. It cannot change or be added again afterwards, even if adding fails </param>
@@ -44,22 +89,26 @@ public sealed class BlePeripheral
     )
     {
         ArgumentNullException.ThrowIfNull(service);
+        if (service.Uuid == GapServiceUuid)
+            throw new InvalidOperationException(
+                "The backend serves the GAP service; set BlePeripheral.DeviceName and Appearance instead"
+            );
         _operations.Enter(typeof(BlePeripheral));
         try
         {
-            (GattServiceDefinition definition, LocalGattCharacteristic[] characteristics) = service.Build();
+            (GattServiceDefinition definition, IHostedAttribute[] attributes) = service.Build();
             // Known before the driver adds it, so a central can use the service as soon as it is live
-            Host(characteristics);
+            Host(attributes);
             try
             {
                 await _driver.AddServiceAsync(definition, cancellationToken).ConfigureAwait(false);
             }
             catch
             {
-                Unhost(characteristics);
+                Unhost(attributes);
                 throw;
             }
-            foreach (LocalGattCharacteristic characteristic in characteristics)
+            foreach (LocalGattCharacteristic characteristic in attributes.OfType<LocalGattCharacteristic>())
                 characteristic.MarkLive(this);
             return new LocalGattService(definition.Uuid);
         }
@@ -106,52 +155,48 @@ public sealed class BlePeripheral
         central?.End(info, takeLinkDown: false);
     }
 
-    internal void Host(LocalGattCharacteristic[] characteristics)
+    internal void Host(IHostedAttribute[] attributes)
     {
         lock (_lock)
         {
-            foreach (LocalGattCharacteristic characteristic in characteristics)
-                _hosted.Add(characteristic.Definition, characteristic);
+            foreach (IHostedAttribute attribute in attributes)
+                _hosted.Add(attribute.Definition, attribute);
         }
     }
 
-    internal void Unhost(LocalGattCharacteristic[] characteristics)
+    internal void Unhost(IHostedAttribute[] attributes)
     {
         lock (_lock)
         {
-            foreach (LocalGattCharacteristic characteristic in characteristics)
-                _hosted.Remove(characteristic.Definition);
+            foreach (IHostedAttribute attribute in attributes)
+                _hosted.Remove(attribute.Definition);
         }
     }
 
     internal async Task<byte[]> OnReadRequestAsync(
         ICentralConnectionDriver connection,
-        GattCharacteristicDefinition definition
+        GattAttributeDefinition definition
     )
     {
-        (ConnectedCentral central, LocalGattCharacteristic characteristic) = Resolve(connection, definition);
-        return await central.RunHandlerAsync(ct => characteristic.ReadAsync(central, ct)).ConfigureAwait(false);
+        (ConnectedCentral central, IHostedAttribute attribute) = Resolve(connection, definition);
+        return await central.RunHandlerAsync(ct => attribute.ReadAsync(central, ct)).ConfigureAwait(false);
     }
 
     internal async Task OnWriteRequestAsync(
         ICentralConnectionDriver connection,
-        GattCharacteristicDefinition definition,
+        GattAttributeDefinition definition,
         byte[] value
     )
     {
-        (ConnectedCentral central, LocalGattCharacteristic characteristic) = Resolve(connection, definition);
+        (ConnectedCentral central, IHostedAttribute attribute) = Resolve(connection, definition);
         GattProtocolStatus status = await central
-            .RunHandlerAsync(ct => characteristic.WriteAsync(central, value, ct))
+            .RunHandlerAsync(ct => attribute.WriteAsync(central, value, ct))
             .ConfigureAwait(false);
         if (status is not GattProtocolStatus.Success)
             throw new GattException(status, $"The write handler answered {status}");
     }
 
-    internal void OnWriteCommand(
-        ICentralConnectionDriver connection,
-        GattCharacteristicDefinition definition,
-        byte[] value
-    )
+    internal void OnWriteCommand(ICentralConnectionDriver connection, GattAttributeDefinition definition, byte[] value)
     {
         // Nobody waits for the answer; failures are logged by the handler run
         _ = OnWriteRequestAsync(connection, definition, value)
@@ -163,9 +208,9 @@ public sealed class BlePeripheral
             );
     }
 
-    private (ConnectedCentral Central, LocalGattCharacteristic Characteristic) Resolve(
+    private (ConnectedCentral Central, IHostedAttribute Attribute) Resolve(
         ICentralConnectionDriver connection,
-        GattCharacteristicDefinition definition
+        GattAttributeDefinition definition
     )
     {
         lock (_lock)
@@ -173,12 +218,54 @@ public sealed class BlePeripheral
             // The driver only reports centrals and characteristics it got from the core
             if (
                 !_centrals.TryGetValue(connection, out ConnectedCentral? central)
-                || !_hosted.TryGetValue(definition, out LocalGattCharacteristic? characteristic)
+                || !_hosted.TryGetValue(definition, out IHostedAttribute? attribute)
             )
             {
-                throw new GattException(GattProtocolStatus.UnlikelyError, "Unknown central or characteristic");
+                throw new GattException(GattProtocolStatus.UnlikelyError, "Unknown central or attribute");
             }
-            return (central, characteristic);
+            return (central, attribute);
+        }
+    }
+
+    /// <summary> Notifies every central that turned notifications on; each independently, failures are logged and skipped </summary>
+    internal async ValueTask NotifyAllAsync(
+        GattCharacteristicDefinition characteristic,
+        ReadOnlyMemory<byte> value,
+        CancellationToken cancellationToken
+    )
+    {
+        ConnectedCentral[] recipients;
+        lock (_lock)
+            recipients = [.. _centrals.Values];
+        // Every central starts before any is awaited, so a slow one delays nobody
+        Task[] sends =
+        [
+            .. recipients
+                .Where(central => central.IsSubscribed(characteristic))
+                .Select(central => NotifyOneAsync(central, characteristic, value, cancellationToken)),
+        ];
+        await Task.WhenAll(sends).ConfigureAwait(false);
+    }
+
+    private async Task NotifyOneAsync(
+        ConnectedCentral central,
+        GattCharacteristicDefinition characteristic,
+        ReadOnlyMemory<byte> value,
+        CancellationToken cancellationToken
+    )
+    {
+        try
+        {
+            await central.NotifyAsync(characteristic, value, cancellationToken).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception e)
+        {
+            // One central's failure is not the caller's; the others still get theirs
+            _logger.LogNotifyAllCentralFailed(central.Address, e);
         }
     }
 
@@ -221,6 +308,34 @@ public sealed class BlePeripheral
             // Every central starts ending before any is awaited, so a slow handler delays nobody else's end
             await Task.WhenAll(centrals.Select(central => central.DisconnectAsync(CancellationToken.None)))
                 .ConfigureAwait(false);
+        }
+    }
+
+    private void EnsureGapIdentity()
+    {
+        if (!Adapter.Capabilities.HasFlag(Capabilities.SetGapIdentity))
+            throw new NotSupportedException($"The {Adapter.Backend} backend owns the GAP service");
+    }
+
+    /// <summary> Changes the identity; admitted like every operation, so adapter disposal waits for it and rejects it afterwards </summary>
+    private void SetIdentity(string? deviceName, AppearanceValues? appearance)
+    {
+        EnsureGapIdentity();
+        _operations.Enter(typeof(BlePeripheral));
+        try
+        {
+            lock (_identityLock)
+            {
+                string newName = deviceName ?? _deviceName;
+                AppearanceValues newAppearance = appearance ?? _appearance;
+                _driver.SetGapIdentity(newName, newAppearance);
+                _deviceName = newName;
+                _appearance = newAppearance;
+            }
+        }
+        finally
+        {
+            _operations.Exit();
         }
     }
 }

@@ -3,27 +3,21 @@ using Darp.Ble.Data;
 
 namespace Darp.Ble.Gatt;
 
-/// <summary> A typed characteristic declaration </summary>
-/// <typeparam name="T"> The type of the characteristic value </typeparam>
-/// <typeparam name="TProp1"> The type of the first property </typeparam>
-public interface ITypedCharacteristicDeclaration<T, TProp1> : ICharacteristicDeclaration, IGattTypedCharacteristic<T>
-    where TProp1 : IBleProperty;
-
 /// <summary>A typed characteristic declaration.</summary>
 /// <param name="uuid">The characteristic UUID.</param>
-/// <param name="onRead">The decoder used to convert raw bytes into the typed value.</param>
-/// <param name="onWrite">The encoder used to convert the typed value into raw bytes.</param>
+/// <param name="decode">Turns the bytes of the characteristic into the value.</param>
+/// <param name="encode">Turns the value into the bytes of the characteristic.</param>
 /// <typeparam name="T"> The type of the characteristic value </typeparam>
 /// <typeparam name="TProp1"> The type of the first property </typeparam>
 public class TypedCharacteristicDeclaration<T, TProp1>(
     BleUuid uuid,
-    IGattTypedCharacteristic<T>.DecodeFunc onRead,
-    IGattTypedCharacteristic<T>.EncodeFunc onWrite
+    IGattTypedCharacteristic<T>.DecodeFunc decode,
+    IGattTypedCharacteristic<T>.EncodeFunc encode
 ) : ITypedCharacteristicDeclaration<T, TProp1>
     where TProp1 : IBleProperty
 {
-    private readonly IGattTypedCharacteristic<T>.DecodeFunc _onRead = onRead;
-    private readonly IGattTypedCharacteristic<T>.EncodeFunc _onWrite = onWrite;
+    private readonly IGattTypedCharacteristic<T>.DecodeFunc _decode = decode;
+    private readonly IGattTypedCharacteristic<T>.EncodeFunc _encode = encode;
 
     /// <inheritdoc />
     public virtual GattProperty Properties => TProp1.GattProperty;
@@ -32,28 +26,28 @@ public class TypedCharacteristicDeclaration<T, TProp1>(
     public BleUuid Uuid { get; } = uuid;
 
     /// <inheritdoc cref="IGattTypedCharacteristic{T}.Decode" />
-    protected internal T ReadValue(ReadOnlySpan<byte> source) => _onRead(source);
+    protected internal T Decode(ReadOnlySpan<byte> source) => _decode(source);
 
     /// <inheritdoc cref="IGattTypedCharacteristic{T}.Encode" />
-    protected internal byte[] WriteValue(T value) => _onWrite(value);
+    protected internal byte[] Encode(T value) => _encode(value);
 
-    T IGattTypedCharacteristic<T>.Decode(ReadOnlySpan<byte> source) => ReadValue(source);
+    T IGattTypedCharacteristic<T>.Decode(ReadOnlySpan<byte> source) => Decode(source);
 
-    byte[] IGattTypedCharacteristic<T>.Encode(T value) => WriteValue(value);
+    byte[] IGattTypedCharacteristic<T>.Encode(T value) => Encode(value);
 }
 
 /// <summary>A typed characteristic declaration with two properties.</summary>
 /// <param name="uuid">The characteristic UUID.</param>
-/// <param name="onRead">The decoder used to convert raw bytes into the typed value.</param>
-/// <param name="onWrite">The encoder used to convert the typed value into raw bytes.</param>
+/// <param name="decode">Turns the bytes of the characteristic into the value.</param>
+/// <param name="encode">Turns the value into the bytes of the characteristic.</param>
 /// <typeparam name="T"> The type of the characteristic value </typeparam>
 /// <typeparam name="TProp1"> The type of the first property </typeparam>
 /// <typeparam name="TProp2"> The type of the second property </typeparam>
 public sealed class TypedCharacteristicDeclaration<T, TProp1, TProp2>(
     BleUuid uuid,
-    IGattTypedCharacteristic<T>.DecodeFunc onRead,
-    IGattTypedCharacteristic<T>.EncodeFunc onWrite
-) : TypedCharacteristicDeclaration<T, TProp1>(uuid, onRead, onWrite), ITypedCharacteristicDeclaration<T, TProp2>
+    IGattTypedCharacteristic<T>.DecodeFunc decode,
+    IGattTypedCharacteristic<T>.EncodeFunc encode
+) : TypedCharacteristicDeclaration<T, TProp1>(uuid, decode, encode), ITypedCharacteristicDeclaration<T, TProp2>
     where TProp1 : IBleProperty
     where TProp2 : IBleProperty
 {
@@ -71,8 +65,8 @@ public sealed class TypedCharacteristicDeclaration<T, TProp1, TProp2>(
         ArgumentNullException.ThrowIfNull(characteristicDeclaration);
         return new TypedCharacteristicDeclaration<T, TProp2, TProp1>(
             characteristicDeclaration.Uuid,
-            characteristicDeclaration.ReadValue,
-            characteristicDeclaration.WriteValue
+            characteristicDeclaration.Decode,
+            characteristicDeclaration.Encode
         );
     }
 }
