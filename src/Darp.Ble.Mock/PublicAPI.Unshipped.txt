@@ -1,6 +1,6 @@
 #nullable enable
 Darp.Ble.Mock.MockBackendOptions
-Darp.Ble.Mock.MockBackendOptions.AddPeripheral(System.Func<Darp.Ble.BleAdapter!, Darp.Ble.Mock.MockBackgroundWork!, System.Threading.Tasks.Task!>! configure, string! name = "Mock peripheral", bool includeGattService = true) -> Darp.Ble.Mock.MockBackendOptions!
+Darp.Ble.Mock.MockBackendOptions.AddPeripheral(System.Func<Darp.Ble.BleAdapter!, Darp.Ble.Mock.MockBackgroundWork!, System.Threading.Tasks.Task!>! configure, string! name = "Mock peripheral", bool includeGattService = true, Darp.Ble.Mock.MockRange? range = null) -> Darp.Ble.Mock.MockBackendOptions!
 Darp.Ble.Mock.MockBackendOptions.IncludeGattService.get -> bool
 Darp.Ble.Mock.MockBackendOptions.IncludeGattService.set -> void
 Darp.Ble.Mock.MockBackendOptions.MockBackendOptions() -> void
@@ -15,5 +15,10 @@ Darp.Ble.Mock.MockBackgroundWork.Run(System.Func<System.Threading.CancellationTo
 Darp.Ble.Mock.MockBackgroundWork.TimeProvider.get -> System.TimeProvider!
 Darp.Ble.Mock.MockBle
 Darp.Ble.Mock.MockBleManagerBuilderExtensions
+Darp.Ble.Mock.MockRange
+Darp.Ble.Mock.MockRange.Enter() -> void
+Darp.Ble.Mock.MockRange.IsInRange.get -> bool
+Darp.Ble.Mock.MockRange.Leave() -> void
+Darp.Ble.Mock.MockRange.MockRange() -> void
 static Darp.Ble.Mock.MockBle.OpenAdapterAsync(string! name = "Mock", System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.BleAdapter!>!
 static Darp.Ble.Mock.MockBleManagerBuilderExtensions.AddMock(this Darp.Ble.BleManagerBuilder! builder, System.Action<Darp.Ble.Mock.MockBackendOptions!>? configure = null) -> Darp.Ble.BleManagerBuilder!

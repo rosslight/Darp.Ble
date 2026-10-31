@@ -19,6 +19,13 @@ internal sealed class MockPeripheralBackend(MockAir air, MockPeripheral peripher
 
     public Task<IBleAdapterDriver> OpenAsync(BleBackendContext context, CancellationToken cancellationToken) =>
         Task.FromResult<IBleAdapterDriver>(
-            new MockAdapterDriver(_air, _peripheral.IncludeGattService, context.LoggerFactory)
+            // Each open of the mock adapter opens its peripherals once, through a backend of their own
+            new MockAdapterDriver(
+                _air,
+                _peripheral.IncludeGattService,
+                _peripheral.Range,
+                closed: () => { },
+                context.LoggerFactory
+            )
         );
 }

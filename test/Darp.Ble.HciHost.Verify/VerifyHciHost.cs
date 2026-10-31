@@ -18,7 +18,6 @@ public static class VerifyHciHost
         {
             List<JsonConverter> converters = serializer.Converters;
             converters.Add(new HciMessageConverter());
-            converters.Add(new ReplayTransportLayerConverter());
         });
     }
 }

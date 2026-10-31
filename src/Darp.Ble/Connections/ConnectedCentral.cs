@@ -22,35 +22,38 @@ public sealed class ConnectedCentral
     private readonly TimeProvider _timeProvider;
     private readonly DiagnosticsSettings _diagnostics;
 
-    // Whether this connection counts in darp.ble.connection.count; set when the peripheral takes it in
-    private bool _counted;
-
-    // Warns once when handlers still run 5 s after the connection started ending (D9)
-    private ITimer? _slowHandlers;
-
-    // Completes once the handlers admitted before the end returned; independent of the driver's teardown
-    private Task _handlersReturned = Task.CompletedTask;
-    private readonly Lock _lock = new();
+    // Completes when the link is down. Its handlers may still be returning then, so a handler can await it
     private readonly TaskCompletionSource<DisconnectInfo> _disconnected = new(
         TaskCreationOptions.RunContinuationsAsynchronously
     );
+
+    // Completes after the link is down, the handlers returned and the states were disposed; adapter disposal waits for it
+    private readonly TaskCompletionSource _released = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+    // Guards _ending, _counted and _subscriptions: the driver's thread ends the connection while the app uses it
+    private readonly Lock _lock = new();
+
+    // Why the connection ends, once it started ending; the first reason wins
     private DisconnectInfo? _ending;
 
-    // State of the app for this connection (D9). Its own lock: a slow factory must not block the driver's thread,
+    // Whether this connection counts in darp.ble.connection.count; set when the peripheral takes it in
+    private bool _counted;
+
+    // The characteristics this central turned notifications on for; empty for good once the connection ends
+    private readonly HashSet<GattCharacteristicDefinition> _subscriptions = [];
+
+    // State of the app for this connection. Its own lock: a slow factory must not block the driver's thread,
     // which takes _lock to end the connection
     private readonly Lock _stateLock = new();
     private readonly Dictionary<Type, object> _states = [];
     private bool _statesSealed;
 
-    // The characteristics this central turned notifications on for; empty for good once the connection ends
-    private readonly HashSet<GattCharacteristicDefinition> _subscriptions = [];
-
-    // Hosted handlers of this central: one at a time, cancelled and awaited when the connection ends (D9)
+    // Hosted handlers of this central: one at a time, cancelled and awaited when the connection ends
     private readonly SemaphoreSlim _handlerTurn = new(1, 1);
     private readonly CancellationTokenSource _lifetime = new();
     private readonly OperationTracker _handlers = new();
 
-    // Notifications to this central, sent one after another in call order (D8); the connection's end cancels and awaits them
+    // Notifications to this central, sent one after another in call order; the connection's end cancels and awaits them
     private readonly OperationTracker _notifications = new();
     private readonly SemaphoreSlim _notifyTurn = new(1, 1);
 
@@ -76,16 +79,28 @@ public sealed class ConnectedCentral
     /// <summary> The address of the central </summary>
     public BleAddress Address { get; }
 
-    /// <summary> Completes once, when the connection ended, with why it ended </summary>
+    /// <summary> Completes once, when the connection ended and its link is down, with why it ended </summary>
+    /// <remarks>
+    /// Handlers that still run then were cancelled and may still be returning; the states are disposed after they returned.
+    /// So a handler of this central can await it
+    /// </remarks>
     public Task<DisconnectInfo> Disconnected => _disconnected.Task;
 
     /// <summary> Ends the connection. Calling it again, or after the central disconnected, waits for the same end </summary>
+    /// <remarks> Waits as long as <see cref="Disconnected"/>, so a handler of this central can await it </remarks>
     /// <param name="cancellationToken"> Stops waiting; the connection still ends </param>
-    /// <returns> A task that completes once the connection ended </returns>
+    /// <returns> A task that completes once the connection ended and its link is down </returns>
     public async Task DisconnectAsync(CancellationToken cancellationToken = default)
     {
         End(new DisconnectInfo(DisconnectReason.LocalRequest), takeLinkDown: true);
         await _disconnected.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary> Ends the connection and waits until its handlers returned and its states were disposed </summary>
+    internal Task ReleaseAsync()
+    {
+        End(new DisconnectInfo(DisconnectReason.LocalRequest), takeLinkDown: true);
+        return _released.Task;
     }
 
     /// <summary> The address as logs and spans may show it </summary>
@@ -152,7 +167,8 @@ public sealed class ConnectedCentral
     /// <summary> Gets the app's state of type <typeparamref name="T"/> for this connection, creating it on first use </summary>
     /// <remarks>
     /// The state is disposed once (<see cref="IAsyncDisposable"/> first, else <see cref="IDisposable"/>) after the connection
-    /// ended and its running handlers returned, so a handler can use it until it returns. A factory that throws leaves no state
+    /// ended and its running handlers returned, so a handler can use it until it returns, also after
+    /// <see cref="Disconnected"/> completed. A factory that throws leaves no state
     /// </remarks>
     /// <param name="create"> Creates the state; runs at most once per type and connection </param>
     /// <typeparam name="T"> The type of the state; one per type </typeparam>
@@ -273,21 +289,18 @@ public sealed class ConnectedCentral
         // No handler or notification starts from now on
         Task handlersReturned = _handlers.CloseAndWaitAsync();
         _notifications.Close();
-        lock (_lock)
-        {
-            _handlersReturned = handlersReturned;
-            _slowHandlers = _timeProvider.CreateTimer(
-                _ => WarnSlowHandlers(),
-                state: null,
-                SlowHandlerWarning,
-                Timeout.InfiniteTimeSpan
-            );
-        }
+        // Warns once when handlers still run 5 s after the connection started ending
+        ITimer slowHandlers = _timeProvider.CreateTimer(
+            _ => WarnSlowHandlers(handlersReturned),
+            state: null,
+            SlowHandlerWarning,
+            Timeout.InfiniteTimeSpan
+        );
         // Off the caller's thread: the driver reports a disconnect from its own loop
-        _ = Task.Run(() => TeardownAsync(info, takeLinkDown));
+        _ = Task.Run(() => TeardownAsync(info, takeLinkDown, handlersReturned, slowHandlers));
     }
 
-    private async Task TeardownAsync(DisconnectInfo info, bool takeLinkDown)
+    private async Task TeardownAsync(DisconnectInfo info, bool takeLinkDown, Task handlersReturned, ITimer slowHandlers)
     {
         try
         {
@@ -309,37 +322,29 @@ public sealed class ConnectedCentral
             // The connection is over either way; whoever waits learns it through Disconnected
             _logger.LogConnectionCleanupFailed(Peer, _diagnostics.Exception(e));
         }
-        finally
-        {
-            // A handler that ignores its token delays only this connection's end
-            Task handlersReturned;
-            lock (_lock)
-                handlersReturned = _handlersReturned;
-            await handlersReturned.ConfigureAwait(false);
-            ITimer? slowHandlers;
-            bool counted;
-            lock (_lock)
-            {
-                slowHandlers = _slowHandlers;
-                counted = _counted;
-            }
-            if (slowHandlers is not null)
-                await slowHandlers.DisposeAsync().ConfigureAwait(false);
-            if (counted)
-                Telemetry.Connections.Add(-1, Tags());
-            await _notifications.CloseAndWaitAsync().ConfigureAwait(false);
-            await DisposeStatesAsync().ConfigureAwait(false);
-            _lifetime.Dispose();
-            _handlerTurn.Dispose();
-            _notifyTurn.Dispose();
-            _peripheral.Remove(_connection);
-            _logger.LogCentralDisconnected(Peer, info.Reason);
-            _disconnected.TrySetResult(info);
-        }
+        bool counted;
+        lock (_lock)
+            counted = _counted;
+        if (counted)
+            Telemetry.Connections.Add(-1, Tags());
+        _logger.LogCentralDisconnected(Peer, info.Reason);
+        // Before the handlers returned: a handler that awaits the end of its own central must not wait for itself
+        _disconnected.TrySetResult(info);
+
+        // A handler that ignores its token delays only the release of this connection's state
+        await handlersReturned.ConfigureAwait(false);
+        await slowHandlers.DisposeAsync().ConfigureAwait(false);
+        await _notifications.CloseAndWaitAsync().ConfigureAwait(false);
+        await DisposeStatesAsync().ConfigureAwait(false);
+        _lifetime.Dispose();
+        _handlerTurn.Dispose();
+        _notifyTurn.Dispose();
+        _peripheral.Remove(_connection);
+        _released.TrySetResult();
     }
 
-    private static GattException Ended() =>
-        new(GattProtocolStatus.UnlikelyError, "The connection of the central ended");
+    /// <summary> The connection ends: the request gets no answer, as the link is going down </summary>
+    private OperationCanceledException Ended() => new("The connection of the central ended", _lifetime.Token);
 
     private bool IsEnding
     {
@@ -387,14 +392,10 @@ public sealed class ConnectedCentral
     /// <summary> How long handlers may keep running after the connection started ending before a warning </summary>
     private static readonly TimeSpan SlowHandlerWarning = TimeSpan.FromSeconds(5);
 
-    private void WarnSlowHandlers()
+    private void WarnSlowHandlers(Task handlersReturned)
     {
-        lock (_lock)
-        {
-            if (_handlersReturned.IsCompleted)
-                return;
-        }
-        _logger.LogSlowHandlers(Peer, SlowHandlerWarning);
+        if (!handlersReturned.IsCompleted)
+            _logger.LogSlowHandlers(Peer, SlowHandlerWarning);
     }
 
     private TagList Tags() =>

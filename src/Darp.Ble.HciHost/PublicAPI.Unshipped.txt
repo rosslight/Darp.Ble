@@ -1,0 +1,20 @@
+#nullable enable
+Darp.Ble.HciHost.HciHostBleManagerBuilderExtensions
+Darp.Ble.HciHost.HciHostOptions
+Darp.Ble.HciHost.HciHostOptions.HciHostOptions() -> void
+Darp.Ble.HciHost.HciHostOptions.Name.get -> string?
+Darp.Ble.HciHost.HciHostOptions.Name.set -> void
+Darp.Ble.HciHost.HciHostOptions.RandomAddress.get -> Darp.Ble.Data.BleAddress?
+Darp.Ble.HciHost.HciHostOptions.RandomAddress.set -> void
+Darp.Ble.HciHost.HciHostOptions.Settings.get -> Darp.Ble.Hci.HciSettings!
+Darp.Ble.HciHost.HciHostOptions.Settings.set -> void
+Darp.Ble.HciHost.SerialHciHostOptions
+Darp.Ble.HciHost.SerialHciHostOptions.DeviceNameMapping.get -> System.Collections.Generic.IDictionary<(ushort VendorId, ushort ProductId), string!>!
+Darp.Ble.HciHost.SerialHciHostOptions.RandomAddress.get -> Darp.Ble.Data.BleAddress?
+Darp.Ble.HciHost.SerialHciHostOptions.RandomAddress.set -> void
+Darp.Ble.HciHost.SerialHciHostOptions.SerialHciHostOptions() -> void
+Darp.Ble.HciHost.SerialHciHostOptions.Settings.get -> Darp.Ble.Hci.HciSettings!
+Darp.Ble.HciHost.SerialHciHostOptions.Settings.set -> void
+static Darp.Ble.HciHost.HciHostBleManagerBuilderExtensions.AddHciHost(this Darp.Ble.BleManagerBuilder! builder, Darp.Ble.Hci.Transport.ITransportLayer! transportLayer, System.Action<Darp.Ble.HciHost.HciHostOptions!>? configure = null) -> Darp.Ble.BleManagerBuilder!
+static Darp.Ble.HciHost.HciHostBleManagerBuilderExtensions.AddSerialHciHost(this Darp.Ble.BleManagerBuilder! builder, System.Action<Darp.Ble.HciHost.SerialHciHostOptions!>? configure = null) -> Darp.Ble.BleManagerBuilder!
+static Darp.Ble.HciHost.HciHostBleManagerBuilderExtensions.AddSerialHciHost(this Darp.Ble.BleManagerBuilder! builder, string! portName, System.Action<Darp.Ble.HciHost.HciHostOptions!>? configure = null) -> Darp.Ble.BleManagerBuilder!

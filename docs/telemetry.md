@@ -11,7 +11,7 @@ metrics.AddMeter(BleTelemetry.MeterName);     // "Darp.Ble"
 
 `BleManagerBuilder.ConfigureDiagnostics(options => options.IncludeAddresses = false)` replaces peer addresses with `<hidden>` in logs and spans. Addresses are never metric dimensions.
 
-The backends add their own sources and event ids when they are ported to v2 (HciHost, WinRT, Android); their spans nest inside the core's.
+The backends add their own sources and event ids when they are ported to v2 (HciHost below; WinRT and Android follow); their spans nest inside the core's.
 
 ## Spans (source `Darp.Ble`)
 
@@ -74,3 +74,20 @@ Span names are message templates; values are only in tags. A cancelled operation
 | 1405 | SlowHandlers | Warning | Handlers of central {Address} still run {Delay} after its connection started ending; its cleanup waits for them |
 
 Advertising events show the adapter's own advertising address, which `IncludeAddresses` does not hide.
+
+## HCI backend (`Darp.Ble.HciHost`)
+
+The HCI layer logs under categories that start with `Darp.Ble.Hci` and traces on the sources `Darp.Ble.Hci` (`Initialize HciHost`, `Query command {Name}`, `Handle ATT request {Name}`) and `Darp.Ble.Hci.Tracing` (`Enqueue command {Name}`). Its spans nest inside the core's. Their tags come from the packets' properties and are not part of the contract yet; explicit tags per packet type and an option to leave out payloads follow.
+
+| Id | Name | Level | Message |
+| --- | --- | --- | --- |
+| 2000 | H4TransportDisconnected | Trace | H4Transport: {Direction} disconnected |
+| 2001 | H4TransportWithError | Critical | H4Transport: {Direction} died due to exception {Message}. This error is not recoverable! |
+| 2002 | PacketSendingErrorEncoding | Warning | H4Transport: Could not send packet {@Packet} due to error while encoding |
+| 2003 | PacketReceivingUnknownPacket | Critical | H4Transport: Received unknown hci packet of type 0x{Type:X2}. Remaining buffer: {Remaining}. This Error is not recoverable! |
+| 2004 | H4TransportDisposed | Trace | H4Transport: Disposed |
+| 2005 | PacketTransmission | Trace | {Source} to {Destination}: {PacketName} |
+| 2006 | PacketTransmissionWarning | Warning | {Source} to {Destination}: {PacketName} {Message} |
+| 2007 | AttPacketTransmission | Trace | {Source} to {Destination}: [0x{ConnectionHandle:X3}]: {PacketName} |
+| 2008 | ReceivedUnknownAttPacket | Warning | {Source} to {Destination}: [0x{ConnectionHandle:X3}]: {OpCode} |
+| 2009 | AttPacketTransmissionWarning | Warning | {Source} to {Destination}: [0x{ConnectionHandle:X3}]: {PacketName} {Message} |

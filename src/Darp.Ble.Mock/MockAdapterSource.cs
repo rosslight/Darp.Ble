@@ -3,10 +3,17 @@ using Darp.Ble.Mock.Connections;
 
 namespace Darp.Ble.Mock;
 
-/// <summary> The mock adapter. Opening it creates its air and opens its simulated peripherals </summary>
+/// <summary>
+/// The mock adapter. Opening it creates its air and opens its simulated peripherals. It is open at most once: a second
+/// open would be a separate air that sees nothing of the first
+/// </summary>
 internal sealed class MockAdapterSource(MockSettings settings) : IBleAdapterSource
 {
     private readonly MockSettings _settings = settings;
+
+    // Guards the field below: two owners of the app may open the adapter at the same time
+    private readonly Lock _lock = new();
+    private bool _open;
 
     public string Name => _settings.Name;
 
@@ -15,9 +22,24 @@ internal sealed class MockAdapterSource(MockSettings settings) : IBleAdapterSour
         cancellationToken.ThrowIfCancellationRequested();
         if (_settings.OpenFailure is { } kind)
             throw new BleOpenException(kind, $"The mock adapter '{Name}' is configured to fail opening with {kind}");
+        lock (_lock)
+        {
+            if (_open)
+                throw new InvalidOperationException(
+                    $"The mock adapter '{Name}' is already open; open it once and share the open adapter"
+                );
+            _open = true;
+        }
 
         var air = new MockAir(context.TimeProvider, _settings.TxPowerToRssi);
-        var driver = new MockAdapterDriver(air, _settings.IncludeGattService, context.LoggerFactory);
+        // From here on the driver owns the open state and gives it back when it is disposed, also when setup fails
+        var driver = new MockAdapterDriver(
+            air,
+            _settings.IncludeGattService,
+            range: null,
+            Close,
+            context.LoggerFactory
+        );
         try
         {
             foreach (MockPeripheral peripheral in _settings.Peripherals)
@@ -48,6 +70,12 @@ internal sealed class MockAdapterSource(MockSettings settings) : IBleAdapterSour
             }
             throw;
         }
+    }
+
+    private void Close()
+    {
+        lock (_lock)
+            _open = false;
     }
 
     /// <summary> Opens a peripheral through the public path, so its callback gets a real <see cref="BleAdapter"/> </summary>

@@ -1,144 +1,107 @@
-using System.Reactive.Linq;
-using System.Reactive.Threading.Tasks;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
+using Darp.Ble.Hci.Package;
 using Darp.Ble.HciHost.Verify;
+using Microsoft.Extensions.Time.Testing;
 using Shouldly;
 
 namespace Darp.Ble.HciHost.Tests;
 
-public sealed partial class ObserverTests
+/// <summary> Scanning on an HCI adapter </summary>
+public sealed class ObserverTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
 
-    private static readonly HciMessage SingleAdv = HciMessage.LeEventToHost(
+    // One legacy report: random address EE661991C415, RSSI -76, manufacturer data of Apple
+    private static readonly HciMessage Report = HciMessage.LeEventToHost(
         "0D0110000115C4911966EE0100FF7FB40000FF0000000000000807FF4C0012020000"
     );
-    private static readonly HciMessage[] ObservingMessages =
-    [
-        HciMessage.CommandCompleteEventToHost("01412000"),
-        HciMessage.CommandCompleteEventToHost("01422000"),
-        HciMessage.CommandCompleteEventToHost("01422000"),
-    ];
 
-    // start with no HCI messages so StartObservingAsync completes immediately
-    private static readonly HciMessage[] EmptyMessages = [];
-
-    private static async Task<(IBleObserver Observer, ReplayTransportLayer Replay)> CreateObserver(
-        HciMessage[] messages,
-        CancellationToken token
-    )
+    [Fact]
+    public async Task AScan_RunsTheControllersScan_AndDeliversItsReports()
     {
-        ReplayTransportLayer transport = ReplayTransportLayer.ReplayAfterBleDeviceInitialization(messages);
-        IBleDevice device = await Helpers.GetAndInitializeBleDeviceAsync(transport, token: token);
+        await using var controller = new FakeController();
+        var time = new FakeTimeProvider(new DateTimeOffset(2026, 10, 23, 12, 0, 0, TimeSpan.Zero));
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller, time);
 
-        // sanity check: not observing yet
-        device.Observer.IsObserving.ShouldBeFalse();
-        return (device.Observer, transport);
+        IGapAdvertisement advertisement;
+        await using (
+            IAsyncEnumerator<IGapAdvertisement> scan = adapter.Observer.ScanAsync(Token).GetAsyncEnumerator(Token)
+        )
+        {
+            ValueTask<bool> next = scan.MoveNextAsync();
+            await controller.WaitForCommandAsync(HciOpCode.HCI_LE_Set_Extended_Scan_Enable);
+            await controller.PushAsync(Report);
+            (await next).ShouldBeTrue();
+            advertisement = scan.Current;
+        }
+
+        advertisement.Address.ShouldBe(new BleAddress(BleAddressType.Random, (UInt48)0xEE661991C415));
+        advertisement.Rssi.ShouldBe((Rssi)(-76));
+        advertisement.Timestamp.ShouldBe(time.GetUtcNow());
+        advertisement.Data.ToByteArray().ShouldBe(Convert.FromHexString("07FF4C0012020000"));
+        await Verifier.Verify(controller.Messages);
     }
 
-    private static Task<(IBleObserver Observer, ReplayTransportLayer Replay)> CreateDefaultObserver(
-        CancellationToken token
-    ) => CreateObserver(ObservingMessages, token);
-
-    [Fact(Timeout = 5000)]
-    public async Task AdvertisementObserved()
+    [Fact]
+    public async Task ScanTimings_AreRoundedToTheControllersUnit()
     {
-        (IBleObserver observer, ReplayTransportLayer replay) = await CreateDefaultObserver(Token);
+        await using var controller = new FakeController();
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+        await adapter.Observer.ConfigureAsync(
+            new BleScanParameters
+            {
+                ScanType = ScanType.Active,
+                ScanInterval = TimeSpan.FromSeconds(1),
+                ScanWindow = TimeSpan.FromMilliseconds(30.2),
+            },
+            Token
+        );
 
-        Task<IGapAdvertisement> observationTask = observer.OnAdvertisement().FirstAsync().ToTask(Token);
-        await observer.StartObservingAsync(Token);
+        await using (
+            IAsyncEnumerator<IGapAdvertisement> scan = adapter.Observer.ScanAsync(Token).GetAsyncEnumerator(Token)
+        )
+        {
+            ValueTask<bool> next = scan.MoveNextAsync();
+            await controller.PushAsync(Report);
+            await next;
+        }
 
-        replay.Push(SingleAdv);
-        IGapAdvertisement advertisement = await observationTask;
-
-        advertisement
-            .AsByteArray()
-            .ShouldBe(Convert.FromHexString("10000115C4911966EE0100FF7FB40000FF0000000000000807FF4C0012020000"));
-        await Verifier.Verify(replay.MessagesToController);
+        // Interval 1600 and window 48 units of 0.625 ms, active
+        controller.Messages[0].PduBytes.ShouldBe(Convert.FromHexString("4120080100010140063000"));
     }
 
-    [Fact(Timeout = 5000)]
-    public async Task Configure()
+    [Fact]
+    public async Task AScanIntervalTheControllerCannotDo_IsRejected()
     {
-        const ScanTiming interval1 = ScanTiming.Ms100;
-        const ScanTiming interval2 = ScanTiming.Ms1000;
-        (IBleObserver observer, _) = await CreateDefaultObserver(Token);
+        await using var controller = new FakeController();
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+        await adapter.Observer.ConfigureAsync(
+            new BleScanParameters { ScanInterval = TimeSpan.FromSeconds(41), ScanWindow = TimeSpan.FromSeconds(1) },
+            Token
+        );
 
-        bool configureSuccess1 = observer.Configure(new BleObservationParameters { ScanInterval = interval1 });
-        configureSuccess1.ShouldBeTrue();
-        observer.Parameters.ScanInterval.ShouldBe(interval1);
-
-        // start observing
-        await observer.StartObservingAsync(Token);
-        observer.IsObserving.ShouldBeTrue();
-
-        // now configure should be rejected
-        bool configureSuccess2 = observer.Configure(new BleObservationParameters { ScanInterval = interval2 });
-        configureSuccess2.ShouldBeFalse();
-        observer.Parameters.ScanInterval.ShouldBe(interval1);
-
-        await observer.StopObservingAsync();
+        await Should.ThrowAsync<ArgumentOutOfRangeException>(async () =>
+        {
+            await foreach (IGapAdvertisement _ in adapter.Observer.ScanAsync(Token)) { }
+        });
     }
 
-    [Fact(Timeout = 5000)]
-    public async Task StartObserving_IsNoOp()
+    [Fact]
+    public async Task ALostTransport_EndsTheScan()
     {
-        (IBleObserver observer, ReplayTransportLayer replay) = await CreateDefaultObserver(Token);
+        await using var controller = new FakeController();
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+        await using IAsyncEnumerator<IGapAdvertisement> scan = adapter
+            .Observer.ScanAsync(Token)
+            .GetAsyncEnumerator(Token);
+        ValueTask<bool> next = scan.MoveNextAsync();
+        await controller.PushAsync(Report);
+        (await next).ShouldBeTrue();
 
-        await observer.StartObservingAsync(Token);
-        observer.IsObserving.ShouldBeTrue();
+        controller.Fail(new IOException("The serial port is gone"));
 
-        await observer.StartObservingAsync(Token);
-        observer.IsObserving.ShouldBeTrue();
-
-        await observer.StopObservingAsync();
-        observer.IsObserving.ShouldBeFalse();
-
-        await Verifier.Verify(replay.MessagesToController);
-    }
-
-    [Fact(Timeout = 5000)]
-    public async Task StopObserving_BeforeStart_IsNoOp()
-    {
-        (IBleObserver observer, ReplayTransportLayer _) = await CreateObserver(EmptyMessages, Token);
-
-        await observer.StopObservingAsync();
-        observer.IsObserving.ShouldBeFalse();
-    }
-
-    [Fact(Timeout = 5000)]
-    public async Task OnAdvertisement_Unsubscribe_StopsCallback()
-    {
-        (IBleObserver observer, ReplayTransportLayer replay) = await CreateDefaultObserver(Token);
-        await observer.StartObservingAsync(Token);
-
-        var calls = 0;
-        IDisposable subscription = observer.OnAdvertisement(_ => calls++);
-
-        replay.Push(SingleAdv);
-        calls.ShouldBe(1);
-
-        subscription.Dispose();
-
-        replay.Push(SingleAdv);
-        calls.ShouldBe(1, "no further calls after Dispose()");
-
-        await Verifier.Verify(replay.MessagesToController);
-    }
-
-    [Fact(Timeout = 5000)]
-    public async Task OnAdvertisement_ThrowingHandler_DoesNotPreventOthers()
-    {
-        (IBleObserver observer, ReplayTransportLayer replay) = await CreateDefaultObserver(Token);
-        await observer.StartObservingAsync(Token);
-
-        var secondFired = false;
-
-        observer.OnAdvertisement(_ => throw new InvalidOperationException("boom"));
-        observer.OnAdvertisement(_ => secondFired = true);
-
-        replay.Push(SingleAdv);
-        secondFired.ShouldBeTrue();
+        BleException exception = await Should.ThrowAsync<BleException>(() => scan.MoveNextAsync().AsTask());
+        exception.InnerException.ShouldBeOfType<IOException>();
     }
 }

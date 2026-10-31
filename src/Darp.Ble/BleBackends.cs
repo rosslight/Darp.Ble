@@ -5,4 +5,7 @@ public static class BleBackends
 {
     /// <summary> The in-process mock backend from the Darp.Ble.Mock package </summary>
     public const string Mock = "Darp.Ble.Mock";
+
+    /// <summary> The HCI backend from the Darp.Ble.HciHost package, which drives a controller over a serial port </summary>
+    public const string HciHost = "Darp.Ble.HciHost";
 }

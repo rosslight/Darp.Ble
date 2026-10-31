@@ -40,15 +40,18 @@ public sealed class MockBackendOptions
     /// goes to <see cref="MockBackgroundWork.Run"/>. The peripheral lives as long as the mock adapter </param>
     /// <param name="name"> The name of the peripheral's adapter </param>
     /// <param name="includeGattService"> Whether the peripheral serves the GATT service; false simulates a device without it </param>
+    /// <param name="range"> Lets the test take the peripheral out of range and back, e.g. to test reconnecting; without
+    /// it the peripheral is always in range </param>
     /// <returns> These options </returns>
     public MockBackendOptions AddPeripheral(
         Func<BleAdapter, MockBackgroundWork, Task> configure,
         string name = "Mock peripheral",
-        bool includeGattService = true
+        bool includeGattService = true,
+        MockRange? range = null
     )
     {
         ArgumentNullException.ThrowIfNull(configure);
-        _peripherals.Add(new MockPeripheral(name, includeGattService, configure));
+        _peripherals.Add(new MockPeripheral(name, includeGattService, configure, range));
         return this;
     }
 

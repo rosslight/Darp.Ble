@@ -5,9 +5,16 @@ using Darp.Ble.Mock.Gatt;
 
 namespace Darp.Ble.Mock.Connections;
 
-/// <summary> One connection between two mock adapters. It goes down once; the other side learns it as a remote disconnect </summary>
+/// <summary>
+/// One connection between two mock adapters. It goes down once: when one side ends it, the other side learns it as a
+/// remote disconnect; when it is lost, both sides learn why
+/// </summary>
 internal sealed class MockLink
 {
+    // The longest value of an attribute; a read over the air ends there too
+    private const int MaxValueLength = 512;
+
+    private readonly MockCentralDriver _centralDriver;
     private readonly IConnectionSink _centralSink;
     private readonly IGattServerSink _peripheralSink;
     private readonly Lock _lock = new();
@@ -21,20 +28,24 @@ internal sealed class MockLink
     private Action? _failOutstanding;
     private bool _down;
 
+    // The MTU of the link: the default until the central's exchange
+    private int _mtu = 23;
+
     public MockLink(
-        BleAddress centralAddress,
+        MockCentralDriver central,
         IConnectionSink centralSink,
         MockPeripheralDriver peripheral,
         IGattServerSink peripheralSink
     )
     {
+        _centralDriver = central;
         PeripheralDriver = peripheral;
         _centralSink = centralSink;
         _peripheralSink = peripheralSink;
         Central = new MockConnectionDriver(this);
         GapService = new MockGapService(peripheral);
         GattService = peripheral.IncludeGattService ? new MockGattService(this) : null;
-        Peripheral = new MockCentralConnection(this, centralAddress);
+        Peripheral = new MockCentralConnection(this, central.Address);
     }
 
     /// <summary> The peripheral role the central connected to </summary>
@@ -45,6 +56,16 @@ internal sealed class MockLink
 
     /// <summary> The GATT service the peripheral serves itself, or null for one without it </summary>
     public MockGattService? GattService { get; }
+
+    /// <summary> Whether the link went down </summary>
+    public bool IsDown
+    {
+        get
+        {
+            lock (_lock)
+                return _down;
+        }
+    }
 
     /// <summary> The central's side </summary>
     public MockConnectionDriver Central { get; }
@@ -88,12 +109,21 @@ internal sealed class MockLink
         return descriptor;
     }
 
+    /// <summary> The central agreed on the MTU of the link </summary>
+    public void AgreeOnMtu(int mtu)
+    {
+        lock (_lock)
+            _mtu = mtu;
+    }
+
     /// <summary> The central reads; the peripheral's handler answers </summary>
     public Task<byte[]> ReadAsync(GattAttributeDefinition characteristic) =>
         CarryAsync(async () =>
+        {
+            byte[] value = await _peripheralSink.OnReadRequest(Peripheral, characteristic).ConfigureAwait(false);
             // A transport copies what it sends; the central never shares the peripheral's buffer
-            (await _peripheralSink.OnReadRequest(Peripheral, characteristic).ConfigureAwait(false)).ToArray()
-        );
+            return value.AsSpan(0, Math.Min(value.Length, MaxValueLength)).ToArray();
+        });
 
     /// <summary> The central writes with a write request; the peripheral's handler answers </summary>
     public Task WriteAsync(GattAttributeDefinition characteristic, ReadOnlyMemory<byte> value) =>
@@ -128,16 +158,19 @@ internal sealed class MockLink
     }
 
     /// <summary> The peripheral notifies; the central gets it while it subscribed, as a peripheral's stack decides </summary>
+    /// <remarks> A longer value is cut to what one notification carries, the MTU less its header, as ATT does </remarks>
     public void Notify(GattCharacteristicDefinition characteristic, ReadOnlySpan<byte> value)
     {
+        int mtu;
         lock (_lock)
         {
             if (_down)
                 throw new IOException("The mock link is down");
             if (!_subscribed.Contains(characteristic))
                 return;
+            mtu = _mtu;
         }
-        _centralSink.OnNotification(GetCharacteristic(characteristic), value);
+        _centralSink.OnNotification(GetCharacteristic(characteristic), value[..Math.Min(value.Length, mtu - 3)]);
     }
 
     public void DisconnectFromCentral()
@@ -157,6 +190,17 @@ internal sealed class MockLink
         failOutstanding?.Invoke();
     }
 
+    /// <summary> The link is lost without either side ending it, e.g. as a device leaves range: both sides learn the reason </summary>
+    public void Lose(DisconnectReason reason)
+    {
+        if (!TakeDown(out Action? failOutstanding))
+            return;
+        var info = new DisconnectInfo(reason);
+        _centralSink.OnDisconnected(info);
+        _peripheralSink.OnCentralDisconnected(Peripheral, info);
+        failOutstanding?.Invoke();
+    }
+
     /// <summary> Carries a request to the peripheral; its answer, or the link going down, ends it </summary>
     private Task<T> CarryAsync<T>(Func<Task<T>> answer)
     {
@@ -173,6 +217,9 @@ internal sealed class MockLink
             .ContinueWith(
                 task =>
                 {
+                    // The peripheral's connection ends: no answer comes, the link going down ends the request
+                    if (task.IsCanceled)
+                        return;
                     lock (_lock)
                     {
                         if (_failOutstanding == fail)
@@ -208,6 +255,7 @@ internal sealed class MockLink
             _failOutstanding = null;
         }
         PeripheralDriver.Forget(this);
+        _centralDriver.Forget(this);
         return true;
     }
 }

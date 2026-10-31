@@ -2,12 +2,13 @@ using Darp.Ble.Connections;
 using Darp.Ble.Gap;
 using Darp.Ble.Gatt;
 using Darp.Ble.Mock;
+using Darp.Ble.Testing;
 using Microsoft.Extensions.Time.Testing;
 using Shouldly;
 
 namespace Darp.Ble.Tests.Connections;
 
-/// <summary> Per-connection state of a central through the Mock (seam 3 of PR 4b, D9) </summary>
+/// <summary> Per-connection state of a central through the Mock </summary>
 public sealed class StateTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -50,10 +51,12 @@ public sealed class StateTests
         await handlerRunning.Task;
         ConnectedCentral central = seen ?? throw new InvalidOperationException("No handler ran");
 
-        Task disconnecting = central.DisconnectAsync(Token);
+        await central.DisconnectAsync(Token);
+        // The link is down, but the handler still runs, so its state is still there
         central.GetOrAddState(() => new Session(events)).Writes.ShouldBe(2);
         releaseHandler.SetResult();
-        await disconnecting;
+        // The host's disposal waits until the handlers returned and the states were disposed
+        await (await _host.Task).Host.DisposeAsync();
 
         events.ShouldBe(["handler returned", "disposed async"]);
         Should.Throw<ObjectDisposedException>(() => central.GetOrAddState(() => new Session(events)));
@@ -61,28 +64,53 @@ public sealed class StateTests
     }
 
     [Fact]
-    public async Task AFailingFactory_LeavesNoState_AndAFailingDisposal_DoesNotStopTheOthers()
+    public async Task AFailingFactory_LeavesNoState()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        ConnectedCentral central = await ConnectCentralAsync(adapter);
+
+        Should.Throw<InvalidOperationException>(() =>
+            central.GetOrAddState<Session>(() => throw new InvalidOperationException("Factory failed"))
+        );
+        var created = new Session([]);
+
+        central.GetOrAddState(() => created).ShouldBeSameAs(created);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AFailingDisposal_DoesNotStopTheStatesAfterIt(bool failsAsync)
     {
         var events = new List<string>();
+        await using BleAdapter adapter = await OpenAsync();
+        ConnectedCentral central = await ConnectCentralAsync(adapter);
+        // Added first, so the states after it are disposed only if the cleanup goes on after the failure
+        if (failsAsync)
+            central.GetOrAddState(() => new FailingAsyncDisposal());
+        else
+            central.GetOrAddState(() => new FailingDisposal());
+        central.GetOrAddState(() => new AsyncState(events));
+        central.GetOrAddState(() => new SyncState(events));
+
+        // The host's disposal waits until the states were disposed
+        await (await _host.Task).Host.DisposeAsync().AsTask().WithWatchdog();
+
+        events.ShouldBe(["async state disposed", "state disposed"], ignoreOrder: true);
+    }
+
+    /// <summary> Connects and returns the host's side of the connection, as the first handler saw it </summary>
+    private async Task<ConnectedCentral> ConnectCentralAsync(BleAdapter adapter)
+    {
         ConnectedCentral? seen = null;
         _onWrite = (central, _, _) =>
         {
             seen = central;
             return ValueTask.FromResult(GattProtocolStatus.Success);
         };
-        await using BleAdapter adapter = await OpenAsync();
         RemoteCharacteristic<Properties.Write> command = await ConnectAsync(adapter);
         await command.WriteAsync(new byte[] { 1 }, Token);
-        ConnectedCentral central = seen ?? throw new InvalidOperationException("No handler ran");
-
-        Should.Throw<InvalidOperationException>(() =>
-            central.GetOrAddState<Session>(() => throw new InvalidOperationException("Factory failed"))
-        );
-        central.GetOrAddState(() => new Session(events));
-        central.GetOrAddState(() => new FailingDisposal());
-        await central.DisconnectAsync(Token);
-
-        events.ShouldBe(["disposed async"]);
+        return seen ?? throw new InvalidOperationException("No handler ran");
     }
 
     private async Task<RemoteCharacteristic<Properties.Write>> ConnectAsync(BleAdapter adapter)
@@ -146,8 +174,36 @@ public sealed class StateTests
         }
     }
 
+    private sealed class AsyncState(List<string> events) : IAsyncDisposable
+    {
+        private readonly List<string> _events = events;
+
+        public ValueTask DisposeAsync()
+        {
+            lock (_events)
+                _events.Add("async state disposed");
+            return ValueTask.CompletedTask;
+        }
+    }
+
+    private sealed class SyncState(List<string> events) : IDisposable
+    {
+        private readonly List<string> _events = events;
+
+        public void Dispose()
+        {
+            lock (_events)
+                _events.Add("state disposed");
+        }
+    }
+
     private sealed class FailingDisposal : IDisposable
     {
         public void Dispose() => throw new InvalidOperationException("Dispose failed");
+    }
+
+    private sealed class FailingAsyncDisposal : IAsyncDisposable
+    {
+        public ValueTask DisposeAsync() => ValueTask.FromException(new InvalidOperationException("Dispose failed"));
     }
 }

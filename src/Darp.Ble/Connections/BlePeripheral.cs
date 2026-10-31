@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using Darp.Ble.Backends;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
@@ -17,21 +18,28 @@ public sealed class BlePeripheral
     private readonly TimeProvider _timeProvider;
     private readonly DiagnosticsSettings _diagnostics;
     private readonly ILogger _logger;
+
+    // Publications and identity changes; disposal closes it and waits for them
+    private readonly OperationTracker _operations = new();
+
+    // Guards the fields below: the driver's thread reports centrals and their requests while the app adds services
+    // and watches centrals
     private readonly Lock _lock = new();
-    private readonly Dictionary<ICentralConnectionDriver, ConnectedCentral> _centrals = [];
+
+    // In the order the centrals connected, which ConnectedCentrals and WatchCentralsAsync keep
+    private readonly OrderedDictionary<ICentralConnectionDriver, ConnectedCentral> _centrals = [];
     private readonly Dictionary<GattAttributeDefinition, IHostedAttribute> _hosted = [];
+
+    // One queue per WatchCentralsAsync loop; written under the lock, so a central is queued in the order it connected
+    private readonly List<ItemQueue<ConnectedCentral>> _watchers = [];
+
+    // Set once disposal disconnected every central; a central reported later goes with the driver
+    private bool _drained;
 
     // The GAP identity; changes are serialized and committed once the driver took them
     private readonly Lock _identityLock = new();
     private string _deviceName;
     private AppearanceValues _appearance = AppearanceValues.Unknown;
-    private bool _closed;
-
-    // Set once disposal disconnected every central; a central reported later goes with the driver
-    private bool _drained;
-
-    // Publications; disposal waits for them
-    private readonly OperationTracker _operations = new();
 
     internal BlePeripheral(
         BleAdapter adapter,
@@ -129,12 +137,54 @@ public sealed class BlePeripheral
     }
 
     /// <summary> The connected centrals, as a snapshot </summary>
+    /// <remarks> A central leaves the list once its <see cref="ConnectedCentral.Disconnected"/> completed </remarks>
     public IReadOnlyList<ConnectedCentral> ConnectedCentrals
     {
         get
         {
+            // A central stays known until its handlers returned, so disposal can wait for them; for the app it is gone
             lock (_lock)
-                return [.. _centrals.Values];
+                return [.. _centrals.Values.Where(central => !central.Disconnected.IsCompleted)];
+        }
+    }
+
+    /// <summary> The centrals connected now, then each new one once its connection is up; ends when the adapter is disposed </summary>
+    /// <remarks>
+    /// Each loop has its own queue. A central may send requests before the loop reads it; handlers get the central
+    /// themselves. A central that disconnected meanwhile is still yielded
+    /// </remarks>
+    /// <param name="cancellationToken"> Ends the loop </param>
+    /// <returns> The centrals, in the order they connected </returns>
+    /// <exception cref="ObjectDisposedException"> The adapter is disposed </exception>
+    public async IAsyncEnumerable<ConnectedCentral> WatchCentralsAsync(
+        [EnumeratorCancellation] CancellationToken cancellationToken = default
+    )
+    {
+        // Few centrals ever connect, so the queue never needs to drop
+        var watcher = new ItemQueue<ConnectedCentral>(QueueOptions.Unbounded, onDrop: () => { });
+        lock (_lock)
+        {
+            // In one step with the snapshot, so no central is missed or yielded twice
+            ObjectDisposedException.ThrowIf(_operations.IsClosed, typeof(BlePeripheral));
+            foreach (ConnectedCentral central in _centrals.Values.Where(central => !central.Disconnected.IsCompleted))
+                watcher.TryWrite(central);
+            _watchers.Add(watcher);
+        }
+        try
+        {
+            while (await watcher.Reader.WaitToReadAsync(cancellationToken).ConfigureAwait(false))
+            {
+                while (watcher.Reader.TryRead(out ConnectedCentral? central))
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    yield return central;
+                }
+            }
+        }
+        finally
+        {
+            lock (_lock)
+                _watchers.Remove(watcher);
         }
     }
 
@@ -145,11 +195,17 @@ public sealed class BlePeripheral
         bool drained;
         lock (_lock)
         {
-            closed = _closed;
+            // Disposal closes admission before it drains, so a drained peripheral is always closed
             drained = _drained;
+            closed = _operations.IsClosed;
             // Disposal waits for every central it can still see, also one it rejects
             if (!drained)
                 _centrals.Add(connection, central);
+            if (!closed)
+            {
+                foreach (ItemQueue<ConnectedCentral> watcher in _watchers)
+                    watcher.TryWrite(central);
+            }
         }
         if (!closed)
             central.CountOpen();
@@ -311,14 +367,19 @@ public sealed class BlePeripheral
             _centrals.Remove(connection);
     }
 
+    /// <summary> Admits nothing new and ends every <see cref="WatchCentralsAsync"/> loop after its queued centrals </summary>
     internal void CloseAdmission()
     {
         _operations.Close();
+        // A closed peripheral rejects every central that still connects, so the loops are over
         lock (_lock)
-            _closed = true;
+        {
+            foreach (ItemQueue<ConnectedCentral> watcher in _watchers)
+                watcher.Complete();
+        }
     }
 
-    /// <summary> Waits for publications in flight, then disconnects every central </summary>
+    /// <summary> Waits for publications in flight, then disconnects every central and waits until its handlers returned and its states were disposed </summary>
     internal async Task DisposeAsync()
     {
         CloseAdmission();
@@ -336,8 +397,7 @@ public sealed class BlePeripheral
                 }
             }
             // Every central starts ending before any is awaited, so a slow handler delays nobody else's end
-            await Task.WhenAll(centrals.Select(central => central.DisconnectAsync(CancellationToken.None)))
-                .ConfigureAwait(false);
+            await Task.WhenAll(centrals.Select(central => central.ReleaseAsync())).ConfigureAwait(false);
         }
     }
 

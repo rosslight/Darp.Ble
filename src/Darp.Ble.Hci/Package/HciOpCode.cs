@@ -82,6 +82,9 @@ public enum HciOpCode : ushort
     /// <summary> The <see cref="HciLeReadNumberOfSupportedAdvertisingSetsCommand"/> </summary>
     HCI_LE_Read_Number_Of_Supported_Advertising_Sets = 0x003B | (HciOpCodeGroupField.LeController << 10),
 
+    /// <summary> The <see cref="HciLeCreateConnectionCancelCommand"/> </summary>
+    HCI_LE_Create_Connection_Cancel = 0x000E | (HciOpCodeGroupField.LeController << 10),
+
     /// <summary> The <see cref="HciLeRemoveAdvertisingSetCommand"/> </summary>
     HCI_LE_Remove_Advertising_Set = 0x003C | (HciOpCodeGroupField.LeController << 10),
 

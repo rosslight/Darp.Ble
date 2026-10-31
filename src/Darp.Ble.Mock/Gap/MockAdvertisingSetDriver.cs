@@ -77,7 +77,7 @@ internal sealed class MockAdvertisingSetDriver(
     /// <summary> A central connects through the set, which stops, as a controller's set does </summary>
     /// <returns> The link, or null when the set stopped meanwhile </returns>
     /// <exception cref="BleConnectException"> The peripheral closes </exception>
-    public async Task<MockLink?> ConnectAsync(BleAddress centralAddress, IConnectionSink centralSink)
+    public async Task<MockLink?> ConnectAsync(MockCentralDriver central, IConnectionSink centralSink)
     {
         ITimer timer;
         MockLink link;
@@ -86,7 +86,7 @@ internal sealed class MockAdvertisingSetDriver(
             if (_timer is null)
                 return null;
             timer = _timer;
-            link = _adapter.PeripheralDriver.Accept(centralAddress, centralSink);
+            link = _adapter.PeripheralDriver.Accept(central, centralSink);
             _timer = null;
             // Under the lock, so the stop is reported before a later start or stop of the set completes
             _sink.OnStoppedByConnection(link.Peripheral);

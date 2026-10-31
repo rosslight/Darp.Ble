@@ -172,6 +172,7 @@ Darp.Ble.Connections.BlePeripheral.Appearance.set -> void
 Darp.Ble.Connections.BlePeripheral.ConnectedCentrals.get -> System.Collections.Generic.IReadOnlyList<Darp.Ble.Connections.ConnectedCentral!>!
 Darp.Ble.Connections.BlePeripheral.DeviceName.get -> string!
 Darp.Ble.Connections.BlePeripheral.DeviceName.set -> void
+Darp.Ble.Connections.BlePeripheral.WatchCentralsAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Collections.Generic.IAsyncEnumerable<Darp.Ble.Connections.ConnectedCentral!>!
 Darp.Ble.Connections.ConnectedCentral
 Darp.Ble.Connections.ConnectedCentral.Address.get -> Darp.Ble.Data.BleAddress!
 Darp.Ble.Connections.ConnectedCentral.DisconnectAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
@@ -4471,6 +4472,7 @@ Darp.Ble.QueueOptions
 Darp.Ble.QueueOptions.Capacity.get -> int?
 Darp.Ble.QueueOptions.FullMode.get -> Darp.Ble.QueueFullMode
 Darp.Ble.QueueOptions.QueueOptions(int capacity, Darp.Ble.QueueFullMode fullMode) -> void
+const Darp.Ble.BleBackends.HciHost = "Darp.Ble.HciHost" -> string!
 const Darp.Ble.BleBackends.Mock = "Darp.Ble.Mock" -> string!
 const Darp.Ble.Diagnostics.BleTelemetry.MeterName = "Darp.Ble" -> string!
 const Darp.Ble.Diagnostics.BleTelemetry.SourceName = "Darp.Ble" -> string!
