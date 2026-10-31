@@ -14,6 +14,10 @@ internal sealed class TestAdapterDriver : IBleAdapterDriver
 
     public IBroadcasterDriver? Broadcaster { get; init; }
 
+    public ICentralDriver? Central { get; init; }
+
+    public IPeripheralDriver? Peripheral { get; init; }
+
     /// <summary> When set, changing the address waits until the test completes it </summary>
     public TaskCompletionSource? HoldAddressChange { get; init; }
 

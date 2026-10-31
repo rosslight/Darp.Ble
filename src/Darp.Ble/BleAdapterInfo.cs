@@ -53,7 +53,7 @@ public sealed class BleAdapterInfo
         // Until the adapter exists, this method owns the driver
         try
         {
-            var adapter = new BleAdapter(Backend, Name, driver, _options, _logger);
+            var adapter = new BleAdapter(Backend, Name, driver, _options, _context.TimeProvider, _logger);
             _logger.LogAdapterOpened(Backend, Name);
             return adapter;
         }

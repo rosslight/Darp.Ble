@@ -9,8 +9,9 @@ namespace Darp.Ble.Gap;
 /// <summary> Shares one radio scan between all scans of an observer (D6) </summary>
 /// <remarks>
 /// <see cref="_lock"/> guards the listeners, the current radio run and admission; it is held only for those fields.
-/// <see cref="_commands"/> serializes the asynchronous driver commands (start, stop, restart) and owns
-/// <see cref="_radioMayScan"/>: once a start was attempted, the radio counts as scanning until a stop succeeded
+/// <see cref="_commands"/> serializes the asynchronous driver commands (start, stop, restart, pause, resume) and owns
+/// <see cref="_radioMayScan"/>: once a start was attempted, the radio counts as scanning until a stop succeeded.
+/// While <see cref="_pauses"/> is above zero, the radio does not scan and scans wait without a run
 /// </remarks>
 [SuppressMessage(
     "Design",
@@ -27,6 +28,7 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
     private RadioRun? _run;
     private bool _closed;
     private bool _radioMayScan;
+    private int _pauses;
 
     public BleScanParameters Parameters { get; private set; } = new();
 
@@ -43,7 +45,7 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
             {
                 ObjectDisposedException.ThrowIf(_closed, typeof(BleObserver));
                 _listeners = [.. _listeners, listener];
-                if (_run is null)
+                if (_run is null && _pauses == 0)
                 {
                     runToStart = new RadioRun(this);
                     _run = runToStart;
@@ -125,6 +127,76 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
                 Fail(oldRun, e);
                 Fail(newRun, e);
                 throw;
+            }
+        }
+        finally
+        {
+            _commands.Release();
+        }
+    }
+
+    /// <summary> Stops the radio scan until the matching <see cref="ResumeAsync"/>; scans stay registered and wait </summary>
+    /// <remarks> Pauses count, so overlapping connects each hold one. Throws when the radio cannot stop; the scans then end with the error </remarks>
+    public async Task PauseAsync(CancellationToken cancellationToken)
+    {
+        await _commands.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            RadioRun? run;
+            lock (_lock)
+            {
+                run = _pauses == 0 ? _run : null;
+                // Reports of the stopped run are ignored from here on
+                _run = null;
+            }
+            try
+            {
+                await StopRadioAsync().ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                if (run is not null)
+                    FailListeners(e);
+                throw;
+            }
+            _pauses++;
+        }
+        finally
+        {
+            _commands.Release();
+        }
+    }
+
+    /// <summary> Ends one pause; the last one starts the radio again for the scans still registered </summary>
+    /// <remarks> Never throws: a radio that cannot start again ends the scans with the error </remarks>
+    public async Task ResumeAsync()
+    {
+        // The caller's cancellation must not keep the radio stopped
+        await _commands.WaitAsync(CancellationToken.None).ConfigureAwait(false);
+        try
+        {
+            RadioRun? run = null;
+            lock (_lock)
+            {
+                _pauses--;
+                if (_pauses == 0 && !_closed && _listeners.Length > 0)
+                {
+                    run = new RadioRun(this);
+                    _run = run;
+                }
+            }
+            if (run is null)
+                return;
+            try
+            {
+                _radioMayScan = true;
+                await _driver.StartScanAsync(Parameters, run, CancellationToken.None).ConfigureAwait(false);
+                _logger.LogScanStarted(Parameters.ScanType);
+            }
+            catch (Exception e)
+            {
+                _logger.LogScanFailed(e);
+                Fail(run, e);
             }
         }
         finally
@@ -216,12 +288,20 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
 
     private void Fail(RadioRun run, Exception error)
     {
-        ScanListener[] listeners;
         lock (_lock)
         {
             if (!ReferenceEquals(_run, run))
                 return;
             _run = null;
+        }
+        FailListeners(error);
+    }
+
+    private void FailListeners(Exception error)
+    {
+        ScanListener[] listeners;
+        lock (_lock)
+        {
             listeners = _listeners;
             _listeners = [];
         }

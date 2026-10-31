@@ -1,4 +1,6 @@
+using System.Runtime.ExceptionServices;
 using Darp.Ble.Backends;
+using Darp.Ble.Connections;
 using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Microsoft.Extensions.Logging;
@@ -14,25 +16,47 @@ public sealed class BleAdapter : IAsyncDisposable
     private readonly Lazy<Task> _disposal;
     private readonly BleObserver? _observer;
     private readonly BleBroadcaster? _broadcaster;
+    private readonly BleCentral? _central;
+    private readonly BlePeripheral? _peripheral;
 
     // Adapter-level operations, e.g. changing the address; disposal waits for them before releasing the driver
     private readonly OperationTracker _operations = new();
 
-    internal BleAdapter(string backend, string? name, IBleAdapterDriver driver, BleCoreOptions options, ILogger logger)
+    internal BleAdapter(
+        string backend,
+        string? name,
+        IBleAdapterDriver driver,
+        BleCoreOptions options,
+        TimeProvider timeProvider,
+        ILogger logger
+    )
     {
         Backend = backend;
         Name = name;
         _driver = driver;
         _logger = logger;
         _disposal = new Lazy<Task>(DisposeCoreAsync);
+        // Connecting needs scanning, and accepting connections needs advertising
+        if (driver.Central is not null && driver.Observer is null)
+            throw new InvalidOperationException($"The backend {backend} has a central role without an observer role");
+        if (driver.Peripheral is not null && driver.Broadcaster is null)
+            throw new InvalidOperationException(
+                $"The backend {backend} has a peripheral role without a broadcaster role"
+            );
         Capabilities =
             driver.Features
             | (driver.Observer is null ? Capabilities.None : Capabilities.Observer)
-            | (driver.Broadcaster is null ? Capabilities.None : Capabilities.Broadcaster);
+            | (driver.Broadcaster is null ? Capabilities.None : Capabilities.Broadcaster)
+            | (driver.Central is null ? Capabilities.None : Capabilities.Central)
+            | (driver.Peripheral is null ? Capabilities.None : Capabilities.Peripheral);
         if (driver.Observer is not null)
             _observer = new BleObserver(this, driver.Observer, options.AdvertisementQueue, logger);
         if (driver.Broadcaster is not null)
             _broadcaster = new BleBroadcaster(this, driver.Broadcaster, logger);
+        if (driver.Central is not null && _observer is not null)
+            _central = new BleCentral(this, driver.Central, _observer, timeProvider, logger);
+        if (driver.Peripheral is not null)
+            _peripheral = new BlePeripheral(this, driver.Peripheral, logger);
     }
 
     /// <summary> The backend of the adapter, e.g. <see cref="BleBackends.Mock"/> </summary>
@@ -51,6 +75,17 @@ public sealed class BleAdapter : IAsyncDisposable
     /// <summary> Advertises with advertising sets </summary>
     /// <exception cref="NotSupportedException"> The adapter cannot advertise; see <see cref="Capabilities"/> </exception>
     public BleBroadcaster Broadcaster => _broadcaster ?? throw MissingRole(nameof(Broadcaster));
+
+    /// <summary> Connects to peripherals </summary>
+    /// <exception cref="NotSupportedException"> The adapter cannot connect to peripherals; see <see cref="Capabilities"/> </exception>
+    public BleCentral Central => _central ?? throw MissingRole(nameof(Central));
+
+    /// <summary> Accepts connections from centrals </summary>
+    /// <exception cref="NotSupportedException"> Centrals cannot connect to the adapter; see <see cref="Capabilities"/> </exception>
+    public BlePeripheral Peripheral => _peripheral ?? throw MissingRole(nameof(Peripheral));
+
+    /// <summary> The central connected through this connection, while it is connected </summary>
+    internal ConnectedCentral? FindCentral(ICentralConnectionDriver central) => _peripheral?.Find(central);
 
     /// <summary> The adapter's own random address </summary>
     public BleAddress RandomAddress => _driver.RandomAddress;
@@ -85,25 +120,36 @@ public sealed class BleAdapter : IAsyncDisposable
         _operations.Close();
         _observer?.CloseAdmission();
         _broadcaster?.CloseAdmission();
+        _central?.CloseAdmission();
+        _peripheral?.CloseAdmission();
         // Every step runs even if an earlier one fails
+        List<Exception> failures = [];
+        if (_observer is not null)
+            await RunStepAsync(_observer.DisposeAsync, failures).ConfigureAwait(false);
+        if (_broadcaster is not null)
+            await RunStepAsync(_broadcaster.DisposeAsync, failures).ConfigureAwait(false);
+        if (_central is not null)
+            await RunStepAsync(_central.DisposeAsync, failures).ConfigureAwait(false);
+        if (_peripheral is not null)
+            await RunStepAsync(_peripheral.DisposeAsync, failures).ConfigureAwait(false);
+        await _operations.CloseAndWaitAsync().ConfigureAwait(false);
+        await RunStepAsync(() => _driver.DisposeAsync().AsTask(), failures).ConfigureAwait(false);
+        _logger.LogAdapterDisposed(Backend, Name);
+        if (failures.Count == 1)
+            ExceptionDispatchInfo.Throw(failures[0]);
+        if (failures.Count > 1)
+            throw new AggregateException("Disposing the adapter failed in several steps", failures);
+    }
+
+    private static async Task RunStepAsync(Func<Task> step, List<Exception> failures)
+    {
         try
         {
-            if (_observer is not null)
-                await _observer.DisposeAsync().ConfigureAwait(false);
+            await step().ConfigureAwait(false);
         }
-        finally
+        catch (Exception e)
         {
-            try
-            {
-                if (_broadcaster is not null)
-                    await _broadcaster.DisposeAsync().ConfigureAwait(false);
-            }
-            finally
-            {
-                await _operations.CloseAndWaitAsync().ConfigureAwait(false);
-                await _driver.DisposeAsync().ConfigureAwait(false);
-                _logger.LogAdapterDisposed(Backend, Name);
-            }
+            failures.Add(e);
         }
     }
 

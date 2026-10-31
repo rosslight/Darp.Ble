@@ -1,5 +1,6 @@
 using Darp.Ble.Backends;
 using Darp.Ble.Data;
+using Darp.Ble.Mock.Connections;
 using Darp.Ble.Mock.Gap;
 using Microsoft.Extensions.Logging;
 
@@ -21,6 +22,7 @@ internal sealed class MockAdapterDriver : IBleAdapterDriver
         );
         Observer = new MockObserverDriver(air, this);
         Broadcaster = new MockBroadcasterDriver(air, this);
+        Central = new MockCentralDriver(air, this);
     }
 
     public Capabilities Features => Capabilities.SetRandomAddress;
@@ -28,6 +30,13 @@ internal sealed class MockAdapterDriver : IBleAdapterDriver
     public IObserverDriver? Observer { get; }
 
     public IBroadcasterDriver? Broadcaster { get; }
+
+    public ICentralDriver? Central { get; }
+
+    public IPeripheralDriver? Peripheral => PeripheralDriver;
+
+    /// <summary> The peripheral role, for centrals in the air that connect to this adapter </summary>
+    public MockPeripheralDriver PeripheralDriver { get; } = new();
 
     public BleAddress RandomAddress => _randomAddress;
 
@@ -45,6 +54,7 @@ internal sealed class MockAdapterDriver : IBleAdapterDriver
     /// <summary> Stops the background work, then disposes the simulated peripherals; tries all of them even if one fails </summary>
     public async ValueTask DisposeAsync()
     {
+        PeripheralDriver.Close();
         List<Exception> failures = [];
         // The work may still use the peripherals, so it ends first, also when one of its cancellation callbacks throws
         try

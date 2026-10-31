@@ -1,5 +1,4 @@
 using Darp.Ble.Backends;
-using Darp.Ble.Data;
 using Darp.Ble.Gap;
 
 namespace Darp.Ble.Tests.Advertising;
@@ -19,6 +18,7 @@ internal sealed class TestBroadcasterDriver : IBroadcasterDriver
         AdvertisingParameters parameters,
         AdvertisingData data,
         AdvertisingData? scanResponseData,
+        IAdvertisingSetSink sink,
         CancellationToken cancellationToken
     )
     {
