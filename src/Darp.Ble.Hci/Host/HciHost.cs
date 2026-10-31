@@ -455,6 +455,8 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
             case HciLeMetaSubEventType.HCI_LE_Connection_Update_Complete
                 when HciLeConnectionUpdateCompleteEvent.TryReadLittleEndian(metaEvt.Parameters.Span, out var evt):
                 LogEventPacketControllerToHost(evt, packetPayloadBytes);
+                if (Device.TryGetConnection(evt.ConnectionHandle, out var updated))
+                    updated.OnConnectionUpdateCompleteEvent(evt);
                 PublishMessage(evt);
                 break;
             case HciLeMetaSubEventType.HCI_LE_Data_Length_Change

@@ -261,7 +261,8 @@ public sealed class CentralTests
 
         Task disposing = connection.DisposeAsync().AsTask();
         await controller.WaitForCommandAsync(HciOpCode.HCI_Disconnect);
-        time.Advance(TimeSpan.FromSeconds(5));
+        // The command timeout after the link's supervision timeout of 720 ms
+        time.Advance(TimeSpan.FromSeconds(5.72));
 
         await Should.ThrowAsync<BleDisconnectedException>(read);
         await disposing;

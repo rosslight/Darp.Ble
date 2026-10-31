@@ -152,7 +152,10 @@ public sealed class HciDevice : IAsyncDisposable
             evt.PeerAddress,
             evt.Role,
             _loggerFactory
-        );
+        )
+        {
+            SupervisionTimeout = AclConnection.ToSupervisionTimeout(evt.SupervisionTimeout),
+        };
         Host.AclPacketQueue.AddLink(evt.ConnectionHandle);
         bool isAdded = _connections.TryAdd(evt.ConnectionHandle, connection);
         Debug.Assert(isAdded, $"Connection {connection.ConnectionHandle} could not be registered at host!");

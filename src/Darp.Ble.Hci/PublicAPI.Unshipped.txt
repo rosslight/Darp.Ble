@@ -6,6 +6,7 @@ Darp.Ble.Hci.AclConnection.Assembler.get -> Darp.Ble.Hci.L2CapAssembler!
 Darp.Ble.Hci.AclConnection.AttMtu.get -> ushort
 Darp.Ble.Hci.AclConnection.AttMtu.set -> void
 Darp.Ble.Hci.AclConnection.ConnectionHandle.get -> ushort
+Darp.Ble.Hci.AclConnection.SupervisionTimeout.get -> System.TimeSpan
 Darp.Ble.Hci.AclConnection.Device.get -> Darp.Ble.Hci.HciDevice!
 Darp.Ble.Hci.AclConnection.DisconnectToken.get -> System.Threading.CancellationToken
 Darp.Ble.Hci.AclConnection.Dispose() -> void

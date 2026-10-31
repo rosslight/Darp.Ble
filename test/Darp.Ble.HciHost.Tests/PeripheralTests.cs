@@ -2,7 +2,11 @@ using Darp.Ble.Connections;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
 using Darp.Ble.Gatt;
+using Darp.Ble.Hci.Package;
+using Darp.Ble.Hci.Payload;
+using Darp.Ble.Hci.Payload.Event;
 using Darp.Ble.HciHost.Verify;
+using Microsoft.Extensions.Time.Testing;
 using Shouldly;
 
 namespace Darp.Ble.HciHost.Tests;
@@ -26,10 +30,11 @@ public sealed class PeripheralTests
     private static async Task<BleAdapter> HostAsync(
         FakeController controller,
         OnReadHandler? onRead = null,
-        OnWriteHandler? onWrite = null
+        OnWriteHandler? onWrite = null,
+        TimeProvider? time = null
     )
     {
-        BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+        BleAdapter adapter = await HciAdapter.OpenAsync(controller, time);
         var service = new LocalGattServiceBuilder(0x180F);
         _level = service.AddCharacteristic(
             0x2A19,
@@ -368,6 +373,47 @@ public sealed class PeripheralTests
 
         (await connected.Disconnected).Reason.ShouldBe(DisconnectReason.LocalRequest);
         controller.Commands.ShouldContain(Hci.Package.HciOpCode.HCI_Disconnect);
+    }
+
+    [Fact]
+    public async Task DisconnectingACentralThatDoesNotAcknowledge_WaitsUntilItsSupervisionTimeoutEndsTheLink()
+    {
+        await using var controller = new FakeController();
+        var time = new FakeTimeProvider();
+        await using BleAdapter adapter = await HostAsync(controller, time: time);
+        var central = new FakeCentral(controller, 0x0001);
+        await central.ConnectAsync();
+        ConnectedCentral connected = await WaitForCentralAsync(adapter);
+        // The central moves the link to a 20 s supervision timeout, longer than any command takes
+        await controller.PushAsync(
+            HciMessage.LeEventToHost(
+                new HciLeConnectionUpdateCompleteEvent
+                {
+                    SubEventCode = HciLeConnectionUpdateCompleteEvent.SubEventType,
+                    Status = HciCommandStatus.Success,
+                    ConnectionHandle = central.Handle,
+                    ConnectionInterval = 0x0028,
+                    PeripheralLatency = 0x0000,
+                    SupervisionTimeout = 0x07D0,
+                }
+            )
+        );
+        controller.Hold(HciOpCode.HCI_Disconnect);
+
+        Task disconnecting = connected.DisconnectAsync(Token);
+        await controller.WaitForCommandAsync(HciOpCode.HCI_Disconnect);
+        await controller.PushAsync(FakeController.CommandStatus(HciOpCode.HCI_Disconnect));
+        // Within the command timeout first, so the host is waiting for the link to end before the clock passes it
+        time.Advance(TimeSpan.FromSeconds(4));
+        await Task.Delay(50, Token);
+        time.Advance(TimeSpan.FromSeconds(16));
+        await Task.Delay(50, Token);
+        disconnecting.IsCompleted.ShouldBeFalse();
+        // The controller gives up on the acknowledgement once the supervision timeout ran out
+        await central.DisconnectAsync(HciCommandStatus.ConnectionTimeout);
+
+        await disconnecting;
+        adapter.Peripheral.ConnectedCentrals.ShouldBeEmpty();
     }
 
     [Fact]

@@ -22,7 +22,11 @@ internal static class HciDisconnects
             (int)reason
         );
 
-    /// <summary> Asks the controller to take a link down; its Disconnection Complete follows </summary>
+    /// <summary> How long the Disconnection Complete may take: a peer that does not acknowledge the request lets the link end only after its supervision timeout </summary>
+    public static TimeSpan CompletionTimeout(AclConnection connection) =>
+        connection.SupervisionTimeout + connection.Device.Settings.CommandTimeout;
+
+    /// <summary> Asks the controller to take a link down; its Disconnection Complete follows within <see cref="CompletionTimeout"/> </summary>
     public static async Task RequestAsync(HciDevice device, ushort connectionHandle)
     {
         HciCommandStatus status = await device

@@ -81,6 +81,18 @@ public sealed class AclConnection : IDisposable
     /// <summary>Gets the last disconnection reason reported by the controller, if available.</summary>
     public HciCommandStatus? LastDisconnectionReason { get; private set; }
 
+    /// <summary>Gets how long the link lasts without a packet from the peer, as last agreed with it.</summary>
+    public TimeSpan SupervisionTimeout { get; internal set; }
+
+    internal void OnConnectionUpdateCompleteEvent(HciLeConnectionUpdateCompleteEvent hciEvent)
+    {
+        if (hciEvent.Status is HciCommandStatus.Success)
+            SupervisionTimeout = ToSupervisionTimeout(hciEvent.SupervisionTimeout);
+    }
+
+    /// <summary>Converts the controller's 10 ms units.</summary>
+    internal static TimeSpan ToSupervisionTimeout(ushort units) => TimeSpan.FromMilliseconds(units * 10);
+
     internal void OnDisconnectEvent(HciDisconnectionCompleteEvent hciEvent)
     {
         if (hciEvent.ConnectionHandle != ConnectionHandle)

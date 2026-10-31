@@ -325,7 +325,7 @@ internal sealed partial class HciHostConnectionDriver : IConnectionDriver
     {
         await HciDisconnects.RequestAsync(_device, _connection.ConnectionHandle).ConfigureAwait(false);
         await _down
-            .Task.WaitAsync(_device.Settings.CommandTimeout, _device.TimeProvider, CancellationToken.None)
+            .Task.WaitAsync(HciDisconnects.CompletionTimeout(_connection), _device.TimeProvider, CancellationToken.None)
             .ConfigureAwait(false);
     }
 }

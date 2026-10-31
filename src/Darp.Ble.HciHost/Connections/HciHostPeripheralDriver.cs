@@ -70,7 +70,7 @@ internal sealed partial class HciHostPeripheralDriver : IPeripheralDriver, IDisp
         await HciDisconnects.RequestAsync(_device, link.Connection.ConnectionHandle).ConfigureAwait(false);
         // The core learns the end from Disconnection Complete, through OnCentralDisconnected
         await link
-            .Down.WaitAsync(_device.Settings.CommandTimeout, _device.TimeProvider, cancellationToken)
+            .Down.WaitAsync(HciDisconnects.CompletionTimeout(link.Connection), _device.TimeProvider, cancellationToken)
             .ConfigureAwait(false);
     }
 
