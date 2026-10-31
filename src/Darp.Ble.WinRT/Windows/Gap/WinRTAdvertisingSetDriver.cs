@@ -113,15 +113,36 @@ internal sealed class WinRTAdvertisingSetDriver(
     private async Task StopPublisherAsync(BluetoothLEAdvertisementPublisher publisher)
     {
         publisher.StatusChanged -= OnRunningStatusChanged;
-        if (
-            publisher.Status
-            is not BluetoothLEAdvertisementPublisherStatus.Started
-                and not BluetoothLEAdvertisementPublisherStatus.Waiting
+        var stopped = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        void OnChanged(
+            BluetoothLEAdvertisementPublisher sender,
+            BluetoothLEAdvertisementPublisherStatusChangedEventArgs args
         )
-            return;
-        Task stopped = WaitForAsync(publisher, BluetoothLEAdvertisementPublisherStatus.Stopped, CancellationToken.None);
-        publisher.Stop();
-        await stopped.ConfigureAwait(false);
+        {
+            if (
+                args.Status
+                is BluetoothLEAdvertisementPublisherStatus.Stopped
+                    or BluetoothLEAdvertisementPublisherStatus.Aborted
+            )
+                stopped.TrySetResult();
+        }
+        // Before the status is read, so an abort in between is not missed
+        publisher.StatusChanged += OnChanged;
+        try
+        {
+            if (
+                publisher.Status
+                is not BluetoothLEAdvertisementPublisherStatus.Started
+                    and not BluetoothLEAdvertisementPublisherStatus.Waiting
+            )
+                return;
+            publisher.Stop();
+            await stopped.Task.ConfigureAwait(false);
+        }
+        finally
+        {
+            publisher.StatusChanged -= OnChanged;
+        }
     }
 
     public Task SetParametersAsync(AdvertisingParameters parameters, CancellationToken cancellationToken)
