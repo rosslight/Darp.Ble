@@ -129,11 +129,14 @@ public sealed class MockRangeTests
             cancellationToken: Token
         );
 
-        BleDisconnectedException lost = await Should.ThrowAsync<BleDisconnectedException>(() =>
+        BleConnectException failed = await Should.ThrowAsync<BleConnectException>(() =>
             device.Central.ConnectAsync(hosting.RandomAddress, cancellationToken: Token).WithWatchdog()
         );
 
-        lost.Info.Reason.ShouldBe(DisconnectReason.ConnectionTimeout);
+        failed.Kind.ShouldBe(BleConnectErrorKind.Unreachable);
+        failed
+            .InnerException.ShouldBeOfType<BleDisconnectedException>()
+            .Info.Reason.ShouldBe(DisconnectReason.ConnectionTimeout);
         device.Central.Connections.ShouldBeEmpty();
         await Watchdog.UntilAsync(() => adapter.Peripheral.ConnectedCentrals.Count == 0);
     }

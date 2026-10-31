@@ -279,7 +279,7 @@ public sealed class CentralTests
     }
 
     [Fact]
-    public async Task ALinkThatGoesDownDuringTheMtuExchange_FailsConnecting()
+    public async Task ALinkThatGoesDownDuringTheMtuExchange_IsUnreachable()
     {
         await using var controller = new FakeController();
         await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
@@ -288,9 +288,19 @@ public sealed class CentralTests
         await controller.PushAsync(HciAdapter.ConnectionComplete(Handle));
         await controller.ReadAclAsync(Token);
 
-        await controller.PushAsync(HciMessages.HciDisconnectionCompleteEvent(Handle));
+        // The peripheral never answered on the new link
+        await controller.PushAsync(
+            HciMessages.HciDisconnectionCompleteEvent(
+                Handle,
+                HciCommandStatus.ConnectionFailedToBeEstablishedOrSynchronizationTimeout
+            )
+        );
 
-        await Should.ThrowAsync<BleDisconnectedException>(connecting);
+        BleConnectException exception = await Should.ThrowAsync<BleConnectException>(connecting);
+        exception.Kind.ShouldBe(BleConnectErrorKind.Unreachable);
+        exception.NativeCode.ShouldBe(0x3E);
+        exception.InnerException.ShouldBeOfType<BleDisconnectedException>();
+        adapter.Central.Connections.ShouldBeEmpty();
     }
 
     [Fact]
