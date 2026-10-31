@@ -63,11 +63,17 @@ internal sealed class WinRTAdvertisingSetDriver(
     private async Task<BluetoothLEAdvertisementPublisher> StartPublisherAsync(CancellationToken cancellationToken)
     {
         BluetoothLEAdvertisementPublisher publisher = CreatePublisher();
-        Task started = WaitForAsync(publisher, BluetoothLEAdvertisementPublisherStatus.Started, cancellationToken);
+        Task<BluetoothLEAdvertisementPublisherStatusChangedEventArgs> started = WaitForAsync(
+            publisher,
+            BluetoothLEAdvertisementPublisherStatus.Started,
+            cancellationToken
+        );
         publisher.Start();
         try
         {
-            await started.ConfigureAwait(false);
+            BluetoothLEAdvertisementPublisherStatusChangedEventArgs args = await started.ConfigureAwait(false);
+            if (args.Status is BluetoothLEAdvertisementPublisherStatus.Aborted)
+                throw Stopped(args.Error);
             publisher.StatusChanged += OnRunningStatusChanged;
             return publisher;
         }
@@ -100,7 +106,10 @@ internal sealed class WinRTAdvertisingSetDriver(
         }
     }
 
-    /// <summary> Once asked to stop, Windows stops, so the wait for it is not cancellable: the set never looks advertising when it is not </summary>
+    /// <summary>
+    /// Once asked to stop, Windows stops, so the wait for it is not cancellable: the set never looks advertising when it
+    /// is not. An abort meanwhile, e.g. by the radio turning off, ends it as well
+    /// </summary>
     private async Task StopPublisherAsync(BluetoothLEAdvertisementPublisher publisher)
     {
         publisher.StatusChanged -= OnRunningStatusChanged;
@@ -217,28 +226,28 @@ internal sealed class WinRTAdvertisingSetDriver(
             innerException: null
         );
 
-    /// <summary> Waits for the publisher's status; Aborted fails with Windows' error </summary>
-    private static async Task WaitForAsync(
+    /// <summary> Waits until the publisher reaches the status or Windows aborts it, and returns which, with Windows' error </summary>
+    private static async Task<BluetoothLEAdvertisementPublisherStatusChangedEventArgs> WaitForAsync(
         BluetoothLEAdvertisementPublisher publisher,
         BluetoothLEAdvertisementPublisherStatus status,
         CancellationToken cancellationToken
     )
     {
-        var reached = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var reached = new TaskCompletionSource<BluetoothLEAdvertisementPublisherStatusChangedEventArgs>(
+            TaskCreationOptions.RunContinuationsAsynchronously
+        );
         void OnChanged(
             BluetoothLEAdvertisementPublisher sender,
             BluetoothLEAdvertisementPublisherStatusChangedEventArgs args
         )
         {
-            if (args.Status == status)
-                reached.TrySetResult();
-            else if (args.Status is BluetoothLEAdvertisementPublisherStatus.Aborted)
-                reached.TrySetException(Stopped(args.Error));
+            if (args.Status == status || args.Status is BluetoothLEAdvertisementPublisherStatus.Aborted)
+                reached.TrySetResult(args);
         }
         publisher.StatusChanged += OnChanged;
         try
         {
-            await reached.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
+            return await reached.Task.WaitAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
