@@ -3,7 +3,9 @@
     <TargetFramework>net10.0-android</TargetFramework>
     <!-- Android 12, older versions are not maintained by google anymore -->
     <SupportedOSPlatformVersion>31</SupportedOSPlatformVersion>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <LangVersion>13</LangVersion>
+    <!-- No Android resources, so no generated (public) Resource class -->
+    <AndroidGenerateResourceDesigner>false</AndroidGenerateResourceDesigner>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Darp.Ble\Darp.Ble.csproj" />

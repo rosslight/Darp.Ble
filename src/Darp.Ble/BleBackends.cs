@@ -11,4 +11,7 @@ public static class BleBackends
 
     /// <summary> The Windows backend from the Darp.Ble.WinRT package, on Windows' own Bluetooth stack </summary>
     public const string WinRT = "Darp.Ble.WinRT";
+
+    /// <summary> The Android backend from the Darp.Ble.Android package, on Android's own Bluetooth stack </summary>
+    public const string Android = "Darp.Ble.Android";
 }

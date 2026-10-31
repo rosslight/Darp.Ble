@@ -1,5 +1,17 @@
 <Solution>
+  <Folder Name="/examples/">
+    <File Path="examples/advertise.cs" />
+    <File Path="examples/connect.cs" />
+    <File Path="examples/host-service.cs" />
+    <File Path="examples/list-adapters.cs" />
+    <File Path="examples/notifications.cs" />
+    <File Path="examples/open-adapter.cs" />
+    <File Path="examples/read-write.cs" />
+    <File Path="examples/request-response.cs" />
+    <File Path="examples/scan.cs" />
+  </Folder>
   <Folder Name="/src/">
+    <Project Path="src/Darp.Ble.Android/Darp.Ble.Android.csproj" />
     <Project Path="src/Darp.Ble.Hci/Darp.Ble.Hci.csproj" />
     <Project Path="src/Darp.Ble.HciHost/Darp.Ble.HciHost.csproj" />
     <Project Path="src/Darp.Ble.Mock/Darp.Ble.Mock.csproj" />
