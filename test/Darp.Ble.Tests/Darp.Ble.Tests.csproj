@@ -1,16 +1,19 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
-    <IsPackable>false</IsPackable>
     <OutputType>Exe</OutputType>
     <IsTestProject>true</IsTestProject>
     <LangVersion>13</LangVersion>
+    <!-- Optimized code from the first call, so the allocation tests measure what an app runs -->
+    <TieredCompilation>false</TieredCompilation>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="coverlet.MTP">
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="SerilogTracing" />
     <PackageReference Include="Shouldly" />
     <PackageReference Include="xunit.v3" />
     <PackageReference Include="Xunit.DependencyInjection.Logging" />
@@ -19,7 +22,11 @@
     <Using Include="Xunit" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="..\Shared\Watchdog.cs" Link="Watchdog.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Darp.Ble.Mock\Darp.Ble.Mock.csproj" />
     <ProjectReference Include="..\..\src\Darp.Ble\Darp.Ble.csproj" />
+    <ProjectReference Include="..\..\src\Darp.Ble.SerilogTracing\Darp.Ble.SerilogTracing.csproj" />
   </ItemGroup>
 </Project>

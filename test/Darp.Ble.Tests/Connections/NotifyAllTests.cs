@@ -3,6 +3,7 @@ using Darp.Ble.Data;
 using Darp.Ble.Gap;
 using Darp.Ble.Gatt;
 using Darp.Ble.Mock;
+using Darp.Ble.Testing;
 using Darp.Ble.Tests.Advertising;
 using Darp.Ble.Tests.Lifecycle;
 using Microsoft.Extensions.Time.Testing;
@@ -10,7 +11,7 @@ using Shouldly;
 
 namespace Darp.Ble.Tests.Connections;
 
-/// <summary> NotifyAllAsync to the centrals that turned notifications on (seam 2 of PR 4b, D8) </summary>
+/// <summary> NotifyAllAsync to the centrals that turned notifications on </summary>
 public sealed class NotifyAllTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -53,8 +54,8 @@ public sealed class NotifyAllTests
         await first.DisableNotificationsAsync(Token);
         await level.NotifyAllAsync((byte)2, Token);
 
-        (await firstValues.FirstAsync(Token)).ShouldBe((byte)1);
-        (await secondValues.FirstAsync(Token)).ShouldBe((byte)2);
+        (await firstValues.FirstAsync(Token).AsTask().WithWatchdog()).ShouldBe((byte)1);
+        (await secondValues.FirstAsync(Token).AsTask().WithWatchdog()).ShouldBe((byte)2);
         host.Peripheral.ConnectedCentrals.Count.ShouldBe(2);
     }
 
@@ -70,10 +71,10 @@ public sealed class NotifyAllTests
 
         ValueTask notifying = level.NotifyAllAsync((byte)5, Token);
 
-        await WaitUntilAsync(() => driver.Accepted.Count == 1);
+        await Watchdog.UntilAsync(() => driver.Accepted.Count == 1);
         notifying.IsCompleted.ShouldBeFalse();
         release.SetResult();
-        await notifying;
+        await notifying.AsTask().WithWatchdog();
         driver.Accepted.Count.ShouldBe(2);
     }
 
@@ -94,7 +95,7 @@ public sealed class NotifyAllTests
         ValueTask cancelled = level.NotifyAllAsync((byte)6, cancellation.Token);
         await cancellation.CancelAsync();
 
-        await Should.ThrowAsync<OperationCanceledException>(() => cancelled.AsTask());
+        await Should.ThrowAsync<OperationCanceledException>(cancelled.AsTask().WithWatchdog());
     }
 
     [Fact]
@@ -122,12 +123,6 @@ public sealed class NotifyAllTests
         await using BleAdapter adapter = await OpenTestAsync(driver, Capabilities.SetGapIdentity);
 
         driver.Calls.ShouldBe(["attach", "identity Test adapter"]);
-    }
-
-    private static async Task WaitUntilAsync(Func<bool> condition)
-    {
-        while (!condition())
-            await Task.Delay(TimeSpan.FromMilliseconds(1), TimeProvider.System, Token);
     }
 
     private static async Task<TypedLocalCharacteristic<byte, Properties.Notify>> AddLevelServiceAsync(

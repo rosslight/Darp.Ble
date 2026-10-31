@@ -27,12 +27,17 @@ public sealed class RemoteGattService
     /// <returns> The characteristics, in the peripheral's order </returns>
     /// <exception cref="GattException"> The peripheral answered with an ATT error </exception>
     /// <exception cref="BleDisconnectedException"> The connection ended </exception>
+    /// <exception cref="BleException"> The platform refused the operation, e.g. it does not let this app use the device; the connection stays open </exception>
     public async Task<IReadOnlyList<RemoteGattCharacteristic>> DiscoverCharacteristicsAsync(
         CancellationToken cancellationToken = default
     )
     {
         IReadOnlyList<IRemoteCharacteristicDriver> characteristics = await _connection
-            .RunAsync(_driver.DiscoverCharacteristicsAsync, cancellationToken)
+            .RunAsync(
+                GattOperation.DiscoverCharacteristics(Uuid),
+                _driver.DiscoverCharacteristicsAsync,
+                cancellationToken
+            )
             .ConfigureAwait(false);
         return [.. characteristics.Select(characteristic => new RemoteGattCharacteristic(_connection, characteristic))];
     }

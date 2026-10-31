@@ -1,7 +1,7 @@
 using Darp.Ble.Backends;
-using Darp.Ble.Connections;
 using Darp.Ble.Data;
 using Darp.Ble.Data.AssignedNumbers;
+using Darp.Ble.Diagnostics;
 using Darp.Ble.Gatt;
 using Microsoft.Extensions.Logging;
 
@@ -14,6 +14,8 @@ public sealed class BlePeripheral
     private static readonly BleUuid GapServiceUuid = BleUuid.FromUInt16(0x1800);
 
     private readonly IPeripheralDriver _driver;
+    private readonly TimeProvider _timeProvider;
+    private readonly DiagnosticsSettings _diagnostics;
     private readonly ILogger _logger;
     private readonly Lock _lock = new();
     private readonly Dictionary<ICentralConnectionDriver, ConnectedCentral> _centrals = [];
@@ -31,9 +33,17 @@ public sealed class BlePeripheral
     // Publications; disposal waits for them
     private readonly OperationTracker _operations = new();
 
-    internal BlePeripheral(BleAdapter adapter, IPeripheralDriver driver, ILogger logger)
+    internal BlePeripheral(
+        BleAdapter adapter,
+        IPeripheralDriver driver,
+        TimeProvider timeProvider,
+        DiagnosticsSettings diagnostics,
+        ILogger logger
+    )
     {
         Adapter = adapter;
+        _timeProvider = timeProvider;
+        _diagnostics = diagnostics;
         _driver = driver;
         _logger = logger;
         _deviceName = adapter.Name ?? DefaultDeviceName;
@@ -75,7 +85,7 @@ public sealed class BlePeripheral
             lock (_identityLock)
                 return _appearance;
         }
-        set { SetIdentity(deviceName: null, value); }
+        set => SetIdentity(deviceName: null, value);
     }
 
     /// <summary> Adds a complete service </summary>
@@ -130,7 +140,7 @@ public sealed class BlePeripheral
 
     internal void OnCentralConnected(ICentralConnectionDriver connection)
     {
-        var central = new ConnectedCentral(this, _driver, connection, _logger);
+        var central = new ConnectedCentral(this, _driver, connection, _timeProvider, _diagnostics, _logger);
         bool closed;
         bool drained;
         lock (_lock)
@@ -141,7 +151,9 @@ public sealed class BlePeripheral
             if (!drained)
                 _centrals.Add(connection, central);
         }
-        _logger.LogCentralConnected(central.Address);
+        if (!closed)
+            central.CountOpen();
+        _logger.LogCentralConnected(central.Peer);
         // A central that connects while the adapter closes is let go at once; after disposal the driver's own disposal ends it
         if (closed)
             central.End(new DisconnectInfo(DisconnectReason.LocalRequest), takeLinkDown: !drained);
@@ -179,27 +191,45 @@ public sealed class BlePeripheral
     )
     {
         (ConnectedCentral central, IHostedAttribute attribute) = Resolve(connection, definition);
-        return await central.RunHandlerAsync(ct => attribute.ReadAsync(central, ct)).ConfigureAwait(false);
+        return await central
+            .RunHandlerAsync("read", definition.Uuid, ct => attribute.ReadAsync(central, ct))
+            .ConfigureAwait(false);
     }
 
-    internal async Task OnWriteRequestAsync(
+    internal Task OnWriteRequestAsync(
+        ICentralConnectionDriver connection,
+        GattAttributeDefinition definition,
+        byte[] value
+    ) => WriteAsync("write", connection, definition, value);
+
+    private async Task WriteAsync(
+        string operation,
         ICentralConnectionDriver connection,
         GattAttributeDefinition definition,
         byte[] value
     )
     {
         (ConnectedCentral central, IHostedAttribute attribute) = Resolve(connection, definition);
-        GattProtocolStatus status = await central
-            .RunHandlerAsync(ct => attribute.WriteAsync(central, value, ct))
+        await central
+            .RunHandlerAsync(
+                operation,
+                definition.Uuid,
+                async ct =>
+                {
+                    GattProtocolStatus status = await attribute.WriteAsync(central, value, ct).ConfigureAwait(false);
+                    // Inside the run, so its span shows the handler's answer
+                    if (status is not GattProtocolStatus.Success)
+                        throw new GattException(status, $"The write handler answered {status}");
+                    return status;
+                }
+            )
             .ConfigureAwait(false);
-        if (status is not GattProtocolStatus.Success)
-            throw new GattException(status, $"The write handler answered {status}");
     }
 
     internal void OnWriteCommand(ICentralConnectionDriver connection, GattAttributeDefinition definition, byte[] value)
     {
         // Nobody waits for the answer; failures are logged by the handler run
-        _ = OnWriteRequestAsync(connection, definition, value)
+        _ = WriteAsync("write_command", connection, definition, value)
             .ContinueWith(
                 task => _ = task.Exception,
                 CancellationToken.None,
@@ -265,7 +295,7 @@ public sealed class BlePeripheral
         catch (Exception e)
         {
             // One central's failure is not the caller's; the others still get theirs
-            _logger.LogNotifyAllCentralFailed(central.Address, e);
+            _logger.LogNotifyAllCentralFailed(central.Peer, _diagnostics.Exception(e));
         }
     }
 

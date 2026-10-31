@@ -1,8 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using Darp.Ble.Backends;
-using Darp.Ble.Data;
-using Darp.Ble.Gap;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Gap;
@@ -18,7 +16,7 @@ public sealed class BleObserver
     internal BleObserver(BleAdapter adapter, IObserverDriver driver, QueueOptions defaultQueue, ILogger logger)
     {
         Adapter = adapter;
-        _coordinator = new ScanCoordinator(driver, logger);
+        _coordinator = new ScanCoordinator(driver, adapter.Backend, logger);
         _defaultQueue = defaultQueue;
         _logger = logger;
     }
@@ -43,6 +41,7 @@ public sealed class BleObserver
     /// <summary> Scans while enumerated, with the default queue of the <see cref="BleManager"/> </summary>
     /// <param name="cancellationToken"> Ends the scan </param>
     /// <returns> The advertisements, in the order they were received </returns>
+    /// <exception cref="BleQueueOverflowException"> The queue was full and has <see cref="QueueFullMode.Fail"/> </exception>
     /// <exception cref="BleException"> The radio stopped scanning; thrown after the queued advertisements </exception>
     [SuppressMessage(
         "ApiDesign",
@@ -64,24 +63,71 @@ public sealed class BleObserver
     )
     {
         ArgumentNullException.ThrowIfNull(queue);
-        ItemQueue<IGapAdvertisement> listener = await _coordinator
-            .AddListenerAsync(queue, cancellationToken)
-            .ConfigureAwait(false);
+        // One span per scan, never per advertisement; nothing when nobody listens
+        ScanSpan? span = ScanSpan.Start(Adapter.Backend);
         try
         {
-            while (await WaitForAdvertisementsAsync(listener, cancellationToken).ConfigureAwait(false))
+            ItemQueue<IGapAdvertisement> listener;
+            try
             {
-                while (listener.Reader.TryRead(out IGapAdvertisement? advertisement))
+                listener = await _coordinator.AddListenerAsync(queue, cancellationToken).ConfigureAwait(false);
+            }
+            catch (Exception e)
+            {
+                span?.Fail(e);
+                throw;
+            }
+            try
+            {
+                while (await WaitAsync(listener, span, cancellationToken).ConfigureAwait(false))
                 {
-                    // A queue that never runs empty must not delay cancellation
-                    cancellationToken.ThrowIfCancellationRequested();
-                    yield return advertisement;
+                    while (listener.Reader.TryRead(out IGapAdvertisement? advertisement))
+                    {
+                        // A queue that never runs empty must not delay cancellation
+                        cancellationToken.ThrowIfCancellationRequested();
+                        yield return advertisement;
+                    }
                 }
+            }
+            finally
+            {
+                await RemoveAsync(listener, span).ConfigureAwait(false);
             }
         }
         finally
         {
+            span?.End(cancellationToken.IsCancellationRequested);
+        }
+    }
+
+    /// <summary> Ends the scan's part in the radio scan; a failure to stop the radio also fails the scan's span </summary>
+    private async Task RemoveAsync(ItemQueue<IGapAdvertisement> listener, ScanSpan? span)
+    {
+        try
+        {
             await _coordinator.RemoveListenerAsync(listener).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            span?.Fail(e);
+            throw;
+        }
+    }
+
+    private async Task<bool> WaitAsync(
+        ItemQueue<IGapAdvertisement> listener,
+        ScanSpan? span,
+        CancellationToken cancellationToken
+    )
+    {
+        try
+        {
+            return await WaitForAdvertisementsAsync(listener, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception e)
+        {
+            span?.Fail(e);
+            throw;
         }
     }
 

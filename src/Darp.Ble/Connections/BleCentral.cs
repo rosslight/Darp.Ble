@@ -1,6 +1,7 @@
+using System.Diagnostics;
 using Darp.Ble.Backends;
-using Darp.Ble.Connections;
 using Darp.Ble.Data;
+using Darp.Ble.Diagnostics;
 using Darp.Ble.Gap;
 using Microsoft.Extensions.Logging;
 
@@ -18,8 +19,11 @@ public sealed class BleCentral
     private readonly BleObserver _observer;
     private readonly TimeProvider _timeProvider;
     private readonly QueueOptions _notificationQueue;
+    private readonly DiagnosticsSettings _diagnostics;
     private readonly ILogger _logger;
     private readonly Lock _lock = new();
+
+    // Until their backend released them, so disposal waits for connections whose link is already down too
     private readonly List<ConnectedPeripheral> _connections = [];
 
     // Disposal cancels the connection attempts it admitted and waits for them
@@ -31,11 +35,12 @@ public sealed class BleCentral
         ICentralDriver driver,
         BleObserver observer,
         TimeProvider timeProvider,
-        QueueOptions notificationQueue,
+        BleCoreOptions options,
         ILogger logger
     )
     {
-        _notificationQueue = notificationQueue;
+        _notificationQueue = options.NotificationQueue;
+        _diagnostics = options.Diagnostics;
         Adapter = adapter;
         _driver = driver;
         _observer = observer;
@@ -47,25 +52,31 @@ public sealed class BleCentral
     public BleAdapter Adapter { get; }
 
     /// <summary> The open connections, as a snapshot </summary>
+    /// <remarks> A connection leaves it once its <see cref="ConnectedPeripheral.Disconnected"/> completed </remarks>
     public IReadOnlyList<ConnectedPeripheral> Connections
     {
         get
         {
             lock (_lock)
-                return [.. _connections];
+                return [.. _connections.Where(connection => !connection.Disconnected.IsCompleted)];
         }
     }
 
     /// <summary> Connects to a peripheral </summary>
-    /// <remarks> The adapter's scans pause while the link comes up and continue afterwards </remarks>
+    /// <remarks>
+    /// It has no time limit of its own: HciHost and WinRT keep trying until <paramref name="cancellationToken"/> is cancelled,
+    /// so pass one that times out. The Mock fails at once for an address nobody advertises connectable.
+    /// The adapter's scans pause while the link comes up and continue afterwards
+    /// </remarks>
     /// <param name="address"> The address of the peripheral </param>
     /// <param name="parameters"> How the connection runs; the defaults when null </param>
-    /// <param name="cancellationToken"> Cancels connecting </param>
+    /// <param name="cancellationToken"> Cancels connecting; the only limit on how long it takes </param>
     /// <returns> The connection once the link is up. The caller owns it; disposing the adapter ends it too </returns>
     /// <exception cref="BleConnectException">
     /// The peripheral could not be connected; <see cref="BleConnectException.Kind"/> says why. A link that goes down
     /// before the connection is set up is <see cref="BleConnectErrorKind.Unreachable"/>, with the end as its inner exception
     /// </exception>
+    /// <exception cref="ObjectDisposedException"> The adapter is disposed, or was disposed while connecting </exception>
     public async Task<ConnectedPeripheral> ConnectAsync(
         BleAddress address,
         BleConnectionParameters? parameters = null,
@@ -76,17 +87,32 @@ public sealed class BleCentral
         parameters ??= new BleConnectionParameters();
         parameters.Validate(nameof(parameters));
         _attempts.Enter(typeof(BleCentral));
+        // Ends when ConnectAsync returns; the MTU exchange is a request inside it
+        using Activity? activity = Telemetry.Source.StartActivity("Connect", ActivityKind.Client);
+        if (activity is { IsAllDataRequested: true })
+        {
+            activity.SetTag(Telemetry.BackendTag, Adapter.Backend);
+            activity.SetTag(Telemetry.AddressTag, Telemetry.Text(_diagnostics.Peer(address)));
+        }
         try
         {
             using var attempt = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _closing.Token);
+            ConnectedPeripheral connection;
             try
             {
-                return await ConnectCoreAsync(address, parameters, attempt.Token).ConfigureAwait(false);
+                connection = await ConnectCoreAsync(address, parameters, attempt.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException e) when (!cancellationToken.IsCancellationRequested)
             {
                 throw new ObjectDisposedException("The adapter was disposed while connecting", e);
             }
+            Telemetry.Finish(activity, Telemetry.Success);
+            return connection;
+        }
+        catch (Exception e)
+        {
+            Telemetry.Finish(activity, Telemetry.OutcomeOf(e), e, _diagnostics);
+            throw;
         }
         finally
         {
@@ -100,10 +126,11 @@ public sealed class BleCentral
         CancellationToken cancellationToken
     )
     {
-        _logger.LogConnecting(address);
+        object peer = _diagnostics.Peer(address);
+        _logger.LogConnecting(peer);
         var events = new ConnectionEvents();
         IConnectionDriver driver;
-        // The adapter's scans pause until the link is up (D6)
+        // The adapter's scans pause until the link is up
         await _observer.PauseAsync(cancellationToken).ConfigureAwait(false);
         try
         {
@@ -111,7 +138,7 @@ public sealed class BleCentral
         }
         catch (BleConnectException e)
         {
-            _logger.LogConnectFailed(address, e.Kind, e);
+            _logger.LogConnectFailed(peer, e.Kind, _diagnostics.Exception(e));
             throw;
         }
         finally
@@ -119,7 +146,16 @@ public sealed class BleCentral
             await _observer.ResumeAsync().ConfigureAwait(false);
         }
         // Until the caller gets it, this method owns the connection
-        var connection = new ConnectedPeripheral(this, address, driver, _timeProvider, _notificationQueue, _logger);
+        var connection = new ConnectedPeripheral(
+            this,
+            address,
+            driver,
+            _timeProvider,
+            _notificationQueue,
+            Adapter.Backend,
+            _diagnostics,
+            _logger
+        );
         events.Attach(connection);
         try
         {
@@ -132,6 +168,7 @@ public sealed class BleCentral
                 if (connection.Ending is { } ending)
                     throw new BleDisconnectedException(ending);
                 _connections.Add(connection);
+                connection.CountOpen();
             }
         }
         catch (Exception e)
@@ -146,12 +183,12 @@ public sealed class BleCentral
                     disconnected.Info.NativeCode,
                     disconnected
                 );
-                _logger.LogConnectFailed(address, failed.Kind, failed);
+                _logger.LogConnectFailed(peer, failed.Kind, _diagnostics.Exception(failed));
                 throw failed;
             }
             throw;
         }
-        _logger.LogConnected(address);
+        _logger.LogConnected(peer);
         return connection;
     }
 
@@ -167,13 +204,16 @@ public sealed class BleCentral
         _closing.Cancel();
     }
 
-    /// <summary> Cancels connection attempts in flight and waits for them, then ends every connection </summary>
+    /// <summary> Cancels connection attempts in flight and waits for them, then ends every connection and waits until its backend released it </summary>
     internal async Task DisposeAsync()
     {
         CloseAdmission();
         await _attempts.CloseAndWaitAsync().ConfigureAwait(false);
         _closing.Dispose();
-        foreach (ConnectedPeripheral connection in Connections)
-            await connection.DisconnectAsync(CancellationToken.None).ConfigureAwait(false);
+        ConnectedPeripheral[] connections;
+        lock (_lock)
+            connections = [.. _connections];
+        foreach (ConnectedPeripheral connection in connections)
+            await connection.DisposeAsync().ConfigureAwait(false);
     }
 }

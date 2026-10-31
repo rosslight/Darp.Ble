@@ -3,6 +3,7 @@
     <Project Path="src/Darp.Ble.Hci/Darp.Ble.Hci.csproj" />
     <Project Path="src/Darp.Ble.Mock/Darp.Ble.Mock.csproj" />
     <Project Path="src/Darp.Ble/Darp.Ble.csproj" />
+    <Project Path="src/Darp.Ble.SerilogTracing/Darp.Ble.SerilogTracing.csproj" />
   </Folder>
   <Folder Name="/test/">
     <Project Path="test/Darp.Ble.Hci.Tests/Darp.Ble.Hci.Tests.csproj" />

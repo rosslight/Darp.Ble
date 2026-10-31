@@ -8,7 +8,7 @@ using Shouldly;
 
 namespace Darp.Ble.Tests.Connections;
 
-/// <summary> Reading and writing characteristics a mock peripheral hosts, through the public API (seam 1) </summary>
+/// <summary> Reading and writing characteristics a mock peripheral hosts, through the public API </summary>
 public sealed class CharacteristicTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -84,6 +84,63 @@ public sealed class CharacteristicTests
 
         (await written.Task).ShouldBe([4]);
         release.SetResult(GattProtocolStatus.WriteRequestRejected);
+    }
+
+    [Fact]
+    public async Task AWriteAndAWriteWithoutResponseAfterIt_ReachTheHandlerInCallOrder()
+    {
+        var order = new List<byte>();
+        await using BleAdapter adapter = await OpenAsync(service =>
+            service.AddCharacteristic(
+                LevelUuid,
+                GattProperty.Write | GattProperty.WriteWithoutResponse,
+                onWrite: (_, value, _) =>
+                {
+                    lock (order)
+                        order.Add(value.Span[0]);
+                    return ValueTask.FromResult(GattProtocolStatus.Success);
+                }
+            )
+        );
+        RemoteGattCharacteristic level = await DiscoverAsync(adapter, LevelUuid);
+
+        for (byte i = 0; i < 100; i += 2)
+        {
+            Task request = level.WriteAsync(new[] { i }, Token);
+            await level.WriteWithoutResponseAsync(new[] { (byte)(i + 1) }, Token);
+            await request;
+        }
+        // The last write without response has no answer to wait for
+        await level.WriteAsync(new byte[] { 100 }, Token);
+
+        lock (order)
+            order.ShouldBe(Enumerable.Range(0, 101).Select(i => (byte)i));
+    }
+
+    [Fact]
+    public async Task AWriteWithoutResponseLongerThanTheMaxWritePayload_IsRejected_WithoutReachingThePeripheral()
+    {
+        var written = new TaskCompletionSource<byte[]>();
+        await using BleAdapter adapter = await OpenAsync(service =>
+            service.AddCharacteristic(
+                LevelUuid,
+                GattProperty.WriteWithoutResponse,
+                onWrite: (_, value, _) =>
+                {
+                    written.SetResult(value.ToArray());
+                    return ValueTask.FromResult(GattProtocolStatus.Success);
+                }
+            )
+        );
+        RemoteGattCharacteristic level = await DiscoverAsync(adapter, LevelUuid);
+        int max = adapter.Central.Connections.Single().MaxWritePayloadLength;
+
+        await Should.ThrowAsync<ArgumentOutOfRangeException>(async () =>
+            await level.WriteWithoutResponseAsync(new byte[max + 1], Token)
+        );
+        await level.WriteWithoutResponseAsync(new byte[max], Token);
+
+        (await written.Task).Length.ShouldBe(max);
     }
 
     [Fact]
@@ -236,6 +293,24 @@ public sealed class CharacteristicTests
 
         (await level.ReadAsync(Token)).ShouldBe((byte)42);
         (await level.Characteristic.ReadAsync(Token)).ShouldBe([42]);
+    }
+
+    [Fact]
+    public async Task ATypedRead_OfAValueTheDeclarationCannotDecode_FailsAsInvalidValue_NotAsAnAttError()
+    {
+        await using BleAdapter adapter = await OpenAsync(service =>
+            service.AddCharacteristic(LevelUuid, GattProperty.Read, onRead: (_, _) => ValueTask.FromResult<byte[]>([1]))
+        );
+        RemoteGattService service = await DiscoverServiceAsync(adapter);
+        TypedRemoteCharacteristic<ushort, Properties.Read> level = await service.DiscoverCharacteristicAsync(
+            CharacteristicDeclaration.Create<ushort, Properties.Read>(LevelUuid),
+            Token
+        );
+
+        GattException exception = await Should.ThrowAsync<GattException>(() => level.ReadAsync(Token));
+
+        exception.Kind.ShouldBe(GattErrorKind.InvalidValue);
+        exception.AttStatus.ShouldBeNull();
     }
 
     [Fact]

@@ -1,6 +1,6 @@
 #nullable enable
 Darp.Ble.Backends.BleBackendContext
-Darp.Ble.Backends.BleBackendContext.BleBackendContext(Microsoft.Extensions.Logging.ILoggerFactory! loggerFactory, System.TimeProvider! timeProvider) -> void
+Darp.Ble.Backends.BleBackendContext.IncludeAddresses.get -> bool
 Darp.Ble.Backends.BleBackendContext.LoggerFactory.get -> Microsoft.Extensions.Logging.ILoggerFactory!
 Darp.Ble.Backends.BleBackendContext.TimeProvider.get -> System.TimeProvider!
 Darp.Ble.Backends.GattAttributeDefinition
@@ -117,6 +117,7 @@ Darp.Ble.BleManager.BleManager(System.Action<Darp.Ble.BleManagerBuilder!>! confi
 Darp.Ble.BleManager.EnumerateAdaptersAsync(System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<System.Collections.Generic.IReadOnlyList<Darp.Ble.BleAdapterInfo!>!>!
 Darp.Ble.BleManagerBuilder
 Darp.Ble.BleManagerBuilder.AddBackend(Darp.Ble.Backends.IBleBackend! backend) -> Darp.Ble.BleManagerBuilder!
+Darp.Ble.BleManagerBuilder.ConfigureDiagnostics(System.Action<Darp.Ble.Diagnostics.BleDiagnosticsOptions!>! configure) -> Darp.Ble.BleManagerBuilder!
 Darp.Ble.BleManagerBuilder.ConfigureQueues(System.Action<Darp.Ble.BleQueueDefaults!>! configure) -> Darp.Ble.BleManagerBuilder!
 Darp.Ble.BleManagerServiceCollectionExtensions
 Darp.Ble.BleOpenErrorKind
@@ -3962,6 +3963,10 @@ Darp.Ble.Data.UInt48.ToUInt64() -> ulong
 Darp.Ble.Data.UInt48.TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) -> bool
 Darp.Ble.Data.UInt48.UInt48() -> void
 Darp.Ble.Data.UInt48.UInt48(byte b0, byte b1, byte b2, byte b3, byte b4, byte b5) -> void
+Darp.Ble.Diagnostics.BleDiagnosticsOptions
+Darp.Ble.Diagnostics.BleDiagnosticsOptions.IncludeAddresses.get -> bool
+Darp.Ble.Diagnostics.BleDiagnosticsOptions.IncludeAddresses.set -> void
+Darp.Ble.Diagnostics.BleTelemetry
 Darp.Ble.Gap.AdvertisementExtensions
 Darp.Ble.Gap.AdvertisementStreamExtensions
 Darp.Ble.Gap.AdvertisingChannelMap
@@ -4467,6 +4472,8 @@ Darp.Ble.QueueOptions.Capacity.get -> int?
 Darp.Ble.QueueOptions.FullMode.get -> Darp.Ble.QueueFullMode
 Darp.Ble.QueueOptions.QueueOptions(int capacity, Darp.Ble.QueueFullMode fullMode) -> void
 const Darp.Ble.BleBackends.Mock = "Darp.Ble.Mock" -> string!
+const Darp.Ble.Diagnostics.BleTelemetry.MeterName = "Darp.Ble" -> string!
+const Darp.Ble.Diagnostics.BleTelemetry.SourceName = "Darp.Ble" -> string!
 override Darp.Ble.Connections.BleConnectionParameters.Equals(object? obj) -> bool
 override Darp.Ble.Connections.BleConnectionParameters.GetHashCode() -> int
 override Darp.Ble.Connections.BleConnectionParameters.ToString() -> string!

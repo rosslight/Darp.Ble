@@ -7,7 +7,7 @@ using Shouldly;
 
 namespace Darp.Ble.Tests.Connections;
 
-/// <summary> Descriptors of a discovered characteristic, at the driver boundary (seam 1; hosted descriptors come with typed hosting) </summary>
+/// <summary> Descriptors of a discovered characteristic, at the driver boundary </summary>
 public sealed class DescriptorTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -34,6 +34,29 @@ public sealed class DescriptorTests
 
         description.Uuid.ShouldBe(BleUuid.FromUInt16(0x2901));
         (await description.ReadAsync(Token)).ShouldBe([1, 2]);
+    }
+
+    [Fact]
+    public async Task ADescriptorWriteLongerThanTheMaxWritePayload_IsRejected_WithoutReachingTheDriver()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        ConnectedPeripheral connection = await adapter.Central.ConnectAsync(
+            BleAddress.NewRandomStaticAddress(),
+            cancellationToken: Token
+        );
+        TestConnectionDriver driver = await _central.Connection;
+        Task<IReadOnlyList<RemoteGattService>> discovery = connection.DiscoverServicesAsync(Token);
+        (await driver.NextRequestAsync(Token)).Complete(BleUuid.FromUInt16(0x180F));
+        RemoteGattCharacteristic characteristic = (
+            await (await discovery).Single().DiscoverCharacteristicsAsync(Token)
+        ).Single();
+        RemoteDescriptor description = (await characteristic.DiscoverDescriptorsAsync(Token)).Single();
+
+        await Should.ThrowAsync<ArgumentOutOfRangeException>(() =>
+            description.WriteAsync(new byte[connection.MaxWritePayloadLength + 1], Token)
+        );
+
+        (await description.ReadAsync(Token)).ShouldBeEmpty();
     }
 
     private async Task<BleAdapter> OpenAsync()

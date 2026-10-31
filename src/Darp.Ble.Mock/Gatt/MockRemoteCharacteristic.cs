@@ -18,10 +18,12 @@ internal sealed class MockRemoteCharacteristic(MockLink link, GattCharacteristic
 
     public async Task<byte[]> ReadAsync(GattRequest request)
     {
+        // At the peripheral before later operations may go, so they reach its handlers after this one
+        Task<byte[]> reading = _link.ReadAsync(_definition);
         request.OnTransactionSent();
         try
         {
-            return await _link.ReadAsync(_definition).ConfigureAwait(false);
+            return await reading.ConfigureAwait(false);
         }
         finally
         {
@@ -31,10 +33,12 @@ internal sealed class MockRemoteCharacteristic(MockLink link, GattCharacteristic
 
     public async Task WriteAsync(ReadOnlyMemory<byte> value, GattRequest request)
     {
+        // At the peripheral before later operations may go, so they reach its handlers after this one
+        Task writing = _link.WriteAsync(_definition, value);
         request.OnTransactionSent();
         try
         {
-            await _link.WriteAsync(_definition, value).ConfigureAwait(false);
+            await writing.ConfigureAwait(false);
         }
         finally
         {

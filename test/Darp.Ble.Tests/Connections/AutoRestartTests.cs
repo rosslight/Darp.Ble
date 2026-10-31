@@ -1,12 +1,13 @@
 using Darp.Ble.Connections;
 using Darp.Ble.Gap;
 using Darp.Ble.Mock;
+using Darp.Ble.Testing;
 using Microsoft.Extensions.Time.Testing;
 using Shouldly;
 
 namespace Darp.Ble.Tests.Connections;
 
-/// <summary> A connection stops the advertising set it came through; autoRestart starts it again afterwards (seam 6) </summary>
+/// <summary> A connection stops the advertising set it came through; autoRestart starts it again afterwards </summary>
 public sealed class AutoRestartTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -32,7 +33,7 @@ public sealed class AutoRestartTests
             BleConnectErrorKind.Unreachable
         );
         await connection.DisposeAsync();
-        await central.Disconnected;
+        await central.Disconnected.WithWatchdog();
 
         IGapAdvertisement advertisement = await NextAdvertisementAsync(adapter);
         advertisement.Address.ShouldBe(set.RandomAddress);
@@ -78,11 +79,7 @@ public sealed class AutoRestartTests
             .GetAsyncEnumerator(Token);
         ValueTask<bool> next = scan.MoveNextAsync();
         // The restart runs after the disconnect, off the caller's thread
-        while (!next.IsCompleted)
-        {
-            _time.Advance(Interval);
-            await Task.Delay(TimeSpan.FromMilliseconds(1), TimeProvider.System, Token);
-        }
+        await Watchdog.UntilAsync(() => next.IsCompleted, step: () => _time.Advance(Interval));
         (await next).ShouldBeTrue();
         return scan.Current;
     }
