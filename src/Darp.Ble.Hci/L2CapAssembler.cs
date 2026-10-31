@@ -1,5 +1,4 @@
 using System.Buffers.Binary;
-using Darp.BinaryObjects;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Att;
 using Darp.Utils.Messaging;
@@ -8,23 +7,11 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.Hci;
 
 /// <summary>
-/// Reassembles complete L2CAP PDUs from incoming ACL packets.
-/// </summary>
-public interface IL2CapAssembler : IMessageSource
-{
-    /// <summary>
-    /// Processes an incoming ACL packet.
-    /// </summary>
-    /// <param name="packet">The ACL packet to incorporate into the current assembly state.</param>
-    void OnAclPacket(HciAclPacket packet);
-}
-
-/// <summary>
 /// Reassembles L2CAP PDUs for a specific ACL connection.
 /// </summary>
 /// <param name="connectionHandle">The connection handle to filter for.</param>
 /// <param name="logger">An optional logger.</param>
-public sealed partial class L2CapAssembler(ushort connectionHandle, ILogger<L2CapAssembler>? logger) : IL2CapAssembler
+public sealed partial class L2CapAssembler(ushort connectionHandle, ILogger<L2CapAssembler>? logger) : IMessageSource
 {
     private readonly MessageSinks _sinks = new();
 
@@ -39,7 +26,8 @@ public sealed partial class L2CapAssembler(ushort connectionHandle, ILogger<L2Ca
     private readonly List<byte> _dataBytes = [];
     private ushort _targetLength;
 
-    /// <inheritdoc />
+    /// <summary> Adds an incoming ACL packet; a complete PDU goes to the subscribers </summary>
+    /// <param name="packet"> The ACL packet </param>
     public void OnAclPacket(HciAclPacket packet)
     {
         if (packet.ConnectionHandle != _connectionHandle)
@@ -132,8 +120,9 @@ public sealed partial class L2CapAssembler(ushort connectionHandle, ILogger<L2Ca
                 when AttFindByTypeValueRsp.TryReadLittleEndian(l2Cap.Pdu, out var rsp):
                 PublishEventPacketAndLog(rsp, l2Cap.Pdu);
                 break;
+            // 128-bit types go on as the raw PDU
             case AttOpCode.ATT_READ_BY_TYPE_REQ
-                when AttReadByTypeReq<ushort>.TryReadLittleEndian(l2Cap.Pdu, out var req):
+                when l2Cap.Pdu.Length == 7 && AttReadByTypeReq<ushort>.TryReadLittleEndian(l2Cap.Pdu, out var req):
                 PublishEventPacketAndLog(req, l2Cap.Pdu);
                 break;
             case AttOpCode.ATT_READ_BY_TYPE_RSP when AttReadByTypeRsp.TryReadLittleEndian(l2Cap.Pdu, out var rsp):
@@ -145,8 +134,14 @@ public sealed partial class L2CapAssembler(ushort connectionHandle, ILogger<L2Ca
             case AttOpCode.ATT_READ_RSP when AttReadRsp.TryReadLittleEndian(l2Cap.Pdu, out var rsp):
                 PublishEventPacketAndLog(rsp, l2Cap.Pdu);
                 break;
+            case AttOpCode.ATT_READ_BLOB_REQ when AttReadBlobReq.TryReadLittleEndian(l2Cap.Pdu, out var req):
+                PublishEventPacketAndLog(req, l2Cap.Pdu);
+                break;
+            case AttOpCode.ATT_READ_BLOB_RSP when AttReadBlobRsp.TryReadLittleEndian(l2Cap.Pdu, out var rsp):
+                PublishEventPacketAndLog(rsp, l2Cap.Pdu);
+                break;
             case AttOpCode.ATT_READ_BY_GROUP_TYPE_REQ
-                when AttReadByGroupTypeReq<ushort>.TryReadLittleEndian(l2Cap.Pdu, out var req):
+                when l2Cap.Pdu.Length == 7 && AttReadByGroupTypeReq<ushort>.TryReadLittleEndian(l2Cap.Pdu, out var req):
                 PublishEventPacketAndLog(req, l2Cap.Pdu);
                 break;
             case AttOpCode.ATT_READ_BY_GROUP_TYPE_RSP

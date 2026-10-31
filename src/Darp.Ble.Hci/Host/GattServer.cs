@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using Darp.Ble.Hci.Payload.Att;
 using Darp.Ble.Hci.Payload.Event;
-using Darp.Utils.Messaging;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci.Host;

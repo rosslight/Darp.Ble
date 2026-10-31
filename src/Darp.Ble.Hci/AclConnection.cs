@@ -11,22 +11,6 @@ using Microsoft.Extensions.Logging;
 namespace Darp.Ble.Hci;
 
 /// <summary>
-/// Represents the negotiated link-layer parameters for an ACL connection.
-/// </summary>
-/// <param name="ConnectionInterval">The connection interval in controller units.</param>
-/// <param name="PeripheralLatency">The number of connection events the peripheral may skip.</param>
-/// <param name="SupervisionTimeout">The timeout before the connection is considered lost.</param>
-/// <param name="SubRateFactor">The subrate factor applied to the connection.</param>
-/// <param name="ContinuationNumber">The continuation number used for subrating.</param>
-public readonly record struct AclConnectionParameters(
-    ushort ConnectionInterval,
-    ushort PeripheralLatency,
-    ushort SupervisionTimeout,
-    int SubRateFactor,
-    int ContinuationNumber
-);
-
-/// <summary>
 /// Represents an active ACL connection to a peer device.
 /// </summary>
 public sealed class AclConnection : IDisposable
@@ -43,7 +27,6 @@ public sealed class AclConnection : IDisposable
     /// <param name="address">The local device address used for the connection.</param>
     /// <param name="peerAddress">The remote peer address.</param>
     /// <param name="role">The local role on the connection.</param>
-    /// <param name="parameters">The negotiated connection parameters.</param>
     /// <param name="loggerFactory">An optional logger factory.</param>
     public AclConnection(
         HciDevice device,
@@ -51,7 +34,6 @@ public sealed class AclConnection : IDisposable
         UInt48 address,
         UInt48 peerAddress,
         HciLeConnectionRole role,
-        AclConnectionParameters parameters,
         ILoggerFactory? loggerFactory
     )
     {
@@ -60,7 +42,6 @@ public sealed class AclConnection : IDisposable
         Address = address;
         PeerAddress = peerAddress;
         Role = role;
-        Parameters = parameters;
         Logger = loggerFactory?.CreateLogger<AclConnection>();
         Assembler = new L2CapAssembler(connectionHandle, loggerFactory?.CreateLogger<L2CapAssembler>());
         _subscription = Assembler.Subscribe(new AclConnectionSubscription(this));
@@ -81,9 +62,6 @@ public sealed class AclConnection : IDisposable
     /// <summary>Gets the local role on the connection.</summary>
     public HciLeConnectionRole Role { get; }
 
-    /// <summary>Gets the negotiated connection parameters.</summary>
-    public AclConnectionParameters Parameters { get; }
-
     /// <summary>Gets the currently effective ATT MTU for the connection.</summary>
     public ushort AttMtu { get; set; } = Constants.DefaultAttMtu;
     internal ILogger<AclConnection>? Logger { get; }
@@ -103,44 +81,17 @@ public sealed class AclConnection : IDisposable
     /// <summary>Gets the last disconnection reason reported by the controller, if available.</summary>
     public HciCommandStatus? LastDisconnectionReason { get; private set; }
 
-    /// <summary>Updates the controller's data length settings for this connection.</summary>
-    /// <param name="txOctets">The maximum number of payload octets to transmit.</param>
-    /// <param name="txTime">The maximum transmit time in microseconds.</param>
-    /// <param name="token">Cancels the command while waiting for the controller response.</param>
-    /// <returns>A task that completes when the controller accepts the new data length.</returns>
-    public async Task SetDataLengthAsync(ushort txOctets, ushort txTime, CancellationToken token = default)
+    /// <summary>Gets how long the link lasts without a packet from the peer, as last agreed with it.</summary>
+    public TimeSpan SupervisionTimeout { get; internal set; }
+
+    internal void OnConnectionUpdateCompleteEvent(HciLeConnectionUpdateCompleteEvent hciEvent)
     {
-        if (txOctets is < 0x001B or > 0x00FB)
-            throw new ArgumentOutOfRangeException(nameof(txOctets));
-        if (txTime is < 0x0148 or > 0x4290)
-            throw new ArgumentOutOfRangeException(nameof(txOctets));
-        ThrowIfDisconnected("set data length");
-        await Device
-            .Host.QueryCommandCompletionAsync<HciLeSetDataLengthCommand, HciLeSetDataLengthResult>(
-                new HciLeSetDataLengthCommand
-                {
-                    ConnectionHandle = ConnectionHandle,
-                    TxOctets = txOctets,
-                    TxTime = txTime,
-                },
-                cancellationToken: token
-            )
-            .ConfigureAwait(false);
+        if (hciEvent.Status is HciCommandStatus.Success)
+            SupervisionTimeout = ToSupervisionTimeout(hciEvent.SupervisionTimeout);
     }
 
-    /// <summary>Reads the currently selected PHYs for this connection.</summary>
-    /// <param name="token">Cancels the command while waiting for the controller response.</param>
-    /// <returns>The PHY information reported by the controller.</returns>
-    public async Task<HciLeReadPhyResult> ReadPhyAsync(CancellationToken token = default)
-    {
-        ThrowIfDisconnected("read phy");
-        return await Device
-            .Host.QueryCommandCompletionAsync<HciLeReadPhyCommand, HciLeReadPhyResult>(
-                new HciLeReadPhyCommand { ConnectionHandle = ConnectionHandle },
-                cancellationToken: token
-            )
-            .ConfigureAwait(false);
-    }
+    /// <summary>Converts the controller's 10 ms units.</summary>
+    internal static TimeSpan ToSupervisionTimeout(ushort units) => TimeSpan.FromMilliseconds(units * 10);
 
     internal void OnDisconnectEvent(HciDisconnectionCompleteEvent hciEvent)
     {
@@ -153,26 +104,6 @@ public sealed class AclConnection : IDisposable
         );
         LastDisconnectionReason = hciEvent.Reason;
         _disconnectSource.Cancel();
-    }
-
-    /// <summary>Requests that the controller disconnect this connection.</summary>
-    /// <param name="reason">The HCI reason code sent with the disconnect request.</param>
-    /// <param name="token">Cancels the command while waiting for the disconnect event.</param>
-    /// <returns>A task that completes when the controller confirms the disconnect.</returns>
-    public async Task DisconnectAsync(
-        HciCommandStatus reason = HciCommandStatus.RemoteUserTerminatedConnection,
-        CancellationToken token = default
-    )
-    {
-        if (DisconnectToken.IsCancellationRequested)
-            return;
-        await Device
-            .Host.QueryCommandAsync<HciDisconnectCommand, HciDisconnectionCompleteEvent>(
-                new HciDisconnectCommand { ConnectionHandle = ConnectionHandle, Reason = reason },
-                timeout: TimeSpan.FromSeconds(2),
-                token
-            )
-            .ConfigureAwait(false);
     }
 
     /// <inheritdoc />
@@ -192,12 +123,6 @@ public sealed class AclConnection : IDisposable
         string operation,
         Exception? innerException = null
     ) => new(ConnectionHandle, operation, LastDisconnectionReason, innerException);
-
-    private void ThrowIfDisconnected(string operation)
-    {
-        if (DisconnectToken.IsCancellationRequested)
-            throw CreateDisconnectedException(operation);
-    }
 }
 
 internal sealed partial class AclConnectionSubscription(AclConnection connection)

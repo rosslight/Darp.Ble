@@ -1,3 +1,5 @@
+using System.Buffers.Binary;
+using Darp.BinaryObjects;
 using Darp.Ble.Connections;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
@@ -10,7 +12,7 @@ using Shouldly;
 
 namespace Darp.Ble.HciHost.Tests;
 
-/// <summary> Connecting to peripherals from an HCI adapter (seam 1 of PR 6) </summary>
+/// <summary> Connecting to peripherals from an HCI adapter </summary>
 public sealed class CentralTests
 {
     private const ushort Handle = 0x0001;
@@ -259,7 +261,8 @@ public sealed class CentralTests
 
         Task disposing = connection.DisposeAsync().AsTask();
         await controller.WaitForCommandAsync(HciOpCode.HCI_Disconnect);
-        time.Advance(TimeSpan.FromSeconds(5));
+        // The command timeout after the link's supervision timeout of 720 ms
+        time.Advance(TimeSpan.FromSeconds(5.72));
 
         await Should.ThrowAsync<BleDisconnectedException>(read);
         await disposing;
@@ -304,6 +307,29 @@ public sealed class CentralTests
     }
 
     [Fact]
+    public async Task APeripheralThatDoesNotSupportTheMtuExchange_IsConnectedWithTheDefaultMtu()
+    {
+        await using var controller = new FakeController();
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+        Task<ConnectedPeripheral> connecting = adapter.Central.ConnectAsync(HciAdapter.Peer, cancellationToken: Token);
+        await controller.WaitForCommandAsync(HciOpCode.HCI_LE_Extended_Create_Connection_V1);
+        await controller.PushAsync(HciAdapter.ConnectionComplete(Handle));
+        await controller.ReadAclAsync(Token);
+
+        await controller.PushAsync(
+            HciMessages.AttErrorResponse(
+                Handle,
+                AttOpCode.ATT_EXCHANGE_MTU_REQ,
+                0x0000,
+                AttErrorCode.RequestNotSupportedError
+            )
+        );
+
+        await using ConnectedPeripheral connection = await connecting;
+        connection.MaxWritePayloadLength.ShouldBe(20);
+    }
+
+    [Fact]
     public async Task APeripheralAskingForTheMtu_GetsAnAnswer()
     {
         await using var controller = new FakeController();
@@ -339,5 +365,128 @@ public sealed class CentralTests
         HciMessage answer = await controller.ReadAclAsync(Token);
         answer.PduBytes[8].ShouldBe((byte)AttOpCode.ATT_ERROR_RSP);
         answer.PduBytes[^1].ShouldBe((byte)AttErrorCode.AttributeNotFoundError);
+    }
+
+    [Theory]
+    // Read By Group Type and Read By Type with a 128-bit type find nothing, as with a 16-bit one
+    [InlineData(
+        new byte[]
+        {
+            0x10,
+            0x01,
+            0x00,
+            0xFF,
+            0xFF,
+            0xFB,
+            0x34,
+            0x9B,
+            0x5F,
+            0x80,
+            0x00,
+            0x00,
+            0x80,
+            0x00,
+            0x10,
+            0x00,
+            0x00,
+            0x00,
+            0x28,
+            0x00,
+            0x00,
+        },
+        AttErrorCode.AttributeNotFoundError
+    )]
+    [InlineData(
+        new byte[]
+        {
+            0x08,
+            0x01,
+            0x00,
+            0xFF,
+            0xFF,
+            0xFB,
+            0x34,
+            0x9B,
+            0x5F,
+            0x80,
+            0x00,
+            0x00,
+            0x80,
+            0x00,
+            0x10,
+            0x00,
+            0x00,
+            0x03,
+            0x28,
+            0x00,
+            0x00,
+        },
+        AttErrorCode.AttributeNotFoundError
+    )]
+    // A type that groups nothing, 16-bit and 128-bit, and a range that ends before it starts
+    [InlineData(new byte[] { 0x10, 0x01, 0x00, 0xFF, 0xFF, 0x03, 0x28 }, AttErrorCode.UnsupportedGroupTypeError)]
+    [InlineData(
+        new byte[]
+        {
+            0x10,
+            0x01,
+            0x00,
+            0xFF,
+            0xFF,
+            0xFB,
+            0x34,
+            0x9B,
+            0x5F,
+            0x80,
+            0x00,
+            0x00,
+            0x80,
+            0x00,
+            0x10,
+            0x00,
+            0x00,
+            0x03,
+            0x28,
+            0x00,
+            0x00,
+        },
+        AttErrorCode.UnsupportedGroupTypeError
+    )]
+    [InlineData(new byte[] { 0x08, 0x05, 0x00, 0x01, 0x00, 0x03, 0x28 }, AttErrorCode.InvalidHandle)]
+    // Read Blob finds no attribute either; Prepare Write and Execute Write are not supported
+    [InlineData(new byte[] { 0x0C, 0x03, 0x00, 0x00, 0x00 }, AttErrorCode.InvalidHandle)]
+    [InlineData(new byte[] { 0x16, 0x03, 0x00, 0x00, 0x00, 0x01 }, AttErrorCode.RequestNotSupportedError)]
+    [InlineData(new byte[] { 0x18, 0x01 }, AttErrorCode.RequestNotSupportedError)]
+    public async Task APeripheralsRequest_ThatOurCentralCannotServe_GetsAnError(byte[] request, AttErrorCode expected)
+    {
+        await using var controller = new FakeController();
+        await using BleAdapter adapter = await HciAdapter.OpenAsync(controller);
+        await using ConnectedPeripheral connection = await HciAdapter.ConnectAsync(adapter, controller, Handle);
+
+        await controller.PushAsync(AttToHost(request));
+
+        // A peripheral that gets no answer runs into its ATT timeout
+        HciMessage answer = await controller.ReadAclAsync(Token).AsTask().WaitAsync(TimeSpan.FromSeconds(5), Token);
+        // ACL header (4), L2CAP header (4), then the error: opcode, the request's opcode, handle, code
+        answer.PduBytes[8].ShouldBe((byte)AttOpCode.ATT_ERROR_RSP);
+        answer.PduBytes[9].ShouldBe(request[0]);
+        answer.PduBytes[^1].ShouldBe((byte)expected);
+    }
+
+    /// <summary> An ATT PDU from the peripheral, as raw bytes </summary>
+    private static HciMessage AttToHost(byte[] pdu)
+    {
+        var frame = new byte[4 + pdu.Length];
+        BinaryPrimitives.WriteUInt16LittleEndian(frame, (ushort)pdu.Length);
+        BinaryPrimitives.WriteUInt16LittleEndian(frame.AsSpan(2), 0x0004);
+        pdu.CopyTo(frame.AsSpan(4));
+        var packet = new HciAclPacket(
+            Handle,
+            PacketBoundaryFlag.FirstAutoFlushable,
+            BroadcastFlag.PointToPoint,
+            (ushort)frame.Length,
+            frame
+        );
+        return HciMessage.AclToHost(packet.ToArrayLittleEndian());
     }
 }

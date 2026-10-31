@@ -1,10 +1,12 @@
 using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Att;
 using Darp.Ble.HciHost.Verify;
+using Darp.Ble.Testing;
 
 namespace Darp.Ble.HciHost.Tests;
 
@@ -44,7 +46,12 @@ internal sealed class FakePeripheral(FakeController controller, ushort handle)
     public void SetValue(ushort attributeHandle, byte[] value) => _attributes[attributeHandle - 1].Value = value;
 
     /// <summary> Waits until the received PDUs fulfil the condition </summary>
-    public async Task WaitForReceivedAsync(Func<IReadOnlyList<byte[]>, bool> condition)
+    public Task WaitForReceivedAsync(
+        Func<IReadOnlyList<byte[]>, bool> condition,
+        [CallerArgumentExpression(nameof(condition))] string awaited = ""
+    ) => WaitForAsync(condition).WithWatchdog(awaited);
+
+    private async Task WaitForAsync(Func<IReadOnlyList<byte[]>, bool> condition)
     {
         while (true)
         {
@@ -219,6 +226,7 @@ internal sealed class FakePeripheral(FakeController controller, ushort handle)
                     : HciMessages.AttNotFoundErrorResponse(Handle, opCode, start);
             }
             case AttOpCode.ATT_READ_REQ
+            or AttOpCode.ATT_READ_BLOB_REQ
             or AttOpCode.ATT_WRITE_REQ when _errors.TryGetValue(ReadUInt16(body), out AttErrorCode error):
                 return HciMessages.AttErrorResponse(Handle, opCode, ReadUInt16(body), error);
             case AttOpCode.ATT_READ_REQ:
@@ -230,6 +238,28 @@ internal sealed class FakePeripheral(FakeController controller, ushort handle)
                 return HciMessages.AttToHost(
                     Handle,
                     new AttReadRsp { AttributeValue = value.AsMemory(0, Math.Min(value.Length, Mtu - 1)) }
+                );
+            }
+            case AttOpCode.ATT_READ_BLOB_REQ:
+            {
+                ushort attributeHandle = ReadUInt16(body);
+                ushort offset = ReadUInt16(body[2..]);
+                if (attributeHandle == 0 || attributeHandle > _attributes.Count)
+                    return HciMessages.AttErrorResponse(Handle, opCode, attributeHandle, AttErrorCode.InvalidHandle);
+                byte[] value = _attributes[attributeHandle - 1].Value;
+                if (offset > value.Length)
+                    return HciMessages.AttErrorResponse(
+                        Handle,
+                        opCode,
+                        attributeHandle,
+                        AttErrorCode.InvalidOffsetError
+                    );
+                return HciMessages.AttToHost(
+                    Handle,
+                    new AttReadBlobRsp
+                    {
+                        PartAttributeValue = value.AsMemory(offset, Math.Min(value.Length - offset, Mtu - 1)),
+                    }
                 );
             }
             case AttOpCode.ATT_WRITE_REQ:

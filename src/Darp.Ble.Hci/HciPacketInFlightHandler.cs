@@ -12,19 +12,19 @@ namespace Darp.Ble.Hci;
 internal sealed partial class HciPacketInFlightHandler<
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TCommand,
     [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicProperties)] TResponse
->(Host.HciHost host, SemaphoreSlim packetInFlightSemaphore) : IDisposable
+>(Host.HciHost host) : IDisposable
     where TCommand : IHciCommand
     where TResponse : IHciEvent<TResponse>
 {
-#pragma warning disable CA2213 // False positive, these fields are not owned by the PacketInFlightHandler
+#pragma warning disable CA2213 // False positive, the host is not owned by the PacketInFlightHandler
     private readonly Host.HciHost _host = host;
-    private readonly SemaphoreSlim _packetInFlightSemaphore = packetInFlightSemaphore;
 #pragma warning restore CA2213 // Disposable fields should be disposed
     private readonly TaskCompletionSource<TResponse> _completionSource = new(
         TaskCreationOptions.RunContinuationsAsynchronously
     );
     private IDisposable? _subscription;
     private readonly bool _waitingForCommandStatus = typeof(TResponse) == typeof(HciCommandStatusEvent);
+    private readonly bool _waitingForCommandComplete = typeof(TResponse) == typeof(HciCommandCompleteEvent);
 
     public async Task<(TResponse Response, Activity? Activity)> QueryAsync(
         TCommand command,
@@ -40,13 +40,14 @@ internal sealed partial class HciPacketInFlightHandler<
         using var linkedSource = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, deadline.Token);
         try
         {
+            int roomReport;
             // Only log the time that is needed to enqueue the command if it actually has to wait.
-            Activity? enqueueActivity = _packetInFlightSemaphore.CurrentCount is 0
+            Activity? enqueueActivity = !_host.IsCommandSlotFree
                 ? Logging.StartEnqueueCommandActivity(TCommand.OpCode, _host.Device.Address)
                 : null;
             try
             {
-                await _packetInFlightSemaphore.WaitAsync(linkedSource.Token).ConfigureAwait(false);
+                roomReport = await _host.WaitForCommandSlotAsync(linkedSource.Token).ConfigureAwait(false);
             }
             catch (OperationCanceledException)
                 when (_host.TransportFailure is { } failure && !cancellationToken.IsCancellationRequested)
@@ -74,7 +75,7 @@ internal sealed partial class HciPacketInFlightHandler<
             try
             {
                 _subscription = _host.Subscribe(this);
-                _host.EnqueuePacket(new HciCommandPacket<TCommand>(command));
+                _host.EnqueuePacket(new HciCommandPacket<TCommand>(command), roomReport);
                 // Once sent, the controller acts on the command; the answer is awaited whatever the caller does,
                 // so the caller learns what the controller did, e.g. that it started to connect
                 TResponse result = await _completionSource.Task.WaitAsync(deadline.Token).ConfigureAwait(false);
@@ -92,7 +93,7 @@ internal sealed partial class HciPacketInFlightHandler<
             }
             finally
             {
-                _packetInFlightSemaphore.Release();
+                _host.ReleaseCommandSlot();
             }
         }
         catch (Exception e)
@@ -119,6 +120,18 @@ internal sealed partial class HciPacketInFlightHandler<
         T messageToCopy = message;
         TResponse response = Unsafe.As<T, TResponse>(ref messageToCopy);
         _completionSource.TrySetResult(response);
+    }
+
+    [MessageSink]
+    private void OnCommandComplete(in HciCommandCompleteEvent message)
+    {
+        // Another command's answer, or an event that only gives room for commands (opcode 0x0000).
+        // An answer names only the opcode: when a command timed out and a room report let the next one with the same
+        // opcode go, the late answer completes that one. Only a controller that already broke the timeout gets here
+        if (!_waitingForCommandComplete || message.CommandOpCode != TCommand.OpCode)
+            return;
+        HciCommandCompleteEvent complete = message;
+        _completionSource.TrySetResult(Unsafe.As<HciCommandCompleteEvent, TResponse>(ref complete));
     }
 
     [MessageSink]

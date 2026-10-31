@@ -2,6 +2,8 @@
 Darp.Ble.HciHost.HciHostBleManagerBuilderExtensions
 Darp.Ble.HciHost.HciHostOptions
 Darp.Ble.HciHost.HciHostOptions.HciHostOptions() -> void
+Darp.Ble.HciHost.HciHostOptions.IncludeGattService.get -> bool
+Darp.Ble.HciHost.HciHostOptions.IncludeGattService.set -> void
 Darp.Ble.HciHost.HciHostOptions.Name.get -> string?
 Darp.Ble.HciHost.HciHostOptions.Name.set -> void
 Darp.Ble.HciHost.HciHostOptions.RandomAddress.get -> Darp.Ble.Data.BleAddress?
@@ -10,6 +12,8 @@ Darp.Ble.HciHost.HciHostOptions.Settings.get -> Darp.Ble.Hci.HciSettings!
 Darp.Ble.HciHost.HciHostOptions.Settings.set -> void
 Darp.Ble.HciHost.SerialHciHostOptions
 Darp.Ble.HciHost.SerialHciHostOptions.DeviceNameMapping.get -> System.Collections.Generic.IDictionary<(ushort VendorId, ushort ProductId), string!>!
+Darp.Ble.HciHost.SerialHciHostOptions.IncludeGattService.get -> bool
+Darp.Ble.HciHost.SerialHciHostOptions.IncludeGattService.set -> void
 Darp.Ble.HciHost.SerialHciHostOptions.RandomAddress.get -> Darp.Ble.Data.BleAddress?
 Darp.Ble.HciHost.SerialHciHostOptions.RandomAddress.set -> void
 Darp.Ble.HciHost.SerialHciHostOptions.SerialHciHostOptions() -> void

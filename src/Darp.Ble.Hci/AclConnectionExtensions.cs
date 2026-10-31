@@ -4,9 +4,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Darp.BinaryObjects;
 using Darp.Ble.Hci.Exceptions;
-using Darp.Ble.Hci.Package;
 using Darp.Ble.Hci.Payload.Att;
-using Darp.Utils.Messaging;
 using Microsoft.Extensions.Logging;
 
 namespace Darp.Ble.Hci;
@@ -38,7 +36,7 @@ public static class AclConnectionExtensions
     }
 
     /// <summary>
-    /// Encodes an ATT PDU, sends it on the connection's ATT channel and waits until the controller has a buffer for it (D8).
+    /// Encodes an ATT PDU, sends it on the connection's ATT channel and waits until the controller has a buffer for it.
     /// From then on the PDU is sent completely while the link is up, whatever happens to the caller
     /// </summary>
     /// <typeparam name="TAttPdu">The ATT PDU type to send.</typeparam>
@@ -117,6 +115,7 @@ public static class AclConnectionExtensions
                 or AttOpCode.ATT_FIND_BY_TYPE_VALUE_RSP
                 or AttOpCode.ATT_READ_BY_TYPE_RSP
                 or AttOpCode.ATT_READ_RSP
+                or AttOpCode.ATT_READ_BLOB_RSP
                 or AttOpCode.ATT_READ_BY_GROUP_TYPE_RSP
                 or AttOpCode.ATT_WRITE_RSP
                 or AttOpCode.ATT_PREPARE_WRITE_RSP

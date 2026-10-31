@@ -37,7 +37,8 @@ public static class HciHostBleManagerBuilderExtensions
                                 port.Port ?? "",
                                 $"{mapping[(port.VendorId, port.ProductId)]} ({port.Port})",
                                 options.RandomAddress,
-                                options.Settings
+                                options.Settings,
+                                options.IncludeGattService
                             )
                         ),
                 ]
@@ -64,7 +65,8 @@ public static class HciHostBleManagerBuilderExtensions
             portName,
             options.Name ?? portName,
             options.RandomAddress,
-            options.Settings
+            options.Settings,
+            options.IncludeGattService
         );
         return builder.AddBackend(new HciHostBackend(() => [source]));
     }
@@ -86,9 +88,11 @@ public static class HciHostBleManagerBuilderExtensions
         configure?.Invoke(options);
         var source = new HciHostAdapterSource(
             options.Name,
+            portName: null,
             _ => transportLayer,
             options.RandomAddress,
-            options.Settings
+            options.Settings,
+            options.IncludeGattService
         );
         return builder.AddBackend(new HciHostBackend(() => [source]));
     }
@@ -97,12 +101,15 @@ public static class HciHostBleManagerBuilderExtensions
         string portName,
         string name,
         Data.BleAddress? randomAddress,
-        Hci.HciSettings settings
+        Hci.HciSettings settings,
+        bool includeGattService
     ) =>
         new(
             name,
+            portName,
             context => new H4TransportLayer(portName, context.LoggerFactory.CreateLogger<H4TransportLayer>()),
             randomAddress,
-            settings
+            settings,
+            includeGattService
         );
 }

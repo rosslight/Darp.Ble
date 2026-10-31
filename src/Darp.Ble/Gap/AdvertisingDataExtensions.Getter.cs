@@ -204,18 +204,17 @@ public static partial class AdvertisingDataExtensions
         ArgumentNullException.ThrowIfNull(uuid);
         foreach ((AdTypes adTypes, ReadOnlyMemory<byte> bytes) in data)
         {
-            if (
-                (uuid.Type is BleUuidType.Uuid16 && adTypes != AdTypes.ServiceData16BitUuid)
-                || (uuid.Type is BleUuidType.Uuid32 && adTypes != AdTypes.ServiceData32BitUuid)
-                || (uuid.Type is BleUuidType.Uuid128 && adTypes != AdTypes.ServiceData128BitUuid)
-            )
+            // The section's type decides the width its uuid is written in, whatever width the caller wrote it in
+            int uuidLength = adTypes switch
             {
+                AdTypes.ServiceData16BitUuid => 2,
+                AdTypes.ServiceData32BitUuid => 4,
+                AdTypes.ServiceData128BitUuid => 16,
+                _ => 0,
+            };
+            if (uuidLength == 0 || bytes.Length < uuidLength)
                 continue;
-            }
-            var uuidLength = (int)uuid.Type;
-            if (bytes.Length < uuidLength)
-                continue;
-            if (!BleUuid.TryRead(bytes.Span[..uuidLength], out BleUuid? sectionUuid) || sectionUuid != uuid)
+            if (BleUuid.Read(bytes.Span[..uuidLength]) != uuid)
                 continue;
             serviceData = bytes[uuidLength..];
             return true;

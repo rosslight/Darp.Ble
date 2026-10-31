@@ -1,4 +1,3 @@
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using Darp.BinaryObjects;
@@ -33,11 +32,30 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
         IDisposable
 {
     private readonly MessageSinks _sinks = new();
-    private readonly CancellationTokenSource _transportGone = new();
-    private Exception? _transportFailure;
     private readonly ITransportLayer _transportLayer = transportLayer;
     private readonly ILogger<HciHost>? _logger = logger;
+
+    // Commands go one at a time
     private readonly SemaphoreSlim _packetInFlightSemaphore = new(1);
+
+    // Guards the fields below: the transport's thread reports the controller's room, the sending command takes it
+    private readonly Lock _roomLock = new();
+
+    // Completed while the controller reported room for a command since the last one was sent (Core Vol 4 Part E 4.4).
+    // Every Command Complete and Command Status reports it, also the ones for no command (opcode 0x0000). Commands go
+    // one at a time, so one report of room is enough; a command that is never answered keeps the next one waiting
+    // for the controller's next report, which also keeps its late answer from answering the next command.
+    // After a reset there is room for one
+    private TaskCompletionSource _room = CompletedSource();
+
+    // Counts the reports, so a command the transport refused gives its room back only if no report came since
+    private int _roomReports;
+
+    // Cancelled when the transport failed, and why; set once on the transport's thread, read by every command
+    private readonly CancellationTokenSource _transportGone = new();
+    private Exception? _transportFailure;
+
+    // Set once by ResetAsync: the queue needs the controller's buffer sizes, and packets before the reset are ignored
     private AclPacketQueue? _leAclPacketQueue;
     private bool _isResetDoneAtLeastOnce;
 
@@ -46,10 +64,6 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
 
     /// <summary>Gets the owning HCI device.</summary>
     public HciDevice Device { get; } = hciDevice;
-
-    /// <summary>Gets whether the host has been initialized and its ACL queue is ready.</summary>
-    [MemberNotNullWhen(true, nameof(_leAclPacketQueue))]
-    public bool IsReady => _leAclPacketQueue is not null;
 
     /// <summary>Gets the ACL packet queue created during initialization.</summary>
     internal AclPacketQueue AclPacketQueue =>
@@ -66,15 +80,24 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
         try
         {
             // Reset the controller
-            await this.QueryResetAsync(token).ConfigureAwait(false);
+            await this.QueryCommandCompletionAsync<HciResetCommand, HciResetResult>(token).ConfigureAwait(false);
             _isResetDoneAtLeastOnce = true;
 
             // Read information about the controller
-            HciReadLocalSupportedCommandsResult supportedCommandsResult =
-                await this.QueryReadLocalSupportedCommandsAsync(token).ConfigureAwait(false);
-            ImmutableArray<HciOpCode> x = supportedCommandsResult.SupportedCommands.ToImmutableArray();
-            await this.QueryLeReadLocalSupportedFeaturesAsync(token).ConfigureAwait(false);
-            HciReadLocalVersionInformationResult version = await this.QueryReadLocalVersionInformationAsync(token)
+            await this.QueryCommandCompletionAsync<
+                HciReadLocalSupportedCommandsCommand,
+                HciReadLocalSupportedCommandsResult
+            >(token)
+                .ConfigureAwait(false);
+            await this.QueryCommandCompletionAsync<
+                HciLeReadLocalSupportedFeaturesCommand,
+                HciLeReadLocalSupportedFeaturesResult
+            >(token)
+                .ConfigureAwait(false);
+            HciReadLocalVersionInformationResult version = await this.QueryCommandCompletionAsync<
+                HciReadLocalVersionInformationCommand,
+                HciReadLocalVersionInformationResult
+            >(token)
                 .ConfigureAwait(false);
             if (version.HciVersion < CoreVersion.BluetoothCoreSpecification42)
             {
@@ -83,15 +106,36 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
                 );
             }
 
-            await this.QueryReadLocalSupportedFeaturesAsync(token).ConfigureAwait(false);
+            await this.QueryCommandCompletionAsync<
+                HciReadLocalSupportedFeaturesCommand,
+                HciReadLocalSupportedFeaturesResult
+            >(token)
+                .ConfigureAwait(false);
 
-            await this.QuerySetEventMaskAsync(new HciSetEventMaskCommand((EventMask)0x3dbff807bffb9fff), token)
+            await this.QueryCommandCompletionAsync<HciSetEventMaskCommand, HciSetEventMaskResult>(
+                    new HciSetEventMaskCommand((EventMask)0x3dbff807bffb9fff),
+                    token
+                )
                 .ConfigureAwait(false);
-            await this.QueryLeSetEventMaskAsync(new HciLeSetEventMaskCommand((LeEventMask)0x00000007fff7ffff), token)
+            await this.QueryCommandCompletionAsync<HciLeSetEventMaskCommand, HciLeSetEventMaskResult>(
+                    new HciLeSetEventMaskCommand((LeEventMask)0x00000007fff7ffff),
+                    token
+                )
                 .ConfigureAwait(false);
-            var data = await this.QueryLeReadBufferSizeV1Async(token).ConfigureAwait(false);
-            await this.QueryLeReadSuggestedDefaultDataLengthAsync(token).ConfigureAwait(false);
-            await this.QueryLeWriteSuggestedDefaultDataLengthAsync(
+            var data = await this.QueryCommandCompletionAsync<
+                HciLeReadBufferSizeCommandV1,
+                HciLeReadBufferSizeResultV1
+            >(token)
+                .ConfigureAwait(false);
+            await this.QueryCommandCompletionAsync<
+                HciLeReadSuggestedDefaultDataLengthCommand,
+                HciLeReadSuggestedDefaultDataLengthResult
+            >(token)
+                .ConfigureAwait(false);
+            await this.QueryCommandCompletionAsync<
+                HciLeWriteSuggestedDefaultDataLengthCommand,
+                HciLeWriteSuggestedDefaultDataLengthResult
+            >(
                     new HciLeWriteSuggestedDefaultDataLengthCommand
                     {
                         SuggestedMaxTxOctets = 251,
@@ -134,7 +178,7 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
     {
         ObjectDisposedException.ThrowIf(Device.IsDisposed, this);
         timeout ??= Device.Settings.CommandTimeout;
-        using var handler = new HciPacketInFlightHandler<TCommand, TEvent>(this, _packetInFlightSemaphore);
+        using var handler = new HciPacketInFlightHandler<TCommand, TEvent>(this);
         (TEvent response, Activity? activity) = await handler
             .QueryAsync(command, timeout.Value, cancellationToken)
             .ConfigureAwait(false);
@@ -158,22 +202,12 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
     {
         ObjectDisposedException.ThrowIf(Device.IsDisposed, this);
         timeout ??= Device.Settings.CommandTimeout;
-        using var handler = new HciPacketInFlightHandler<TCommand, HciCommandCompleteEvent>(
-            this,
-            _packetInFlightSemaphore
-        );
+        using var handler = new HciPacketInFlightHandler<TCommand, HciCommandCompleteEvent>(this);
         (HciCommandCompleteEvent response, Activity? activity) = await handler
             .QueryAsync(command, timeout.Value, cancellationToken)
             .ConfigureAwait(false);
         try
         {
-            if (response.CommandOpCode != TCommand.OpCode)
-            {
-                throw new HciException(
-                    $"Command failed because response OpCode {response.CommandOpCode} is not {TCommand.OpCode}"
-                );
-            }
-
             if (!TResponse.TryReadLittleEndian(response.ReturnParameters.Span, out TResponse? parameters))
                 throw new HciException("Command failed because response could not be read");
 
@@ -193,9 +227,72 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
         }
     }
 
-    /// <summary> Enqueue a new hci packet </summary>
+    /// <summary> Whether a command could be sent right away </summary>
+    internal bool IsCommandSlotFree
+    {
+        get
+        {
+            lock (_roomLock)
+                return _packetInFlightSemaphore.CurrentCount > 0 && _room.Task.IsCompleted;
+        }
+    }
+
+    /// <summary> Waits until no command is in flight and the controller has room for one, and takes the room </summary>
+    /// <remarks> The caller sends its command right away and gives the slot back with <see cref="ReleaseCommandSlot"/> </remarks>
+    /// <returns> The report the room came from, which <see cref="EnqueuePacket{T}"/> needs to give it back </returns>
+    internal async Task<int> WaitForCommandSlotAsync(CancellationToken cancellationToken)
+    {
+        await _packetInFlightSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
+        try
+        {
+            while (true)
+            {
+                Task room;
+                lock (_roomLock)
+                {
+                    if (_room.Task.IsCompleted)
+                    {
+                        _room = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                        return _roomReports;
+                    }
+                    room = _room.Task;
+                }
+                await room.WaitAsync(cancellationToken).ConfigureAwait(false);
+            }
+        }
+        catch
+        {
+            _packetInFlightSemaphore.Release();
+            throw;
+        }
+    }
+
+    /// <summary> Gives the slot taken with <see cref="WaitForCommandSlotAsync"/> back </summary>
+    internal void ReleaseCommandSlot() => _packetInFlightSemaphore.Release();
+
+    private void OnNumHciCommandPackets(byte numHciCommandPackets)
+    {
+        lock (_roomLock)
+        {
+            _roomReports++;
+            if (numHciCommandPackets > 0)
+                _room.TrySetResult();
+            else if (_room.Task.IsCompleted)
+                _room = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        }
+    }
+
+    private static TaskCompletionSource CompletedSource()
+    {
+        var source = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        source.SetResult();
+        return source;
+    }
+
+    /// <summary> Sends a command; the caller holds the slot and the room <see cref="WaitForCommandSlotAsync"/> took </summary>
     /// <param name="packet"> The packet to be enqueued </param>
-    internal void EnqueuePacket<T>(HciCommandPacket<T> packet)
+    /// <param name="roomReport"> The report the room came from </param>
+    internal void EnqueuePacket<T>(HciCommandPacket<T> packet, int roomReport)
         where T : IHciCommand
     {
         using (_logger?.ForContext("PacketPayload", packet.ToArrayLittleEndian()))
@@ -203,7 +300,20 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
         {
             _logger?.LogPacketTransmission("Host", "Controller", $"{T.OpCode.ToString().ToUpperInvariant()}_COMMAND");
         }
-        _transportLayer.Enqueue(packet);
+        try
+        {
+            _transportLayer.Enqueue(packet);
+        }
+        catch
+        {
+            // The command never reached the controller, so the room is still there, unless the controller reported since
+            lock (_roomLock)
+            {
+                if (_roomReports == roomReport)
+                    _room.TrySetResult();
+            }
+            throw;
+        }
     }
 
     private void OnReceivedPacket(HciPacket packet)
@@ -228,6 +338,7 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
                             "ignored because the host was not reset yet!"
                         );
                     }
+                    break;
                 }
                 if (!Device.TryGetConnection(x.ConnectionHandle, out AclConnection? connection))
                 {
@@ -293,7 +404,9 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
             case HciEventCode.HCI_Command_Complete
                 when HciCommandCompleteEvent.TryReadLittleEndian(packet.DataBytes.Span, out var evt):
                 LogEventPacketControllerToHost(evt, packet.DataBytes);
+                // The answer goes to the command in flight first, so a command that waits for room cannot take it
                 PublishMessage(evt);
+                OnNumHciCommandPackets(evt.NumHciCommandPackets);
                 break;
             case HciEventCode.HCI_Disconnection_Complete
                 when HciDisconnectionCompleteEvent.TryReadLittleEndian(packet.DataBytes.Span, out var evt):
@@ -307,7 +420,9 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
             case HciEventCode.HCI_Command_Status
                 when HciCommandStatusEvent.TryReadLittleEndian(packet.DataBytes.Span, out var evt):
                 LogEventPacketControllerToHost(evt, packet.DataBytes);
+                // The answer goes to the command in flight first, so a command that waits for room cannot take it
                 PublishMessage(evt);
+                OnNumHciCommandPackets(evt.NumHciCommandPackets);
                 break;
             case HciEventCode.HCI_Number_Of_Completed_Packets
                 when HciNumberOfCompletedPacketsEvent.TryReadLittleEndian(packet.DataBytes.Span, out var evt):
@@ -340,6 +455,8 @@ public sealed partial class HciHost(HciDevice hciDevice, ITransportLayer transpo
             case HciLeMetaSubEventType.HCI_LE_Connection_Update_Complete
                 when HciLeConnectionUpdateCompleteEvent.TryReadLittleEndian(metaEvt.Parameters.Span, out var evt):
                 LogEventPacketControllerToHost(evt, packetPayloadBytes);
+                if (Device.TryGetConnection(evt.ConnectionHandle, out var updated))
+                    updated.OnConnectionUpdateCompleteEvent(evt);
                 PublishMessage(evt);
                 break;
             case HciLeMetaSubEventType.HCI_LE_Data_Length_Change

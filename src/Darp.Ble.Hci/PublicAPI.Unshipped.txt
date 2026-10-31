@@ -1,38 +1,20 @@
 #nullable enable
 Darp.Ble.Hci.AclConnection
-Darp.Ble.Hci.AclConnection.AclConnection(Darp.Ble.Hci.HciDevice! device, ushort connectionHandle, Darp.Ble.Hci.Payload.Command.UInt48 address, Darp.Ble.Hci.Payload.Command.UInt48 peerAddress, Darp.Ble.Hci.Payload.Event.HciLeConnectionRole role, Darp.Ble.Hci.AclConnectionParameters parameters, Microsoft.Extensions.Logging.ILoggerFactory? loggerFactory) -> void
+Darp.Ble.Hci.AclConnection.AclConnection(Darp.Ble.Hci.HciDevice! device, ushort connectionHandle, Darp.Ble.Hci.Payload.Command.UInt48 address, Darp.Ble.Hci.Payload.Command.UInt48 peerAddress, Darp.Ble.Hci.Payload.Event.HciLeConnectionRole role, Microsoft.Extensions.Logging.ILoggerFactory? loggerFactory) -> void
 Darp.Ble.Hci.AclConnection.Address.get -> Darp.Ble.Hci.Payload.Command.UInt48
 Darp.Ble.Hci.AclConnection.Assembler.get -> Darp.Ble.Hci.L2CapAssembler!
 Darp.Ble.Hci.AclConnection.AttMtu.get -> ushort
 Darp.Ble.Hci.AclConnection.AttMtu.set -> void
 Darp.Ble.Hci.AclConnection.ConnectionHandle.get -> ushort
+Darp.Ble.Hci.AclConnection.SupervisionTimeout.get -> System.TimeSpan
 Darp.Ble.Hci.AclConnection.Device.get -> Darp.Ble.Hci.HciDevice!
-Darp.Ble.Hci.AclConnection.DisconnectAsync(Darp.Ble.Hci.Payload.HciCommandStatus reason = Darp.Ble.Hci.Payload.HciCommandStatus.RemoteUserTerminatedConnection, System.Threading.CancellationToken token = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Darp.Ble.Hci.AclConnection.DisconnectToken.get -> System.Threading.CancellationToken
 Darp.Ble.Hci.AclConnection.Dispose() -> void
 Darp.Ble.Hci.AclConnection.GattServer.get -> Darp.Ble.Hci.Host.GattServer!
 Darp.Ble.Hci.AclConnection.LastDisconnectionReason.get -> Darp.Ble.Hci.Payload.HciCommandStatus?
-Darp.Ble.Hci.AclConnection.Parameters.get -> Darp.Ble.Hci.AclConnectionParameters
 Darp.Ble.Hci.AclConnection.PeerAddress.get -> Darp.Ble.Hci.Payload.Command.UInt48
-Darp.Ble.Hci.AclConnection.ReadPhyAsync(System.Threading.CancellationToken token = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Hci.Payload.Result.HciLeReadPhyResult>!
 Darp.Ble.Hci.AclConnection.Role.get -> Darp.Ble.Hci.Payload.Event.HciLeConnectionRole
-Darp.Ble.Hci.AclConnection.SetDataLengthAsync(ushort txOctets, ushort txTime, System.Threading.CancellationToken token = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task!
 Darp.Ble.Hci.AclConnectionExtensions
-Darp.Ble.Hci.AclConnectionParameters
-Darp.Ble.Hci.AclConnectionParameters.AclConnectionParameters() -> void
-Darp.Ble.Hci.AclConnectionParameters.AclConnectionParameters(ushort ConnectionInterval, ushort PeripheralLatency, ushort SupervisionTimeout, int SubRateFactor, int ContinuationNumber) -> void
-Darp.Ble.Hci.AclConnectionParameters.ConnectionInterval.get -> ushort
-Darp.Ble.Hci.AclConnectionParameters.ConnectionInterval.init -> void
-Darp.Ble.Hci.AclConnectionParameters.ContinuationNumber.get -> int
-Darp.Ble.Hci.AclConnectionParameters.ContinuationNumber.init -> void
-Darp.Ble.Hci.AclConnectionParameters.Deconstruct(out ushort ConnectionInterval, out ushort PeripheralLatency, out ushort SupervisionTimeout, out int SubRateFactor, out int ContinuationNumber) -> void
-Darp.Ble.Hci.AclConnectionParameters.Equals(Darp.Ble.Hci.AclConnectionParameters other) -> bool
-Darp.Ble.Hci.AclConnectionParameters.PeripheralLatency.get -> ushort
-Darp.Ble.Hci.AclConnectionParameters.PeripheralLatency.init -> void
-Darp.Ble.Hci.AclConnectionParameters.SubRateFactor.get -> int
-Darp.Ble.Hci.AclConnectionParameters.SubRateFactor.init -> void
-Darp.Ble.Hci.AclConnectionParameters.SupervisionTimeout.get -> ushort
-Darp.Ble.Hci.AclConnectionParameters.SupervisionTimeout.init -> void
 Darp.Ble.Hci.AssignedNumbers.CoreVersion
 Darp.Ble.Hci.AssignedNumbers.CoreVersion.BluetoothCoreSpecification10B = 0 -> Darp.Ble.Hci.AssignedNumbers.CoreVersion
 Darp.Ble.Hci.AssignedNumbers.CoreVersion.BluetoothCoreSpecification11 = 1 -> Darp.Ble.Hci.AssignedNumbers.CoreVersion
@@ -76,13 +58,11 @@ Darp.Ble.Hci.Exceptions.HciException.HciException(string! message) -> void
 Darp.Ble.Hci.Exceptions.HciException.HciException(string! message, System.Exception? innerException) -> void
 Darp.Ble.Hci.HciDevice
 Darp.Ble.Hci.HciDevice.Address.get -> ulong
-Darp.Ble.Hci.HciDevice.ConnectAsync(byte peerAddressType, Darp.Ble.Hci.Payload.Command.UInt48 peerAddress, System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<Darp.Ble.Hci.AclConnection!>!
 Darp.Ble.Hci.HciDevice.DisposeAsync() -> System.Threading.Tasks.ValueTask
 Darp.Ble.Hci.HciDevice.GattServer.get -> Darp.Ble.Hci.Host.GattServer!
 Darp.Ble.Hci.HciDevice.HciDevice(Darp.Ble.Hci.Transport.ITransportLayer! transportLayer, ulong randomAddress, Darp.Ble.Hci.HciSettings! settings, System.TimeProvider! timeProvider, Microsoft.Extensions.Logging.ILoggerFactory? loggerFactory) -> void
 Darp.Ble.Hci.HciDevice.Host.get -> Darp.Ble.Hci.Host.HciHost!
 Darp.Ble.Hci.HciDevice.InitializeAsync(System.Threading.CancellationToken token) -> System.Threading.Tasks.Task!
-Darp.Ble.Hci.HciDevice.ResetAsync(System.Threading.CancellationToken token) -> System.Threading.Tasks.Task!
 Darp.Ble.Hci.HciDevice.SetRandomAddressAsync(ulong randomAddress, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task!
 Darp.Ble.Hci.HciDevice.Settings.get -> Darp.Ble.Hci.HciSettings!
 Darp.Ble.Hci.HciDevice.TimeProvider.get -> System.TimeProvider!
@@ -113,7 +93,6 @@ Darp.Ble.Hci.Host.HciHost
 Darp.Ble.Hci.Host.HciHost.Device.get -> Darp.Ble.Hci.HciDevice!
 Darp.Ble.Hci.Host.HciHost.Dispose() -> void
 Darp.Ble.Hci.Host.HciHost.HciHost(Darp.Ble.Hci.HciDevice! hciDevice, Darp.Ble.Hci.Transport.ITransportLayer! transportLayer, Microsoft.Extensions.Logging.ILogger<Darp.Ble.Hci.Host.HciHost!>? logger) -> void
-Darp.Ble.Hci.Host.HciHost.IsReady.get -> bool
 Darp.Ble.Hci.Host.HciHost.QueryCommandAsync<TCommand, TEvent>(TCommand command, System.TimeSpan? timeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<TEvent>!
 Darp.Ble.Hci.Host.HciHost.QueryCommandCompletionAsync<TCommand, TResponse>(TCommand command, System.TimeSpan? timeout, System.Threading.CancellationToken cancellationToken) -> System.Threading.Tasks.Task<TResponse>!
 Darp.Ble.Hci.Host.HciHost.ResetAsync(System.Threading.CancellationToken token) -> System.Threading.Tasks.Task!
@@ -123,8 +102,6 @@ Darp.Ble.Hci.Host.HciHostExtensions
 Darp.Ble.Hci.Host.HciTransportFailedEventArgs
 Darp.Ble.Hci.Host.HciTransportFailedEventArgs.Exception.get -> System.Exception!
 Darp.Ble.Hci.Host.HciTransportFailedEventArgs.HciTransportFailedEventArgs(System.Exception! exception) -> void
-Darp.Ble.Hci.IL2CapAssembler
-Darp.Ble.Hci.IL2CapAssembler.OnAclPacket(Darp.Ble.Hci.Package.HciAclPacket packet) -> void
 Darp.Ble.Hci.L2CapAssembler
 Darp.Ble.Hci.L2CapAssembler.L2CapAssembler(ushort connectionHandle, Microsoft.Extensions.Logging.ILogger<Darp.Ble.Hci.L2CapAssembler!>? logger) -> void
 Darp.Ble.Hci.L2CapAssembler.OnAclPacket(Darp.Ble.Hci.Package.HciAclPacket packet) -> void
@@ -417,6 +394,20 @@ Darp.Ble.Hci.Payload.Att.AttGroupTypeData.TryWriteLittleEndian(System.Span<byte>
 Darp.Ble.Hci.Payload.Att.AttGroupTypeData.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) -> bool
 Darp.Ble.Hci.Payload.Att.AttGroupTypeData.Value.get -> System.ReadOnlyMemory<byte>
 Darp.Ble.Hci.Payload.Att.AttGroupTypeData.Value.init -> void
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.AttHandleValueInd() -> void
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.Equals(Darp.Ble.Hci.Payload.Att.AttHandleValueInd other) -> bool
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.GetByteCount() -> int
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.Handle.get -> ushort
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.Handle.init -> void
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.OpCode.get -> Darp.Ble.Hci.Payload.Att.AttOpCode
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.OpCode.init -> void
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.TryWriteBigEndian(System.Span<byte> destination) -> bool
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) -> bool
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.TryWriteLittleEndian(System.Span<byte> destination) -> bool
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) -> bool
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.Value.get -> System.ReadOnlyMemory<byte>
+Darp.Ble.Hci.Payload.Att.AttHandleValueInd.Value.init -> void
 Darp.Ble.Hci.Payload.Att.AttHandleValueNtf
 Darp.Ble.Hci.Payload.Att.AttHandleValueNtf.AttHandleValueNtf() -> void
 Darp.Ble.Hci.Payload.Att.AttHandleValueNtf.Equals(Darp.Ble.Hci.Payload.Att.AttHandleValueNtf other) -> bool
@@ -441,9 +432,13 @@ Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_FIND_BY_TYPE_VALUE_REQ = 6 -> Darp.Ble.Hc
 Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_FIND_BY_TYPE_VALUE_RSP = 7 -> Darp.Ble.Hci.Payload.Att.AttOpCode
 Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_FIND_INFORMATION_REQ = 4 -> Darp.Ble.Hci.Payload.Att.AttOpCode
 Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_FIND_INFORMATION_RSP = 5 -> Darp.Ble.Hci.Payload.Att.AttOpCode
+Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_HANDLE_VALUE_CFM = 30 -> Darp.Ble.Hci.Payload.Att.AttOpCode
+Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_HANDLE_VALUE_IND = 29 -> Darp.Ble.Hci.Payload.Att.AttOpCode
 Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_HANDLE_VALUE_NTF = 27 -> Darp.Ble.Hci.Payload.Att.AttOpCode
 Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_PREPARE_WRITE_REQ = 22 -> Darp.Ble.Hci.Payload.Att.AttOpCode
 Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_PREPARE_WRITE_RSP = 23 -> Darp.Ble.Hci.Payload.Att.AttOpCode
+Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_READ_BLOB_REQ = 12 -> Darp.Ble.Hci.Payload.Att.AttOpCode
+Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_READ_BLOB_RSP = 13 -> Darp.Ble.Hci.Payload.Att.AttOpCode
 Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_READ_BY_GROUP_TYPE_REQ = 16 -> Darp.Ble.Hci.Payload.Att.AttOpCode
 Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_READ_BY_GROUP_TYPE_RSP = 17 -> Darp.Ble.Hci.Payload.Att.AttOpCode
 Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_READ_BY_TYPE_REQ = 8 -> Darp.Ble.Hci.Payload.Att.AttOpCode
@@ -454,6 +449,32 @@ Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_WRITE_CMD = 82 -> Darp.Ble.Hci.Payload.At
 Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_WRITE_REQ = 18 -> Darp.Ble.Hci.Payload.Att.AttOpCode
 Darp.Ble.Hci.Payload.Att.AttOpCode.ATT_WRITE_RSP = 19 -> Darp.Ble.Hci.Payload.Att.AttOpCode
 Darp.Ble.Hci.Payload.Att.AttOpCode.None = 0 -> Darp.Ble.Hci.Payload.Att.AttOpCode
+Darp.Ble.Hci.Payload.Att.AttReadBlobReq
+Darp.Ble.Hci.Payload.Att.AttReadBlobReq.AttReadBlobReq() -> void
+Darp.Ble.Hci.Payload.Att.AttReadBlobReq.AttributeHandle.get -> ushort
+Darp.Ble.Hci.Payload.Att.AttReadBlobReq.AttributeHandle.init -> void
+Darp.Ble.Hci.Payload.Att.AttReadBlobReq.Equals(Darp.Ble.Hci.Payload.Att.AttReadBlobReq other) -> bool
+Darp.Ble.Hci.Payload.Att.AttReadBlobReq.GetByteCount() -> int
+Darp.Ble.Hci.Payload.Att.AttReadBlobReq.OpCode.get -> Darp.Ble.Hci.Payload.Att.AttOpCode
+Darp.Ble.Hci.Payload.Att.AttReadBlobReq.OpCode.init -> void
+Darp.Ble.Hci.Payload.Att.AttReadBlobReq.TryWriteBigEndian(System.Span<byte> destination) -> bool
+Darp.Ble.Hci.Payload.Att.AttReadBlobReq.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) -> bool
+Darp.Ble.Hci.Payload.Att.AttReadBlobReq.TryWriteLittleEndian(System.Span<byte> destination) -> bool
+Darp.Ble.Hci.Payload.Att.AttReadBlobReq.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) -> bool
+Darp.Ble.Hci.Payload.Att.AttReadBlobReq.ValueOffset.get -> ushort
+Darp.Ble.Hci.Payload.Att.AttReadBlobReq.ValueOffset.init -> void
+Darp.Ble.Hci.Payload.Att.AttReadBlobRsp
+Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.AttReadBlobRsp() -> void
+Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.Equals(Darp.Ble.Hci.Payload.Att.AttReadBlobRsp other) -> bool
+Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.GetByteCount() -> int
+Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.OpCode.get -> Darp.Ble.Hci.Payload.Att.AttOpCode
+Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.OpCode.init -> void
+Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.PartAttributeValue.get -> System.ReadOnlyMemory<byte>
+Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.PartAttributeValue.init -> void
+Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.TryWriteBigEndian(System.Span<byte> destination) -> bool
+Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) -> bool
+Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.TryWriteLittleEndian(System.Span<byte> destination) -> bool
+Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) -> bool
 Darp.Ble.Hci.Payload.Att.AttReadByGroupTypeReq<TAttributeType>
 Darp.Ble.Hci.Payload.Att.AttReadByGroupTypeReq<TAttributeType>.AttReadByGroupTypeReq() -> void
 Darp.Ble.Hci.Payload.Att.AttReadByGroupTypeReq<TAttributeType>.AttributeGroupType.get -> TAttributeType
@@ -1602,8 +1623,6 @@ Darp.Ble.Hci.Payload.Result.ICommandStatusResult
 Darp.Ble.Hci.Payload.Result.ICommandStatusResult.Status.get -> Darp.Ble.Hci.Payload.HciCommandStatus
 Darp.Ble.Hci.Payload.Result.InlineBitField64
 Darp.Ble.Hci.Payload.Result.InlineBitField64.InlineBitField64() -> void
-Darp.Ble.Hci.ReactiveExtensions
-Darp.Ble.Hci.ReactiveExtensions.TrySelector<T, TResult>
 Darp.Ble.Hci.Transport.H4TransportLayer
 Darp.Ble.Hci.Transport.H4TransportLayer.DisposeAsync() -> System.Threading.Tasks.ValueTask
 Darp.Ble.Hci.Transport.H4TransportLayer.Enqueue(Darp.Ble.Hci.Package.IHciPacket! packet) -> void
@@ -1620,7 +1639,6 @@ Darp.Ble.Hci.Transport.ITransportLayer.InitializeAsync(System.Action<Darp.Ble.Hc
 const Darp.Ble.Hci.HciLoggingStrings.ActivityName = "Darp.Ble.Hci" -> string!
 const Darp.Ble.Hci.HciLoggingStrings.TracingActivityName = "Darp.Ble.Hci.Tracing" -> string!
 const Darp.Ble.Hci.Package.IHciEventPacket<TSelf>.EventPacketHeaderLength = 2 -> int
-override Darp.Ble.Hci.AclConnectionParameters.GetHashCode() -> int
 override Darp.Ble.Hci.HciSettings.Equals(object? obj) -> bool
 override Darp.Ble.Hci.HciSettings.GetHashCode() -> int
 override Darp.Ble.Hci.HciSettings.ToString() -> string!
@@ -1637,7 +1655,10 @@ override Darp.Ble.Hci.Payload.Att.AttFindInformationData.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Att.AttFindInformationReq.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Att.AttFindInformationRsp.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Att.AttGroupTypeData.GetHashCode() -> int
+override Darp.Ble.Hci.Payload.Att.AttHandleValueInd.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Att.AttHandleValueNtf.GetHashCode() -> int
+override Darp.Ble.Hci.Payload.Att.AttReadBlobReq.GetHashCode() -> int
+override Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Att.AttReadByGroupTypeReq<TAttributeType>.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Att.AttReadByGroupTypeRsp.GetHashCode() -> int
 override Darp.Ble.Hci.Payload.Att.AttReadByTypeData.GetHashCode() -> int
@@ -1720,8 +1741,6 @@ static Darp.Ble.Hci.AclConnectionExtensions.EnqueueGattErrorResponse(this Darp.B
 static Darp.Ble.Hci.AclConnectionExtensions.EnqueueGattErrorResponse(this Darp.Ble.Hci.AclConnection! connection, System.Exception? exception, Darp.Ble.Hci.Payload.Att.AttOpCode requestOpCode, ushort handle, Darp.Ble.Hci.Payload.Att.AttErrorCode errorCode, System.Diagnostics.Activity? activity) -> void
 static Darp.Ble.Hci.AclConnectionExtensions.EnqueueGattPacket<TAttPdu>(this Darp.Ble.Hci.AclConnection! connection, TAttPdu attPdu, System.Diagnostics.Activity? activity) -> void
 static Darp.Ble.Hci.AclConnectionExtensions.SendGattPacketAsync<TAttPdu>(this Darp.Ble.Hci.AclConnection! connection, TAttPdu attPdu, System.Action? onHandOff, System.Threading.CancellationToken cancellationToken, System.Threading.CancellationToken released = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.ValueTask
-static Darp.Ble.Hci.AclConnectionParameters.operator !=(Darp.Ble.Hci.AclConnectionParameters left, Darp.Ble.Hci.AclConnectionParameters right) -> bool
-static Darp.Ble.Hci.AclConnectionParameters.operator ==(Darp.Ble.Hci.AclConnectionParameters left, Darp.Ble.Hci.AclConnectionParameters right) -> bool
 static Darp.Ble.Hci.AttResponse<T>.ExpectedOpCode.get -> Darp.Ble.Hci.Payload.Att.AttOpCode
 static Darp.Ble.Hci.AttResponse<T>.Fail(Darp.Ble.Hci.Payload.Att.AttErrorRsp errorResponse) -> Darp.Ble.Hci.AttResponse<T>
 static Darp.Ble.Hci.AttResponse<T>.Ok(T attResponse) -> Darp.Ble.Hci.AttResponse<T>
@@ -1737,16 +1756,6 @@ static Darp.Ble.Hci.HciSettings.operator ==(Darp.Ble.Hci.HciSettings? left, Darp
 static Darp.Ble.Hci.Host.HciHostExtensions.QueryCommandCompletionAsync<TCommand, TParameters>(this Darp.Ble.Hci.Host.HciHost! hciHost, TCommand command, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TParameters>!
 static Darp.Ble.Hci.Host.HciHostExtensions.QueryCommandCompletionAsync<TCommand, TResponse>(this Darp.Ble.Hci.Host.HciHost! hciHost, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<TResponse>!
 static Darp.Ble.Hci.Host.HciHostExtensions.QueryCommandStatusAsync<TCommand>(this Darp.Ble.Hci.Host.HciHost! hciHost, TCommand command = default(TCommand), System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) -> System.Threading.Tasks.Task<Darp.Ble.Hci.Payload.HciCommandStatus>!
-static Darp.Ble.Hci.Host.HciHostExtensions.QueryLeReadBufferSizeV1Async(this Darp.Ble.Hci.Host.HciHost! host, System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<Darp.Ble.Hci.Payload.Result.HciLeReadBufferSizeResultV1>!
-static Darp.Ble.Hci.Host.HciHostExtensions.QueryLeReadLocalSupportedFeaturesAsync(this Darp.Ble.Hci.Host.HciHost! host, System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<Darp.Ble.Hci.Payload.Result.HciLeReadLocalSupportedFeaturesResult>!
-static Darp.Ble.Hci.Host.HciHostExtensions.QueryLeReadSuggestedDefaultDataLengthAsync(this Darp.Ble.Hci.Host.HciHost! host, System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<Darp.Ble.Hci.Payload.Result.HciLeReadSuggestedDefaultDataLengthResult>!
-static Darp.Ble.Hci.Host.HciHostExtensions.QueryLeSetEventMaskAsync(this Darp.Ble.Hci.Host.HciHost! host, Darp.Ble.Hci.Payload.Command.HciLeSetEventMaskCommand command, System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<Darp.Ble.Hci.Payload.Result.HciLeSetEventMaskResult>!
-static Darp.Ble.Hci.Host.HciHostExtensions.QueryLeWriteSuggestedDefaultDataLengthAsync(this Darp.Ble.Hci.Host.HciHost! host, Darp.Ble.Hci.Payload.Command.HciLeWriteSuggestedDefaultDataLengthCommand command, System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<Darp.Ble.Hci.Payload.Result.HciLeWriteSuggestedDefaultDataLengthResult>!
-static Darp.Ble.Hci.Host.HciHostExtensions.QueryReadLocalSupportedCommandsAsync(this Darp.Ble.Hci.Host.HciHost! host, System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<Darp.Ble.Hci.Payload.Result.HciReadLocalSupportedCommandsResult>!
-static Darp.Ble.Hci.Host.HciHostExtensions.QueryReadLocalSupportedFeaturesAsync(this Darp.Ble.Hci.Host.HciHost! host, System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<Darp.Ble.Hci.Payload.Result.HciReadLocalSupportedFeaturesResult>!
-static Darp.Ble.Hci.Host.HciHostExtensions.QueryReadLocalVersionInformationAsync(this Darp.Ble.Hci.Host.HciHost! host, System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<Darp.Ble.Hci.Payload.Result.HciReadLocalVersionInformationResult>!
-static Darp.Ble.Hci.Host.HciHostExtensions.QueryResetAsync(this Darp.Ble.Hci.Host.HciHost! host, System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<Darp.Ble.Hci.Payload.Result.HciResetResult>!
-static Darp.Ble.Hci.Host.HciHostExtensions.QuerySetEventMaskAsync(this Darp.Ble.Hci.Host.HciHost! host, Darp.Ble.Hci.Payload.Command.HciSetEventMaskCommand command, System.Threading.CancellationToken token) -> System.Threading.Tasks.Task<Darp.Ble.Hci.Payload.Result.HciSetEventMaskResult>!
 static Darp.Ble.Hci.Package.AttReadResult.operator !=(Darp.Ble.Hci.Package.AttReadResult left, Darp.Ble.Hci.Package.AttReadResult right) -> bool
 static Darp.Ble.Hci.Package.AttReadResult.operator ==(Darp.Ble.Hci.Package.AttReadResult left, Darp.Ble.Hci.Package.AttReadResult right) -> bool
 static Darp.Ble.Hci.Package.HciAclPacket.HeaderLength.get -> int
@@ -1835,6 +1844,13 @@ static Darp.Ble.Hci.Payload.Att.AttGroupTypeData.TryReadLittleEndian(System.Read
 static Darp.Ble.Hci.Payload.Att.AttGroupTypeData.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttGroupTypeData value, out int bytesRead) -> bool
 static Darp.Ble.Hci.Payload.Att.AttGroupTypeData.operator !=(Darp.Ble.Hci.Payload.Att.AttGroupTypeData left, Darp.Ble.Hci.Payload.Att.AttGroupTypeData right) -> bool
 static Darp.Ble.Hci.Payload.Att.AttGroupTypeData.operator ==(Darp.Ble.Hci.Payload.Att.AttGroupTypeData left, Darp.Ble.Hci.Payload.Att.AttGroupTypeData right) -> bool
+static Darp.Ble.Hci.Payload.Att.AttHandleValueInd.ExpectedOpCode.get -> Darp.Ble.Hci.Payload.Att.AttOpCode
+static Darp.Ble.Hci.Payload.Att.AttHandleValueInd.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttHandleValueInd value) -> bool
+static Darp.Ble.Hci.Payload.Att.AttHandleValueInd.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttHandleValueInd value, out int bytesRead) -> bool
+static Darp.Ble.Hci.Payload.Att.AttHandleValueInd.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttHandleValueInd value) -> bool
+static Darp.Ble.Hci.Payload.Att.AttHandleValueInd.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttHandleValueInd value, out int bytesRead) -> bool
+static Darp.Ble.Hci.Payload.Att.AttHandleValueInd.operator !=(Darp.Ble.Hci.Payload.Att.AttHandleValueInd left, Darp.Ble.Hci.Payload.Att.AttHandleValueInd right) -> bool
+static Darp.Ble.Hci.Payload.Att.AttHandleValueInd.operator ==(Darp.Ble.Hci.Payload.Att.AttHandleValueInd left, Darp.Ble.Hci.Payload.Att.AttHandleValueInd right) -> bool
 static Darp.Ble.Hci.Payload.Att.AttHandleValueNtf.ExpectedOpCode.get -> Darp.Ble.Hci.Payload.Att.AttOpCode
 static Darp.Ble.Hci.Payload.Att.AttHandleValueNtf.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttHandleValueNtf value) -> bool
 static Darp.Ble.Hci.Payload.Att.AttHandleValueNtf.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttHandleValueNtf value, out int bytesRead) -> bool
@@ -1842,6 +1858,20 @@ static Darp.Ble.Hci.Payload.Att.AttHandleValueNtf.TryReadLittleEndian(System.Rea
 static Darp.Ble.Hci.Payload.Att.AttHandleValueNtf.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttHandleValueNtf value, out int bytesRead) -> bool
 static Darp.Ble.Hci.Payload.Att.AttHandleValueNtf.operator !=(Darp.Ble.Hci.Payload.Att.AttHandleValueNtf left, Darp.Ble.Hci.Payload.Att.AttHandleValueNtf right) -> bool
 static Darp.Ble.Hci.Payload.Att.AttHandleValueNtf.operator ==(Darp.Ble.Hci.Payload.Att.AttHandleValueNtf left, Darp.Ble.Hci.Payload.Att.AttHandleValueNtf right) -> bool
+static Darp.Ble.Hci.Payload.Att.AttReadBlobReq.ExpectedOpCode.get -> Darp.Ble.Hci.Payload.Att.AttOpCode
+static Darp.Ble.Hci.Payload.Att.AttReadBlobReq.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttReadBlobReq value) -> bool
+static Darp.Ble.Hci.Payload.Att.AttReadBlobReq.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttReadBlobReq value, out int bytesRead) -> bool
+static Darp.Ble.Hci.Payload.Att.AttReadBlobReq.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttReadBlobReq value) -> bool
+static Darp.Ble.Hci.Payload.Att.AttReadBlobReq.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttReadBlobReq value, out int bytesRead) -> bool
+static Darp.Ble.Hci.Payload.Att.AttReadBlobReq.operator !=(Darp.Ble.Hci.Payload.Att.AttReadBlobReq left, Darp.Ble.Hci.Payload.Att.AttReadBlobReq right) -> bool
+static Darp.Ble.Hci.Payload.Att.AttReadBlobReq.operator ==(Darp.Ble.Hci.Payload.Att.AttReadBlobReq left, Darp.Ble.Hci.Payload.Att.AttReadBlobReq right) -> bool
+static Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.ExpectedOpCode.get -> Darp.Ble.Hci.Payload.Att.AttOpCode
+static Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttReadBlobRsp value) -> bool
+static Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttReadBlobRsp value, out int bytesRead) -> bool
+static Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttReadBlobRsp value) -> bool
+static Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttReadBlobRsp value, out int bytesRead) -> bool
+static Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.operator !=(Darp.Ble.Hci.Payload.Att.AttReadBlobRsp left, Darp.Ble.Hci.Payload.Att.AttReadBlobRsp right) -> bool
+static Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.operator ==(Darp.Ble.Hci.Payload.Att.AttReadBlobRsp left, Darp.Ble.Hci.Payload.Att.AttReadBlobRsp right) -> bool
 static Darp.Ble.Hci.Payload.Att.AttReadByGroupTypeReq<TAttributeType>.ExpectedOpCode.get -> Darp.Ble.Hci.Payload.Att.AttOpCode
 static Darp.Ble.Hci.Payload.Att.AttReadByGroupTypeReq<TAttributeType>.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttReadByGroupTypeReq<TAttributeType> value) -> bool
 static Darp.Ble.Hci.Payload.Att.AttReadByGroupTypeReq<TAttributeType>.TryReadBigEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Att.AttReadByGroupTypeReq<TAttributeType> value, out int bytesRead) -> bool
@@ -2358,10 +2388,6 @@ static Darp.Ble.Hci.Payload.Result.HciSetExtendedScanParametersResult.TryReadLit
 static Darp.Ble.Hci.Payload.Result.HciSetExtendedScanParametersResult.TryReadLittleEndian(System.ReadOnlySpan<byte> source, out Darp.Ble.Hci.Payload.Result.HciSetExtendedScanParametersResult value, out int bytesRead) -> bool
 static Darp.Ble.Hci.Payload.Result.HciSetExtendedScanParametersResult.operator !=(Darp.Ble.Hci.Payload.Result.HciSetExtendedScanParametersResult left, Darp.Ble.Hci.Payload.Result.HciSetExtendedScanParametersResult right) -> bool
 static Darp.Ble.Hci.Payload.Result.HciSetExtendedScanParametersResult.operator ==(Darp.Ble.Hci.Payload.Result.HciSetExtendedScanParametersResult left, Darp.Ble.Hci.Payload.Result.HciSetExtendedScanParametersResult right) -> bool
-static Darp.Ble.Hci.ReactiveExtensions.SelectWhere<T, TResult>(this System.IObservable<T>! source, Darp.Ble.Hci.ReactiveExtensions.TrySelector<T, TResult>! trySelector) -> System.IObservable<TResult>!
-virtual Darp.Ble.Hci.ReactiveExtensions.TrySelector<T, TResult>.Invoke(T value, out TResult? result) -> bool
-~override Darp.Ble.Hci.AclConnectionParameters.Equals(object obj) -> bool
-~override Darp.Ble.Hci.AclConnectionParameters.ToString() -> string
 ~override Darp.Ble.Hci.Package.AttReadResult.Equals(object obj) -> bool
 ~override Darp.Ble.Hci.Package.AttReadResult.ToString() -> string
 ~override Darp.Ble.Hci.Payload.Att.AttErrorRsp.Equals(object obj) -> bool
@@ -2384,8 +2410,14 @@ virtual Darp.Ble.Hci.ReactiveExtensions.TrySelector<T, TResult>.Invoke(T value, 
 ~override Darp.Ble.Hci.Payload.Att.AttFindInformationRsp.ToString() -> string
 ~override Darp.Ble.Hci.Payload.Att.AttGroupTypeData.Equals(object obj) -> bool
 ~override Darp.Ble.Hci.Payload.Att.AttGroupTypeData.ToString() -> string
+~override Darp.Ble.Hci.Payload.Att.AttHandleValueInd.Equals(object obj) -> bool
+~override Darp.Ble.Hci.Payload.Att.AttHandleValueInd.ToString() -> string
 ~override Darp.Ble.Hci.Payload.Att.AttHandleValueNtf.Equals(object obj) -> bool
 ~override Darp.Ble.Hci.Payload.Att.AttHandleValueNtf.ToString() -> string
+~override Darp.Ble.Hci.Payload.Att.AttReadBlobReq.Equals(object obj) -> bool
+~override Darp.Ble.Hci.Payload.Att.AttReadBlobReq.ToString() -> string
+~override Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.Equals(object obj) -> bool
+~override Darp.Ble.Hci.Payload.Att.AttReadBlobRsp.ToString() -> string
 ~override Darp.Ble.Hci.Payload.Att.AttReadByGroupTypeReq<TAttributeType>.Equals(object obj) -> bool
 ~override Darp.Ble.Hci.Payload.Att.AttReadByGroupTypeReq<TAttributeType>.ToString() -> string
 ~override Darp.Ble.Hci.Payload.Att.AttReadByGroupTypeRsp.Equals(object obj) -> bool

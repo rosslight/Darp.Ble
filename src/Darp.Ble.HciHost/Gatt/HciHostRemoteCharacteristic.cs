@@ -67,8 +67,9 @@ internal sealed class HciHostRemoteCharacteristic(
         while (start <= _endHandle && start > ValueHandle && !request.IsAbandoned)
         {
             AttFindInformationRsp? page = await _connection
-                .Client.QueryUnlessNotFoundAsync<AttFindInformationReq, AttFindInformationRsp>(
+                .Client.QueryUnlessAsync<AttFindInformationReq, AttFindInformationRsp>(
                     new AttFindInformationReq { StartingHandle = start, EndingHandle = _endHandle },
+                    AttErrorCode.AttributeNotFoundError,
                     request
                 )
                 .ConfigureAwait(false);

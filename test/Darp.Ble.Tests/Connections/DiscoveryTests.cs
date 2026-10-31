@@ -8,7 +8,7 @@ using Shouldly;
 
 namespace Darp.Ble.Tests.Connections;
 
-/// <summary> Discovering what a mock peripheral hosts through the public API (seam 2) </summary>
+/// <summary> Discovering what a mock peripheral hosts through the public API </summary>
 public sealed class DiscoveryTests
 {
     private static CancellationToken Token => TestContext.Current.CancellationToken;
@@ -48,6 +48,23 @@ public sealed class DiscoveryTests
         RemoteGattService service = await connection.DiscoverServiceAsync(ServiceUuid, Token);
 
         service.Uuid.ShouldBe(ServiceUuid);
+    }
+
+    [Fact]
+    public async Task Discovery_MatchesAUuidWrittenInAnotherWidth()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        ConnectedPeripheral connection = await ConnectAsync(adapter);
+
+        // The 128-bit form of a 16-bit UUID, as a UUID string from a data sheet gives it
+        RemoteGattService service = await connection.DiscoverServiceAsync(BleUuid.FromGuid(ServiceUuid.Value), Token);
+        RemoteCharacteristic<Properties.Notify> measurement = await service.DiscoverCharacteristicAsync(
+            new CharacteristicDeclaration<Properties.Notify>(BleUuid.FromGuid(MeasurementUuid.Value)),
+            Token
+        );
+
+        service.Uuid.ShouldBe(ServiceUuid);
+        measurement.Uuid.ShouldBe(MeasurementUuid);
     }
 
     [Fact]

@@ -1,14 +1,13 @@
+using System.Buffers;
+using System.Buffers.Binary;
 using Darp.Ble.Backends;
 using Darp.Ble.Connections;
 using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Darp.Ble.Hci;
 using Darp.Ble.Hci.Host;
-using Darp.Ble.Hci.Payload;
 using Darp.Ble.Hci.Payload.Att;
-using Darp.Ble.Hci.Payload.Command;
 using Darp.Ble.Hci.Payload.Event;
-using Darp.Ble.Hci.Payload.Result;
 using Darp.Ble.HciHost.Gatt;
 using Darp.Utils.Messaging;
 
@@ -31,6 +30,9 @@ internal sealed partial class HciHostConnectionDriver : IConnectionDriver
     private readonly IDisposable _assemblerSubscription;
     private const int MinimumMtu = 23;
 
+    // The longest value of an attribute
+    private const int MaxValueLength = 512;
+
     private readonly TaskCompletionSource<DisconnectInfo> _down = new(
         TaskCreationOptions.RunContinuationsAsynchronously
     );
@@ -52,13 +54,17 @@ internal sealed partial class HciHostConnectionDriver : IConnectionDriver
 
     public async Task<int> ExchangeMtuAsync(int clientMtu, GattRequest request)
     {
-        AttExchangeMtuRsp response = await Client
-            .QueryAsync<AttExchangeMtuReq, AttExchangeMtuRsp>(
+        // The exchange is optional: a peer that does not support it keeps the default MTU
+        AttExchangeMtuRsp? response = await Client
+            .QueryUnlessAsync<AttExchangeMtuReq, AttExchangeMtuRsp>(
                 new AttExchangeMtuReq { ClientRxMtu = (ushort)clientMtu },
+                AttErrorCode.RequestNotSupportedError,
                 request
             )
             .ConfigureAwait(false);
-        var mtu = (ushort)Math.Max(MinimumMtu, Math.Min(clientMtu, response.ServerRxMtu));
+        if (response is not { } agreed)
+            return MinimumMtu;
+        var mtu = (ushort)Math.Max(MinimumMtu, Math.Min(clientMtu, agreed.ServerRxMtu));
         _connection.AttMtu = mtu;
         return mtu;
     }
@@ -71,13 +77,14 @@ internal sealed partial class HciHostConnectionDriver : IConnectionDriver
         while (!request.IsAbandoned)
         {
             AttReadByGroupTypeRsp? page = await Client
-                .QueryUnlessNotFoundAsync<AttReadByGroupTypeReq<ushort>, AttReadByGroupTypeRsp>(
+                .QueryUnlessAsync<AttReadByGroupTypeReq<ushort>, AttReadByGroupTypeRsp>(
                     new AttReadByGroupTypeReq<ushort>
                     {
                         StartingHandle = start,
                         EndingHandle = 0xFFFF,
                         AttributeGroupType = 0x2800,
                     },
+                    AttErrorCode.AttributeNotFoundError,
                     request
                 )
                 .ConfigureAwait(false);
@@ -93,16 +100,12 @@ internal sealed partial class HciHostConnectionDriver : IConnectionDriver
         return services;
     }
 
-    public Task<byte[]> ReadAsync(ushort handle, GattRequest request) => ReadCoreAsync(handle, request);
-
-    public Task WriteAsync(ushort handle, ReadOnlyMemory<byte> value, GattRequest request)
-    {
-        CheckLength(value);
-        return Client.QueryAsync<AttWriteReq, AttWriteRsp>(
+    /// <summary> Sends a write request; the core rejects values longer than one write carries </summary>
+    public Task WriteAsync(ushort handle, ReadOnlyMemory<byte> value, GattRequest request) =>
+        Client.QueryAsync<AttWriteReq, AttWriteRsp>(
             new AttWriteReq { AttributeHandle = handle, AttributeValue = value },
             request
         );
-    }
 
     /// <summary> Sends a write command, which the peer does not answer </summary>
     public ValueTask WriteCommandAsync(
@@ -112,8 +115,7 @@ internal sealed partial class HciHostConnectionDriver : IConnectionDriver
         CancellationToken connectionClosed
     )
     {
-        CheckLength(value);
-        // Completes once the controller has a buffer for the command, which paces a loop of writes (D8)
+        // Completes once the controller has a buffer for the command, which paces a loop of writes
         return _connection.SendGattPacketAsync(
             new AttWriteCmd { Handle = handle, Value = value },
             onHandOff: null,
@@ -122,20 +124,36 @@ internal sealed partial class HciHostConnectionDriver : IConnectionDriver
         );
     }
 
-    private async Task<byte[]> ReadCoreAsync(ushort handle, GattRequest request)
+    /// <summary> Reads a value; while answers come back full, the rest follows with Read Blob from where they ended </summary>
+    public async Task<byte[]> ReadAsync(ushort handle, GattRequest request)
     {
-        AttReadRsp response = await Client
+        AttReadRsp first = await Client
             .QueryAsync<AttReadReq, AttReadRsp>(new AttReadReq { AttributeHandle = handle }, request)
             .ConfigureAwait(false);
-        return response.AttributeValue.ToArray();
-    }
-
-    /// <summary> Long writes would need prepared writes, which v2 leaves out (D8) </summary>
-    private void CheckLength(ReadOnlyMemory<byte> value)
-    {
-        int max = _connection.AttMtu - 3;
-        if (value.Length > max)
-            throw new ArgumentOutOfRangeException(nameof(value), value.Length, $"The MTU allows at most {max} bytes");
+        int fullAnswer = _connection.AttMtu - 1;
+        // At a large MTU one answer can already hold more than an attribute may
+        if (first.AttributeValue.Length < fullAnswer)
+            return first.AttributeValue[..Math.Min(first.AttributeValue.Length, MaxValueLength)].ToArray();
+        var value = new ArrayBufferWriter<byte>();
+        value.Write(first.AttributeValue.Span);
+        ReadOnlyMemory<byte> part = first.AttributeValue;
+        // A shorter part is the last one; an empty one ends a value that ended where an answer did
+        while (part.Length >= fullAnswer && value.WrittenCount < MaxValueLength && !request.IsAbandoned)
+        {
+            AttReadBlobRsp? blob = await Client
+                .QueryUnlessAsync<AttReadBlobReq, AttReadBlobRsp>(
+                    new AttReadBlobReq { AttributeHandle = handle, ValueOffset = (ushort)value.WrittenCount },
+                    // A peer may answer that the value was not longer than the first answer
+                    AttErrorCode.AttributeNotLongError,
+                    request
+                )
+                .ConfigureAwait(false);
+            if (blob is not { } next)
+                break;
+            part = next.PartAttributeValue;
+            value.Write(part.Span);
+        }
+        return value.WrittenSpan[..Math.Min(value.WrittenCount, MaxValueLength)].ToArray();
     }
 
     private HciHostRemoteService GetService(ushort start, ushort end, BleUuid uuid)
@@ -193,7 +211,7 @@ internal sealed partial class HciHostConnectionDriver : IConnectionDriver
         if (hciEvent.ConnectionHandle != _connection.ConnectionHandle)
             return;
         LinkDown(
-            ToInfo(hciEvent.Reason),
+            HciDisconnects.ToInfo(hciEvent.Reason),
             new BleException($"The link went down: {hciEvent.Reason}", false, (int)hciEvent.Reason, null)
         );
     }
@@ -213,30 +231,77 @@ internal sealed partial class HciHostConnectionDriver : IConnectionDriver
     // Requests of the peripheral to this adapter's GATT server. There are no services to serve on this side yet
     [MessageSink]
     private void OnReadByGroupTypeRequest(AttReadByGroupTypeReq<ushort> request) =>
-        NotFound(request.OpCode, request.StartingHandle);
+        NoGroups(request.StartingHandle, request.EndingHandle, BleUuid.FromUInt16(request.AttributeGroupType));
 
     [MessageSink]
     private void OnReadByTypeRequest(AttReadByTypeReq<ushort> request) =>
-        NotFound(request.OpCode, request.StartingHandle);
+        NotFound(request.OpCode, request.StartingHandle, request.EndingHandle);
 
     [MessageSink]
     private void OnFindByTypeValueRequest(AttFindByTypeValueReq request) =>
-        NotFound(request.OpCode, request.StartingHandle);
+        NotFound(request.OpCode, request.StartingHandle, request.EndingHandle);
 
     [MessageSink]
     private void OnFindInformationRequest(AttFindInformationReq request) =>
-        NotFound(request.OpCode, request.StartingHandle);
+        NotFound(request.OpCode, request.StartingHandle, request.EndingHandle);
 
     [MessageSink]
     private void OnReadRequest(AttReadReq request) =>
-        _connection.EnqueueGattErrorResponse(request.OpCode, request.AttributeHandle, AttErrorCode.InvalidHandle, null);
+        Error(request.OpCode, request.AttributeHandle, AttErrorCode.InvalidHandle);
+
+    [MessageSink]
+    private void OnReadBlobRequest(AttReadBlobReq request) =>
+        Error(request.OpCode, request.AttributeHandle, AttErrorCode.InvalidHandle);
 
     [MessageSink]
     private void OnWriteRequest(AttWriteReq request) =>
-        _connection.EnqueueGattErrorResponse(request.OpCode, request.AttributeHandle, AttErrorCode.InvalidHandle, null);
+        Error(request.OpCode, request.AttributeHandle, AttErrorCode.InvalidHandle);
 
-    private void NotFound(AttOpCode opCode, ushort startingHandle) =>
-        _connection.EnqueueGattErrorResponse(opCode, startingHandle, AttErrorCode.AttributeNotFoundError, null);
+    // The other requests: 128-bit type queries find nothing either, the rest is not supported. Unanswered, the peripheral
+    // would run into its ATT timeout
+    [MessageSink]
+    private void OnUnknownPdu(L2CapPdu pdu)
+    {
+        if (pdu.ChannelId is not 0x0004 || pdu.Pdu.Length == 0)
+            return;
+        var opCode = (AttOpCode)pdu.Pdu[0];
+        if (!AttServer.IsRequest(opCode))
+            return;
+        ReadOnlySpan<byte> body = pdu.Pdu[1..];
+        // Requests with a 128-bit type
+        if (opCode is AttOpCode.ATT_READ_BY_TYPE_REQ or AttOpCode.ATT_READ_BY_GROUP_TYPE_REQ && body.Length == 20)
+        {
+            ushort start = BinaryPrimitives.ReadUInt16LittleEndian(body);
+            ushort end = BinaryPrimitives.ReadUInt16LittleEndian(body[2..]);
+            if (opCode is AttOpCode.ATT_READ_BY_TYPE_REQ)
+                NotFound(opCode, start, end);
+            else
+                NoGroups(start, end, BleUuid.Read(body[4..]));
+            return;
+        }
+        Error(opCode, 0x0000, AttErrorCode.RequestNotSupportedError);
+    }
+
+    /// <summary> A range starting at handle 1 that does not end before it starts holds nothing here </summary>
+    private void NotFound(AttOpCode opCode, ushort start, ushort end) =>
+        Error(
+            opCode,
+            start,
+            start == 0 || end < start ? AttErrorCode.InvalidHandle : AttErrorCode.AttributeNotFoundError
+        );
+
+    /// <summary> No services in the range, if the type is one that groups at all </summary>
+    private void NoGroups(ushort start, ushort end, BleUuid type)
+    {
+        const AttOpCode opCode = AttOpCode.ATT_READ_BY_GROUP_TYPE_REQ;
+        if (start != 0 && end >= start && !AttServer.IsGroupType(type))
+            Error(opCode, start, AttErrorCode.UnsupportedGroupTypeError);
+        else
+            NotFound(opCode, start, end);
+    }
+
+    private void Error(AttOpCode opCode, ushort handle, AttErrorCode code) =>
+        _connection.EnqueueGattErrorResponse(opCode, handle, code, null);
 
     /// <summary> Takes the link down unless it is down already; the core has failed this connection's operations before </summary>
     public async ValueTask DisposeAsync()
@@ -258,33 +323,9 @@ internal sealed partial class HciHostConnectionDriver : IConnectionDriver
 
     private async Task DisconnectAsync()
     {
-        HciCommandStatus status = await _device
-            .Host.QueryCommandStatusAsync(
-                new HciDisconnectCommand
-                {
-                    ConnectionHandle = _connection.ConnectionHandle,
-                    Reason = HciCommandStatus.RemoteUserTerminatedConnection,
-                },
-                CancellationToken.None
-            )
-            .ConfigureAwait(false);
-        // Unknown Connection Identifier: the link went down meanwhile, and its event is on the way
-        if (status is not (HciCommandStatus.Success or HciCommandStatus.UnknownConnectionIdentifier))
-            throw HciCommands.Failed(status, "disconnect");
+        await HciDisconnects.RequestAsync(_device, _connection.ConnectionHandle).ConfigureAwait(false);
         await _down
-            .Task.WaitAsync(_device.Settings.CommandTimeout, _device.TimeProvider, CancellationToken.None)
+            .Task.WaitAsync(HciDisconnects.CompletionTimeout(_connection), _device.TimeProvider, CancellationToken.None)
             .ConfigureAwait(false);
     }
-
-    private static DisconnectInfo ToInfo(HciCommandStatus reason) =>
-        new(
-            (byte)reason switch
-            {
-                (byte)HciCommandStatus.ConnectionTerminatedByLocalHost => DisconnectReason.LocalRequest,
-                // Supervision timeout, LL response timeout, failed to be established
-                0x08 or 0x22 or 0x3E => DisconnectReason.ConnectionTimeout,
-                _ => DisconnectReason.RemoteRequest,
-            },
-            (int)reason
-        );
 }
