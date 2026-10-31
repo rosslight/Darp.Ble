@@ -1,6 +1,7 @@
 using Darp.Ble.Backends;
 using Darp.Ble.Connections;
 using Darp.Ble.Data;
+using Darp.Ble.Mock.Gatt;
 
 namespace Darp.Ble.Mock.Connections;
 
@@ -10,6 +11,13 @@ internal sealed class MockLink
     private readonly IConnectionSink _centralSink;
     private readonly IGattServerSink _peripheralSink;
     private readonly Lock _lock = new();
+    private readonly Dictionary<GattServiceDefinition, MockRemoteService> _services = [];
+    private readonly Dictionary<GattCharacteristicDefinition, MockRemoteCharacteristic> _characteristics = [];
+    private readonly HashSet<GattCharacteristicDefinition> _subscribed = [];
+
+    // Fails the central's request that waits for the peripheral's answer; one at a time, as the core holds the ATT slot
+    // until it ends. The link going down fails it at once
+    private Action? _failOutstanding;
     private bool _down;
 
     public MockLink(
@@ -35,25 +43,144 @@ internal sealed class MockLink
     /// <summary> The peripheral's side </summary>
     public MockCentralConnection Peripheral { get; }
 
-    public void DisconnectFromCentral()
+    /// <summary> The central's object for a service; the same one on every discovery, which the core runs one at a time </summary>
+    public MockRemoteService GetService(GattServiceDefinition definition)
     {
-        if (TakeDown())
-            _peripheralSink.OnCentralDisconnected(Peripheral, new DisconnectInfo(DisconnectReason.RemoteRequest));
+        if (!_services.TryGetValue(definition, out MockRemoteService? service))
+        {
+            service = new MockRemoteService(this, definition);
+            _services.Add(definition, service);
+        }
+        return service;
     }
 
-    public void DisconnectFromPeripheral()
+    /// <summary> The central's object for a characteristic; the same one on every discovery </summary>
+    public MockRemoteCharacteristic GetCharacteristic(GattCharacteristicDefinition definition)
     {
-        if (TakeDown())
-            _centralSink.OnDisconnected(new DisconnectInfo(DisconnectReason.RemoteRequest));
+        lock (_lock)
+        {
+            if (!_characteristics.TryGetValue(definition, out MockRemoteCharacteristic? characteristic))
+            {
+                characteristic = new MockRemoteCharacteristic(this, definition);
+                _characteristics.Add(definition, characteristic);
+            }
+            return characteristic;
+        }
     }
 
-    private bool TakeDown()
+    /// <summary> The central reads; the peripheral's handler answers </summary>
+    public Task<byte[]> ReadAsync(GattCharacteristicDefinition characteristic) =>
+        CarryAsync(async () => await _peripheralSink.OnReadRequest(Peripheral, characteristic).ConfigureAwait(false));
+
+    /// <summary> The central writes with a write request; the peripheral's handler answers </summary>
+    public Task WriteAsync(GattCharacteristicDefinition characteristic, ReadOnlyMemory<byte> value) =>
+        CarryAsync<object?>(async () =>
+        {
+            await _peripheralSink.OnWriteRequest(Peripheral, characteristic, value).ConfigureAwait(false);
+            return null;
+        });
+
+    /// <summary> The central writes with a write command; the peripheral's handler runs on its own, its answer is dropped </summary>
+    public void WriteWithoutResponse(GattCharacteristicDefinition characteristic, ReadOnlyMemory<byte> value)
+    {
+        EnsureUp();
+        // The core copies the value before the handler runs, so the caller's buffer is free once this returns
+        _peripheralSink.OnWriteCommand(Peripheral, characteristic, value);
+    }
+
+    /// <summary> The central writes the CCCD of a characteristic </summary>
+    public void SetSubscribed(GattCharacteristicDefinition characteristic, bool enabled)
     {
         lock (_lock)
         {
             if (_down)
+                throw new IOException("The mock link is down");
+            if (enabled)
+                _subscribed.Add(characteristic);
+            else
+                _subscribed.Remove(characteristic);
+        }
+    }
+
+    /// <summary> The peripheral notifies; the central gets it while it subscribed, as a peripheral's stack decides </summary>
+    public void Notify(GattCharacteristicDefinition characteristic, ReadOnlySpan<byte> value)
+    {
+        lock (_lock)
+        {
+            if (_down)
+                throw new IOException("The mock link is down");
+            if (!_subscribed.Contains(characteristic))
+                return;
+        }
+        _centralSink.OnNotification(GetCharacteristic(characteristic), value);
+    }
+
+    public void DisconnectFromCentral()
+    {
+        if (!TakeDown(out Action? failOutstanding))
+            return;
+        _peripheralSink.OnCentralDisconnected(Peripheral, new DisconnectInfo(DisconnectReason.RemoteRequest));
+        failOutstanding?.Invoke();
+    }
+
+    public void DisconnectFromPeripheral()
+    {
+        if (!TakeDown(out Action? failOutstanding))
+            return;
+        // A driver reports the disconnect before it fails what still runs
+        _centralSink.OnDisconnected(new DisconnectInfo(DisconnectReason.RemoteRequest));
+        failOutstanding?.Invoke();
+    }
+
+    /// <summary> Carries a request to the peripheral; its answer, or the link going down, ends it </summary>
+    private Task<T> CarryAsync<T>(Func<Task<T>> answer)
+    {
+        var outstanding = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
+        Action fail = () => outstanding.TrySetException(new IOException("The mock link is down"));
+        lock (_lock)
+        {
+            if (_down)
+                throw new IOException("The mock link is down");
+            _failOutstanding = fail;
+        }
+        // The peripheral's handler may take longer than the link lives; its result is observed either way
+        _ = answer()
+            .ContinueWith(
+                task =>
+                {
+                    lock (_lock)
+                    {
+                        if (_failOutstanding == fail)
+                            _failOutstanding = null;
+                    }
+                    outstanding.TrySetFromTask(task);
+                },
+                TaskScheduler.Default
+            );
+        return outstanding.Task;
+    }
+
+    private void EnsureUp()
+    {
+        lock (_lock)
+        {
+            if (_down)
+                throw new IOException("The mock link is down");
+        }
+    }
+
+    private bool TakeDown(out Action? failOutstanding)
+    {
+        lock (_lock)
+        {
+            if (_down)
+            {
+                failOutstanding = null;
                 return false;
+            }
             _down = true;
+            failOutstanding = _failOutstanding;
+            _failOutstanding = null;
         }
         PeripheralDriver.Forget(this);
         return true;

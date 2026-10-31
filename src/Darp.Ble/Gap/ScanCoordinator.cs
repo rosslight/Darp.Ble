@@ -24,7 +24,7 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
     private readonly ILogger _logger = logger;
     private readonly Lock _lock = new();
     private readonly SemaphoreSlim _commands = new(1, 1);
-    private ScanListener[] _listeners = [];
+    private ItemQueue<IGapAdvertisement>[] _listeners = [];
     private RadioRun? _run;
     private bool _closed;
     private bool _radioMayScan;
@@ -34,9 +34,12 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
 
     public ScanDropCounter DropCounter { get; } = new();
 
-    public async Task<ScanListener> AddListenerAsync(QueueOptions queue, CancellationToken cancellationToken)
+    public async Task<ItemQueue<IGapAdvertisement>> AddListenerAsync(
+        QueueOptions queue,
+        CancellationToken cancellationToken
+    )
     {
-        var listener = new ScanListener(queue, DropCounter);
+        var listener = new ItemQueue<IGapAdvertisement>(queue, DropCounter.Increment);
         await _commands.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
@@ -61,7 +64,7 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
         }
     }
 
-    public async Task RemoveListenerAsync(ScanListener listener)
+    public async Task RemoveListenerAsync(ItemQueue<IGapAdvertisement> listener)
     {
         listener.Complete();
         await _commands.WaitAsync(CancellationToken.None).ConfigureAwait(false);
@@ -219,14 +222,14 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
         await _commands.WaitAsync(CancellationToken.None).ConfigureAwait(false);
         try
         {
-            ScanListener[] listeners;
+            ItemQueue<IGapAdvertisement>[] listeners;
             lock (_lock)
             {
                 listeners = _listeners;
                 _listeners = [];
                 _run = null;
             }
-            foreach (ScanListener listener in listeners)
+            foreach (ItemQueue<IGapAdvertisement> listener in listeners)
                 listener.Complete();
             await StopRadioAsync().ConfigureAwait(false);
         }
@@ -236,7 +239,11 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
         }
     }
 
-    private async Task StartRunAsync(RadioRun run, ScanListener listener, CancellationToken cancellationToken)
+    private async Task StartRunAsync(
+        RadioRun run,
+        ItemQueue<IGapAdvertisement> listener,
+        CancellationToken cancellationToken
+    )
     {
         try
         {
@@ -270,14 +277,14 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
 
     private void Deliver(RadioRun run, IGapAdvertisement advertisement)
     {
-        ScanListener[] listeners;
+        ItemQueue<IGapAdvertisement>[] listeners;
         lock (_lock)
         {
             if (!ReferenceEquals(_run, run))
                 return;
             listeners = _listeners;
         }
-        foreach (ScanListener listener in listeners)
+        foreach (ItemQueue<IGapAdvertisement> listener in listeners)
         {
             if (listener.TryWrite(advertisement))
                 continue;
@@ -299,18 +306,20 @@ internal sealed class ScanCoordinator(IObserverDriver driver, ILogger logger)
 
     private void FailListeners(Exception error)
     {
-        ScanListener[] listeners;
+        ItemQueue<IGapAdvertisement>[] listeners;
         lock (_lock)
         {
             listeners = _listeners;
             _listeners = [];
         }
-        foreach (ScanListener listener in listeners)
+        foreach (ItemQueue<IGapAdvertisement> listener in listeners)
             listener.Complete(error);
     }
 
-    private static ScanListener[] Without(ScanListener[] listeners, ScanListener listener) =>
-        Array.IndexOf(listeners, listener) < 0 ? listeners : [.. listeners.Where(l => !ReferenceEquals(l, listener))];
+    private static ItemQueue<IGapAdvertisement>[] Without(
+        ItemQueue<IGapAdvertisement>[] listeners,
+        ItemQueue<IGapAdvertisement> listener
+    ) => Array.IndexOf(listeners, listener) < 0 ? listeners : [.. listeners.Where(l => !ReferenceEquals(l, listener))];
 
     /// <summary> The sink of one radio run. Calls of a run that was stopped or replaced are ignored </summary>
     private sealed class RadioRun(ScanCoordinator coordinator) : IScanSink

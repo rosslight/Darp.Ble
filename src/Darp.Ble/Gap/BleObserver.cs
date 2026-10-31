@@ -64,7 +64,9 @@ public sealed class BleObserver
     )
     {
         ArgumentNullException.ThrowIfNull(queue);
-        ScanListener listener = await _coordinator.AddListenerAsync(queue, cancellationToken).ConfigureAwait(false);
+        ItemQueue<IGapAdvertisement> listener = await _coordinator
+            .AddListenerAsync(queue, cancellationToken)
+            .ConfigureAwait(false);
         try
         {
             while (await WaitForAdvertisementsAsync(listener, cancellationToken).ConfigureAwait(false))
@@ -93,7 +95,10 @@ public sealed class BleObserver
     /// <summary> Ends one pause; never throws, failures end the scans </summary>
     internal Task ResumeAsync() => _coordinator.ResumeAsync();
 
-    private async Task<bool> WaitForAdvertisementsAsync(ScanListener listener, CancellationToken cancellationToken)
+    private async Task<bool> WaitForAdvertisementsAsync(
+        ItemQueue<IGapAdvertisement> listener,
+        CancellationToken cancellationToken
+    )
     {
         try
         {

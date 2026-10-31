@@ -1,5 +1,4 @@
 using Darp.Ble.Backends;
-using Darp.Ble.Mock.Gatt;
 
 namespace Darp.Ble.Mock.Connections;
 
@@ -16,9 +15,7 @@ internal sealed class MockConnectionDriver(MockLink link) : IConnectionDriver
 
     public Task<IReadOnlyList<IRemoteServiceDriver>> DiscoverServicesAsync(GattRequest request) =>
         Task.FromResult<IReadOnlyList<IRemoteServiceDriver>>([
-            .. _link
-                .PeripheralDriver.Services.Where(service => service.IsPrimary)
-                .Select(service => new MockRemoteService(service)),
+            .. _link.PeripheralDriver.Services.Where(service => service.IsPrimary).Select(_link.GetService),
         ]);
 
     public ValueTask DisposeAsync()

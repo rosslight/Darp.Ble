@@ -17,6 +17,7 @@ public sealed class BleCentral
     private readonly ICentralDriver _driver;
     private readonly BleObserver _observer;
     private readonly TimeProvider _timeProvider;
+    private readonly QueueOptions _notificationQueue;
     private readonly ILogger _logger;
     private readonly Lock _lock = new();
     private readonly List<ConnectedPeripheral> _connections = [];
@@ -30,9 +31,11 @@ public sealed class BleCentral
         ICentralDriver driver,
         BleObserver observer,
         TimeProvider timeProvider,
+        QueueOptions notificationQueue,
         ILogger logger
     )
     {
+        _notificationQueue = notificationQueue;
         Adapter = adapter;
         _driver = driver;
         _observer = observer;
@@ -116,7 +119,7 @@ public sealed class BleCentral
             await _observer.ResumeAsync().ConfigureAwait(false);
         }
         // Until the caller gets it, this method owns the connection
-        var connection = new ConnectedPeripheral(this, address, driver, _timeProvider, _logger);
+        var connection = new ConnectedPeripheral(this, address, driver, _timeProvider, _notificationQueue, _logger);
         events.Attach(connection);
         try
         {

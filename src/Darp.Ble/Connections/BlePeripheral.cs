@@ -1,5 +1,6 @@
 using Darp.Ble.Backends;
 using Darp.Ble.Connections;
+using Darp.Ble.Data;
 using Darp.Ble.Gatt;
 using Microsoft.Extensions.Logging;
 
@@ -12,6 +13,7 @@ public sealed class BlePeripheral
     private readonly ILogger _logger;
     private readonly Lock _lock = new();
     private readonly Dictionary<ICentralConnectionDriver, ConnectedCentral> _centrals = [];
+    private readonly Dictionary<GattCharacteristicDefinition, LocalGattCharacteristic> _hosted = [];
     private bool _closed;
 
     // Set once disposal disconnected every central; a central reported later goes with the driver
@@ -45,8 +47,20 @@ public sealed class BlePeripheral
         _operations.Enter(typeof(BlePeripheral));
         try
         {
-            GattServiceDefinition definition = service.Build();
-            await _driver.AddServiceAsync(definition, cancellationToken).ConfigureAwait(false);
+            (GattServiceDefinition definition, LocalGattCharacteristic[] characteristics) = service.Build();
+            // Known before the driver adds it, so a central can use the service as soon as it is live
+            Host(characteristics);
+            try
+            {
+                await _driver.AddServiceAsync(definition, cancellationToken).ConfigureAwait(false);
+            }
+            catch
+            {
+                Unhost(characteristics);
+                throw;
+            }
+            foreach (LocalGattCharacteristic characteristic in characteristics)
+                characteristic.MarkLive(this);
             return new LocalGattService(definition.Uuid);
         }
         finally
@@ -92,6 +106,82 @@ public sealed class BlePeripheral
         central?.End(info, takeLinkDown: false);
     }
 
+    internal void Host(LocalGattCharacteristic[] characteristics)
+    {
+        lock (_lock)
+        {
+            foreach (LocalGattCharacteristic characteristic in characteristics)
+                _hosted.Add(characteristic.Definition, characteristic);
+        }
+    }
+
+    internal void Unhost(LocalGattCharacteristic[] characteristics)
+    {
+        lock (_lock)
+        {
+            foreach (LocalGattCharacteristic characteristic in characteristics)
+                _hosted.Remove(characteristic.Definition);
+        }
+    }
+
+    internal async Task<byte[]> OnReadRequestAsync(
+        ICentralConnectionDriver connection,
+        GattCharacteristicDefinition definition
+    )
+    {
+        (ConnectedCentral central, LocalGattCharacteristic characteristic) = Resolve(connection, definition);
+        return await central.RunHandlerAsync(ct => characteristic.ReadAsync(central, ct)).ConfigureAwait(false);
+    }
+
+    internal async Task OnWriteRequestAsync(
+        ICentralConnectionDriver connection,
+        GattCharacteristicDefinition definition,
+        byte[] value
+    )
+    {
+        (ConnectedCentral central, LocalGattCharacteristic characteristic) = Resolve(connection, definition);
+        GattProtocolStatus status = await central
+            .RunHandlerAsync(ct => characteristic.WriteAsync(central, value, ct))
+            .ConfigureAwait(false);
+        if (status is not GattProtocolStatus.Success)
+            throw new GattException(status, $"The write handler answered {status}");
+    }
+
+    internal void OnWriteCommand(
+        ICentralConnectionDriver connection,
+        GattCharacteristicDefinition definition,
+        byte[] value
+    )
+    {
+        // Nobody waits for the answer; failures are logged by the handler run
+        _ = OnWriteRequestAsync(connection, definition, value)
+            .ContinueWith(
+                task => _ = task.Exception,
+                CancellationToken.None,
+                TaskContinuationOptions.OnlyOnFaulted,
+                TaskScheduler.Default
+            );
+    }
+
+    private (ConnectedCentral Central, LocalGattCharacteristic Characteristic) Resolve(
+        ICentralConnectionDriver connection,
+        GattCharacteristicDefinition definition
+    )
+    {
+        lock (_lock)
+        {
+            // The driver only reports centrals and characteristics it got from the core
+            if (
+                !_centrals.TryGetValue(connection, out ConnectedCentral? central)
+                || !_hosted.TryGetValue(definition, out LocalGattCharacteristic? characteristic)
+            )
+            {
+                throw new GattException(GattProtocolStatus.UnlikelyError, "Unknown central or characteristic");
+            }
+            return (central, characteristic);
+        }
+    }
+
     internal ConnectedCentral? Find(ICentralConnectionDriver connection)
     {
         lock (_lock)
@@ -128,8 +218,9 @@ public sealed class BlePeripheral
                     return;
                 }
             }
-            foreach (ConnectedCentral central in centrals)
-                await central.DisconnectAsync(CancellationToken.None).ConfigureAwait(false);
+            // Every central starts ending before any is awaited, so a slow handler delays nobody else's end
+            await Task.WhenAll(centrals.Select(central => central.DisconnectAsync(CancellationToken.None)))
+                .ConfigureAwait(false);
         }
     }
 }

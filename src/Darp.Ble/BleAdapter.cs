@@ -54,7 +54,7 @@ public sealed class BleAdapter : IAsyncDisposable
         if (driver.Broadcaster is not null)
             _broadcaster = new BleBroadcaster(this, driver.Broadcaster, logger);
         if (driver.Central is not null && _observer is not null)
-            _central = new BleCentral(this, driver.Central, _observer, timeProvider, logger);
+            _central = new BleCentral(this, driver.Central, _observer, timeProvider, options.NotificationQueue, logger);
         if (driver.Peripheral is not null)
             _peripheral = new BlePeripheral(this, driver.Peripheral, logger);
     }

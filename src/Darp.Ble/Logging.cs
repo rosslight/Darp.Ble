@@ -181,4 +181,12 @@ internal static partial class Logging
         Message = "Connection of central {Address} ended: {Reason}"
     )]
     public static partial void LogCentralDisconnected(this ILogger logger, BleAddress address, DisconnectReason reason);
+
+    [LoggerMessage(
+        EventId = 1402,
+        EventName = "HandlerFailed",
+        Level = LogLevel.Warning,
+        Message = "A handler for central {Address} failed; answering with UnlikelyError"
+    )]
+    public static partial void LogHandlerFailed(this ILogger logger, BleAddress address, Exception exception);
 }

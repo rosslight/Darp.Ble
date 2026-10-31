@@ -171,6 +171,184 @@ public sealed class RequestQueueTests
         connection.Disconnected.IsCompleted.ShouldBeFalse();
     }
 
+    [Fact]
+    public async Task AWriteWithoutResponse_BehindASentRequest_GoesOutBeforeTheRequestIsAnswered()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        (RemoteGattCharacteristic characteristic, TestConnectionDriver driver) = await DiscoverAsync(adapter);
+        Task<byte[]> read = characteristic.ReadAsync(Token);
+        PendingRequest sentRead = await driver.NextRequestAsync(Token);
+        sentRead.Send();
+
+        ValueTask write = characteristic.WriteWithoutResponseAsync(new byte[] { 1 }, Token);
+        PendingRequest command = await driver.NextRequestAsync(Token);
+
+        command.Kind.ShouldBe("command");
+        command.Accept();
+        await write;
+        sentRead.Answer(new byte[] { 5 });
+        (await read).ShouldBe([5]);
+    }
+
+    [Fact]
+    public async Task AWriteWithoutResponse_NeverOvertakesAnEarlierRequestThatWaitsForTheAttSlot()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        (RemoteGattCharacteristic characteristic, TestConnectionDriver driver) = await DiscoverAsync(adapter);
+        Task<byte[]> first = characteristic.ReadAsync(Token);
+        PendingRequest firstRead = await driver.NextRequestAsync(Token);
+        firstRead.Send();
+        Task<byte[]> second = characteristic.ReadAsync(Token);
+        ValueTask write = characteristic.WriteWithoutResponseAsync(new byte[] { 1 }, Token);
+
+        firstRead.Answer(new byte[] { 1 });
+        await first;
+        PendingRequest secondRead = await driver.NextRequestAsync(Token);
+        secondRead.Kind.ShouldBe("read");
+        secondRead.Send();
+        PendingRequest command = await driver.NextRequestAsync(Token);
+
+        command.Kind.ShouldBe("command");
+        command.Accept();
+        await write;
+        secondRead.Answer(new byte[] { 2 });
+        (await second).ShouldBe([2]);
+    }
+
+    [Fact]
+    public async Task CancellingARequestThatWaitsForTheAttSlot_LetsTheWriteWithoutResponseBehindItGo()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        (RemoteGattCharacteristic characteristic, TestConnectionDriver driver) = await DiscoverAsync(adapter);
+        Task<byte[]> sent = characteristic.ReadAsync(Token);
+        PendingRequest sentRead = await driver.NextRequestAsync(Token);
+        sentRead.Send();
+        using var cancellation = new CancellationTokenSource();
+        Task<byte[]> waiting = characteristic.ReadAsync(cancellation.Token);
+        ValueTask write = characteristic.WriteWithoutResponseAsync(new byte[] { 1 }, Token);
+
+        await cancellation.CancelAsync();
+
+        await Should.ThrowAsync<OperationCanceledException>(() => waiting);
+        PendingRequest command = await driver.NextRequestAsync(Token);
+        command.Kind.ShouldBe("command");
+        command.Accept();
+        await write;
+        sentRead.Answer(new byte[] { 1 });
+        await sent;
+    }
+
+    [Fact]
+    public async Task CancellingAWriteWithoutResponse_WhileItWaitsForBufferSpace_EndsIt_AndTheNextOperationGoes()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        (RemoteGattCharacteristic characteristic, TestConnectionDriver driver) = await DiscoverAsync(adapter);
+        using var cancellation = new CancellationTokenSource();
+        ValueTask write = characteristic.WriteWithoutResponseAsync(new byte[] { 1 }, cancellation.Token);
+        (await driver.NextRequestAsync(Token)).Kind.ShouldBe("command");
+
+        await cancellation.CancelAsync();
+
+        await Should.ThrowAsync<OperationCanceledException>(() => write.AsTask());
+        Task<byte[]> read = characteristic.ReadAsync(Token);
+        PendingRequest next = await driver.NextRequestAsync(Token);
+        next.Kind.ShouldBe("read");
+        next.Send();
+        next.Answer(new byte[] { 3 });
+        (await read).ShouldBe([3]);
+    }
+
+    [Fact]
+    public async Task AWriteWithoutResponse_LeavesTheAttTimeoutOfASentRequestRunning()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        (RemoteGattCharacteristic characteristic, TestConnectionDriver driver) = await DiscoverAsync(adapter);
+        ConnectedPeripheral connection = adapter.Central.Connections.Single();
+        Task<byte[]> read = characteristic.ReadAsync(Token);
+        (await driver.NextRequestAsync(Token)).Send();
+        _time.Advance(TimeSpan.FromSeconds(20));
+
+        ValueTask write = characteristic.WriteWithoutResponseAsync(new byte[] { 1 }, Token);
+        (await driver.NextRequestAsync(Token)).Accept();
+        await write;
+        _time.Advance(TimeSpan.FromSeconds(10));
+
+        (await connection.Disconnected).Reason.ShouldBe(DisconnectReason.AttTimeout);
+        await Should.ThrowAsync<BleDisconnectedException>(() => read);
+    }
+
+    [Fact]
+    public async Task ALostLink_FailsTheSentRequest_TheWriteWithoutResponse_AndTheQueuedRequest()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        (RemoteGattCharacteristic characteristic, TestConnectionDriver driver) = await DiscoverAsync(adapter);
+        Task<byte[]> sent = characteristic.ReadAsync(Token);
+        (await driver.NextRequestAsync(Token)).Send();
+        Task write = characteristic.WriteWithoutResponseAsync(new byte[] { 1 }, Token).AsTask();
+        (await driver.NextRequestAsync(Token)).Kind.ShouldBe("command");
+        Task<byte[]> queued = characteristic.ReadAsync(Token);
+
+        driver.Sink.OnDisconnected(new DisconnectInfo(DisconnectReason.TransportLost));
+
+        foreach (Task operation in new Task[] { sent, write, queued })
+        {
+            BleDisconnectedException exception = await Should.ThrowAsync<BleDisconnectedException>(() => operation);
+            exception.Info.Reason.ShouldBe(DisconnectReason.TransportLost);
+        }
+    }
+
+    [Fact]
+    public async Task AnEnableTheCallerGaveUpOn_StillTurnsNotificationsOn_WhenThePeerAccepts()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        (RemoteGattCharacteristic characteristic, TestConnectionDriver driver) = await DiscoverAsync(adapter);
+        using NotificationStream<byte[]> stream = characteristic.Subscribe();
+        using var cancellation = new CancellationTokenSource();
+        Task enable = characteristic.EnableNotificationsAsync(cancellation.Token);
+        PendingRequest cccd = await driver.NextRequestAsync(Token);
+        cccd.Send();
+
+        await cancellation.CancelAsync();
+        await Should.ThrowAsync<OperationCanceledException>(() => enable);
+        cccd.Answer();
+        // The next request only goes out once the CCCD write ended
+        Task<byte[]> read = characteristic.ReadAsync(Token);
+        (await driver.NextRequestAsync(Token)).Answer(new byte[] { 0 });
+        await read;
+
+        driver.Sink.OnNotification(driver.Characteristic, [9]);
+        (await stream.FirstAsync(Token)).ShouldBe([9]);
+    }
+
+    [Fact]
+    public async Task ANotificationWhileEnabling_ReachesTheStreams()
+    {
+        await using BleAdapter adapter = await OpenAsync();
+        (RemoteGattCharacteristic characteristic, TestConnectionDriver driver) = await DiscoverAsync(adapter);
+        using NotificationStream<byte[]> stream = characteristic.Subscribe();
+        Task enable = characteristic.EnableNotificationsAsync(Token);
+        PendingRequest cccd = await driver.NextRequestAsync(Token);
+        cccd.Send();
+
+        // Some devices send a value right after the CCCD write, before its answer
+        driver.Sink.OnNotification(driver.Characteristic, [7]);
+        cccd.Answer();
+        await enable;
+
+        (await stream.FirstAsync(Token)).ShouldBe([7]);
+    }
+
+    private async Task<(RemoteGattCharacteristic Characteristic, TestConnectionDriver Driver)> DiscoverAsync(
+        BleAdapter adapter
+    )
+    {
+        (ConnectedPeripheral connection, TestConnectionDriver driver) = await ConnectAsync(adapter);
+        Task<IReadOnlyList<RemoteGattService>> discovery = connection.DiscoverServicesAsync(Token);
+        (await driver.NextRequestAsync(Token)).Complete(ServiceUuid);
+        RemoteGattService service = (await discovery).Single();
+        return ((await service.DiscoverCharacteristicsAsync(Token)).Single(), driver);
+    }
+
     private async Task<(ConnectedPeripheral Connection, TestConnectionDriver Driver)> ConnectAsync(BleAdapter adapter)
     {
         ConnectedPeripheral connection = await adapter.Central.ConnectAsync(

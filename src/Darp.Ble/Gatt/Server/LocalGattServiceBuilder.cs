@@ -8,7 +8,7 @@ public sealed class LocalGattServiceBuilder
 {
     private readonly BleUuid _uuid;
     private readonly bool _isPrimary;
-    private readonly List<GattCharacteristicDefinition> _characteristics = [];
+    private readonly List<LocalGattCharacteristic> _characteristics = [];
     private bool _added;
 
     /// <summary> Starts a service </summary>
@@ -32,23 +32,40 @@ public sealed class LocalGattServiceBuilder
     /// <summary> Adds a characteristic </summary>
     /// <param name="uuid"> The UUID of the characteristic </param>
     /// <param name="properties"> What the characteristic supports </param>
+    /// <param name="onRead"> Answers reads of centrals; without it a read is answered with <see cref="GattProtocolStatus.ReadNotPermitted"/> </param>
+    /// <param name="onWrite"> Handles write requests of centrals; without it a write is answered with <see cref="GattProtocolStatus.WriteNotPermitted"/> </param>
     /// <returns> The characteristic </returns>
     /// <exception cref="InvalidOperationException"> The service was already added </exception>
-    public LocalGattCharacteristic AddCharacteristic(BleUuid uuid, GattProperty properties)
+    public LocalGattCharacteristic AddCharacteristic(
+        BleUuid uuid,
+        GattProperty properties,
+        OnReadHandler? onRead = null,
+        OnWriteHandler? onWrite = null
+    )
     {
         ArgumentNullException.ThrowIfNull(uuid);
-        var definition = new GattCharacteristicDefinition(uuid, properties);
+        var characteristic = new LocalGattCharacteristic(
+            new GattCharacteristicDefinition(uuid, properties),
+            onRead,
+            onWrite
+        );
         EnsureNotAdded();
-        _characteristics.Add(definition);
-        return new LocalGattCharacteristic(definition);
+        _characteristics.Add(characteristic);
+        return characteristic;
     }
 
     /// <summary> Freezes the service and builds its definition; the builder cannot change or be added again afterwards </summary>
-    internal GattServiceDefinition Build()
+    internal (GattServiceDefinition Definition, LocalGattCharacteristic[] Characteristics) Build()
     {
         EnsureNotAdded();
         _added = true;
-        return new GattServiceDefinition(_uuid, _isPrimary, [.. _characteristics]);
+        LocalGattCharacteristic[] characteristics = [.. _characteristics];
+        var definition = new GattServiceDefinition(
+            _uuid,
+            _isPrimary,
+            [.. characteristics.Select(characteristic => characteristic.Definition)]
+        );
+        return (definition, characteristics);
     }
 
     private void EnsureNotAdded()
