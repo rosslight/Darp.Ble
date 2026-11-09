@@ -17,7 +17,7 @@
     <PackageVersion Include="Microsoft.Reactive.Testing" Version="7.0.0" />
     <PackageVersion Include="NSubstitute" Version="6.2.0" />
     <PackageVersion Include="NSubstitute.Analyzers.CSharp" Version="1.0.17" />
-    <PackageVersion Include="PolySharp" Version="1.16.0" />
+    <PackageVersion Include="PolySharp" Version="1.17.0" />
     <PackageVersion Include="roslynator.analyzers" Version="5.0.1">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
