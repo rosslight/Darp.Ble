@@ -16,6 +16,8 @@ public static class UsbPort
             return UsbPortWin.GetPortInfos();
         if (OperatingSystem.IsLinux())
             return UsbPortLinux.GetPortInfos();
+        if (OperatingSystem.IsMacOS())
+            return UsbPortMac.GetPortInfos();
         throw new NotSupportedException($"Invalid operating system {RuntimeInformation.OSDescription}");
     }
 
